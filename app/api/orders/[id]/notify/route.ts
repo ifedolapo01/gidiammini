@@ -5,10 +5,11 @@ import { sendCustomNotification } from '@/lib/notifications';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const orderId = params.id;
+    const { id: orderId } = await params;
+    
     const body = await request.json();
     const { message, viaEmail = true, viaSMS = true } = body;
     
@@ -21,7 +22,6 @@ export async function POST(
 
     const supabase = createAdminClient();
 
-    // Get the order
     const { data: order, error: fetchError } = await supabase
       .from('orders')
       .select('*')
@@ -35,7 +35,6 @@ export async function POST(
       );
     }
 
-    // Send notification
     const result = await sendCustomNotification({
       orderNumber: order.order_number,
       customerName: order.customer_name,
