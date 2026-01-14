@@ -122,21 +122,35 @@ const handleSendReceipt = async () => {
       }))
     };
 
-    // Save to database
-    const response = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData),
-    });
+    // In your handleSendReceipt function in page.tsx - Update the fetch call response handling
+const response = await fetch('/api/orders', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(orderData),
+});
 
-    const result = await response.json();
+// Check if response is OK
+if (!response.ok) {
+  const errorText = await response.text();
+  console.error('API Error Response:', errorText);
+  throw new Error(`API Error: ${response.status} ${response.statusText}`);
+}
 
-    if (result.success) {
-      clearCart();
-      setStep('confirmation');
-    } else {
-      throw new Error(result.error);
-    }
+// Parse the response
+let result;
+try {
+  result = await response.json();
+} catch (jsonError) {
+  console.error('JSON parse error:', jsonError);
+  throw new Error('Invalid response from server');
+}
+
+if (result.success) {
+  clearCart();
+  setStep('confirmation');
+} else {
+  throw new Error(result.error || 'Order submission failed');
+}
 
   } catch (error: any) {
     console.error('Order submission error:', error);

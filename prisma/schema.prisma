@@ -58,8 +58,8 @@ model Order {
   customerEmail  String
   customerPhone  String
   total          Int
-  status         String      // 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'
-  deliveryOption String      // 'pickup', 'delivery'
+  status         String      // 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'
+  deliveryOption String      // 'Pickup', 'Delivery'
   selectedState  String
   address        String?
   city           String?

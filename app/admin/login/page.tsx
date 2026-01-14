@@ -55,7 +55,6 @@ export default function AdminLogin() {
               className="w-full border rounded-lg px-4 py-2 text-black"
               placeholder="admin@urbanthreads.com"
               required
-              defaultValue="admin@urbanthreads.com"
             />
           </div>
           

@@ -109,11 +109,11 @@ export default function PaymentStep({
         <div className="mt-6 md:mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center">
             <MessageCircle className="w-4 h-4 md:w-5 h-5 text-green-600 mr-2" />
-            <h4 className="font-bold text-green-800 text-sm md:text-base">Automatic WhatsApp Notification:</h4>
+            <h4 className="font-bold text-green-800 text-sm md:text-base">Automatic Email Notification:</h4>
           </div>
           <p className="text-xs md:text-sm text-green-700 mt-2">
             When you click "Send Receipt to Owner", all your order details and the receipt will be automatically 
-            sent to the store owner's WhatsApp. They will verify your payment and contact you via email/SMS
+            sent to the store owner's email. They will verify your payment and contact you via email/SMS
             for order confirmation.
           </p>
         </div>
@@ -166,13 +166,12 @@ function BankDetails({ bankDetails, orderNumber, total }: any) {
       </div>
       
       <div className="mt-4 md:mt-6 p-3 md:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <h4 className="font-bold text-yellow-800 mb-2 text-sm md:text-base">Important Instructions:</h4>
+        <h4 className="font-bold text-yellow-800 mb-2 text-sm md:text-base">IMPORTANT INSTRUCTIONS:</h4>
         <ul className="text-xs md:text-sm text-yellow-700 space-y-1">
-          <li>• Use <strong>Order #{orderNumber}</strong> as payment reference</li>
+          <li>• Use <strong>Order #{orderNumber}</strong> as payment description/remark</li>
           <li>• Transfer <strong>exactly ₦{total.toLocaleString()}</strong></li>
-          <li>• Take a screenshot of successful transfer</li>
-          <li>• Upload the receipt below after payment</li>
-          <li>• Receipt will be sent to store owner automatically</li>
+          <li>• Upload the receipt below after payment and click on send receipt to seller</li>
+          <li>• Receipt will be sent to store owner immediately</li>
         </ul>
       </div>
     </div>

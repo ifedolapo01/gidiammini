@@ -429,8 +429,8 @@ export default function ProductDetailPage() {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">Delivery Information</h4>
                 <p className="text-sm text-blue-800">
-                  • Abuja: 2-3 business days<br/>
-                  • Other states: 5-7 business days to designated parks<br/>
+                  • Abuja: 1-2 days<br/>
+                  • Other states: 3-5 business days to designated parks<br/>
                   • Contact us for expedited shipping
                 </p>
               </div>

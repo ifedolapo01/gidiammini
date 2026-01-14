@@ -92,14 +92,14 @@ function NextSteps({ deliveryOption, isPickupAvailable, selectedState, formData,
         <StepItem number={1} color="blue">
           <p className="font-medium text-gray-900 text-sm md:text-base">Payment Verification</p>
           <p className="text-xs md:text-sm text-gray-600">
-            Store owner has received your receipt on WhatsApp and will verify your bank transfer
+            Store owner has received your receipt via email and will verify your bank transfer
           </p>
         </StepItem>
         
         <StepItem number={2} color="yellow">
           <p className="font-medium text-gray-900 text-sm md:text-base">Order Confirmation</p>
           <p className="text-xs md:text-sm text-gray-600">
-            You'll receive a call/SMS when your order is confirmed
+            You'll receive an email/SMS when your order is confirmed
           </p>
         </StepItem>
         
