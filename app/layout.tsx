@@ -29,6 +29,7 @@ export default function RootLayout({
         <CartProvider>
           <Header />
           <main className="min-h-screen overflow-x-hidden">{children}</main>
+          <Analytics />
           <footer className="bg-gray-900 text-white py-8 md:py-12">
             <div className="container mx-auto px-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
