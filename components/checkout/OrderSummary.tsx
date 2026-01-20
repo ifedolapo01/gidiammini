@@ -1,7 +1,7 @@
 'use client';
 
 import { Banknote } from 'lucide-react';
-import { CartItem } from '@/components/CartProvider';
+import { CartItem } from '@/types/product';
 
 interface OrderSummaryProps {
   items: CartItem[];
