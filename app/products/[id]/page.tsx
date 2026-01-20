@@ -1,11 +1,13 @@
+// app/products/[id]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
-import { getProduct, Product } from '@/lib/supabase/actions';
+import { getProduct } from '@/lib/supabase/actions';
 import { Truck, Shield, ChevronLeft, Share2, Heart, Check, Package } from 'lucide-react';
 import Link from 'next/link';
+import { Product } from '@/types/product';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -553,26 +555,26 @@ export default function ProductDetailPage() {
             {/* Features & Details */}
             <div className="space-y-4 border-t pt-6 md:pt-8 mt-6 md:mt-0">
               {/* Product Details List */}
-{product.details && product.details.length > 0 && (
-  <div className="border rounded-lg border-gray-900">
-    <details className="group" open>
-      <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
-        <span className="font-medium text-gray-900">Product Details</span>
-        <ChevronLeft className="w-5 h-5 transform group-open:rotate-90 transition-transform text-gray-900" />
-      </summary>
-      <div className="px-4 pb-4 text-gray-600">
-        <ul className="space-y-2 text-sm md:text-base">
-          {product.details.map((detail, index) => (
-            <li key={index} className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span>
-              <span>{detail}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </details>
-  </div>
-)}
+              {product.details && product.details.length > 0 && (
+                <div className="border rounded-lg border-gray-900">
+                  <details className="group" open>
+                    <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
+                      <span className="font-medium text-gray-900">Product Details</span>
+                      <ChevronLeft className="w-5 h-5 transform group-open:rotate-90 transition-transform text-gray-900" />
+                    </summary>
+                    <div className="px-4 pb-4 text-gray-600">
+                      <ul className="space-y-2 text-sm md:text-base">
+                        {product.details.map((detail, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-blue-500 mr-2">•</span>
+                            <span>{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </details>
+                </div>
+              )}
 
               {/* Shipping & Returns */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

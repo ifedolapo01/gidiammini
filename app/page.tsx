@@ -2,6 +2,7 @@
 import ProductCard from '@/components/ProductCard';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { ProductCardProduct } from '@/types/product';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -19,7 +20,7 @@ export default async function HomePage() {
     // Show a fallback state
   }
 
-  const featuredProducts = products?.slice(0, 4) || [];
+  const featuredProducts = (products as ProductCardProduct[])?.slice(0, 4) || [];
 
   return (
     <div>

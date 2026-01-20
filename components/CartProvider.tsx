@@ -1,23 +1,15 @@
+// components/CartProvider.tsx
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-
-export interface CartItem {
-  productId: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-  size?: string;
-  color?: string;
-}
+import { CartItem } from '@/types/product';
 
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void; // Add this
+  clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
 }
@@ -57,7 +49,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // Add this function
   const clearCart = () => {
     setItems([]);
   };
@@ -76,7 +67,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addToCart,
       removeFromCart,
       updateQuantity,
-      clearCart, // Add to context
+      clearCart,
       getTotal,
       getItemCount
     }}>

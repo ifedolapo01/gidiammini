@@ -5,20 +5,10 @@ import { useState, useEffect } from 'react';
 import ProductCard from '@/components/ProductCard';
 import { Filter } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  category: string;
-  main_image: string;
-  stock: number;
-  is_active: boolean;
-}
+import { ProductCardProduct } from '@/types/product';
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductCardProduct[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -49,7 +39,7 @@ export default function ProductsPage() {
         console.error('Error loading products:', error);
         setProducts([]);
       } else {
-        setProducts(data || []);
+        setProducts(data as ProductCardProduct[] || []);
       }
     } catch (error) {
       console.error('Error loading products:', error);

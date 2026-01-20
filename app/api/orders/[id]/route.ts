@@ -154,10 +154,7 @@ export async function GET(
     
     const { data: order, error } = await supabase
       .from('orders')
-      .select(`
-        *,
-        order_items (*)
-      `)
+      .select(`*, order_items (*)`)
       .eq('id', orderId)
       .single();
 

@@ -116,7 +116,7 @@ export default function AdminDashboard() {
           <button
             onClick={refreshData}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-2 text-black px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
@@ -270,7 +270,7 @@ export default function AdminDashboard() {
         <h2 className="text-xl font-bold mb-6 text-gray-800">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link 
-            href="/admin/products/new"
+            href="/admin/products"
             className="p-4 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors"
           >
             <h3 className="font-semibold text-blue-700 mb-1">Add New Product</h3>

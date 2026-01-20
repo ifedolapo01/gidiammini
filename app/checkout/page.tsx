@@ -1,3 +1,4 @@
+// app/checkout/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -13,6 +14,7 @@ import StateDeliveryForm from '@/components/checkout/StateDeliveryForm';
 import OrderSummary from '@/components/checkout/OrderSummary';
 import PaymentStep from '@/components/checkout/PaymentStep';
 import ConfirmationStep from '@/components/checkout/ConfirmationStep';
+import { OrderData, CartItem } from '@/types/product';
 
 export default function CheckoutPage() {
   const { items, getTotal, clearCart } = useCart();
@@ -71,94 +73,92 @@ export default function CheckoutPage() {
     }
   };
 
-  // app/checkout/page.tsx - Update the handleSendReceipt function
-const handleSendReceipt = async () => {
-  if (!uploadedReceipt) {
-    alert('Please upload your payment receipt first.');
-    return;
-  }
+  const handleSendReceipt = async () => {
+    if (!uploadedReceipt) {
+      alert('Please upload your payment receipt first.');
+      return;
+    }
 
-  setIsProcessing(true);
+    setIsProcessing(true);
 
-  try {
-    // Upload receipt to Supabase Storage
-    const supabase = createClient();
-    const fileName = `${orderNumber}-${Date.now()}.jpg`;
-    
-    // Convert base64 to blob
-    const base64Response = await fetch(uploadedReceipt);
-    const blob = await base64Response.blob();
-    
-    const { error: uploadError } = await supabase.storage
-      .from('receipts')
-      .upload(fileName, blob);
+    try {
+      // Upload receipt to Supabase Storage
+      const supabase = createClient();
+      const fileName = `${orderNumber}-${Date.now()}.jpg`;
+      
+      // Convert base64 to blob
+      const base64Response = await fetch(uploadedReceipt);
+      const blob = await base64Response.blob();
+      
+      const { error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, blob);
 
-    if (uploadError) throw uploadError;
+      if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
 
-    // Create order in database
-    const orderData = {
-      order_number: orderNumber,
-      customer_name: `${formData.firstName} ${formData.lastName}`,
-      customer_email: formData.email,
-      customer_phone: formData.phone,
-      total_amount: total,
-      delivery_option: deliveryOption,
-      selected_state: selectedState,
-      delivery_address: deliveryOption === 'delivery' ? formData.address : null,
-      city: formData.city,
-      note: formData.note,
-      receipt_url: publicUrl,
-      items: items.map(item => ({
-        product_id: item.productId,
-        product_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        size: item.size,
-        color: item.color,
-      }))
-    };
+      // Create order in database
+      const orderData: OrderData = {
+        order_number: orderNumber,
+        customer_name: `${formData.firstName} ${formData.lastName}`,
+        customer_email: formData.email,
+        customer_phone: formData.phone,
+        total_amount: total,
+        delivery_option: deliveryOption,
+        selected_state: selectedState,
+        delivery_address: deliveryOption === 'delivery' ? formData.address : undefined,
+        city: formData.city,
+        note: formData.note,
+        receipt_url: publicUrl,
+        items: items.map((item: CartItem) => ({
+          product_id: item.productId,
+          product_name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size || null,
+          color: item.color || null,
+        }))
+      };
 
-    // In your handleSendReceipt function in page.tsx - Update the fetch call response handling
-const response = await fetch('/api/orders', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(orderData),
-});
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
 
-// Check if response is OK
-if (!response.ok) {
-  const errorText = await response.text();
-  console.error('API Error Response:', errorText);
-  throw new Error(`API Error: ${response.status} ${response.statusText}`);
-}
+      // Check if response is OK
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
 
-// Parse the response
-let result;
-try {
-  result = await response.json();
-} catch (jsonError) {
-  console.error('JSON parse error:', jsonError);
-  throw new Error('Invalid response from server');
-}
+      // Parse the response
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        throw new Error('Invalid response from server');
+      }
 
-if (result.success) {
-  clearCart();
-  setStep('confirmation');
-} else {
-  throw new Error(result.error || 'Order submission failed');
-}
+      if (result.success) {
+        clearCart();
+        setStep('confirmation');
+      } else {
+        throw new Error(result.error || 'Order submission failed');
+      }
 
-  } catch (error: any) {
-    console.error('Order submission error:', error);
-    alert('Failed to submit order. Please try again or contact support.');
-  } finally {
-    setIsProcessing(false);
-  }
-};
+    } catch (error: any) {
+      console.error('Order submission error:', error);
+      alert('Failed to submit order. Please try again or contact support.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (items.length === 0 && step !== 'confirmation') {
     return <EmptyCart />;

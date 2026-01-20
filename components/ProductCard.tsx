@@ -1,20 +1,6 @@
 // components/ProductCard.tsx - Server Component version
 import Link from 'next/link';
-
-// Define a more flexible product type
-interface ProductCardProduct {
-  id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  category: string;
-  main_image?: string;
-  image?: string;
-  stock?: number;
-  is_active?: boolean;
-  colors?: string[];
-  sizes?: string[];
-}
+import { ProductCardProduct } from '@/types/product';
 
 interface ProductCardProps {
   product: ProductCardProduct;

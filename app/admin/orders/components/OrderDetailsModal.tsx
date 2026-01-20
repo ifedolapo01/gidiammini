@@ -1,31 +1,6 @@
 // app/admin/orders/components/OrderDetailsModal.tsx
 import { RefreshCw, Send, Mail, Phone } from 'lucide-react';
-
-interface Order {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  total_amount: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  delivery_option: 'pickup' | 'delivery';
-  selected_state: string;
-  payment_verified: boolean;
-  created_at: string;
-  receipt_url?: string | null;
-  delivery_address?: string | null;
-  city?: string | null;
-  note?: string | null;
-  order_items?: Array<{
-    id: string;
-    product_name: string;
-    quantity: number;
-    price: number;
-    size: string | null;
-    color: string | null;
-  }>;
-}
+import { Order } from '@/types/product';
 
 interface OrderDetailsModalProps {
   selectedOrder: Order;

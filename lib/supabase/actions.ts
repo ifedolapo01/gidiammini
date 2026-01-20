@@ -2,23 +2,7 @@
 'use server'
 
 import { createClient } from './server'
-
-export interface Product {
-  id: string
-  name: string
-  description: string | null
-  price: number
-  category: string
-  main_image: string
-  images: string[]
-  colors: string[]
-  sizes: string[]
-  details: string[]
-  stock: number
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
+import { Product, OrderData } from '@/types/product'
 
 export async function getProducts(category?: string) {
   const supabase = await createClient()
@@ -61,27 +45,7 @@ export async function getProduct(id: string) {
   return data as Product
 }
 
-// Add this if you need to create orders from the product page
-export async function createOrder(orderData: {
-  order_number: string
-  customer_name: string
-  customer_email: string
-  customer_phone: string
-  total_amount: number
-  delivery_option: 'pickup' | 'delivery'
-  selected_state: string
-  delivery_address?: string
-  city?: string
-  note?: string
-  items: Array<{
-    product_id?: string
-    product_name: string
-    price: number
-    quantity: number
-    size?: string
-    color?: string
-  }>
-}) {
+export async function createOrder(orderData: OrderData) {
   const supabase = await createClient()
 
   // Start a transaction

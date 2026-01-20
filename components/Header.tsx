@@ -4,8 +4,15 @@ import { ShoppingBag, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { useState } from "react";
+import { usePathname } from 'next/navigation';
 
 export default function Header() {
+  const pathname = usePathname();
+  
+  // Don't render header on admin pages
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
   const { getItemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

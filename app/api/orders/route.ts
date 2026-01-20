@@ -1,6 +1,7 @@
 // app/api/orders/route.ts - COMPLETE VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
+import { OrderData } from '@/types/product';
 
 // GET method - fetch orders (for admin dashboard)
 export async function GET(request: NextRequest) {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse the request body
-    const orderData = await request.json();
+    const orderData: OrderData = await request.json();
     
     console.log('Creating order:', orderData.order_number);
     
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     // Then, create order items if they exist
     if (items && items.length > 0) {
-      const orderItems = items.map((item: any) => ({
+      const orderItems = items.map((item) => ({
         order_id: order.id,
         product_id: item.product_id,
         product_name: item.product_name,

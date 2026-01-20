@@ -15,32 +15,7 @@ import {
   Send
 } from 'lucide-react';
 import OrderDetailsModal from './components/OrderDetailsModal';
-
-interface Order {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  total_amount: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  delivery_option: 'pickup' | 'delivery';
-  selected_state: string;
-  payment_verified: boolean;
-  created_at: string;
-  receipt_url?: string | null;
-  delivery_address?: string | null;
-  city?: string | null;
-  note?: string | null;
-  order_items?: Array<{
-    id: string;
-    product_name: string;
-    quantity: number;
-    price: number;
-    size: string | null;
-    color: string | null;
-  }>;
-}
+import { Order, OrderItem } from '@/types/product';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -80,65 +55,65 @@ export default function AdminOrders() {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
-  try {
-    // Show confirmation for certain status changes
-    if (newStatus === 'cancelled') {
-      if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
-        return;
+    try {
+      // Show confirmation for certain status changes
+      if (newStatus === 'cancelled') {
+        if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+          return;
+        }
       }
-    }
 
-    console.log(`Updating order ${orderId} to status: ${newStatus}`);
-    console.log(`Calling API: /api/orders/${orderId}`);
-    
-    const response = await fetch(`/api/orders/${orderId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        status: newStatus,
-        sendNotification: true,
-        notificationMessage: `Your order status has been updated to: ${newStatus.toUpperCase()}`
-        // payment_verified will be handled automatically by the API
-      }),
-    });
+      console.log(`Updating order ${orderId} to status: ${newStatus}`);
+      console.log(`Calling API: /api/orders/${orderId}`);
+      
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status: newStatus,
+          sendNotification: true,
+          notificationMessage: `Your order status has been updated to: ${newStatus.toUpperCase()}`
+          // payment_verified will be handled automatically by the API
+        }),
+      });
 
-    console.log('Response status:', response.status);
-    
-    const result = await response.json();
-    console.log('Update response:', result);
-    
-    if (response.ok && result.success) {
-      // Update local state immediately for better UX
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId
-            ? {
-                ...order,
-                status: newStatus,
-                // Update payment status if it was auto-verified
-                payment_verified: result.paymentVerified || order.payment_verified
-              }
-            : order
-        )
-      );
+      console.log('Response status:', response.status);
       
-      // Show success message
-      const message = result.paymentVerified 
-        ? `✅ Order confirmed! Payment marked as verified. Customer has been notified.`
-        : `✅ Order status updated to ${newStatus}. Customer has been notified.`;
+      const result = await response.json();
+      console.log('Update response:', result);
       
-      alert(message);
-    } else {
-      console.error('Update failed:', result);
-      alert(`❌ Failed to update order status: ${result.error || 'Unknown error'}`);
+      if (response.ok && result.success) {
+        // Update local state immediately for better UX
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderId
+              ? {
+                  ...order,
+                  status: newStatus,
+                  // Update payment status if it was auto-verified
+                  payment_verified: result.paymentVerified || order.payment_verified
+                }
+              : order
+          )
+        );
+        
+        // Show success message
+        const message = result.paymentVerified 
+          ? `✅ Order confirmed! Payment marked as verified. Customer has been notified.`
+          : `✅ Order status updated to ${newStatus}. Customer has been notified.`;
+        
+        alert(message);
+      } else {
+        console.error('Update failed:', result);
+        alert(`❌ Failed to update order status: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('Error updating order:', error);
+      alert(`❌ Error updating order: ${error.message || 'Please check your connection.'}`);
     }
-  } catch (error: any) {
-    console.error('Error updating order:', error);
-    alert(`❌ Error updating order: ${error.message || 'Please check your connection.'}`);
-  }
-};
+  };
 
   const sendCustomNotification = async (orderId: string) => {
     if (!notificationMessage.trim()) {
@@ -235,7 +210,7 @@ export default function AdminOrders() {
     return allStatuses;
   };
 
-  const calculateSubtotal = (items: any[] = []) => {
+  const calculateSubtotal = (items: OrderItem[] = []) => {
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
