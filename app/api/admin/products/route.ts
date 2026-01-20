@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       images: body.images || [],
       colors: body.colors || [],
       sizes: body.sizes || [],
+      details: body.details || [],
       stock: Number(body.stock) || 0,
       is_active: true,
       created_at: new Date().toISOString(),

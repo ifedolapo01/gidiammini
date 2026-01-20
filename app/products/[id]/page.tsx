@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
 import { getProduct, Product } from '@/lib/supabase/actions';
-import { Star, Truck, Shield, ChevronLeft, Share2, Heart } from 'lucide-react';
+import { Truck, Shield, ChevronLeft, Share2, Heart, Check, Package } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProductDetailPage() {
@@ -18,6 +18,8 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     loadProduct();
@@ -27,34 +29,66 @@ export default function ProductDetailPage() {
     if (!params.id) return;
     
     setLoading(true);
-    const data = await getProduct(params.id as string);
-    setProduct(data);
-    setLoading(false);
+    try {
+      const data = await getProduct(params.id as string);
+      setProduct(data);
+      
+      // Set default selections if available
+      if (data) {
+        if (data.sizes.length > 0) {
+          setSelectedSize(data.sizes[0]);
+        }
+        if (data.colors.length > 0) {
+          setSelectedColor(data.colors[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading product:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="animate-pulse">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-gray-700 mb-4">Product not found</h1>
-        <Link
-          href="/products"
-          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"
-        >
-          Continue Shopping
-        </Link>
-      </div>
-    );
-  }
+  const handleShare = async (platform?: string) => {
+    if (!product) return;
+    
+    setIsSharing(true);
+    const url = window.location.href;
+    const title = `Check out ${product.name} on UrbanThreads`;
+    const text = `${product.name} - ₦${product.price.toLocaleString()}\n${product.description || ''}`;
+    
+    try {
+      if (platform === 'whatsapp') {
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${title}\n${url}`)}`, '_blank');
+      } else if (platform === 'twitter') {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${title}\n${url}`)}`, '_blank');
+      } else if (platform === 'facebook') {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+      } else if (platform === 'copy') {
+        await navigator.clipboard.writeText(`${title}\n${url}`);
+        alert('Link copied to clipboard!');
+      } else if (navigator.share) {
+        // Use Web Share API if available (mobile devices)
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } else {
+        // Fallback for desktop without Web Share API
+        setShowShareOptions(true);
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    } finally {
+      setIsSharing(false);
+      setShowShareOptions(false);
+    }
+  };
 
   const handleAddToCart = () => {
+    if (!product) return;
+    
     if (!selectedSize || !selectedColor) {
       alert('Please select both size and color before adding to cart');
       return;
@@ -89,10 +123,36 @@ export default function ProductDetailPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-gray-700 mb-4">Product not found</h1>
+        <Link
+          href="/products"
+          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"
+        >
+          Continue Shopping
+        </Link>
+      </div>
+    );
+  }
+
   const productImages = [
     product.main_image,
-    ...product.images
-  ];
+    ...(product.images || [])
+  ].filter(Boolean);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -117,19 +177,54 @@ export default function ProductDetailPage() {
                 className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
               />
             </button>
-            <button 
-              className="p-2 hover:bg-gray-100 rounded-full"
-              aria-label="Share product"
-            >
-              <Share2 className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="relative">
+              <button 
+                className="p-2 hover:bg-gray-100 rounded-full"
+                onClick={() => handleShare()}
+                aria-label="Share product"
+                disabled={isSharing}
+              >
+                <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'}`} />
+              </button>
+              
+              {showShareOptions && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+                  <div className="p-2">
+                    <button
+                      onClick={() => handleShare('whatsapp')}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                    >
+                      <span className="mr-2">📱</span> WhatsApp
+                    </button>
+                    <button
+                      onClick={() => handleShare('twitter')}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                    >
+                      <span className="mr-2">🐦</span> Twitter
+                    </button>
+                    <button
+                      onClick={() => handleShare('facebook')}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                    >
+                      <span className="mr-2">👍</span> Facebook
+                    </button>
+                    <button
+                      onClick={() => handleShare('copy')}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                    >
+                      <span className="mr-2">📋</span> Copy Link
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12">
-          {/* Product Images - Mobile optimized */}
+          {/* Product Images */}
           <div>
             {/* Main Image */}
             <div className="relative rounded-xl md:rounded-2xl overflow-hidden shadow-lg mb-3 md:mb-4 bg-white">
@@ -138,83 +233,100 @@ export default function ProductDetailPage() {
                   src={productImages[currentImageIndex]}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                  }}
                 />
               </div>
               
               {/* Image Navigation Dots (Mobile) */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 md:hidden">
-                {productImages.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      currentImageIndex === index 
-                        ? 'bg-blue-600 w-4' 
-                        : 'bg-white bg-opacity-60'
-                    }`}
-                    aria-label={`View image ${index + 1}`}
-                  />
-                ))}
-              </div>
+              {productImages.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 md:hidden">
+                  {productImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        currentImageIndex === index 
+                          ? 'bg-blue-600 w-4' 
+                          : 'bg-white bg-opacity-60'
+                      }`}
+                      aria-label={`View image ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
               
               {/* Desktop Image Navigation Arrows */}
-              <div className="hidden md:block">
-                <button
-                  onClick={() => setCurrentImageIndex(prev => prev > 0 ? prev - 1 : productImages.length - 1)}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setCurrentImageIndex(prev => prev < productImages.length - 1 ? prev + 1 : 0)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
-                  aria-label="Next image"
-                >
-                  <ChevronLeft className="w-5 h-5 rotate-180" />
-                </button>
-              </div>
-            </div>
-            
-            {/* Thumbnail Gallery */}
-            <div className="hidden md:grid md:grid-cols-4 gap-2">
-              {productImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentImageIndex(idx)}
-                  className={`border rounded-lg overflow-hidden hover:border-blue-500 transition-all ${
-                    currentImageIndex === idx ? 'border-2 border-blue-500' : ''
-                  }`}
-                >
-                  <img 
-                    src={img} 
-                    alt={`Thumbnail ${idx + 1}`} 
-                    className="w-full h-20 object-cover" 
-                  />
-                </button>
-              ))}
-            </div>
-            
-            {/* Mobile Thumbnail Swipe (Horizontal Scroll) */}
-            <div className="md:hidden overflow-x-auto pb-2 -mx-4 px-4">
-              <div className="flex space-x-3 w-max">
-                {productImages.map((img, idx) => (
+              {productImages.length > 1 && (
+                <div className="hidden md:block">
                   <button
-                    key={idx}
-                    onClick={() => setCurrentImageIndex(idx)}
-                    className={`flex-shrink-0 w-20 h-20 border rounded-lg overflow-hidden ${
-                      currentImageIndex === idx ? 'border-2 border-blue-500' : 'border-gray-300'
-                    }`}
+                    onClick={() => setCurrentImageIndex(prev => prev > 0 ? prev - 1 : productImages.length - 1)}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
+                    aria-label="Previous image"
                   >
-                    <img 
-                      src={img} 
-                      alt={`Thumbnail ${idx + 1}`} 
-                      className="w-full h-full object-cover" 
-                    />
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
-                ))}
-              </div>
+                  <button
+                    onClick={() => setCurrentImageIndex(prev => prev < productImages.length - 1 ? prev + 1 : 0)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
+                    aria-label="Next image"
+                  >
+                    <ChevronLeft className="w-5 h-5 rotate-180" />
+                  </button>
+                </div>
+              )}
             </div>
+            
+            {/* Thumbnail Gallery - Desktop */}
+            {productImages.length > 1 && (
+              <>
+                <div className="hidden md:grid md:grid-cols-4 gap-2">
+                  {productImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`border rounded-lg overflow-hidden hover:border-blue-500 transition-all ${
+                        currentImageIndex === idx ? 'border-2 border-blue-500' : ''
+                      }`}
+                    >
+                      <img 
+                        src={img} 
+                        alt={`Thumbnail ${idx + 1}`} 
+                        className="w-full h-20 object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Mobile Thumbnail Swipe (Horizontal Scroll) */}
+                <div className="md:hidden overflow-x-auto pb-2 -mx-4 px-4">
+                  <div className="flex space-x-3 w-max">
+                    {productImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentImageIndex(idx)}
+                        className={`flex-shrink-0 w-20 h-20 border rounded-lg overflow-hidden ${
+                          currentImageIndex === idx ? 'border-2 border-blue-500' : 'border-gray-300'
+                        }`}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`Thumbnail ${idx + 1}`} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Product Info */}
@@ -234,12 +346,47 @@ export default function ProductDetailPage() {
                     className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
                   />
                 </button>
-                <button 
-                  className="p-2 hover:bg-gray-100 rounded-full"
-                  aria-label="Share product"
-                >
-                  <Share2 className="w-5 h-5 text-gray-500" />
-                </button>
+                <div className="relative">
+                  <button 
+                    className="p-2 hover:bg-gray-100 rounded-full"
+                    onClick={() => handleShare()}
+                    aria-label="Share product"
+                    disabled={isSharing}
+                  >
+                    <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'}`} />
+                  </button>
+                  
+                  {showShareOptions && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+                      <div className="p-2">
+                        <button
+                          onClick={() => handleShare('whatsapp')}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                        >
+                          <span className="mr-2">📱</span> WhatsApp
+                        </button>
+                        <button
+                          onClick={() => handleShare('twitter')}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                        >
+                          <span className="mr-2">🐦</span> Twitter
+                        </button>
+                        <button
+                          onClick={() => handleShare('facebook')}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                        >
+                          <span className="mr-2">👍</span> Facebook
+                        </button>
+                        <button
+                          onClick={() => handleShare('copy')}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded text-sm flex items-center"
+                        >
+                          <span className="mr-2">📋</span> Copy Link
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -251,16 +398,22 @@ export default function ProductDetailPage() {
                 {product.description}
               </p>
               
-              {/* Ratings */}
-              <div className="flex items-center mb-4 md:mb-6">
-                <div className="flex text-yellow-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 md:w-5 md:h-5 fill-current" />
-                  ))}
-                </div>
-                <span className="ml-2 text-sm md:text-base text-gray-600">
-                  (42 reviews) <span className="text-blue-600 hover:underline ml-2 cursor-pointer">Write a review</span>
-                </span>
+              {/* Stock Status */}
+              <div className="flex items-center mb-4">
+                {product.stock > 0 ? (
+                  <>
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span className="text-green-600 font-medium">In Stock</span>
+                    <span className="text-gray-500 text-sm ml-2">
+                      ({product.stock} available)
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Package className="w-5 h-5 text-red-500 mr-2" />
+                    <span className="text-red-600 font-medium">Out of Stock</span>
+                  </>
+                )}
               </div>
 
               {/* Price */}
@@ -270,142 +423,156 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Size Selector */}
-            <div className="mb-6 md:mb-8">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-base md:text-lg text-black">Select Size</h3>
-                <button className="text-sm text-blue-600 hover:underline">
-                  Size Guide
-                </button>
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mb-6 md:mb-8">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-base md:text-lg text-black">Select Size</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map(size => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg transition-all text-sm md:text-base ${
+                        selectedSize === size
+                          ? 'border-blue-500 bg-blue-50 text-blue-600'
+                          : 'hover:border-gray-400 text-gray-700'
+                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      aria-pressed={selectedSize === size}
+                      disabled={product.stock <= 0}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {product.sizes.map(size => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg transition-all text-sm md:text-base ${
-                      selectedSize === size
-                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                        : 'hover:border-gray-400 text-gray-700'
-                    }`}
-                    aria-pressed={selectedSize === size}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Color Selector */}
-            <div className="mb-6 md:mb-8">
-              <h3 className="font-semibold text-base md:text-lg mb-3 text-black">Select Color</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.colors.map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg flex items-center transition-all text-gray-900 ${
-                      selectedColor === color
-                        ? 'border-blue-700 bg-blue-100 text-gray-900'
-                        : 'hover:border-gray-400'
-                    }`}
-                    aria-pressed={selectedColor === color}
-                  >
-                    <span 
-                      className="w-4 h-4 md:w-5 md:h-5 rounded-full mr-2 border border-gray-300"
-                      style={{ backgroundColor: getColorHex(color) }}
-                    />
-                    <span className="text-sm md:text-base">{color}</span>
-                  </button>
-                ))}
+            {product.colors && product.colors.length > 0 && (
+              <div className="mb-6 md:mb-8">
+                <h3 className="font-semibold text-base md:text-lg mb-3 text-black">Select Color</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg flex items-center transition-all text-gray-900 ${
+                        selectedColor === color
+                          ? 'border-blue-700 bg-blue-100 text-gray-900'
+                          : 'hover:border-gray-400'
+                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      aria-pressed={selectedColor === color}
+                      disabled={product.stock <= 0}
+                    >
+                      <span 
+                        className="w-4 h-4 md:w-5 md:h-5 rounded-full mr-2 border border-gray-300"
+                        style={{ backgroundColor: getColorHex(color) }}
+                      />
+                      <span className="text-sm md:text-base">{color}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Quantity & Add to Cart - Mobile Bottom Sticky */}
-            <div className="md:mb-8">
-              <div className="hidden md:flex items-center gap-4 mb-6">
-                <div className="flex items-center border rounded-lg">
-                  <button 
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-4 py-3 hover:bg-gray-50 text-lg"
-                    aria-label="Decrease quantity"
+            {/* Quantity & Add to Cart - Desktop */}
+            {product.stock > 0 && (
+              <div className="md:mb-8">
+                <div className="hidden md:flex items-center gap-4 mb-6">
+                  <div className="flex items-center border rounded-lg text-black">
+                    <button 
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-4 py-3 hover:bg-gray-50 text-lg"
+                      aria-label="Decrease quantity"
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-3 w-12 text-center">{quantity}</span>
+                    <button 
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="px-4 py-3 hover:bg-gray-50 text-lg"
+                      aria-label="Increase quantity"
+                      disabled={quantity >= product.stock}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    id="add-to-cart-button"
+                    onClick={handleAddToCart}
+                    disabled={!selectedSize || !selectedColor}
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-base md:text-lg"
                   >
-                    -
+                    Add to Cart
                   </button>
-                  <span className="px-4 py-3 w-12 text-center">{quantity}</span>
-                  <button 
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-4 py-3 hover:bg-gray-50 text-lg"
-                    aria-label="Increase quantity"
-                  >
-                    +
-                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Bottom Sticky Add to Cart */}
+            {product.stock > 0 && (
+              <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm text-gray-600">Total</p>
+                    <p className="font-bold text-xl text-blue-600">₦{(product.price * quantity).toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-center border rounded-lg border-gray-800">
+                    <button 
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-4 py-3 text-black hover:bg-gray-50 disabled:opacity-50"
+                      aria-label="Decrease quantity"
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-3 w-10 text-center text-black">{quantity}</span>
+                    <button 
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="px-4 py-3 text-black hover:bg-gray-50 disabled:opacity-50"
+                      aria-label="Increase quantity"
+                      disabled={quantity >= product.stock}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
                 <button
                   id="add-to-cart-button"
                   onClick={handleAddToCart}
                   disabled={!selectedSize || !selectedColor}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-base md:text-lg"
+                  className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-lg"
                 >
-                  Add to Cart
+                  {!selectedSize || !selectedColor ? 'Select Options' : 'Add to Cart'}
                 </button>
               </div>
-            </div>
-
-            {/* Mobile Bottom Sticky Add to Cart */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-sm text-gray-600">Total</p>
-                  <p className="font-bold text-xl text-blue-600">₦{(product.price * quantity).toLocaleString()}</p>
-                </div>
-                <div className="flex items-center border rounded-lg border-gray-800">
-                  <button 
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-4 py-3 text-black hover:bg-gray-50"
-                    aria-label="Decrease quantity"
-                  >
-                    -
-                  </button>
-                  <span className="px-4 py-3 w-10 text-center text-black">{quantity}</span>
-                  <button 
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-4 py-3 text-black hover:bg-gray-50"
-                    aria-label="Increase quantity"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              <button
-                id="add-to-cart-button"
-                onClick={handleAddToCart}
-                disabled={!selectedSize || !selectedColor}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-lg"
-              >
-                {!selectedSize || !selectedColor ? 'Select Options' : 'Add to Cart'}
-              </button>
-            </div>
+            )}
 
             {/* Features & Details */}
             <div className="space-y-4 border-t pt-6 md:pt-8 mt-6 md:mt-0">
-              {/* Product Details Accordion */}
-              <div className="border rounded-lg border-gray-900">
-                <details className="group">
-                  <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
-                    <span className="font-medium text-gray-900">Product Details</span>
-                    <ChevronLeft className="w-5 h-5 transform group-open:rotate-90 transition-transform text-gray-900" />
-                  </summary>
-                  <div className="px-4 pb-4 text-gray-600">
-                    <ul className="space-y-2 text-sm md:text-base">
-                      <li>• 100% Premium Cotton</li>
-                      <li>• Machine Washable</li>
-                      <li>• Imported Fabric</li>
-                      <li>• Regular Fit</li>
-                      <li>• Pre-shrunk</li>
-                    </ul>
-                  </div>
-                </details>
-              </div>
+              {/* Product Details List */}
+{product.details && product.details.length > 0 && (
+  <div className="border rounded-lg border-gray-900">
+    <details className="group" open>
+      <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
+        <span className="font-medium text-gray-900">Product Details</span>
+        <ChevronLeft className="w-5 h-5 transform group-open:rotate-90 transition-transform text-gray-900" />
+      </summary>
+      <div className="px-4 pb-4 text-gray-600">
+        <ul className="space-y-2 text-sm md:text-base">
+          {product.details.map((detail, index) => (
+            <li key={index} className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span>
+              <span>{detail}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </details>
+  </div>
+)}
 
               {/* Shipping & Returns */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -453,11 +620,27 @@ function getColorHex(colorName: string): string {
     'Burgundy': '#800020',
     'Khaki': '#C3B091',
     'Grey': '#808080',
+    'Gray': '#808080',
     'Emerald': '#50C878',
     'Dusty Rose': '#DCAE96',
     'Plum': '#8E4585',
     'Light Wash': '#6F8FAF',
-    'Dark Wash': '#1C2841'
+    'Dark Wash': '#1C2841',
+    'Red': '#FF0000',
+    'Blue': '#0000FF',
+    'Green': '#008000',
+    'Yellow': '#FFFF00',
+    'Pink': '#FFC0CB',
+    'Purple': '#800080',
+    'Orange': '#FFA500',
+    'Brown': '#A52A2A',
+    'Beige': '#F5F5DC',
+    'Cream': '#FFFDD0',
+    'Maroon': '#800000',
+    'Teal': '#008080',
+    'Turquoise': '#40E0D0',
+    'Lavender': '#E6E6FA',
+    'Mint': '#98FF98'
   };
   
   return colorMap[colorName] || '#CCCCCC';

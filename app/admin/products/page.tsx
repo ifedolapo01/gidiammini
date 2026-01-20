@@ -6,14 +6,13 @@ import { Upload, X } from 'lucide-react';
 import { uploadProductImage } from '@/app/actions/upload';
 import imageCompression from 'browser-image-compression';
 
-// Image compression function
 const compressImage = async (file: File): Promise<File> => {
   const options = {
-    maxSizeMB: 1, // Compress to max 1MB
-    maxWidthOrHeight: 1920, // Resize if larger than 1920px
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1920,
     useWebWorker: true,
     fileType: file.type,
-    initialQuality: 0.8, // 80% quality
+    initialQuality: 0.8,
   };
   
   try {
@@ -23,7 +22,7 @@ const compressImage = async (file: File): Promise<File> => {
     return compressedFile;
   } catch (error) {
     console.error('Compression error:', error);
-    return file; // Return original if compression fails
+    return file;
   }
 };
 
@@ -36,6 +35,7 @@ export default function AdminProducts() {
     stock: 0,
     colors: [''],
     sizes: [''],
+    details: [''],
   });
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
@@ -45,7 +45,6 @@ export default function AdminProducts() {
   const [success, setSuccess] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
 
-  // Updated handleImageChange with compression
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -54,7 +53,6 @@ export default function AdminProducts() {
       setSuccess(false);
       
       try {
-        // Check file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowedTypes.includes(file.type)) {
           setError(`Invalid file type: ${file.type}. Use JPEG, PNG, WebP, or GIF.`);
@@ -65,8 +63,7 @@ export default function AdminProducts() {
           return;
         }
         
-        // Check file size before compression
-        if (file.size > 10 * 1024 * 1024) { // 10MB
+        if (file.size > 10 * 1024 * 1024) {
           setError(`Image too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Max 10MB before compression.`);
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -77,8 +74,7 @@ export default function AdminProducts() {
         
         let processedFile = file;
         
-        // Show compression message for large files
-        if (file.size > 1 * 1024 * 1024) { // 1MB
+        if (file.size > 1 * 1024 * 1024) {
           console.log('Compressing image...');
           processedFile = await compressImage(file);
         }
@@ -99,7 +95,6 @@ export default function AdminProducts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Quick validation
     if (!formData.name.trim()) {
       setError('Product name is required');
       return;
@@ -120,7 +115,6 @@ export default function AdminProducts() {
     setSuccess(false);
 
     try {
-      // 1. Upload image
       const uploadFormData = new FormData();
       uploadFormData.append('image', mainImage);
       const uploadResult = await uploadProductImage(uploadFormData);
@@ -129,7 +123,6 @@ export default function AdminProducts() {
         throw new Error(uploadResult.error);
       }
 
-      // 2. Prepare product data
       const productData = {
         name: formData.name,
         description: formData.description,
@@ -140,9 +133,9 @@ export default function AdminProducts() {
         colors: formData.colors.filter(c => c.trim() !== ''),
         sizes: formData.sizes.filter(s => s.trim() !== ''),
         stock: formData.stock,
+        details: formData.details.filter(d => d.trim() !== ''),
       };
 
-      // 3. API call
       const response = await fetch('/api/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,7 +148,6 @@ export default function AdminProducts() {
         throw new Error(result.error || 'Failed to save product');
       }
 
-      // 4. Success - set success flag
       setSuccess(true);
       
     } catch (error: any) {
@@ -166,7 +158,6 @@ export default function AdminProducts() {
     }
   };
 
-  // Reset form function
   const resetForm = () => {
     setFormData({
       name: '',
@@ -176,6 +167,7 @@ export default function AdminProducts() {
       stock: 0,
       colors: [''],
       sizes: [''],
+      details: [''],
     });
     setMainImage(null);
     setImagePreview('');
@@ -186,7 +178,21 @@ export default function AdminProducts() {
     setError('');
   };
 
-  // Add color input
+  const addDetailInput = () => {
+  setFormData({...formData, details: [...formData.details, '']});
+};
+
+const removeDetailInput = (index: number) => {
+  const newDetails = formData.details.filter((_, i) => i !== index);
+  setFormData({...formData, details: newDetails});
+};
+
+const updateDetail = (index: number, value: string) => {
+  const newDetails = [...formData.details];
+  newDetails[index] = value;
+  setFormData({...formData, details: newDetails});
+};
+
   const addColorInput = () => {
     setFormData({...formData, colors: [...formData.colors, '']});
   };
@@ -202,7 +208,6 @@ export default function AdminProducts() {
     setFormData({...formData, colors: newColors});
   };
 
-  // Add size input
   const addSizeInput = () => {
     setFormData({...formData, sizes: [...formData.sizes, '']});
   };
@@ -218,7 +223,6 @@ export default function AdminProducts() {
     setFormData({...formData, sizes: newSizes});
   };
 
-  // If success, show success screen
   if (success) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
@@ -499,6 +503,47 @@ export default function AdminProducts() {
             </div>
           ))}
         </div>
+
+        <div>
+  <div className="flex items-center justify-between mb-2">
+    <label className="block text-sm font-medium text-gray-700">
+      Product Details (List)
+    </label>
+    <button
+      type="button"
+      onClick={addDetailInput}
+      className={`text-sm ${
+        isSubmitting || isCompressing ? 'text-gray-400' : 'text-blue-600 hover:text-blue-800'
+      }`}
+      disabled={isSubmitting || isCompressing}
+    >
+      + Add detail
+    </button>
+  </div>
+  <p className="text-sm text-gray-500 mb-3">Each item will be shown as a bullet point</p>
+  {formData.details.map((detail, index) => (
+    <div key={index} className="flex gap-2 mb-2">
+      <input
+        type="text"
+        value={detail}
+        onChange={(e) => updateDetail(index, e.target.value)}
+        className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-black"
+        placeholder="e.g., 100% Premium Cotton"
+        disabled={isSubmitting || isCompressing}
+      />
+      {formData.details.length > 1 && (
+        <button
+          type="button"
+          onClick={() => removeDetailInput(index)}
+          className="px-4 text-red-600 hover:bg-red-50 rounded-lg disabled:text-gray-400"
+          disabled={isSubmitting || isCompressing}
+        >
+          Remove
+        </button>
+      )}
+    </div>
+  ))}
+</div>
 
         {/* Submit Button */}
         <button

@@ -13,6 +13,7 @@ export interface Product {
   images: string[]
   colors: string[]
   sizes: string[]
+  details: string[]
   stock: number
   is_active: boolean
   created_at: string
