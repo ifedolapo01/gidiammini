@@ -3,7 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, ShoppingBag, DollarSign, RefreshCw } from 'lucide-react';
+import { Package, ShoppingBag, RefreshCw } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faNairaSign } from '@fortawesome/free-solid-svg-icons';
 
 interface DashboardStats {
   totalProducts: number;
@@ -160,9 +162,13 @@ export default function AdminDashboard() {
         
         <div className="bg-white p-6 rounded-xl shadow border">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-600">Total Revenue</h3>
+            <h3 className="font-semibold text-gray-600">Revenue Confirmed</h3>
             <div className="p-3 bg-purple-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-purple-600" />
+              <FontAwesomeIcon 
+  icon={faNairaSign} 
+  className="w-5 h-5"
+  style={{ color: '#9810fa' }}
+/>
             </div>
           </div>
           <p className="text-3xl font-bold text-gray-800">{formatCurrency(stats.totalRevenue)}</p>

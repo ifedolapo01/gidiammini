@@ -471,11 +471,16 @@ export default function AdminOrders() {
             </p>
           </div>
           <div className="bg-white p-4 rounded-lg shadow border">
-            <p className="text-sm text-gray-600">Revenue</p>
-            <p className="text-2xl font-bold text-green-600">
-              ₦{orders.reduce((sum, order) => sum + order.total_amount, 0).toLocaleString()}
-            </p>
-          </div>
+  <p className="text-sm text-gray-600">Total Revenue</p>
+  <p className="text-2xl font-bold text-green-600">
+    ₦{orders
+      .filter(order => order.status !== 'cancelled')
+      .reduce((sum, order) => sum + order.total_amount, 0)
+      .toLocaleString()
+    }
+  </p>
+  <p className="text-xs text-gray-500 mt-1">Excluding cancelled orders</p>
+</div>
           <div className="bg-white p-4 rounded-lg shadow border">
             <p className="text-sm text-gray-600">Paid Orders</p>
             <p className="text-2xl font-bold text-blue-600">
