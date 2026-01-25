@@ -1,11 +1,11 @@
-// app/products/[id]/page.tsx
+// app/products/[id]/page.tsx - UPDATED with enhanced stock status
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
 import { getProduct } from '@/lib/supabase/actions';
-import { Truck, Shield, ChevronLeft, Share2, Heart, Check, Package } from 'lucide-react';
+import { Truck, Shield, ChevronLeft, Share2, Heart, Check, Package, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Product } from '@/types/product';
 
@@ -156,6 +156,81 @@ export default function ProductDetailPage() {
     ...(product.images || [])
   ].filter(Boolean);
 
+  // Enhanced Stock Status Component
+  const StockStatus = ({ stock }: { stock: number }) => {
+    if (stock > 10) {
+      return (
+        <div className="flex items-center">
+          <Check className="w-5 h-5 text-green-500 mr-2" />
+          <div>
+            <span className="text-green-600 font-medium">In Stock</span>
+            <span className="text-gray-500 text-sm ml-2">
+              ({stock} available)
+            </span>
+            <p className="text-xs text-green-700 mt-1">
+              • Ready to ship within 24 hours
+            </p>
+          </div>
+        </div>
+      );
+    } else if (stock > 5) {
+      return (
+        <div className="flex items-center">
+          <Check className="w-5 h-5 text-green-500 mr-2" />
+          <div>
+            <span className="text-green-600 font-medium">In Stock</span>
+            <span className="text-gray-500 text-sm ml-2">
+              ({stock} available)
+            </span>
+            <p className="text-xs text-green-700 mt-1">
+              • Limited quantity available
+            </p>
+          </div>
+        </div>
+      );
+    } else if (stock > 0) {
+      return (
+        <div className="flex items-center">
+          <AlertTriangle className="w-5 h-5 text-yellow-500 mr-2" />
+          <div>
+            <span className="text-yellow-600 font-medium">Low Stock</span>
+            <span className="text-gray-500 text-sm ml-2">
+              (Only {stock} left)
+            </span>
+            <p className="text-xs text-yellow-700 mt-1">
+              • Selling fast! Order now to secure your item
+            </p>
+          </div>
+        </div>
+      );
+    } else if (stock === 0) {
+      return (
+        <div className="flex items-center">
+          <Package className="w-5 h-5 text-red-500 mr-2" />
+          <div>
+            <span className="text-red-600 font-medium">Out of Stock</span>
+            <span className="text-gray-500 text-sm ml-2">
+              (Currently unavailable)
+            </span>
+            <p className="text-xs text-red-700 mt-1">
+              • Check back soon for restock updates
+              <br />
+              • Contact us for estimated restock date
+            </p>
+          </div>
+        </div>
+      );
+    } else {
+      // Stock is negative (shouldn't happen, but just in case)
+      return (
+        <div className="flex items-center text-red-600">
+          <Package className="w-5 h-5 mr-2" />
+          <span className="font-medium">Inventory Error</span>
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Back Button & Actions */}
@@ -174,9 +249,10 @@ export default function ProductDetailPage() {
               className="p-2 hover:bg-gray-100 rounded-full"
               onClick={() => setIsWishlisted(!isWishlisted)}
               aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+              disabled={product.stock <= 0}
             >
               <Heart 
-                className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
+                className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'} ${product.stock <= 0 ? 'opacity-50' : ''}`} 
               />
             </button>
             <div className="relative">
@@ -184,9 +260,9 @@ export default function ProductDetailPage() {
                 className="p-2 hover:bg-gray-100 rounded-full"
                 onClick={() => handleShare()}
                 aria-label="Share product"
-                disabled={isSharing}
+                disabled={isSharing || product.stock <= 0}
               >
-                <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'}`} />
+                <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'} ${product.stock <= 0 ? 'opacity-50' : ''}`} />
               </button>
               
               {showShareOptions && (
@@ -240,6 +316,18 @@ export default function ProductDetailPage() {
                   }}
                 />
               </div>
+              
+              {/* Stock Badge on Image */}
+              {product.stock <= 5 && product.stock > 0 && (
+                <div className="absolute top-4 left-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  {product.stock <= 3 ? `Only ${product.stock} left!` : 'Low Stock'}
+                </div>
+              )}
+              {product.stock === 0 && (
+                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Out of Stock
+                </div>
+              )}
               
               {/* Image Navigation Dots (Mobile) */}
               {productImages.length > 1 && (
@@ -335,14 +423,27 @@ export default function ProductDetailPage() {
           <div className="px-1 md:px-0">
             {/* Category & Wishlist - Desktop */}
             <div className="hidden md:flex items-center justify-between mb-4">
-              <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm capitalize">
-                {product.category}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm capitalize">
+                  {product.category}
+                </span>
+                {product.stock <= 5 && product.stock > 0 && (
+                  <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                    {product.stock <= 3 ? `Only ${product.stock} left!` : 'Low Stock'}
+                  </span>
+                )}
+                {product.stock === 0 && (
+                  <span className="inline-block px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                    Out of Stock
+                  </span>
+                )}
+              </div>
               <div className="flex items-center space-x-2">
                 <button 
-                  className="p-2 hover:bg-gray-100 rounded-full"
+                  className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => setIsWishlisted(!isWishlisted)}
                   aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                  disabled={product.stock <= 0}
                 >
                   <Heart 
                     className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
@@ -350,10 +451,10 @@ export default function ProductDetailPage() {
                 </button>
                 <div className="relative">
                   <button 
-                    className="p-2 hover:bg-gray-100 rounded-full"
+                    className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleShare()}
                     aria-label="Share product"
-                    disabled={isSharing}
+                    disabled={isSharing || product.stock <= 0}
                   >
                     <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'}`} />
                   </button>
@@ -400,22 +501,9 @@ export default function ProductDetailPage() {
                 {product.description}
               </p>
               
-              {/* Stock Status */}
-              <div className="flex items-center mb-4">
-                {product.stock > 0 ? (
-                  <>
-                    <Check className="w-5 h-5 text-green-500 mr-2" />
-                    <span className="text-green-600 font-medium">In Stock</span>
-                    <span className="text-gray-500 text-sm ml-2">
-                      ({product.stock} available)
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Package className="w-5 h-5 text-red-500 mr-2" />
-                    <span className="text-red-600 font-medium">Out of Stock</span>
-                  </>
-                )}
+              {/* Enhanced Stock Status */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <StockStatus stock={product.stock} />
               </div>
 
               {/* Price */}
@@ -429,17 +517,22 @@ export default function ProductDetailPage() {
               <div className="mb-6 md:mb-8">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-base md:text-lg text-black">Select Size</h3>
+                  {product.stock <= 0 && (
+                    <span className="text-sm text-red-600 font-medium">
+                      Out of Stock - Cannot select size
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map(size => (
                     <button
                       key={size}
-                      onClick={() => setSelectedSize(size)}
+                      onClick={() => product.stock > 0 && setSelectedSize(size)}
                       className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg transition-all text-sm md:text-base ${
-                        selectedSize === size
+                        selectedSize === size && product.stock > 0
                           ? 'border-blue-500 bg-blue-50 text-blue-600'
                           : 'hover:border-gray-400 text-gray-700'
-                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                       aria-pressed={selectedSize === size}
                       disabled={product.stock <= 0}
                     >
@@ -453,17 +546,24 @@ export default function ProductDetailPage() {
             {/* Color Selector */}
             {product.colors && product.colors.length > 0 && (
               <div className="mb-6 md:mb-8">
-                <h3 className="font-semibold text-base md:text-lg mb-3 text-black">Select Color</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-base md:text-lg text-black">Select Color</h3>
+                  {product.stock <= 0 && (
+                    <span className="text-sm text-red-600 font-medium">
+                      Out of Stock - Cannot select color
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map(color => (
                     <button
                       key={color}
-                      onClick={() => setSelectedColor(color)}
+                      onClick={() => product.stock > 0 && setSelectedColor(color)}
                       className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg flex items-center transition-all text-gray-900 ${
-                        selectedColor === color
+                        selectedColor === color && product.stock > 0
                           ? 'border-blue-700 bg-blue-100 text-gray-900'
                           : 'hover:border-gray-400'
-                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                       aria-pressed={selectedColor === color}
                       disabled={product.stock <= 0}
                     >
@@ -485,7 +585,7 @@ export default function ProductDetailPage() {
                   <div className="flex items-center border rounded-lg text-black">
                     <button 
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-4 py-3 hover:bg-gray-50 text-lg"
+                      className="px-4 py-3 hover:bg-gray-50 text-lg disabled:opacity-50"
                       aria-label="Decrease quantity"
                       disabled={quantity <= 1}
                     >
@@ -493,8 +593,8 @@ export default function ProductDetailPage() {
                     </button>
                     <span className="px-4 py-3 w-12 text-center">{quantity}</span>
                     <button 
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="px-4 py-3 hover:bg-gray-50 text-lg"
+                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      className="px-4 py-3 hover:bg-gray-50 text-lg disabled:opacity-50"
                       aria-label="Increase quantity"
                       disabled={quantity >= product.stock}
                     >
@@ -507,14 +607,14 @@ export default function ProductDetailPage() {
                     disabled={!selectedSize || !selectedColor}
                     className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-base md:text-lg"
                   >
-                    Add to Cart
+                    {!selectedSize || !selectedColor ? 'Select Options' : 'Add to Cart'}
                   </button>
                 </div>
               </div>
             )}
 
             {/* Mobile Bottom Sticky Add to Cart */}
-            {product.stock > 0 && (
+            {product.stock > 0 ? (
               <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -532,7 +632,7 @@ export default function ProductDetailPage() {
                     </button>
                     <span className="px-4 py-3 w-10 text-center text-black">{quantity}</span>
                     <button 
-                      onClick={() => setQuantity(quantity + 1)}
+                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                       className="px-4 py-3 text-black hover:bg-gray-50 disabled:opacity-50"
                       aria-label="Increase quantity"
                       disabled={quantity >= product.stock}
@@ -549,6 +649,45 @@ export default function ProductDetailPage() {
                 >
                   {!selectedSize || !selectedColor ? 'Select Options' : 'Add to Cart'}
                 </button>
+              </div>
+            ) : (
+              <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
+                <div className="text-center">
+                  <p className="text-red-600 font-medium mb-2">This item is currently out of stock</p>
+                  <button
+                    onClick={() => window.location.href = '/products'}
+                    className="w-full bg-gray-800 text-white py-4 rounded-lg font-semibold hover:bg-gray-900 transition-all text-lg"
+                  >
+                    Browse Other Products
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Out of Stock Message */}
+            {product.stock <= 0 && (
+              <div className="mb-6 md:mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h4 className="font-bold text-red-900 mb-2 flex items-center">
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  Currently Unavailable
+                </h4>
+                <p className="text-red-800 text-sm">
+                  This product is out of stock. We're working to restock it as soon as possible.
+                </p>
+                <div className="mt-3 space-y-2">
+                  <button
+                    onClick={() => window.location.href = '/products'}
+                    className="w-full bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-900"
+                  >
+                    Browse Available Products
+                  </button>
+                  <button
+                    onClick={() => setIsWishlisted(true)}
+                    className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50"
+                  >
+                    {isWishlisted ? '✓ Added to Wishlist' : 'Add to Wishlist'}
+                  </button>
+                </div>
               </div>
             )}
 

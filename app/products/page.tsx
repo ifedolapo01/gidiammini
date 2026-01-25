@@ -12,6 +12,7 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showOutOfStock, setShowOutOfStock] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -20,7 +21,6 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      // Use the Supabase client directly instead of API
       const supabase = createClient();
       
       let query = supabase
@@ -31,6 +31,11 @@ export default function ProductsPage() {
 
       if (selectedCategory !== 'all') {
         query = query.eq('category', selectedCategory);
+      }
+
+      const isAdmin = false; // Replace with actual auth check
+      if (!isAdmin && !showOutOfStock) {
+        query = query.gt('stock', 0);
       }
 
       const { data, error } = await query;

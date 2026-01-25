@@ -120,7 +120,7 @@ export default function OrderDetailsModal({
                   value={notificationMessage}
                   onChange={(e) => onNotificationMessageChange(e.target.value)}
                   placeholder="Enter your message to the customer..."
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg text-black px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={4}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -159,7 +159,7 @@ export default function OrderDetailsModal({
                 </button>
                 <button
                   onClick={onClose}
-                  className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50"
+                  className="px-6 py-3 border border-gray-500 rounded-lg text-black font-semibold hover:bg-gray-50"
                 >
                   Cancel
                 </button>
