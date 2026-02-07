@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   console.log('📱 Fetching single product');
   
@@ -16,8 +16,8 @@ export async function GET(
   };
   
   try {
-    // Extract ID from params
-    const { id } = params;
+    // Extract ID from params - NOW WE NEED TO AWAIT IT
+    const { id } = await params;  // AWAIT THE PARAMS
     
     console.log('Product ID from params:', id);
     
@@ -90,4 +90,16 @@ export async function GET(
       { status: 500, headers }
     );
   }
+}
+
+// Also need to add OPTIONS handler for CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS, PUT, DELETE, POST',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
