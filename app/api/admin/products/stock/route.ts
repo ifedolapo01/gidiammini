@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, category, stock as current_stock, colors, sizes, price')
+      .select('id, name, category, stock, colors, sizes, price')
       .eq('is_active', true)
       .order('stock', { ascending: true });
 

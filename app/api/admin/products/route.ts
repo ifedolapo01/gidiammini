@@ -1,14 +1,63 @@
-// app/api/admin/products/route.ts - MOBILE OPTIMIZED
+// app/api/admin/products/route.ts - UPDATED FOR COMPLETE CRUD
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Increase timeout for mobile
-export const maxDuration = 30; // 30 seconds for mobile
+export const maxDuration = 30;
+
+export async function GET(request: NextRequest) {
+  console.log('📱 Fetching all products');
+  
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json'
+  };
+  
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return NextResponse.json(
+      { 
+        success: true, 
+        products: data
+      },
+      { headers }
+    );
+    
+  } catch (error: any) {
+    console.error('Error fetching products:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to fetch products',
+        details: error.message 
+      },
+      { status: 500, headers }
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
-  console.log('📱 Mobile product creation API called');
+  console.log('📱 Creating new product');
   
-  // Add CORS headers for mobile
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -17,17 +66,7 @@ export async function POST(request: NextRequest) {
   };
   
   try {
-    // Handle OPTIONS preflight for CORS
-    if (request.method === 'OPTIONS') {
-      return new NextResponse(null, { status: 200, headers });
-    }
-    
-    // Parse with timeout for mobile
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout')), 25000);
-    });
-    
-    const body = await Promise.race([request.json(), timeoutPromise]) as any;
+    const body = await request.json();
     
     // Create client
     const supabase = createClient(
@@ -37,27 +76,21 @@ export async function POST(request: NextRequest) {
         auth: {
           autoRefreshToken: false,
           persistSession: false
-        },
-        global: {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
         }
       }
     );
     
     // Validate
-    if (!body.name || !body.price) {
+    if (!body.name || !body.price || !body.main_image) {
       return NextResponse.json(
-        { success: false, error: 'Product name and price are required' },
+        { success: false, error: 'Product name, price, and image are required' },
         { status: 400, headers }
       );
     }
     
     // Prepare data
     const productData = {
-      name: body.name.substring(0, 100), // Limit length for mobile
+      name: body.name.substring(0, 100),
       description: (body.description || '').substring(0, 500),
       price: Number(body.price),
       category: body.category || 'men',
@@ -72,72 +105,185 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     };
     
-    console.log('Creating product from mobile:', productData.name);
+    console.log('Creating product:', productData.name);
     
-    // Insert with retry for mobile networks
-    let retries = 3;
-    let lastError;
+    // Insert product
+    const { data, error } = await supabase
+      .from('products')
+      .insert([productData])
+      .select()
+      .single();
     
-    while (retries > 0) {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([productData])
-          .select()
-          .single();
-        
-        if (error) throw error;
-        
-        console.log('✅ Mobile product created:', data.id);
-        
-        return NextResponse.json(
-          { 
-            success: true, 
-            product: data,
-            message: 'Product created successfully'
-          },
-          { headers }
-        );
-        
-      } catch (error: any) {
-        lastError = error;
-        retries--;
-        console.log(`Retry ${3 - retries}/3 failed:`, error.message);
-        
-        if (retries > 0) {
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-    }
+    if (error) throw error;
     
-    // All retries failed
-    console.error('❌ All retries failed:', lastError);
+    console.log('✅ Product created:', data.id);
     
     return NextResponse.json(
       { 
-        success: false, 
-        error: 'Network error. Please check connection and try again.',
-        details: lastError?.message 
+        success: true, 
+        product: data,
+        message: 'Product created successfully'
       },
-      { status: 500, headers }
+      { headers }
     );
     
   } catch (error: any) {
-    console.error('Mobile API error:', error);
-    
-    let errorMessage = 'Server error';
-    if (error.message.includes('timeout')) {
-      errorMessage = 'Request timeout. Your connection is slow. Try a smaller image.';
-    } else if (error.message.includes('network')) {
-      errorMessage = 'Network error. Check your internet connection.';
-    }
+    console.error('❌ Product creation error:', error);
     
     return NextResponse.json(
       { 
         success: false, 
-        error: errorMessage,
-        type: 'mobile_error'
+        error: 'Failed to create product',
+        details: error.message 
+      },
+      { status: 500, headers }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  console.log('📱 Updating product');
+  
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'PUT, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json'
+  };
+  
+  try {
+    const body = await request.json();
+    
+    if (!body.id) {
+      return NextResponse.json(
+        { success: false, error: 'Product ID is required' },
+        { status: 400, headers }
+      );
+    }
+    
+    // Create client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+    
+    // Prepare update data
+    const updateData = {
+      name: body.name.substring(0, 100),
+      description: (body.description || '').substring(0, 500),
+      price: Number(body.price),
+      category: body.category || 'men',
+      main_image: body.main_image,
+      images: body.images || [],
+      colors: body.colors || [],
+      sizes: body.sizes || [],
+      details: body.details || [],
+      stock: Number(body.stock) || 0,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Update product
+    const { data, error } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('id', body.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    console.log('✅ Product updated:', body.id);
+    
+    return NextResponse.json(
+      { 
+        success: true, 
+        product: data,
+        message: 'Product updated successfully'
+      },
+      { headers }
+    );
+    
+  } catch (error: any) {
+    console.error('❌ Product update error:', error);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to update product',
+        details: error.message 
+      },
+      { status: 500, headers }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  console.log('📱 Deleting product');
+  
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json'
+  };
+  
+  try {
+    const body = await request.json();
+    
+    if (!body.id) {
+      return NextResponse.json(
+        { success: false, error: 'Product ID is required' },
+        { status: 400, headers }
+      );
+    }
+    
+    // Create client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+    
+    // Soft delete (set is_active to false)
+    const { error } = await supabase
+      .from('products')
+      .update({ 
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', body.id);
+    
+    if (error) throw error;
+    
+    console.log('✅ Product deleted:', body.id);
+    
+    return NextResponse.json(
+      { 
+        success: true,
+        message: 'Product deleted successfully'
+      },
+      { headers }
+    );
+    
+  } catch (error: any) {
+    console.error('❌ Product deletion error:', error);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to delete product',
+        details: error.message 
       },
       { status: 500, headers }
     );

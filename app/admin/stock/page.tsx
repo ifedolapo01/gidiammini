@@ -7,7 +7,7 @@ import { Package, RefreshCw, Plus, Edit, Save, X } from 'lucide-react';
 interface ProductStock {
   id: string;
   name: string;
-  current_stock: number;
+  stock: number;
   category: string;
   colors: string[];
   sizes: string[];
@@ -53,7 +53,7 @@ export default function StockManagementPage() {
     setEditingProduct(product.id);
     setStockUpdates({
       ...stockUpdates,
-      [product.id]: product.current_stock
+      [product.id]: product.stock
     });
     setNewColors({
       ...newColors,
@@ -148,13 +148,14 @@ export default function StockManagementPage() {
   };
 
   const getStockStatus = (stock: number) => {
-    if (stock === 0) return { text: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-    if (stock <= lowStockThreshold) return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-    return { text: 'In Stock', color: 'bg-green-100 text-green-800' };
-  };
+  if (stock <= 0) return { text: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+  if (stock <= lowStockThreshold) return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+  return { text: 'In Stock', color: 'bg-green-100 text-green-800' };
+};
 
-  const lowStockProducts = products.filter(p => p.current_stock <= lowStockThreshold);
-  const outOfStockProducts = products.filter(p => p.current_stock === 0);
+// Update the filter functions:
+const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= lowStockThreshold);
+const outOfStockProducts = products.filter(p => p.stock <= 0);
 
   if (loading) {
     return (
@@ -245,7 +246,7 @@ export default function StockManagementPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {products.map((product) => {
-                const status = getStockStatus(product.current_stock);
+                const status = getStockStatus(product.stock);
                 const isEditing = editingProduct === product.id;
                 
                 return (
@@ -265,18 +266,18 @@ export default function StockManagementPage() {
                       {isEditing ? (
                         <input
                           type="number"
-                          value={stockUpdates[product.id] || product.current_stock}
+                          value={stockUpdates[product.id] || product.stock}
                           onChange={(e) => setStockUpdates({
                             ...stockUpdates,
                             [product.id]: parseInt(e.target.value) || 0
                           })}
-                          className="w-24 border border-gray-300 rounded-lg px-3 py-1"
+                          className="w-24 border border-gray-300 rounded-lg px-3 py-1 text-black"
                           min="0"
                         />
                       ) : (
                         <div className="flex items-center">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                            {status.text} ({product.current_stock})
+                            {status.text} ({product.stock})
                           </span>
                         </div>
                       )}
@@ -290,7 +291,7 @@ export default function StockManagementPage() {
                                 type="text"
                                 value={color}
                                 onChange={(e) => updateColor(product.id, index, e.target.value)}
-                                className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+                                className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm text-black"
                                 placeholder="Color name"
                               />
                               <button
@@ -328,7 +329,7 @@ export default function StockManagementPage() {
                                 type="text"
                                 value={size}
                                 onChange={(e) => updateSize(product.id, index, e.target.value)}
-                                className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+                                className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm text-black"
                                 placeholder="Size"
                               />
                               <button

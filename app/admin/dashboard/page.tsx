@@ -231,13 +231,13 @@ export default function AdminDashboard() {
         {/* Low Stock Products */}
         <div className="bg-white p-6 rounded-xl shadow border">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-800">Low Stock Products</h2>
+            <h2 className="text-xl font-bold text-gray-800">Low Stock</h2>
             <Link 
-  href="/admin/stock"
-  className="p-4 bg-orange-50 border border-orange-200 rounded-xl hover:bg-orange-100 transition-colors"
->
-  <h3 className="font-semibold text-orange-700 mb-1">Manage Stock</h3>
-</Link>
+              href="/admin/stock" 
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              View all
+            </Link>
           </div>
           
           {stats.lowStockProducts.length === 0 ? (

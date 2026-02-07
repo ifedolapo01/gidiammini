@@ -27,8 +27,15 @@ export async function PUT(
     };
     
     if (stock !== undefined) {
-      updateData.stock = Math.max(0, parseInt(stock) || 0);
-    }
+  // Prevent negative stock
+  const newStock = Math.max(0, parseInt(stock) || 0);
+  updateData.stock = newStock;
+  
+  // If stock is 0 or negative, you might want to hide it from customers
+  if (newStock <= 0) {
+    updateData.is_active = true; // Or keep true if you want to show out-of-stock
+  }
+}
     
     if (colors) {
       updateData.colors = colors.filter((c: string) => c.trim() !== '');

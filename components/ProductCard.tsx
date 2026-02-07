@@ -25,7 +25,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
         
-        {stock < 10 && stock > 0 && (
+        {stock < 5 && stock > 0 && (
           <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-md text-xs font-bold z-10">
             LOW STOCK: {stock}
           </div>

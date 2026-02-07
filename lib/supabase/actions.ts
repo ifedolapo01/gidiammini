@@ -48,6 +48,21 @@ export async function getProduct(id: string) {
 export async function createOrder(orderData: OrderData) {
   const supabase = await createClient()
 
+  // First, check stock availability before creating order
+  for (const item of orderData.items) {
+    if (item.product_id) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('stock')
+        .eq('id', item.product_id)
+        .single()
+      
+      if (product && product.stock < item.quantity) {
+        throw new Error(`Insufficient stock for ${item.product_name}. Available: ${product.stock}, Requested: ${item.quantity}`)
+      }
+    }
+  }
+
   // Start a transaction
   const { data: order, error: orderError } = await supabase
     .from('orders')

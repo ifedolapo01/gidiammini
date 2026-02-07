@@ -38,14 +38,23 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(5);
     
-    // Fetch low stock products (stock <= 10)
-    const { data: lowStockProducts } = await supabase
-      .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .lte('stock', 10)
-      .order('stock', { ascending: true })
-      .limit(5);
+    // Fetch low stock products (stock > 0 AND <= 10)
+const { data: lowStockProducts } = await supabase
+  .from('products')
+  .select('*')
+  .eq('is_active', true)
+  .gt('stock', 0)  // Only products with stock > 0
+  .lte('stock', 10)
+  .order('stock', { ascending: true })
+  .limit(5);
+
+// Fetch out of stock products
+const { data: outOfStockProducts } = await supabase
+  .from('products')
+  .select('*')
+  .eq('is_active', true)
+  .lte('stock', 0)  // Products with 0 or negative stock
+  .limit(5);
 
     return NextResponse.json({
       totalProducts: totalProducts || 0,
@@ -53,7 +62,8 @@ export async function GET() {
       pendingOrders: pendingOrders || 0,
       totalRevenue,
       recentOrders: recentOrders || [],
-      lowStockProducts: lowStockProducts || []
+      lowStockProducts: lowStockProducts || [],
+      outOfStockProducts: outOfStockProducts || []
     });
     
   } catch (error) {
@@ -66,7 +76,8 @@ export async function GET() {
         pendingOrders: 0,
         totalRevenue: 0,
         recentOrders: [],
-        lowStockProducts: []
+        lowStockProducts: [],
+        outOfStockProducts: []
       },
       { status: 500 }
     );
