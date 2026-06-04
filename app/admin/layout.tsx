@@ -86,6 +86,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Link href="/admin/stock" className="text-gray-600 hover:text-gray-900 px-3 py-2">
                     Stock Management
                   </Link>
+                  <Link href="/admin/categories" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    Categories
+                  </Link>
+                  <Link href="/admin/discounts" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    Discounts
+                  </Link>
                 </nav>
               </div>
               
@@ -124,6 +130,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
                   >
                     Stock Management
+                  </Link>
+                  <Link 
+                    href="/admin/categories" 
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                  >
+                    Categories
+                  </Link>
+                  <Link 
+                    href="/admin/discounts" 
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                  >
+                    Discounts
                   </Link>
                 </nav>
               </div>

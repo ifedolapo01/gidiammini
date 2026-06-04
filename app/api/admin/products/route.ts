@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
       colors: body.colors || [],
       sizes: body.sizes || [],
       details: body.details || [],
+      sub_category: body.sub_category || null,
       stock: Number(body.stock) || 0,
       is_active: true,
       created_at: new Date().toISOString(),
@@ -188,6 +189,7 @@ export async function PUT(request: NextRequest) {
       colors: body.colors || [],
       sizes: body.sizes || [],
       details: body.details || [],
+      sub_category: body.sub_category || null,
       stock: Number(body.stock) || 0,
       updated_at: new Date().toISOString()
     };

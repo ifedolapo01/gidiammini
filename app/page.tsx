@@ -22,6 +22,22 @@ export default async function HomePage() {
 
   const featuredProducts = (products as ProductCardProduct[])?.slice(0, 4) || [];
 
+  // Fetch dynamic categories
+  const { data: categoriesData } = await supabase
+    .from('categories')
+    .select('*, subcategories(*)')
+    .order('created_at', { ascending: true });
+
+  const categories = categoriesData || [];
+
+  // Fetch active discounts
+  const { data: discountsData } = await supabase
+    .from('discounts')
+    .select('*')
+    .eq('is_active', true);
+
+  const discounts = discountsData || [];
+
   return (
     <div className="bg-pink-50/20">
       {/* Hero Carousel Section */}
@@ -50,7 +66,7 @@ export default async function HomePage() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {featuredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} discounts={discounts} />
               ))}
             </div>
           </div>
@@ -70,41 +86,22 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Babies */}
-            <Link 
-              href="/products?category=babies"
-              className="relative group overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
-            >
-              <div className="h-56 md:h-72 bg-gradient-to-br from-amber-300/80 to-orange-400/90 flex flex-col justify-end p-6 md:p-8 text-white">
-                <span className="text-amber-100 text-xs font-bold uppercase tracking-widest mb-1">Ages 0 - 2</span>
-                <h3 className="text-2xl md:text-3xl font-extrabold mb-1">Babies</h3>
-                <p className="text-amber-50 text-sm font-medium">Soft organic basics & nursery sets</p>
-              </div>
-            </Link>
-            
-            {/* Kids */}
-            <Link 
-              href="/products?category=kids"
-              className="relative group overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
-            >
-              <div className="h-56 md:h-72 bg-gradient-to-br from-sky-300/80 to-indigo-400/90 flex flex-col justify-end p-6 md:p-8 text-white">
-                <span className="text-sky-100 text-xs font-bold uppercase tracking-widest mb-1">Ages 2 - 12</span>
-                <h3 className="text-2xl md:text-3xl font-extrabold mb-1">Kids & Pre-Teens</h3>
-                <p className="text-sky-50 text-sm font-medium">Playproof clothing & footwear</p>
-              </div>
-            </Link>
-
-            {/* Maternity */}
-            <Link 
-              href="/products?category=maternity"
-              className="relative group overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
-            >
-              <div className="h-56 md:h-72 bg-gradient-to-br from-pink-300/80 to-purple-400/90 flex flex-col justify-end p-6 md:p-8 text-white">
-                <span className="text-pink-100 text-xs font-bold uppercase tracking-widest mb-1">For Mothers</span>
-                <h3 className="text-2xl md:text-3xl font-extrabold mb-1">Maternity Wear</h3>
-                <p className="text-pink-50 text-sm font-medium">Comfortable, elegant support styles</p>
-              </div>
-            </Link>
+            {categories?.map((cat) => (
+              <Link 
+                key={cat.id}
+                href={`/products?category=${cat.slug}`}
+                className="relative group overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+              >
+                <div className={`h-56 md:h-72 bg-gradient-to-br ${cat.color || 'from-sky-300/80 to-indigo-400/90'} flex flex-col justify-end p-6 md:p-8 text-white`}>
+                  <h3 className="text-2xl md:text-3xl font-extrabold mb-1">{cat.name}</h3>
+                  <p className="text-white/90 text-sm font-medium line-clamp-2">
+                    {cat.subcategories && cat.subcategories.length > 0 
+                      ? cat.subcategories.map((s: any) => s.name).join(' • ')
+                      : `Shop our ${cat.name.toLowerCase()} collection`}
+                  </p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

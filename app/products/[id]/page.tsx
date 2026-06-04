@@ -5,15 +5,18 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
 import { getProduct } from '@/lib/supabase/actions';
+import { createClient } from '@/lib/supabase/client';
 import { Truck, Shield, ChevronLeft, Share2, Heart, Check, Package, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Product } from '@/types/product';
+import { Discount, getBestDiscount, calculateDiscountedPrice } from '@/lib/discounts';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const { addToCart } = useCart();
   
   const [product, setProduct] = useState<Product | null>(null);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
@@ -44,12 +47,27 @@ export default function ProductDetailPage() {
           setSelectedColor(data.colors[0]);
         }
       }
+
+      // Fetch active discounts
+      const supabase = createClient();
+      const { data: discountsData } = await supabase
+        .from('discounts')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (discountsData) {
+        setDiscounts(discountsData as Discount[]);
+      }
+
     } catch (error) {
       console.error('Error loading product:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const bestDiscount = product ? getBestDiscount(product, discounts) : null;
+  const finalPrice = product ? calculateDiscountedPrice(product.price, bestDiscount) : 0;
 
   const handleShare = async (platform?: string) => {
     if (!product) return;
@@ -104,7 +122,7 @@ export default function ProductDetailPage() {
     addToCart({
       productId: product.id,
       name: product.name,
-      price: product.price,
+      price: finalPrice, // Use discounted price
       quantity,
       image: product.main_image,
       size: selectedSize,
@@ -507,8 +525,24 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Price */}
-              <div className="text-3xl md:text-4xl font-bold mb-6 md:mb-8 text-gray-900">
-                ₦{product.price.toLocaleString()}
+              <div className="mb-6 md:mb-8 flex items-end gap-3">
+                {bestDiscount ? (
+                  <>
+                    <div className="text-3xl md:text-4xl font-bold text-red-600">
+                      ₦{finalPrice.toLocaleString()}
+                    </div>
+                    <div className="text-xl text-gray-400 line-through mb-1">
+                      ₦{product.price.toLocaleString()}
+                    </div>
+                    <div className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm font-bold mb-1">
+                      {bestDiscount.type === 'PERCENTAGE' ? `${bestDiscount.value}% OFF` : `Save ₦${bestDiscount.value}`}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-3xl md:text-4xl font-bold text-gray-900">
+                    ₦{product.price.toLocaleString()}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -619,7 +653,7 @@ export default function ProductDetailPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-sm text-gray-600">Total</p>
-                    <p className="font-bold text-xl text-blue-600">₦{(product.price * quantity).toLocaleString()}</p>
+                    <p className="font-bold text-xl text-blue-600">₦{(finalPrice * quantity).toLocaleString()}</p>
                   </div>
                   <div className="flex items-center border rounded-lg border-gray-800">
                     <button 

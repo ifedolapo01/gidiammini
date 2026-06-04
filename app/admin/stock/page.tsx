@@ -12,6 +12,8 @@ interface ProductStock {
   colors: string[];
   sizes: string[];
   price: number;
+  main_image?: string;
+  images?: string[];
 }
 
 export default function StockManagementPage() {
@@ -247,14 +249,24 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
             <tbody className="bg-white divide-y divide-gray-200">
               {products.map((product) => {
                 const status = getStockStatus(product.stock);
-                const isEditing = editingProduct === product.id;
                 
                 return (
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <p className="font-medium text-gray-900">{product.name}</p>
-                        <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
+                      <div className="flex items-center gap-3">
+                        {product.main_image || (product.images && product.images[0]) ? (
+                          <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden">
+                            <img src={product.main_image || (product.images && product.images[0]) || ''} alt={product.name} className="object-cover w-full h-full" />
+                          </div>
+                        ) : (
+                          <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
+                            <Package className="h-5 w-5 text-gray-500" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-gray-900">{product.name}</p>
+                          <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -263,128 +275,38 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {isEditing ? (
-                        <input
-                          type="number"
-                          value={stockUpdates[product.id] || product.stock}
-                          onChange={(e) => setStockUpdates({
-                            ...stockUpdates,
-                            [product.id]: parseInt(e.target.value) || 0
-                          })}
-                          className="w-24 border border-gray-300 rounded-lg px-3 py-1 text-black"
-                          min="0"
-                        />
-                      ) : (
-                        <div className="flex items-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                            {status.text} ({product.stock})
+                      <div className="flex items-center">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                          {status.text} ({product.stock})
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {product.colors.map((color, index) => (
+                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
+                            {color}
                           </span>
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      {isEditing ? (
-                        <div className="space-y-1">
-                          {(newColors[product.id] || []).map((color, index) => (
-                            <div key={index} className="flex items-center gap-1">
-                              <input
-                                type="text"
-                                value={color}
-                                onChange={(e) => updateColor(product.id, index, e.target.value)}
-                                className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm text-black"
-                                placeholder="Color name"
-                              />
-                              <button
-                                onClick={() => removeColor(product.id, index)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => addColor(product.id)}
-                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                          >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add Color
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {product.colors.map((color, index) => (
-                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
-                              {color}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {isEditing ? (
-                        <div className="space-y-1">
-                          {(newSizes[product.id] || []).map((size, index) => (
-                            <div key={index} className="flex items-center gap-1">
-                              <input
-                                type="text"
-                                value={size}
-                                onChange={(e) => updateSize(product.id, index, e.target.value)}
-                                className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm text-black"
-                                placeholder="Size"
-                              />
-                              <button
-                                onClick={() => removeSize(product.id, index)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => addSize(product.id)}
-                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                          >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add Size
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {product.sizes.map((size, index) => (
-                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
-                              {size}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {product.sizes.map((size, index) => (
+                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
+                            {size}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {isEditing ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => saveChanges(product.id)}
-                            className="text-green-600 hover:text-green-900 flex items-center"
-                          >
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </button>
-                          <button
-                            onClick={cancelEditing}
-                            className="text-gray-600 hover:text-gray-900 flex items-center"
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => startEditing(product)}
-                          className="text-blue-600 hover:text-blue-900 flex items-center"
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </button>
-                      )}
+                      <button
+                        onClick={() => startEditing(product)}
+                        className="text-blue-600 hover:text-blue-900 flex items-center"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 );
@@ -405,6 +327,166 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
           <li>• Click <strong>Edit</strong> to update stock quantity, colors, and sizes</li>
         </ul>
       </div>
+
+      {/* Edit Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
+              <h2 className="text-xl font-bold text-gray-800">Edit Product Stock</h2>
+              <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {(() => {
+                const product = products.find(p => p.id === editingProduct);
+                if (!product) return null;
+                
+                return (
+                  <div className="space-y-6">
+                    <div className="flex gap-6 items-start">
+                      {product.main_image || (product.images && product.images[0]) ? (
+                        <div className="w-64 flex-shrink-0 rounded-lg overflow-hidden border shadow-sm bg-white">
+                          <img 
+                            src={product.main_image || (product.images && product.images[0]) || ''} 
+                            alt={product.name} 
+                            className="w-full h-auto block" 
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-64 h-64 flex-shrink-0 bg-white rounded-lg flex items-center justify-center border shadow-sm">
+                          <Package className="w-20 h-20 text-gray-400" />
+                        </div>
+                      )}
+                      
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">{product.name}</h3>
+                        <p className="text-gray-500 capitalize">{product.category}</p>
+                        <p className="text-gray-700 mt-2 font-medium">₦{product.price.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-8">
+                      {/* Stock Quantity */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2">
+                          Stock Quantity
+                        </label>
+                        <input
+                          type="number"
+                          value={stockUpdates[product.id] || product.stock}
+                          onChange={(e) => setStockUpdates({
+                            ...stockUpdates,
+                            [product.id]: parseInt(e.target.value) || 0
+                          })}
+                          className="w-full md:w-1/2 border border-gray-300 rounded-lg px-4 py-2.5 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          min="0"
+                        />
+                      </div>
+                      
+                      <div className="border-t border-gray-100"></div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Colors */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-800 mb-3">Colors</label>
+                          <div className="space-y-3">
+                            {(newColors[product.id] || []).map((color, index) => (
+                              <div key={index} className="flex items-center gap-2 group">
+                                <div className="relative flex-1">
+                                  <input
+                                    type="text"
+                                    value={color}
+                                    onChange={(e) => updateColor(product.id, index, e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="e.g. Black, White, Red"
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => removeColor(product.id, index)}
+                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Remove color"
+                                >
+                                  <X className="w-5 h-5" />
+                                </button>
+                              </div>
+                            ))}
+                            {(newColors[product.id] || []).length === 0 && (
+                              <p className="text-sm text-gray-500 italic mb-3">No colors specified.</p>
+                            )}
+                            <button
+                              onClick={() => addColor(product.id)}
+                              className="w-full mt-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-all"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Color
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Sizes */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-800 mb-3">Sizes</label>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              {(newSizes[product.id] || []).map((size, index) => (
+                                <div key={index} className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all bg-white">
+                                  <input
+                                    type="text"
+                                    value={size}
+                                    onChange={(e) => updateSize(product.id, index, e.target.value)}
+                                    className="flex-1 px-3 py-2 text-sm text-black w-full outline-none"
+                                    placeholder="e.g. S, M, L"
+                                  />
+                                  <button
+                                    onClick={() => removeSize(product.id, index)}
+                                    className="px-3 py-2 bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 border-l border-gray-300 transition-colors"
+                                    title="Remove size"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            {(newSizes[product.id] || []).length === 0 && (
+                              <p className="text-sm text-gray-500 italic mb-3">No sizes specified.</p>
+                            )}
+                            <button
+                              onClick={() => addSize(product.id)}
+                              className="w-full mt-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-all"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Size
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+              <button
+                onClick={cancelEditing}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveChanges(editingProduct)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,7 +13,10 @@ function ProductsListContent() {
   const categoryParam = searchParams?.get('category') || 'all';
 
   const [products, setProducts] = useState<ProductCardProduct[]>([]);
+  const [categories, setCategories] = useState<{name: string, slug: string, subcategories?: {name: string, slug: string}[]}[]>([]);
+  const [discounts, setDiscounts] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showOutOfStock, setShowOutOfStock] = useState(false);
@@ -21,17 +24,19 @@ function ProductsListContent() {
   // Sync state if URL query param changes
   useEffect(() => {
     setSelectedCategory(categoryParam);
+    setSelectedSubCategory('all');
   }, [categoryParam]);
 
   useEffect(() => {
-    loadProducts();
-  }, [selectedCategory]);
+    loadData();
+  }, [selectedCategory, selectedSubCategory]);
 
-  const loadProducts = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
       const supabase = createClient();
       
+      // Fetch products
       let query = supabase
         .from('products')
         .select('*')
@@ -42,21 +47,47 @@ function ProductsListContent() {
         query = query.eq('category', selectedCategory);
       }
 
+      if (selectedSubCategory !== 'all') {
+        query = query.eq('sub_category', selectedSubCategory);
+      }
+
       const isAdmin = false; // Replace with actual auth check
       if (!isAdmin && !showOutOfStock) {
         query = query.gt('stock', 0);
       }
 
-      const { data, error } = await query;
+      // Fetch Categories with subcategories
+      const categoriesPromise = supabase
+        .from('categories')
+        .select('name, slug, subcategories(name, slug)')
+        .order('name');
+        
+      // Fetch Discounts
+      const discountsPromise = supabase
+        .from('discounts')
+        .select('*')
+        .eq('is_active', true);
 
-      if (error) {
-        console.error('Error loading products:', error);
-        setProducts([]);
-      } else {
-        setProducts(data as ProductCardProduct[] || []);
+      const [productsRes, categoriesRes, discountsRes] = await Promise.all([
+        query,
+        categoriesPromise,
+        discountsPromise
+      ]);
+
+      if (!productsRes.error) {
+        setProducts(productsRes.data as ProductCardProduct[] || []);
       }
+      
+      if (!categoriesRes.error) {
+        setCategories(categoriesRes.data || []);
+      }
+      
+      if (!discountsRes.error) {
+        setDiscounts(discountsRes.data || []);
+      }
+      
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error('Error loading data:', error);
       setProducts([]);
     } finally {
       setLoading(false);
@@ -86,18 +117,64 @@ function ProductsListContent() {
               <div>
                 <h4 className="font-medium mb-3 text-gray-700">Category</h4>
                 <div className="space-y-2">
-                  {['all', 'babies', 'kids', 'maternity'].map(category => (
-                    <button
-                      key={category}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`block w-full text-left px-3 py-2 rounded capitalize transition-colors ${
-                        selectedCategory === category
-                          ? 'bg-pink-50 text-pink-600 border border-pink-200 font-semibold'
-                          : 'hover:bg-gray-50 text-gray-700 font-medium'
-                      }`}
-                    >
-                      {category === 'all' ? 'All Products' : category === 'kids' ? 'Kids & Pre-Teens' : category}
-                    </button>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSelectedSubCategory('all');
+                    }}
+                    className={`block w-full text-left px-3 py-2 rounded transition-colors ${
+                      selectedCategory === 'all'
+                        ? 'bg-pink-50 text-pink-600 border border-pink-200 font-semibold'
+                        : 'hover:bg-gray-50 text-gray-700 font-medium'
+                    }`}
+                  >
+                    All Products
+                  </button>
+                  {categories.map(category => (
+                    <div key={category.slug} className="space-y-1">
+                      <button
+                        onClick={() => {
+                          setSelectedCategory(category.slug);
+                          setSelectedSubCategory('all');
+                        }}
+                        className={`block w-full text-left px-3 py-2 rounded transition-colors ${
+                          selectedCategory === category.slug
+                            ? 'bg-pink-50 text-pink-600 border border-pink-200 font-semibold'
+                            : 'hover:bg-gray-50 text-gray-700 font-medium'
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                      
+                      {/* Subcategories (only show if parent category is selected) */}
+                      {selectedCategory === category.slug && category.subcategories && category.subcategories.length > 0 && (
+                        <div className="pl-4 pr-2 py-1 space-y-1 border-l-2 border-pink-100 ml-2 mb-2">
+                          <button
+                            onClick={() => setSelectedSubCategory('all')}
+                            className={`block w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                              selectedSubCategory === 'all'
+                                ? 'text-pink-600 font-semibold bg-pink-50/50'
+                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            All {category.name}
+                          </button>
+                          {category.subcategories.map(sub => (
+                            <button
+                              key={sub.slug}
+                              onClick={() => setSelectedSubCategory(sub.slug)}
+                              className={`block w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                                selectedSubCategory === sub.slug
+                                  ? 'text-pink-600 font-semibold bg-pink-50/50'
+                                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {sub.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -139,7 +216,7 @@ function ProductsListContent() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map(product => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} discounts={discounts} />
               ))}
             </div>
           )}

@@ -45,3 +45,10 @@ next-env.d.ts
 # Code review results
 CODE_REVIEW.md
 
+# Database files
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+dev.db

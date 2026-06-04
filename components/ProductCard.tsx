@@ -1,12 +1,14 @@
 // components/ProductCard.tsx - Server Component version
 import Link from 'next/link';
 import { ProductCardProduct } from '@/types/product';
+import { Discount, getBestDiscount, calculateDiscountedPrice } from '@/lib/discounts';
 
 interface ProductCardProps {
   product: ProductCardProduct;
+  discounts?: Discount[];
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, discounts = [] }: ProductCardProps) {
   // Use defaults for missing fields
   const isOutOfStock = (product.stock || 0) <= 0;
   // Use a fallback image without onError handler
@@ -14,6 +16,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   const description = product.description || '';
   const category = product.category || '';
   const stock = product.stock || 0;
+  
+  const bestDiscount = getBestDiscount(product, discounts);
+  const finalPrice = calculateDiscountedPrice(product.price, bestDiscount);
 
   return (
     <Link href={`/products/${product.id}`} className="group">
@@ -40,8 +45,20 @@ export default function ProductCard({ product }: ProductCardProps) {
               isOutOfStock ? 'opacity-70' : ''
             }`}
           />
-          <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-md text-sm font-semibold text-black">
-            ₦{product.price.toLocaleString()}
+          {bestDiscount && (
+            <div className="absolute top-2 right-2 bg-red-600 text-white px-2.5 py-1 rounded-md text-xs font-bold z-10 animate-pulse">
+              {bestDiscount.type === 'PERCENTAGE' ? `${bestDiscount.value}% OFF` : `₦${bestDiscount.value} OFF`}
+            </div>
+          )}
+          <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-md text-sm font-bold text-black shadow-sm flex items-center gap-2">
+            {bestDiscount ? (
+              <>
+                <span className="text-gray-400 line-through text-xs">₦{product.price.toLocaleString()}</span>
+                <span className="text-red-600">₦{finalPrice.toLocaleString()}</span>
+              </>
+            ) : (
+              <span>₦{product.price.toLocaleString()}</span>
+            )}
           </div>
         </div>
         
