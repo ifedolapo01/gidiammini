@@ -48,7 +48,7 @@ export default function AddProductPage() {
     name: "",
     description: "",
     price: 0,
-    category: "men",
+    category: "babies",
     stock: 0,
     colors: [""],
     sizes: [""],
@@ -384,7 +384,7 @@ export default function AddProductPage() {
                   name: "",
                   description: "",
                   price: 0,
-                  category: "men",
+                  category: "babies",
                   stock: 0,
                   colors: [""],
                   sizes: [""],
@@ -658,9 +658,9 @@ export default function AddProductPage() {
             required
             disabled={isSubmitting || isCompressing}
           >
-            <option value="men">Men</option>
-            <option value="women">Women</option>
-            <option value="unisex">Unisex</option>
+            <option value="babies">Babies</option>
+            <option value="kids">Kids & Pre-Teens</option>
+            <option value="maternity">Maternity</option>
           </select>
         </div>
 

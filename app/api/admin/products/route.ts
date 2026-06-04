@@ -1,16 +1,18 @@
 // app/api/admin/products/route.ts - UPDATED FOR COMPLETE CRUD
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAdminAuth } from '@/lib/auth';
 
 export const maxDuration = 30;
 
 export async function GET(request: NextRequest) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   console.log('📱 Fetching all products');
   
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'
   };
   
@@ -56,12 +58,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   console.log('📱 Creating new product');
   
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'
   };
   
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
       name: body.name.substring(0, 100),
       description: (body.description || '').substring(0, 500),
       price: Number(body.price),
-      category: body.category || 'men',
+      category: body.category || 'babies',
       main_image: body.main_image || '',
       images: body.images || [],
       colors: body.colors || [],
@@ -142,12 +145,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   console.log('📱 Updating product');
   
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'PUT, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'
   };
   
@@ -178,7 +182,7 @@ export async function PUT(request: NextRequest) {
       name: body.name.substring(0, 100),
       description: (body.description || '').substring(0, 500),
       price: Number(body.price),
-      category: body.category || 'men',
+      category: body.category || 'babies',
       main_image: body.main_image,
       images: body.images || [],
       colors: body.colors || [],
@@ -224,12 +228,13 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   console.log('📱 Deleting product');
   
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'
   };
   

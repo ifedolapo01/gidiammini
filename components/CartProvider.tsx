@@ -1,7 +1,7 @@
 // components/CartProvider.tsx
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CartItem } from '@/types/product';
 
 interface CartContextType {
@@ -18,6 +18,25 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const savedCart = localStorage.getItem('gidiammini_cart');
+    if (savedCart) {
+      try {
+        setItems(JSON.parse(savedCart));
+      } catch (e) {
+        console.error('Failed to parse saved cart from localStorage:', e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('gidiammini_cart', JSON.stringify(items));
+    }
+  }, [items, isLoaded]);
 
   const addToCart = (item: CartItem) => {
     setItems(current => {

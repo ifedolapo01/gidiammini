@@ -8,8 +8,8 @@ import { Analytics } from "@vercel/analytics/next";
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'UrbanThreads Co. | Modern Streetwear',
-  description: 'Minimalist clothing for everyday comfort and style',
+  title: 'GidiamMini | Baby, Kids & Maternity Store',
+  description: 'Premium clothing, maternity wear, and essentials for babies, kids, and pre-teens.',
 };
 
 export const viewport = {
@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ overflowX: 'hidden' }} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <CartProvider>
           <Header />
@@ -33,17 +33,18 @@ export default function RootLayout({
             <div className="container mx-auto px-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
-                  <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">UrbanThreads Co.</h3>
+                  <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">GidiamMini</h3>
                   <p className="text-gray-400 text-sm md:text-base">
-                    Modern streetwear designed for comfort and style.
+                    Premium baby items, clothing, maternity wear, and kids essentials.
                   </p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-3 md:mb-4 text-base md:text-lg">Shop</h4>
                   <ul className="space-y-2 text-gray-400 text-sm md:text-base">
-                    <li><a href="#" className="hover:text-white">All Products</a></li>
-                    <li><a href="#" className="hover:text-white">Men</a></li>
-                    <li><a href="#" className="hover:text-white">Women</a></li>
+                    <li><a href="/products" className="hover:text-white">All Products</a></li>
+                    <li><a href="/products?category=babies" className="hover:text-white">Babies</a></li>
+                    <li><a href="/products?category=kids" className="hover:text-white">Kids</a></li>
+                    <li><a href="/products?category=maternity" className="hover:text-white">Maternity</a></li>
                   </ul>
                 </div>
                 <div>

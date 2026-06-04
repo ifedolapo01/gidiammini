@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </button>
                   
                   <Link href="/admin/dashboard" className="text-xl font-bold text-gray-800">
-                    UrbanThreads Admin
+                    GidiamMini Admin
                   </Link>
                 </div>
 

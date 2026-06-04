@@ -31,10 +31,10 @@ export default function PaymentStep({
 }: PaymentStepProps) {
   
   const bankDetails = {
-    bankName: 'OPAY',
-    accountName: 'Ifedolapo Ajayi',
-    accountNumber: '8096539067',
-    sortCode: '011'
+    bankName: process.env.NEXT_PUBLIC_BANK_NAME || 'OPAY',
+    accountName: process.env.NEXT_PUBLIC_ACCOUNT_NAME || 'Ifedolapo Ajayi',
+    accountNumber: process.env.NEXT_PUBLIC_ACCOUNT_NUMBER || '8096539067',
+    sortCode: process.env.NEXT_PUBLIC_SORT_CODE || '011'
   };
 
   return (

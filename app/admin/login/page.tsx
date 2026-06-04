@@ -42,8 +42,8 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-        <h1 className="text-2xl font-bold mb-2 text-blue-600">UrbanThreads Admin</h1>
-        <p className="text-gray-600 mb-6 text-sm">Use: admin@urbanthreads.com</p>
+        <h1 className="text-2xl font-bold mb-2 text-blue-600">GidiamMini Admin</h1>
+        <p className="text-gray-600 mb-6 text-sm">Use: admin@gidiammini.com</p>
         
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -53,7 +53,7 @@ export default function AdminLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border rounded-lg px-4 py-2 text-black"
-              placeholder="admin@urbanthreads.com"
+              placeholder="admin@gidiammini.com"
               required
             />
           </div>

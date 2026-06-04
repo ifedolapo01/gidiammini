@@ -2,9 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { OrderData } from '@/types/product';
+import { verifyAdminAuth } from '@/lib/auth';
 
 // GET method - fetch orders (for admin dashboard)
 export async function GET(request: NextRequest) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const supabase = createAdminClient();
     

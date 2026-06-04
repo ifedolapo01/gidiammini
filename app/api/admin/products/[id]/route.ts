@@ -1,23 +1,24 @@
 // app/api/admin/products/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAdminAuth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   console.log('📱 Fetching single product');
   
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'
   };
   
   try {
-    // Extract ID from params - NOW WE NEED TO AWAIT IT
-    const { id } = await params;  // AWAIT THE PARAMS
+    const { id } = await params;
     
     console.log('Product ID from params:', id);
     
@@ -90,16 +91,4 @@ export async function GET(
       { status: 500, headers }
     );
   }
-}
-
-// Also need to add OPTIONS handler for CORS
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS, PUT, DELETE, POST',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  });
 }

@@ -135,64 +135,87 @@ export async function createOrder(orderData: {
 }) {
   const supabase = await createClient()
 
-  // Start a transaction
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert([{
-      order_number: orderData.order_number,
-      customer_name: orderData.customer_name,
-      customer_email: orderData.customer_email,
-      customer_phone: orderData.customer_phone,
-      total_amount: orderData.total_amount,
-      delivery_option: orderData.delivery_option,
-      selected_state: orderData.selected_state,
-      delivery_address: orderData.delivery_address,
-      city: orderData.city,
-      note: orderData.note,
-      receipt_url: orderData.receipt_url,  // Add this line
-      status: 'pending' 
-    }])
-    .select()
-    .single()
+  // 1. Atomically check and decrease stock for all items
+  const itemsToDecrement = orderData.items
+    .filter(item => item.product_id)
+    .map(item => ({
+      product_id: item.product_id,
+      quantity: item.quantity
+    }))
 
-  if (orderError) {
-    console.error('Error creating order:', orderError)
-    return null
-  }
+  if (itemsToDecrement.length > 0) {
+    const { data: success, error: rpcError } = await supabase.rpc('check_and_decrease_stock_multi', {
+      items: itemsToDecrement
+    })
 
-  // Create order items
-  const orderItems = orderData.items.map(item => ({
-    order_id: order.id,
-    product_id: item.product_id,
-    product_name: item.product_name,
-    price: item.price,
-    quantity: item.quantity,
-    size: item.size,
-    color: item.color
-  }))
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems)
-
-  if (itemsError) {
-    console.error('Error creating order items:', itemsError)
-    // Clean up the order if items fail
-    await supabase.from('orders').delete().eq('id', order.id)
-    return null
-  }
-
-  // Update product stock
-  for (const item of orderData.items) {
-    if (item.product_id) {
-      await supabase.rpc('decrease_product_stock', {
-        product_id: item.product_id,
-        quantity: item.quantity
-      })
+    if (rpcError || !success) {
+      throw new Error(`Insufficient stock for one or more items. Please verify product inventory.`)
     }
   }
 
-  return order as Order
+  try {
+    // 2. Insert the main order record
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert([{
+        order_number: orderData.order_number,
+        customer_name: orderData.customer_name,
+        customer_email: orderData.customer_email,
+        customer_phone: orderData.customer_phone,
+        total_amount: orderData.total_amount,
+        delivery_option: orderData.delivery_option,
+        selected_state: orderData.selected_state,
+        delivery_address: orderData.delivery_address,
+        city: orderData.city,
+        note: orderData.note,
+        receipt_url: orderData.receipt_url,
+        status: 'pending' 
+      }])
+      .select()
+      .single()
+
+    if (orderError) {
+      throw orderError
+    }
+
+    // 3. Create order items
+    const orderItems = orderData.items.map(item => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      price: item.price,
+      quantity: item.quantity,
+      size: item.size,
+      color: item.color
+    }))
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems)
+
+    if (itemsError) {
+      // Clean up the order if items fail
+      await supabase.from('orders').delete().eq('id', order.id)
+      throw itemsError
+    }
+
+    return order as Order
+
+  } catch (error: any) {
+    console.error('Error creating order, rolling back stock changes:', error)
+    
+    // Rollback: restore stock
+    if (itemsToDecrement.length > 0) {
+      for (const item of itemsToDecrement) {
+        await supabase.rpc('increase_product_stock', {
+          product_id: item.product_id,
+          quantity: item.quantity
+        })
+      }
+    }
+    
+    throw error
+  }
 }
 
 export async function getOrders(status?: string) {

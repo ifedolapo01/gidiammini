@@ -15,15 +15,16 @@ export async function POST(request: NextRequest) {
 
     // Check for required environment variables
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.warn('⚠️ Email credentials not set. Skipping email sending.');
+      console.error('❌ EMAIL_USER or EMAIL_PASS environment variables are missing! Email notifications cannot be sent.');
       
-      return NextResponse.json({
-        success: true,
-        message: 'Order received (test mode - no emails sent)',
-        orderNumber: body.orderNumber,
-        note: 'Email credentials not configured. Configure EMAIL_USER and EMAIL_PASS in .env.local',
-        timestamp: new Date().toISOString()
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Email service configuration error',
+          details: 'Email credentials not configured on the server. Please configure EMAIL_USER and EMAIL_PASS in .env.local'
+        },
+        { status: 500 }
+      );
     }
 
     // Try to send emails
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
 
       // Email to store owner
       const ownerMailOptions = {
-        from: `"UrbanThreads Store" <${process.env.EMAIL_USER}>`,
+        from: `"GidiamMini Store" <${process.env.EMAIL_USER}>`,
         to: process.env.STORE_OWNER_EMAIL || 'ifedolapoajayi0@gmail.com',
         subject: `🛍️ NEW ORDER #${body.orderNumber} - ${body.customerName}`,
         text: `
@@ -117,7 +118,7 @@ Order received at: ${new Date().toISOString()}
       // Send confirmation to customer if email is provided
       if (body.customerEmail) {
         const customerMailOptions = {
-          from: `"UrbanThreads Store" <${process.env.EMAIL_USER}>`,
+          from: `"GidiamMini Store" <${process.env.EMAIL_USER}>`,
           to: body.customerEmail,
           subject: `✅ Order Confirmation #${body.orderNumber}`,
           text: `Thank you for your order ${body.customerName}!

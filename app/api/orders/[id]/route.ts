@@ -2,11 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { sendOrderStatusUpdate } from '@/lib/notifications';
+import { verifyAdminAuth } from '@/lib/auth';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
     const orderId = id;
@@ -60,29 +65,27 @@ export async function PUT(
     
     // Update stock based on status changes
     if (willBeConfirmed && !wasConfirmed) {
-      // Reduce stock when confirming order
-      for (const item of currentOrder.order_items || []) {
-        if (item.product_id) {
-          const { data: product } = await supabase
-            .from('products')
-            .select('stock')
-            .eq('id', item.product_id)
-            .single();
-          
-          if (product && product.stock >= item.quantity) {
-            await supabase
-              .from('products')
-              .update({ stock: product.stock - item.quantity })
-              .eq('id', item.product_id);
-          } else {
-            return NextResponse.json(
-              { 
-                success: false, 
-                error: `Insufficient stock for ${item.product_name}. Available: ${product?.stock || 0}, Requested: ${item.quantity}` 
-              },
-              { status: 400 }
-            );
-          }
+      // Reduce stock atomically when confirming order
+      const itemsToDecrement = (currentOrder.order_items || [])
+        .filter((item: any) => item.product_id)
+        .map((item: any) => ({
+          product_id: item.product_id,
+          quantity: item.quantity
+        }));
+      
+      if (itemsToDecrement.length > 0) {
+        const { data: success, error: rpcError } = await supabase.rpc('check_and_decrease_stock_multi', {
+          items: itemsToDecrement
+        });
+        
+        if (rpcError || !success) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `Insufficient stock to confirm this order. Please verify product inventory.` 
+            },
+            { status: 400 }
+          );
         }
       }
     } else if (willBeCancelled && wasConfirmed) {

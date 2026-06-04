@@ -195,14 +195,14 @@ async function sendStatusEmail(params: {
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Need Help?</strong></p>
           <p>📞 Call us: 0809 653 9067</p>
-          <p>✉️ Email: support@urbanthreads.com</p>
+          <p>✉️ Email: support@gidiammini.com</p>
         </div>
         
         <p>Best regards,<br>
-        <strong>The UrbanThreads Team</strong></p>
+        <strong>The GidiamMini Team</strong></p>
       </div>
       <div class="footer">
-        <p>UrbanThreads Clothing Store<br>
+        <p>GidiamMini Clothing Store<br>
         Abuja, Nigeria</p>
       </div>
     </body>
@@ -256,15 +256,15 @@ async function sendCustomEmail(params: {
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Need to respond?</strong></p>
           <p>📞 Call us: 0809 653 9067</p>
-          <p>✉️ Email: support@urbanthreads.com</p>
+          <p>✉️ Email: support@gidiammini.com</p>
           <p>💬 WhatsApp: +234 809 653 9067</p>
         </div>
         
         <p>Best regards,<br>
-        <strong>The UrbanThreads Team</strong></p>
+        <strong>The GidiamMini Team</strong></p>
       </div>
       <div class="footer">
-        <p>UrbanThreads Clothing Store<br>
+        <p>GidiamMini Clothing Store<br>
         Abuja, Nigeria</p>
       </div>
     </body>
@@ -292,7 +292,7 @@ async function sendStatusSMS(params: {
   const statusTexts: Record<string, string> = {
     confirmed: `Your order #${orderNumber} has been confirmed! We're processing it now.`,
     shipped: `Great news! Your order #${orderNumber} has been shipped. Track your package for updates.`,
-    delivered: `Your order #${orderNumber} has been delivered! Thank you for shopping with UrbanThreads.`,
+    delivered: `Your order #${orderNumber} has been delivered! Thank you for shopping with GidiamMini.`,
     cancelled: `Your order #${orderNumber} has been cancelled. Contact us at 0809 653 9067 if you have questions.`
   };
   
@@ -340,7 +340,7 @@ async function sendCustomSMS(params: {
 }) {
   const { customerPhone, orderNumber, message } = params;
   
-  const fullMessage = `UrbanThreads Order #${orderNumber}: ${message}`;
+  const fullMessage = `GidiamMini Order #${orderNumber}: ${message}`;
   
   // TODO: Implement actual SMS sending
   console.log(`📱 SMS to ${customerPhone}: ${fullMessage}`);

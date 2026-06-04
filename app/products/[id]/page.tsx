@@ -56,7 +56,7 @@ export default function ProductDetailPage() {
     
     setIsSharing(true);
     const url = window.location.href;
-    const title = `Check out ${product.name} on UrbanThreads`;
+    const title = `Check out ${product.name} on GidiamMini`;
     const text = `${product.name} - ₦${product.price.toLocaleString()}\n${product.description || ''}`;
     
     try {

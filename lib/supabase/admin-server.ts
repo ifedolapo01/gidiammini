@@ -17,8 +17,7 @@ export function createAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is not defined');
   }
   
-  console.log('🔧 Creating admin client with URL:', supabaseUrl);
-  
+
   return createClient(
     supabaseUrl,
     supabaseServiceKey,

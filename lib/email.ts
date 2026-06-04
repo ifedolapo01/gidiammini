@@ -19,7 +19,7 @@ export async function sendOrderEmail(to: string, subject: string, html: string) 
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `"UrbanThreads Store" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      from: `"GidiamMini Store" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
@@ -56,7 +56,7 @@ export async function sendBulkEmail(recipients: string[], subject: string, html:
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `"UrbanThreads Store" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      from: `"GidiamMini Store" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       bcc: recipients.join(','), // Use BCC for privacy
       subject,
       html,
