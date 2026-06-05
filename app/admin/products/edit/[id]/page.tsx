@@ -62,6 +62,7 @@ interface Product {
   stock: number;
   is_active: boolean;
   sizing_type?: 'size' | 'age' | null;
+  pricing_config?: PricingConfig | null;
   created_at: string;
   updated_at: string;
 }

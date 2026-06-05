@@ -55,3 +55,4 @@ dev.db
 
 # Scratch scripts
 scripts/*.js
+scripts/*.ts
