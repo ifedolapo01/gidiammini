@@ -14,6 +14,7 @@ interface ProductStock {
   price: number;
   main_image?: string;
   images?: string[];
+  pricing_config?: any;
 }
 
 export default function StockManagementPage() {
@@ -393,16 +394,22 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
                         <label className="block text-sm font-semibold text-gray-800 mb-2">
                           Stock Quantity
                         </label>
-                        <input
-                          type="number"
-                          value={stockUpdates[product.id] || product.stock}
-                          onChange={(e) => setStockUpdates({
-                            ...stockUpdates,
-                            [product.id]: parseInt(e.target.value) || 0
-                          })}
-                          className="w-full md:w-1/2 border border-gray-300 rounded-lg px-4 py-2.5 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                          min="0"
-                        />
+                        {product.pricing_config && product.pricing_config.mode !== 'single' ? (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                            This product uses variant-level stock (Total: {product.stock}). Please use the main <a href={`/admin/products/edit/${product.id}`} className="font-bold underline hover:text-blue-600">Product Edit page</a> to update specific variant quantities.
+                          </div>
+                        ) : (
+                          <input
+                            type="number"
+                            value={stockUpdates[product.id] || product.stock}
+                            onChange={(e) => setStockUpdates({
+                              ...stockUpdates,
+                              [product.id]: parseInt(e.target.value) || 0
+                            })}
+                            className="w-full md:w-1/2 border border-gray-300 rounded-lg px-4 py-2.5 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            min="0"
+                          />
+                        )}
                       </div>
                       
                       <div className="border-t border-gray-100"></div>

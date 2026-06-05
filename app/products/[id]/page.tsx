@@ -1,7 +1,6 @@
-// app/products/[id]/page.tsx - UPDATED with enhanced stock status
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
 import { getProduct } from '@/lib/supabase/actions';
@@ -68,9 +67,52 @@ export default function ProductDetailPage() {
     }
   };
 
+  const getVariantStock = (product: Product, size: string | null, color: string | null) => {
+    if (!product.pricing_config) return product.stock;
+    
+    const config = product.pricing_config as any;
+    if (config.mode === 'single') {
+      return config.singleStock !== undefined ? config.singleStock : product.stock;
+    }
+    if (config.mode === 'size' && size) {
+      return config.sizeStock?.[size] ?? product.stock;
+    }
+    if (config.mode === 'color' && color) {
+      return config.colorStock?.[color] ?? product.stock;
+    }
+    if (config.mode === 'combination' && size && color) {
+      return config.combinationStock?.[`${size}|${color}`] ?? product.stock;
+    }
+    return product.stock;
+  };
+
   const currentBasePrice = product ? getVariantPrice(product, selectedSize, selectedColor) : 0;
+  const currentStock = product ? getVariantStock(product, selectedSize, selectedColor) : 0;
   const bestDiscount = product ? getBestDiscount(product, discounts, currentBasePrice) : null;
   const finalPrice = product ? calculateDiscountedPrice(currentBasePrice, bestDiscount) : 0;
+
+  // Derive available colors based on selected size for combination mode
+  const availableColors = useMemo(() => {
+    if (!product || !product.pricing_config) return product?.colors || [];
+    const config = product.pricing_config as any;
+    
+    if (config.mode === 'combination' && selectedSize) {
+      const combinationPrices = config.combinationPrices || {};
+      const colorsForSize = Object.keys(combinationPrices)
+        .filter(key => key.startsWith(`${selectedSize}|`))
+        .map(key => key.split('|')[1]);
+      return colorsForSize.length > 0 ? colorsForSize : (product.colors || []);
+    }
+    
+    return product.colors || [];
+  }, [product, selectedSize]);
+
+  // When selected size changes, ensure selected color is valid for that size
+  useEffect(() => {
+    if (availableColors.length > 0 && selectedColor && !availableColors.includes(selectedColor)) {
+      setSelectedColor(availableColors[0]);
+    }
+  }, [selectedSize, availableColors, selectedColor]);
 
   const handleShare = async (platform?: string) => {
     if (!product) return;
@@ -117,8 +159,8 @@ export default function ProductDetailPage() {
       return;
     }
     
-    if (product.stock < quantity) {
-      alert(`Only ${product.stock} items available in stock`);
+    if (currentStock < quantity) {
+      alert(`Only ${currentStock} items available in stock`);
       return;
     }
     
@@ -270,10 +312,10 @@ export default function ProductDetailPage() {
               className="p-2 hover:bg-gray-100 rounded-full"
               onClick={() => setIsWishlisted(!isWishlisted)}
               aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-              disabled={product.stock <= 0}
+              disabled={currentStock <= 0}
             >
               <Heart 
-                className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'} ${product.stock <= 0 ? 'opacity-50' : ''}`} 
+                className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'} ${currentStock <= 0 ? 'opacity-50' : ''}`} 
               />
             </button>
             <div className="relative">
@@ -281,9 +323,9 @@ export default function ProductDetailPage() {
                 className="p-2 hover:bg-gray-100 rounded-full"
                 onClick={() => handleShare()}
                 aria-label="Share product"
-                disabled={isSharing || product.stock <= 0}
+                disabled={isSharing || currentStock <= 0}
               >
-                <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'} ${product.stock <= 0 ? 'opacity-50' : ''}`} />
+                <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'} ${currentStock <= 0 ? 'opacity-50' : ''}`} />
               </button>
               
               {showShareOptions && (
@@ -339,12 +381,12 @@ export default function ProductDetailPage() {
               </div>
               
               {/* Stock Badge on Image */}
-              {product.stock <= 5 && product.stock > 0 && (
+              {currentStock <= 5 && currentStock > 0 && (
                 <div className="absolute top-4 left-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  {product.stock <= 3 ? `Only ${product.stock} left!` : 'Low Stock'}
+                  {currentStock <= 3 ? `Only ${currentStock} left!` : 'Low Stock'}
                 </div>
               )}
-              {product.stock === 0 && (
+              {currentStock === 0 && (
                 <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                   Out of Stock
                 </div>
@@ -448,12 +490,12 @@ export default function ProductDetailPage() {
                 <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm capitalize">
                   {product.category}
                 </span>
-                {product.stock <= 5 && product.stock > 0 && (
+                {currentStock <= 5 && currentStock > 0 && (
                   <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                    {product.stock <= 3 ? `Only ${product.stock} left!` : 'Low Stock'}
+                    {currentStock <= 3 ? `Only ${currentStock} left!` : 'Low Stock'}
                   </span>
                 )}
-                {product.stock === 0 && (
+                {currentStock === 0 && (
                   <span className="inline-block px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
                     Out of Stock
                   </span>
@@ -464,7 +506,7 @@ export default function ProductDetailPage() {
                   className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => setIsWishlisted(!isWishlisted)}
                   aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                  disabled={product.stock <= 0}
+                  disabled={currentStock <= 0}
                 >
                   <Heart 
                     className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
@@ -475,7 +517,7 @@ export default function ProductDetailPage() {
                     className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleShare()}
                     aria-label="Share product"
-                    disabled={isSharing || product.stock <= 0}
+                    disabled={isSharing || currentStock <= 0}
                   >
                     <Share2 className={`w-5 h-5 ${isSharing ? 'text-gray-300' : 'text-gray-500'}`} />
                   </button>
@@ -524,7 +566,7 @@ export default function ProductDetailPage() {
               
               {/* Enhanced Stock Status */}
               <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <StockStatus stock={product.stock} />
+                <StockStatus stock={currentStock} />
               </div>
 
               {/* Price */}
@@ -553,10 +595,10 @@ export default function ProductDetailPage() {
             {product.sizes && product.sizes.length > 0 && (
               <div className="mb-6 md:mb-8">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-base md:text-lg text-black">Select Size</h3>
-                  {product.stock <= 0 && (
+                  <h3 className="font-semibold text-base md:text-lg text-black">Select {product.sizing_type === 'age' ? 'Age' : 'Size'}</h3>
+                  {currentStock <= 0 && (
                     <span className="text-sm text-red-600 font-medium">
-                      Out of Stock - Cannot select size
+                      Out of Stock - Cannot select {product.sizing_type === 'age' ? 'age' : 'size'}
                     </span>
                   )}
                 </div>
@@ -564,14 +606,14 @@ export default function ProductDetailPage() {
                   {product.sizes.map(size => (
                     <button
                       key={size}
-                      onClick={() => product.stock > 0 && setSelectedSize(size)}
+                      onClick={() => currentStock > 0 && setSelectedSize(size)}
                       className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg transition-all text-sm md:text-base ${
-                        selectedSize === size && product.stock > 0
+                        selectedSize === size && currentStock > 0
                           ? 'border-blue-500 bg-blue-50 text-blue-600'
                           : 'hover:border-gray-400 text-gray-700'
-                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
+                      } ${currentStock <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                       aria-pressed={selectedSize === size}
-                      disabled={product.stock <= 0}
+                      disabled={currentStock <= 0}
                     >
                       {size}
                     </button>
@@ -581,28 +623,28 @@ export default function ProductDetailPage() {
             )}
 
             {/* Color Selector */}
-            {product.colors && product.colors.length > 0 && (
+            {availableColors.length > 0 && (
               <div className="mb-6 md:mb-8">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-base md:text-lg text-black">Select Color</h3>
-                  {product.stock <= 0 && (
+                  {currentStock <= 0 && (
                     <span className="text-sm text-red-600 font-medium">
                       Out of Stock - Cannot select color
                     </span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {product.colors.map(color => (
+                  {availableColors.map(color => (
                     <button
                       key={color}
-                      onClick={() => product.stock > 0 && setSelectedColor(color)}
+                      onClick={() => currentStock > 0 && setSelectedColor(color)}
                       className={`px-4 py-3 md:px-4 md:py-2 border rounded-lg flex items-center transition-all text-gray-900 ${
-                        selectedColor === color && product.stock > 0
+                        selectedColor === color && currentStock > 0
                           ? 'border-blue-700 bg-blue-100 text-gray-900'
                           : 'hover:border-gray-400'
-                      } ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
+                      } ${currentStock <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                       aria-pressed={selectedColor === color}
-                      disabled={product.stock <= 0}
+                      disabled={currentStock <= 0}
                     >
                       <span 
                         className="w-4 h-4 md:w-5 md:h-5 rounded-full mr-2 border border-gray-300"
@@ -616,7 +658,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Quantity & Add to Cart - Desktop */}
-            {product.stock > 0 && (
+            {currentStock > 0 && (
               <div className="md:mb-8">
                 <div className="hidden md:flex items-center gap-4 mb-6">
                   <div className="flex items-center border rounded-lg text-black">
@@ -630,10 +672,10 @@ export default function ProductDetailPage() {
                     </button>
                     <span className="px-4 py-3 w-12 text-center">{quantity}</span>
                     <button 
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
                       className="px-4 py-3 hover:bg-gray-50 text-lg disabled:opacity-50"
                       aria-label="Increase quantity"
-                      disabled={quantity >= product.stock}
+                      disabled={quantity >= currentStock}
                     >
                       +
                     </button>
@@ -651,7 +693,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Mobile Bottom Sticky Add to Cart */}
-            {product.stock > 0 ? (
+            {currentStock > 0 ? (
               <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -669,10 +711,10 @@ export default function ProductDetailPage() {
                     </button>
                     <span className="px-4 py-3 w-10 text-center text-black">{quantity}</span>
                     <button 
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
                       className="px-4 py-3 text-black hover:bg-gray-50 disabled:opacity-50"
                       aria-label="Increase quantity"
-                      disabled={quantity >= product.stock}
+                      disabled={quantity >= currentStock}
                     >
                       +
                     </button>
@@ -702,7 +744,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Out of Stock Message */}
-            {product.stock <= 0 && (
+            {currentStock <= 0 && (
               <div className="mb-6 md:mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <h4 className="font-bold text-red-900 mb-2 flex items-center">
                   <AlertTriangle className="w-5 h-5 mr-2" />

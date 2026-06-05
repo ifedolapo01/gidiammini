@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, category, stock, colors, sizes, price, main_image, images')
+      .select('id, name, category, stock, colors, sizes, price, main_image, images, pricing_config')
       .eq('is_active', true)
       .order('stock', { ascending: true });
 

@@ -21,8 +21,9 @@ const productSchema = z.object({
   category: z.string().min(1, "Category is required"),
   sub_category: z.string().optional(),
   stock: z.coerce.number().min(0, "Stock must be a positive number"),
-  colors: z.array(z.object({ value: z.string().min(1, "Color cannot be empty") })).min(1, "At least one color is required"),
-  sizes: z.array(z.object({ value: z.string().min(1, "Size cannot be empty") })).min(1, "At least one size is required"),
+  colors: z.array(z.object({ value: z.string() })).optional().default([]),
+  sizes: z.array(z.object({ value: z.string() })).optional().default([]),
+  sizing_type: z.enum(['size', 'age']).optional().default('size'),
   details: z.array(z.object({ value: z.string().min(1, "Detail cannot be empty") })).optional().default([]),
 });
 
@@ -60,6 +61,7 @@ interface Product {
   details: string[];
   stock: number;
   is_active: boolean;
+  sizing_type?: 'size' | 'age' | null;
   created_at: string;
   updated_at: string;
 }
@@ -109,6 +111,7 @@ export default function EditProductPage(props: PageProps) {
       stock: 0,
       colors: [{ value: "" }],
       sizes: [{ value: "" }],
+      sizing_type: "size",
       details: [{ value: "" }],
     },
   });
@@ -128,17 +131,28 @@ export default function EditProductPage(props: PageProps) {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [pricingMode, setPricingMode] = useState<PricingMode>('single');
-  const [sizePrices, setSizePrices] = useState<Record<string, number>>({});
-  const [colorPrices, setColorPrices] = useState<Record<string, number>>({});
-  const [combinationPrices, setCombinationPrices] = useState<Record<string, number>>({});
+  const [hasVariants, setHasVariants] = useState(false);
+  const [hasSizes, setHasSizes] = useState(false);
+  const [hasColors, setHasColors] = useState(false);
+  const [sizingType, setSizingType] = useState<'size'|'age'>('size');
 
+  interface VariantColor {
+    name: string;
+    price: number;
+    stock: number;
+  }
+
+  interface VariantSize {
+    size: string;
+    price: number;
+    stock: number;
+    colors: VariantColor[];
+  }
+
+  const [variants, setVariants] = useState<VariantSize[]>([{ size: "", price: 0, stock: 0, colors: [] }]);
 
   // Watch the category field to update the sub_category options
   const selectedCategorySlug = useWatch({ control, name: "category" });
-
-  const watchedSizes = useWatch({ control: control as any, name: 'sizes' });
-  const watchedColors = useWatch({ control: control as any, name: 'colors' });
 
   const selectedCategory = categories.find(c => c.slug === selectedCategorySlug);
 
@@ -205,6 +219,7 @@ export default function EditProductPage(props: PageProps) {
           category: productData.category || "",
           sub_category: (productData as any).sub_category || "",
           stock: productData.stock,
+          sizing_type: productData.sizing_type || 'size',
           colors: productData.colors.length > 0 ? productData.colors.map(c => ({ value: c })) : [{ value: "" }],
           sizes: productData.sizes.length > 0 ? productData.sizes.map(s => ({ value: s })) : [{ value: "" }],
           details: productData.details.length > 0 ? productData.details.map(d => ({ value: d })) : [{ value: "" }],
@@ -215,6 +230,99 @@ export default function EditProductPage(props: PageProps) {
           ...(productData.images || []).map((img: string) => ({ file: null, url: img, isMain: false }))
         ];
         setImages(initialImages);
+
+        if (productData.pricing_config) {
+          const config = productData.pricing_config;
+          setSizingType(productData.sizing_type || 'size');
+          
+          if (config.mode === 'single') {
+            setHasVariants(false);
+            setHasSizes(false);
+            setHasColors(false);
+            setVariants([{ size: "", price: productData.price, stock: config.singleStock || productData.stock, colors: [] }]);
+          } else {
+            setHasVariants(true);
+            const newVariants: VariantSize[] = [];
+            
+            if (config.mode === 'combination') {
+              setHasSizes(true);
+              setHasColors(true);
+              
+              const prices = config.combinationPrices || {};
+              const stocks = config.combinationStock || {};
+              const sizeMap = new Map<string, VariantColor[]>();
+              
+              Object.keys(prices).forEach(key => {
+                const [size, color] = key.split('|');
+                if (size && color) {
+                  if (!sizeMap.has(size)) sizeMap.set(size, []);
+                  sizeMap.get(size)!.push({
+                    name: color,
+                    price: prices[key] || 0,
+                    stock: stocks[key] || 0
+                  });
+                }
+              });
+              
+              sizeMap.forEach((colors, size) => {
+                newVariants.push({
+                  size,
+                  price: 0,
+                  stock: 0,
+                  colors
+                });
+              });
+              
+              if (newVariants.length === 0) newVariants.push({ size: "", price: 0, stock: 0, colors: [] });
+              
+            } else if (config.mode === 'size') {
+              setHasSizes(true);
+              setHasColors(false);
+              
+              const prices = config.sizePrices || {};
+              const stocks = config.sizeStock || {};
+              
+              Object.keys(prices).forEach(size => {
+                newVariants.push({
+                  size,
+                  price: prices[size] || 0,
+                  stock: stocks[size] || 0,
+                  colors: []
+                });
+              });
+              
+              if (newVariants.length === 0) newVariants.push({ size: "", price: 0, stock: 0, colors: [] });
+              
+            } else if (config.mode === 'color') {
+              setHasSizes(false);
+              setHasColors(true);
+              
+              const prices = config.colorPrices || {};
+              const stocks = config.colorStock || {};
+              const colors: VariantColor[] = [];
+              
+              Object.keys(prices).forEach(color => {
+                colors.push({
+                  name: color,
+                  price: prices[color] || 0,
+                  stock: stocks[color] || 0
+                });
+              });
+              
+              newVariants.push({
+                size: "",
+                price: 0,
+                stock: 0,
+                colors
+              });
+            }
+            
+            setVariants(newVariants);
+          }
+        } else {
+          setHasVariants(false);
+          setVariants([{ size: "", price: productData.price, stock: productData.stock, colors: [] }]);
+        }
       }
     } catch (error: any) {
       setSubmitError(error.message || "Failed to load product");
@@ -313,6 +421,74 @@ export default function EditProductPage(props: PageProps) {
       return;
     }
 
+    let totalStock = 0;
+    let pricingConfig: any = { mode: 'single' };
+    const uniqueSizes = new Set<string>();
+    const uniqueColors = new Set<string>();
+
+    if (!hasVariants) {
+      totalStock = data.stock;
+      pricingConfig.singleStock = totalStock;
+    } else {
+      if (hasSizes && hasColors) {
+        pricingConfig.mode = 'combination';
+        pricingConfig.combinationPrices = {};
+        pricingConfig.combinationStock = {};
+        
+        variants.forEach(v => {
+          const s = v.size.trim();
+          if (s) uniqueSizes.add(s);
+          v.colors.forEach(c => {
+            const cn = c.name.trim();
+            if (cn) uniqueColors.add(cn);
+            if (s && cn) {
+              const key = `${s}|${cn}`;
+              pricingConfig.combinationPrices[key] = c.price;
+              pricingConfig.combinationStock[key] = c.stock;
+              totalStock += c.stock;
+            }
+          });
+        });
+      } else if (hasSizes && !hasColors) {
+        pricingConfig.mode = 'size';
+        pricingConfig.sizePrices = {};
+        pricingConfig.sizeStock = {};
+        
+        variants.forEach(v => {
+          const s = v.size.trim();
+          if (s) {
+            uniqueSizes.add(s);
+            pricingConfig.sizePrices[s] = v.price;
+            pricingConfig.sizeStock[s] = v.stock;
+            totalStock += v.stock;
+          }
+        });
+      } else if (!hasSizes && hasColors) {
+        pricingConfig.mode = 'color';
+        pricingConfig.colorPrices = {};
+        pricingConfig.colorStock = {};
+        
+        variants.forEach(v => {
+          v.colors.forEach(c => {
+            const cn = c.name.trim();
+            if (cn) {
+              uniqueColors.add(cn);
+              pricingConfig.colorPrices[cn] = c.price;
+              pricingConfig.colorStock[cn] = c.stock;
+              totalStock += c.stock;
+            }
+          });
+        });
+      }
+    }
+
+    if (hasVariants && hasColors && uniqueColors.size > 0) {
+      if (images.length < uniqueColors.size) {
+        setSubmitError(`Please upload at least ${uniqueColors.size} images (you have ${images.length}) to correspond with your ${uniqueColors.size} unique colors.`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setSubmitError("");
     setSuccess(false);
@@ -345,10 +521,12 @@ export default function EditProductPage(props: PageProps) {
         sub_category: data.sub_category,
         main_image: mainImageUrl,
         images: additionalImages,
-        colors: data.colors.map(c => c.value).filter((c) => c.trim() !== ""),
-        sizes: data.sizes.map(s => s.value).filter((s) => s.trim() !== ""),
-        stock: data.stock,
+        colors: Array.from(uniqueColors),
+        sizes: Array.from(uniqueSizes),
+        sizing_type: sizingType,
+        stock: totalStock,
         details: data.details?.map(d => d.value).filter((d) => d.trim() !== "") || [],
+        pricing_config: pricingConfig
       };
 
       const response = await fetch("/api/admin/products", {
@@ -480,32 +658,7 @@ export default function EditProductPage(props: PageProps) {
                   {errors.description && <p className="text-red-500 text-sm mt-1.5">{errors.description.message}</p>}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Price (₦) <span className="text-red-500">*</span></label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₦</span>
-                      <input
-                        {...register("price")}
-                        type="number"
-                        className={`w-full border rounded-xl pl-8 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors ${errors.price ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
-                        min="0" step="100" placeholder="0"
-                      />
-                    </div>
-                    {errors.price && <p className="text-red-500 text-sm mt-1.5">{errors.price.message}</p>}
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Stock Quantity <span className="text-red-500">*</span></label>
-                    <input
-                      {...register("stock")}
-                      type="number"
-                      className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors ${errors.stock ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
-                      min="0" placeholder="0"
-                    />
-                    {errors.stock && <p className="text-red-500 text-sm mt-1.5">{errors.stock.message}</p>}
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -543,156 +696,251 @@ export default function EditProductPage(props: PageProps) {
               <hr className="border-gray-100" />
 
               {/* Dynamic Fields Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Colors */}
-                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <label className="block text-sm font-bold text-gray-800">Colors <span className="text-red-500">*</span></label>
-                    <button type="button" onClick={() => appendColor({ value: "" })} className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">+ Add</button>
+              <div className="bg-gray-50 p-5 md:p-8 rounded-xl border border-gray-100 mb-8">
+                <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Pricing & Variants</h3>
+                    <p className="text-sm text-gray-500 mt-1">Configure pricing, stock, sizes, and colors.</p>
                   </div>
-                  <div className="space-y-3">
-                    {colorFields.map((field, index) => (
-                      <div key={field.id}>
-                        <div className="flex gap-2">
-                          <input
-                            {...register(`colors.${index}.value`)}
-                            className={`flex-1 border rounded-lg px-3 py-2 text-black ${errors.colors?.[index]?.value ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
-                            placeholder="e.g., Red"
-                          />
-                          {colorFields.length > 1 && (
-                            <button type="button" onClick={() => removeColor(index)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><X size={20} /></button>
-                          )}
-                        </div>
-                        {errors.colors?.[index]?.value && <p className="text-red-500 text-xs mt-1">{errors.colors[index]?.value?.message}</p>}
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-200">
+                    <label className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={hasVariants}
+                        onChange={(e) => {
+                          setHasVariants(e.target.checked);
+                          if (!e.target.checked) {
+                            setHasSizes(false);
+                            setHasColors(false);
+                          } else {
+                            setHasSizes(true);
+                            setHasColors(true);
+                          }
+                        }}
+                      />
+                      Product has multiple options
+                    </label>
                   </div>
-                  {errors.colors && !Array.isArray(errors.colors) && <p className="text-red-500 text-sm mt-2">{errors.colors.message}</p>}
                 </div>
 
-                {/* Sizes */}
-                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <label className="block text-sm font-bold text-gray-800">Sizes <span className="text-red-500">*</span></label>
-                    <button type="button" onClick={() => appendSize({ value: "" })} className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">+ Add</button>
+                {!hasVariants ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-white rounded-xl border border-gray-200">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Base Price (₦) <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₦</span>
+                        <input
+                          {...register("price")}
+                          type="number"
+                          className={`w-full border rounded-xl pl-8 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors ${errors.price ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                          min="0" step="100" placeholder="0"
+                        />
+                      </div>
+                      {errors.price && <p className="text-red-500 text-sm mt-1.5">{errors.price.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Total Stock <span className="text-red-500">*</span></label>
+                      <input
+                        {...register("stock")}
+                        type="number"
+                        className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors ${errors.stock ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                        min="0" placeholder="0"
+                      />
+                      {errors.stock && <p className="text-red-500 text-sm mt-1.5">{errors.stock.message}</p>}
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    {sizeFields.map((field, index) => (
-                      <div key={field.id}>
-                        <div className="flex gap-2">
-                          <input
-                            {...register(`sizes.${index}.value`)}
-                            className={`flex-1 border rounded-lg px-3 py-2 text-black ${errors.sizes?.[index]?.value ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
-                            placeholder="e.g., XL"
-                          />
-                          {sizeFields.length > 1 && (
-                            <button type="button" onClick={() => removeSize(index)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><X size={20} /></button>
-                          )}
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap gap-4 p-4 bg-white rounded-lg border border-gray-200">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={hasSizes}
+                          onChange={(e) => setHasSizes(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Has Sizes/Ages</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={hasColors}
+                          onChange={(e) => setHasColors(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Has Colors</span>
+                      </label>
+                      {hasSizes && (
+                        <div className="ml-auto flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
+                          <label className={`cursor-pointer px-3 py-1 rounded-md text-xs font-medium transition-colors ${sizingType === 'size' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-100'}`}>
+                            <input type="radio" value="size" checked={sizingType === 'size'} onChange={() => setSizingType('size')} className="sr-only" /> Use Sizes (S, M, L)
+                          </label>
+                          <label className={`cursor-pointer px-3 py-1 rounded-md text-xs font-medium transition-colors ${sizingType === 'age' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-100'}`}>
+                            <input type="radio" value="age" checked={sizingType === 'age'} onChange={() => setSizingType('age')} className="sr-only" /> Use Ages (3-6m)
+                          </label>
                         </div>
-                        {errors.sizes?.[index]?.value && <p className="text-red-500 text-xs mt-1">{errors.sizes[index]?.value?.message}</p>}
-                      </div>
-                    ))}
-                  </div>
-                  {errors.sizes && !Array.isArray(errors.sizes) && <p className="text-red-500 text-sm mt-2">{errors.sizes.message}</p>}
-                </div>
-
-                
-                {/* Pricing Configuration */}
-                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 md:col-span-2">
-                  <div className="mb-4">
-                    <label className="block text-sm font-bold text-gray-800 mb-2">Pricing Mode</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                      {[
-                        { id: 'single', label: 'Single' },
-                        { id: 'size', label: 'By Size' },
-                        { id: 'color', label: 'By Color' },
-                        { id: 'combination', label: 'Combined' }
-                      ].map((mode) => (
-                        <button
-                          key={mode.id}
-                          type="button"
-                          onClick={() => setPricingMode(mode.id as PricingMode)}
-                          className={`px-2 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors ${pricingMode === mode.id ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
+                      )}
                     </div>
-                  </div>
 
-                  {pricingMode === 'size' && (
-                    <div className="space-y-3 mt-4">
-                      <p className="text-sm text-gray-600 font-medium">Set price for each size (leave blank to use base price):</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {watchedSizes?.map((s: any, i: number) => s?.value ? (
-                          <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
-                            <span className="font-medium text-gray-700 w-20 truncate">{s.value}</span>
-                            <div className="relative flex-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
-                              <input
-                                type="number"
-                                className="w-full border-gray-200 border rounded-lg pl-8 pr-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Base Price"
-                                value={sizePrices[s.value] || ''}
-                                onChange={(e) => setSizePrices(prev => ({ ...prev, [s.value]: Number(e.target.value) || 0 }))}
-                              />
-                            </div>
-                          </div>
-                        ) : null)}
-                      </div>
-                    </div>
-                  )}
+                    <div className="space-y-4">
+                      {variants.map((variant, vIdx) => (
+                        <div key={vIdx} className="border border-blue-200 bg-blue-50/30 rounded-xl p-5 relative">
+                          {variants.length > 1 && (
+                            <button 
+                              type="button" 
+                              onClick={() => setVariants(variants.filter((_, i) => i !== vIdx))}
+                              className="absolute right-4 top-4 text-red-400 hover:text-red-600 p-1"
+                              title="Remove this group"
+                            >
+                              <X size={18} />
+                            </button>
+                          )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            {hasSizes && (
+                              <div className="md:col-span-1">
+                                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">
+                                  {sizingType === 'age' ? 'Age Group' : 'Size'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={variant.size}
+                                  onChange={(e) => {
+                                    const newV = [...variants];
+                                    newV[vIdx].size = e.target.value;
+                                    setVariants(newV);
+                                  }}
+                                  className="w-full border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                                  placeholder={sizingType === 'age' ? "e.g., 3-6 Months" : "e.g., Medium"}
+                                />
+                              </div>
+                            )}
 
-                  {pricingMode === 'color' && (
-                    <div className="space-y-3 mt-4">
-                      <p className="text-sm text-gray-600 font-medium">Set price for each color (leave blank to use base price):</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {watchedColors?.map((c: any, i: number) => c?.value ? (
-                          <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
-                            <span className="font-medium text-gray-700 w-20 truncate">{c.value}</span>
-                            <div className="relative flex-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
-                              <input
-                                type="number"
-                                className="w-full border-gray-200 border rounded-lg pl-8 pr-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Base Price"
-                                value={colorPrices[c.value] || ''}
-                                onChange={(e) => setColorPrices(prev => ({ ...prev, [c.value]: Number(e.target.value) || 0 }))}
-                              />
-                            </div>
-                          </div>
-                        ) : null)}
-                      </div>
-                    </div>
-                  )}
-
-                  {pricingMode === 'combination' && (
-                    <div className="space-y-3 mt-4">
-                      <p className="text-sm text-gray-600 font-medium">Set price for combinations (leave blank to use base price):</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {watchedSizes?.map((s: any) => 
-                          s?.value ? watchedColors?.map((c: any) => 
-                            c?.value ? (
-                              <div key={`${s.value}|${c.value}`} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
-                                <span className="font-medium text-gray-700 w-32 truncate">{s.value} + {c.value}</span>
-                                <div className="relative flex-1">
-                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                            {(!hasColors) && (
+                              <>
+                                <div className="md:col-span-1">
+                                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Price (₦)</label>
                                   <input
                                     type="number"
-                                    className="w-full border-gray-200 border rounded-lg pl-8 pr-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Base Price"
-                                    value={combinationPrices[`${s.value}|${c.value}`] || ''}
-                                    onChange={(e) => setCombinationPrices(prev => ({ ...prev, [`${s.value}|${c.value}`]: Number(e.target.value) || 0 }))}
+                                    value={variant.price || ''}
+                                    onChange={(e) => {
+                                      const newV = [...variants];
+                                      newV[vIdx].price = Number(e.target.value);
+                                      setVariants(newV);
+                                    }}
+                                    className="w-full border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                                    placeholder="Price"
                                   />
                                 </div>
+                                <div className="md:col-span-1">
+                                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Stock Qty</label>
+                                  <input
+                                    type="number"
+                                    value={variant.stock || ''}
+                                    onChange={(e) => {
+                                      const newV = [...variants];
+                                      newV[vIdx].stock = Number(e.target.value);
+                                      setVariants(newV);
+                                    }}
+                                    className="w-full border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                                    placeholder="Qty"
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {hasColors && (
+                            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-semibold text-gray-700">Colors for {hasSizes ? (variant.size || 'this size') : 'this product'}</h4>
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    const newV = [...variants];
+                                    newV[vIdx].colors.push({ name: '', price: 0, stock: 0 });
+                                    setVariants(newV);
+                                  }}
+                                  className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1"
+                                >
+                                  <Plus size={14} /> Add Color
+                                </button>
                               </div>
-                            ) : null
-                          ) : null
-                        )}
-                      </div>
+                              <div className="space-y-2">
+                                {variant.colors.map((color, cIdx) => (
+                                  <div key={cIdx} className="flex flex-wrap sm:flex-nowrap gap-2 items-center bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+                                    <input
+                                      type="text"
+                                      value={color.name}
+                                      onChange={(e) => {
+                                        const newV = [...variants];
+                                        newV[vIdx].colors[cIdx].name = e.target.value;
+                                        setVariants(newV);
+                                      }}
+                                      className="flex-1 min-w-[120px] border-gray-300 rounded-lg px-3 py-1.5 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                                      placeholder="Color Name"
+                                    />
+                                    <div className="relative w-28 sm:w-32">
+                                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs">₦</span>
+                                      <input
+                                        type="number"
+                                        value={color.price || ''}
+                                        onChange={(e) => {
+                                          const newV = [...variants];
+                                          newV[vIdx].colors[cIdx].price = Number(e.target.value);
+                                          setVariants(newV);
+                                        }}
+                                        className="w-full border-gray-300 rounded-lg pl-6 pr-2 py-1.5 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                                        placeholder="Price"
+                                      />
+                                    </div>
+                                    <input
+                                      type="number"
+                                      value={color.stock || ''}
+                                      onChange={(e) => {
+                                        const newV = [...variants];
+                                        newV[vIdx].colors[cIdx].stock = Number(e.target.value);
+                                        setVariants(newV);
+                                      }}
+                                      className="w-20 sm:w-24 border-gray-300 rounded-lg px-2 py-1.5 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                                      placeholder="Stock"
+                                    />
+                                    <button 
+                                      type="button" 
+                                      onClick={() => {
+                                        const newV = [...variants];
+                                        newV[vIdx].colors = newV[vIdx].colors.filter((_, i) => i !== cIdx);
+                                        setVariants(newV);
+                                      }}
+                                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-md transition-colors"
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  </div>
+                                ))}
+                                {variant.colors.length === 0 && (
+                                  <p className="text-xs text-amber-600 italic py-2">No colors added. Click 'Add Color' above.</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {hasSizes && (
+                        <button 
+                          type="button" 
+                          onClick={() => setVariants([...variants, { size: "", price: 0, stock: 0, colors: [{ name: '', price: 0, stock: 0 }] }])}
+                          className="w-full py-3 border-2 border-dashed border-gray-300 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Plus size={18} /> Add Another {sizingType === 'age' ? 'Age Group' : 'Size'}
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+              </div>
 
                 {/* Details */}
 
@@ -723,7 +971,6 @@ export default function EditProductPage(props: PageProps) {
                     )}
                   </div>
                 </div>
-              </div>
 
               <hr className="border-gray-100" />
 

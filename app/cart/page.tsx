@@ -45,7 +45,7 @@ export default function CartPage() {
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg truncate">{item.name}</h3>
                   <p className="text-gray-600 text-xs sm:text-sm mt-1 truncate">
                     {item.color && `Color: ${item.color}`}
-                    {item.size && ` • Size: ${item.size}`}
+                    {item.size && ` • Size/Age: ${item.size}`}
                   </p>
                   <div className="flex items-center justify-between mt-2 sm:mt-3 md:mt-4 flex-wrap sm:flex-nowrap gap-2">
                     <div className="flex items-center order-1 sm:order-none">

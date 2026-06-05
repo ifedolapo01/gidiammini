@@ -48,13 +48,63 @@ export default function CheckoutPage() {
   const tax = subtotal * 0.075;
   const total = subtotal + tax + shippingCost;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (deliveryOption === 'delivery' && !formData.address.trim()) {
       alert('Please enter your delivery address');
       return;
     }
+    
+    setIsProcessing(true);
+    
+    try {
+      const supabase = createClient();
+      const productIds = items.map((i: CartItem) => i.productId);
+      
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('id, stock, pricing_config')
+        .in('id', productIds);
+        
+      if (error) throw error;
+      
+      for (const item of items) {
+        const product = products?.find(p => p.id === item.productId);
+        if (!product) {
+          alert(`Product ${item.name} is no longer available.`);
+          setIsProcessing(false);
+          return;
+        }
+        
+        let currentStock = product.stock;
+        if (product.pricing_config) {
+          const config = product.pricing_config as any;
+          if (config.mode === 'single') {
+            currentStock = config.singleStock !== undefined ? config.singleStock : product.stock;
+          } else if (config.mode === 'size' && item.size) {
+            currentStock = config.sizeStock?.[item.size] ?? product.stock;
+          } else if (config.mode === 'color' && item.color) {
+            currentStock = config.colorStock?.[item.color] ?? product.stock;
+          } else if (config.mode === 'combination' && item.size && item.color) {
+            currentStock = config.combinationStock?.[`${item.size}|${item.color}`] ?? product.stock;
+          }
+        }
+        
+        if (currentStock < item.quantity) {
+          alert(`Insufficient stock for ${item.name} ${item.size ? `(${item.size})` : ''} ${item.color ? `(${item.color})` : ''}. Only ${currentStock} available.`);
+          setIsProcessing(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Error validating stock:', err);
+      alert('Failed to validate stock. Please try again.');
+      setIsProcessing(false);
+      return;
+    }
+    
+    setIsProcessing(false);
     
     const newOrderNumber = `UT${Date.now().toString().slice(-8)}`;
     setOrderNumber(newOrderNumber);

@@ -73,7 +73,7 @@ export default function OrderDetailsModal({
                       <p className="font-medium text-black">{item.product_name}</p>
                       <p className="text-sm text-gray-600">
                         Quantity: {item.quantity}
-                        {item.size && ` • Size: ${item.size}`}
+                        {item.size && ` • Size/Age: ${item.size}`}
                         {item.color && ` • Color: ${item.color}`}
                       </p>
                     </div>

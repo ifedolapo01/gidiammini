@@ -4,9 +4,13 @@ export type PricingMode = 'single' | 'size' | 'color' | 'combination';
 
 export interface PricingConfig {
   mode: PricingMode;
+  singleStock?: number;
   sizePrices?: Record<string, number>;
+  sizeStock?: Record<string, number>;
   colorPrices?: Record<string, number>;
+  colorStock?: Record<string, number>;
   combinationPrices?: Record<string, number>;
+  combinationStock?: Record<string, number>;
 }
 
 export interface Product {
@@ -22,6 +26,7 @@ export interface Product {
   details: string[];
   stock: number;
   is_active: boolean;
+  sizing_type?: 'size' | 'age' | null;
   pricing_config?: PricingConfig | null;
   created_at: string;
   updated_at: string;
@@ -40,6 +45,7 @@ export interface ProductCardProduct extends Pick<Product,
   sizes?: string[];
   images?: string[];
   details?: string[];
+  sizing_type?: 'size' | 'age' | null;
   pricing_config?: PricingConfig | null;
   created_at?: string;
   updated_at?: string;

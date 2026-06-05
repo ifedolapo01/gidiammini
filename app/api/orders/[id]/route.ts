@@ -64,38 +64,72 @@ export async function PUT(
     const willBeCancelled = status === 'cancelled';
     
     // Update stock based on status changes
-    if (willBeConfirmed && !wasConfirmed) {
-      // Reduce stock atomically when confirming order
-      const itemsToDecrement = (currentOrder.order_items || [])
-        .filter((item: any) => item.product_id)
-        .map((item: any) => ({
-          product_id: item.product_id,
-          quantity: item.quantity
-        }));
+    if ((willBeConfirmed && !wasConfirmed) || (willBeCancelled && wasConfirmed)) {
+      const productIds = (currentOrder.order_items || []).map((item: any) => item.product_id);
       
-      if (itemsToDecrement.length > 0) {
-        const { data: success, error: rpcError } = await supabase.rpc('check_and_decrease_stock_multi', {
-          items: itemsToDecrement
-        });
-        
-        if (rpcError || !success) {
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: `Insufficient stock to confirm this order. Please verify product inventory.` 
-            },
-            { status: 400 }
-          );
+      if (productIds.length > 0) {
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+          
+        if (productsError) {
+          return NextResponse.json({ success: false, error: 'Failed to fetch products for stock update.' }, { status: 500 });
         }
-      }
-    } else if (willBeCancelled && wasConfirmed) {
-      // Restore stock when cancelling a confirmed order
-      for (const item of currentOrder.order_items || []) {
-        if (item.product_id) {
-          await supabase.rpc('increase_product_stock', {
-            product_id: item.product_id,
-            quantity: item.quantity
+        
+        const productUpdates = [];
+        
+        for (const product of products || []) {
+          let newStock = product.stock;
+          let pricingConfig = product.pricing_config ? { ...product.pricing_config } : null;
+          
+          const itemsForProduct = currentOrder.order_items.filter((item: any) => item.product_id === product.id);
+          
+          for (const item of itemsForProduct) {
+            const qty = willBeConfirmed ? -item.quantity : item.quantity; // Decrement if confirming, increment if cancelling
+            
+            if (pricingConfig) {
+              if (pricingConfig.mode === 'single') {
+                if (pricingConfig.singleStock !== undefined) pricingConfig.singleStock += qty;
+                newStock += qty;
+              } else if (pricingConfig.mode === 'size' && item.size) {
+                if (pricingConfig.sizeStock?.[item.size] !== undefined) pricingConfig.sizeStock[item.size] += qty;
+                newStock += qty;
+              } else if (pricingConfig.mode === 'color' && item.color) {
+                if (pricingConfig.colorStock?.[item.color] !== undefined) pricingConfig.colorStock[item.color] += qty;
+                newStock += qty;
+              } else if (pricingConfig.mode === 'combination' && item.size && item.color) {
+                const key = `${item.size}|${item.color}`;
+                if (pricingConfig.combinationStock?.[key] !== undefined) pricingConfig.combinationStock[key] += qty;
+                newStock += qty;
+              } else {
+                newStock += qty; // fallback
+              }
+            } else {
+              newStock += qty;
+            }
+          }
+          
+          if (willBeConfirmed && newStock < 0) {
+            return NextResponse.json(
+              { success: false, error: `Insufficient stock to confirm order for product: ${product.name}` },
+              { status: 400 }
+            );
+          }
+          
+          productUpdates.push({
+            id: product.id,
+            stock: newStock,
+            pricing_config: pricingConfig
           });
+        }
+        
+        // Apply all updates
+        for (const update of productUpdates) {
+          await supabase.from('products').update({ 
+            stock: update.stock, 
+            pricing_config: update.pricing_config 
+          }).eq('id', update.id);
         }
       }
     }
