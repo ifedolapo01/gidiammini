@@ -7,8 +7,8 @@ import { CartItem } from '@/types/product';
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string, size?: string, color?: string) => void;
+  updateQuantity: (productId: string, size: string | undefined, color: string | undefined, quantity: number) => void;
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
@@ -40,10 +40,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (item: CartItem) => {
     setItems(current => {
-      const existing = current.find(i => i.productId === item.productId);
+      const existing = current.find(i => 
+        i.productId === item.productId && 
+        i.size === item.size && 
+        i.color === item.color
+      );
       if (existing) {
         return current.map(i => 
-          i.productId === item.productId 
+          (i.productId === item.productId && i.size === item.size && i.color === item.color)
             ? { ...i, quantity: i.quantity + item.quantity }
             : i
         );
@@ -52,18 +56,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems(current => current.filter(item => item.productId !== productId));
+  const removeFromCart = (productId: string, size?: string, color?: string) => {
+    setItems(current => current.filter(item => 
+      !(item.productId === productId && item.size === size && item.color === color)
+    ));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, size: string | undefined, color: string | undefined, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, size, color);
       return;
     }
     setItems(current => 
       current.map(item => 
-        item.productId === productId ? { ...item, quantity } : item
+        (item.productId === productId && item.size === size && item.color === color) 
+          ? { ...item, quantity } 
+          : item
       )
     );
   };

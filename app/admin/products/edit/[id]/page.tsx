@@ -7,6 +7,8 @@ import { Upload, X, ArrowLeft, Star, Plus } from "lucide-react";
 import Link from "next/link";
 import { uploadProductImage } from "@/app/actions/upload";
 import imageCompression from "browser-image-compression";
+import { PricingMode, PricingConfig } from "@/types/product";
+
 import { z } from "zod";
 import { useForm, useFieldArray, SubmitHandler, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -126,9 +128,18 @@ export default function EditProductPage(props: PageProps) {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [pricingMode, setPricingMode] = useState<PricingMode>('single');
+  const [sizePrices, setSizePrices] = useState<Record<string, number>>({});
+  const [colorPrices, setColorPrices] = useState<Record<string, number>>({});
+  const [combinationPrices, setCombinationPrices] = useState<Record<string, number>>({});
+
 
   // Watch the category field to update the sub_category options
   const selectedCategorySlug = useWatch({ control, name: "category" });
+
+  const watchedSizes = useWatch({ control: control as any, name: 'sizes' });
+  const watchedColors = useWatch({ control: control as any, name: 'colors' });
+
   const selectedCategory = categories.find(c => c.slug === selectedCategorySlug);
 
   useEffect(() => {
@@ -585,7 +596,106 @@ export default function EditProductPage(props: PageProps) {
                   {errors.sizes && !Array.isArray(errors.sizes) && <p className="text-red-500 text-sm mt-2">{errors.sizes.message}</p>}
                 </div>
 
+                
+                {/* Pricing Configuration */}
+                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 md:col-span-2">
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold text-gray-800 mb-2">Pricing Mode</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                      {[
+                        { id: 'single', label: 'Single' },
+                        { id: 'size', label: 'By Size' },
+                        { id: 'color', label: 'By Color' },
+                        { id: 'combination', label: 'Combined' }
+                      ].map((mode) => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setPricingMode(mode.id as PricingMode)}
+                          className={`px-2 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors ${pricingMode === mode.id ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+                        >
+                          {mode.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {pricingMode === 'size' && (
+                    <div className="space-y-3 mt-4">
+                      <p className="text-sm text-gray-600 font-medium">Set price for each size (leave blank to use base price):</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {watchedSizes?.map((s: any, i: number) => s?.value ? (
+                          <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
+                            <span className="font-medium text-gray-700 w-20 truncate">{s.value}</span>
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                              <input
+                                type="number"
+                                className="w-full border-gray-200 border rounded-lg pl-8 pr-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Base Price"
+                                value={sizePrices[s.value] || ''}
+                                onChange={(e) => setSizePrices(prev => ({ ...prev, [s.value]: Number(e.target.value) || 0 }))}
+                              />
+                            </div>
+                          </div>
+                        ) : null)}
+                      </div>
+                    </div>
+                  )}
+
+                  {pricingMode === 'color' && (
+                    <div className="space-y-3 mt-4">
+                      <p className="text-sm text-gray-600 font-medium">Set price for each color (leave blank to use base price):</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {watchedColors?.map((c: any, i: number) => c?.value ? (
+                          <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
+                            <span className="font-medium text-gray-700 w-20 truncate">{c.value}</span>
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                              <input
+                                type="number"
+                                className="w-full border-gray-200 border rounded-lg pl-8 pr-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Base Price"
+                                value={colorPrices[c.value] || ''}
+                                onChange={(e) => setColorPrices(prev => ({ ...prev, [c.value]: Number(e.target.value) || 0 }))}
+                              />
+                            </div>
+                          </div>
+                        ) : null)}
+                      </div>
+                    </div>
+                  )}
+
+                  {pricingMode === 'combination' && (
+                    <div className="space-y-3 mt-4">
+                      <p className="text-sm text-gray-600 font-medium">Set price for combinations (leave blank to use base price):</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {watchedSizes?.map((s: any) => 
+                          s?.value ? watchedColors?.map((c: any) => 
+                            c?.value ? (
+                              <div key={`${s.value}|${c.value}`} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
+                                <span className="font-medium text-gray-700 w-32 truncate">{s.value} + {c.value}</span>
+                                <div className="relative flex-1">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                                  <input
+                                    type="number"
+                                    className="w-full border-gray-200 border rounded-lg pl-8 pr-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Base Price"
+                                    value={combinationPrices[`${s.value}|${c.value}`] || ''}
+                                    onChange={(e) => setCombinationPrices(prev => ({ ...prev, [`${s.value}|${c.value}`]: Number(e.target.value) || 0 }))}
+                                  />
+                                </div>
+                              </div>
+                            ) : null
+                          ) : null
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Details */}
+
                 <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 md:col-span-2">
                   <div className="flex items-center justify-between mb-4">
                     <div>

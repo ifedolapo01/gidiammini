@@ -10,6 +10,8 @@ import { Truck, Shield, ChevronLeft, Share2, Heart, Check, Package, AlertTriangl
 import Link from 'next/link';
 import { Product } from '@/types/product';
 import { Discount, getBestDiscount, calculateDiscountedPrice } from '@/lib/discounts';
+import { getVariantPrice } from '@/lib/pricing';
+
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -66,8 +68,9 @@ export default function ProductDetailPage() {
     }
   };
 
-  const bestDiscount = product ? getBestDiscount(product, discounts) : null;
-  const finalPrice = product ? calculateDiscountedPrice(product.price, bestDiscount) : 0;
+  const currentBasePrice = product ? getVariantPrice(product, selectedSize, selectedColor) : 0;
+  const bestDiscount = product ? getBestDiscount(product, discounts, currentBasePrice) : null;
+  const finalPrice = product ? calculateDiscountedPrice(currentBasePrice, bestDiscount) : 0;
 
   const handleShare = async (platform?: string) => {
     if (!product) return;
@@ -75,7 +78,7 @@ export default function ProductDetailPage() {
     setIsSharing(true);
     const url = window.location.href;
     const title = `Check out ${product.name} on GidiamMini`;
-    const text = `${product.name} - ₦${product.price.toLocaleString()}\n${product.description || ''}`;
+    const text = `${product.name} - ₦${currentBasePrice.toLocaleString()}\n${product.description || ''}`;
     
     try {
       if (platform === 'whatsapp') {
@@ -532,7 +535,7 @@ export default function ProductDetailPage() {
                       ₦{finalPrice.toLocaleString()}
                     </div>
                     <div className="text-xl text-gray-400 line-through mb-1">
-                      ₦{product.price.toLocaleString()}
+                      ₦{currentBasePrice.toLocaleString()}
                     </div>
                     <div className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm font-bold mb-1">
                       {bestDiscount.type === 'PERCENTAGE' ? `${bestDiscount.value}% OFF` : `Save ₦${bestDiscount.value}`}
@@ -540,7 +543,7 @@ export default function ProductDetailPage() {
                   </>
                 ) : (
                   <div className="text-3xl md:text-4xl font-bold text-gray-900">
-                    ₦{product.price.toLocaleString()}
+                    ₦{currentBasePrice.toLocaleString()}
                   </div>
                 )}
               </div>

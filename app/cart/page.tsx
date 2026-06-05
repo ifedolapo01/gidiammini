@@ -50,14 +50,14 @@ export default function CartPage() {
                   <div className="flex items-center justify-between mt-2 sm:mt-3 md:mt-4 flex-wrap sm:flex-nowrap gap-2">
                     <div className="flex items-center order-1 sm:order-none">
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity - 1)}
                         className="w-7 h-7 sm:w-8 sm:h-8 border rounded-l text-sm flex items-center justify-center hover:bg-gray-50"
                       >
                         -
                       </button>
                       <span className="w-8 sm:w-10 text-center text-sm sm:text-base">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity + 1)}
                         className="w-7 h-7 sm:w-8 sm:h-8 border rounded-r text-sm flex items-center justify-center hover:bg-gray-50"
                       >
                         +
@@ -69,7 +69,7 @@ export default function CartPage() {
                         ₦{(item.price * item.quantity).toLocaleString()}
                       </span>
                       <button
-                        onClick={() => removeFromCart(item.productId)}
+                        onClick={() => removeFromCart(item.productId, item.size, item.color)}
                         className="text-red-500 hover:text-red-700 ml-3 sm:ml-4 md:ml-6"
                         aria-label="Remove item"
                       >

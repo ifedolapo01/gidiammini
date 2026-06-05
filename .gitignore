@@ -52,3 +52,6 @@ CODE_REVIEW.md
 *.db
 *.db-journal
 dev.db
+
+# Scratch scripts
+scripts/*.js

@@ -1,4 +1,14 @@
 // types/product.ts
+
+export type PricingMode = 'single' | 'size' | 'color' | 'combination';
+
+export interface PricingConfig {
+  mode: PricingMode;
+  sizePrices?: Record<string, number>;
+  colorPrices?: Record<string, number>;
+  combinationPrices?: Record<string, number>;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -12,6 +22,7 @@ export interface Product {
   details: string[];
   stock: number;
   is_active: boolean;
+  pricing_config?: PricingConfig | null;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +40,7 @@ export interface ProductCardProduct extends Pick<Product,
   sizes?: string[];
   images?: string[];
   details?: string[];
+  pricing_config?: PricingConfig | null;
   created_at?: string;
   updated_at?: string;
 }

@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
       sizes: body.sizes || [],
       details: body.details || [],
       sub_category: body.sub_category || null,
+      pricing_config: body.pricing_config || null,
       stock: Number(body.stock) || 0,
       is_active: true,
       created_at: new Date().toISOString(),
@@ -190,6 +191,7 @@ export async function PUT(request: NextRequest) {
       sizes: body.sizes || [],
       details: body.details || [],
       sub_category: body.sub_category || null,
+      pricing_config: body.pricing_config || null,
       stock: Number(body.stock) || 0,
       updated_at: new Date().toISOString()
     };

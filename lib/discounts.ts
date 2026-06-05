@@ -12,7 +12,7 @@ export interface Discount {
   end_date: string | null;
 }
 
-export function getBestDiscount(product: any, discounts: Discount[]): Discount | null {
+export function getBestDiscount(product: any, discounts: Discount[], currentPrice?: number): Discount | null {
   if (!discounts || discounts.length === 0) return null;
 
   const now = new Date();
@@ -38,11 +38,13 @@ export function getBestDiscount(product: any, discounts: Discount[]): Discount |
   if (validDiscounts.length === 0) return null;
 
   // Find the one that gives the maximum discount value
+  const baseCalculationPrice = currentPrice !== undefined ? currentPrice : product.price;
+
   let bestDiscount = validDiscounts[0];
-  let maxSavings = calculateSavings(product.price, bestDiscount);
+  let maxSavings = calculateSavings(baseCalculationPrice, bestDiscount);
 
   for (let i = 1; i < validDiscounts.length; i++) {
-    const savings = calculateSavings(product.price, validDiscounts[i]);
+    const savings = calculateSavings(baseCalculationPrice, validDiscounts[i]);
     if (savings > maxSavings) {
       maxSavings = savings;
       bestDiscount = validDiscounts[i];

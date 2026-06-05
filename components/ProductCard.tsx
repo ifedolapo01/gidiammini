@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { ProductCardProduct } from '@/types/product';
 import { Discount, getBestDiscount, calculateDiscountedPrice } from '@/lib/discounts';
+import { getProductPriceRange } from '@/lib/pricing';
 
 interface ProductCardProps {
   product: ProductCardProduct;
@@ -18,7 +19,13 @@ export default function ProductCard({ product, discounts = [] }: ProductCardProp
   const stock = product.stock || 0;
   
   const bestDiscount = getBestDiscount(product, discounts);
-  const finalPrice = calculateDiscountedPrice(product.price, bestDiscount);
+  
+  // Get price range
+  const { min, max } = getProductPriceRange(product as any);
+  
+  const hasRange = min !== max;
+  const finalMinPrice = calculateDiscountedPrice(min, bestDiscount);
+  const finalMaxPrice = calculateDiscountedPrice(max, bestDiscount);
 
   return (
     <Link href={`/products/${product.id}`} className="group">
@@ -52,12 +59,18 @@ export default function ProductCard({ product, discounts = [] }: ProductCardProp
           )}
           <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-md text-sm font-bold text-black shadow-sm flex items-center gap-2">
             {bestDiscount ? (
-              <>
-                <span className="text-gray-400 line-through text-xs">₦{product.price.toLocaleString()}</span>
-                <span className="text-red-600">₦{finalPrice.toLocaleString()}</span>
-              </>
+              <div className="flex flex-col items-end">
+                <span className="text-gray-400 line-through text-[10px] leading-tight">
+                  {hasRange ? `₦${min.toLocaleString()} - ₦${max.toLocaleString()}` : `₦${min.toLocaleString()}`}
+                </span>
+                <span className="text-red-600 leading-tight">
+                  {hasRange ? `₦${finalMinPrice.toLocaleString()} - ₦${finalMaxPrice.toLocaleString()}` : `₦${finalMinPrice.toLocaleString()}`}
+                </span>
+              </div>
             ) : (
-              <span>₦{product.price.toLocaleString()}</span>
+              <span>
+                {hasRange ? `₦${min.toLocaleString()} - ₦${max.toLocaleString()}` : `₦${min.toLocaleString()}`}
+              </span>
             )}
           </div>
         </div>
