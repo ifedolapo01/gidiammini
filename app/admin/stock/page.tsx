@@ -222,98 +222,117 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
 
       {/* Products Table */}
       <div className="bg-white rounded-xl shadow border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Product
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Colors
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sizes
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product) => {
-                const status = getStockStatus(product.stock);
-                
-                return (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        {product.main_image || (product.images && product.images[0]) ? (
-                          <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden">
-                            <img src={product.main_image || (product.images && product.images[0]) || ''} alt={product.name} className="object-cover w-full h-full" />
+        {products.length === 0 ? (
+          <div className="p-12 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-4">
+              <Package size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">No products found</h3>
+            <p className="text-gray-500 max-w-md mx-auto mb-6">
+              You haven't added any products to your store yet. Add some products to start managing their stock.
+            </p>
+            <a 
+              href="/admin/products/new" 
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium transition-colors shadow-sm"
+            >
+              <Plus size={18} />
+              Add Your First Product
+            </a>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Stock Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Colors
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Sizes
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {products.map((product) => {
+                  const status = getStockStatus(product.stock);
+                  
+                  return (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          {product.main_image || (product.images && product.images[0]) ? (
+                            <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden">
+                              <img src={product.main_image || (product.images && product.images[0]) || ''} alt={product.name} className="object-cover w-full h-full" />
+                            </div>
+                          ) : (
+                            <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
+                              <Package className="h-5 w-5 text-gray-500" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium text-gray-900">{product.name}</p>
+                            <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
                           </div>
-                        ) : (
-                          <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
-                            <Package className="h-5 w-5 text-gray-500" />
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-900">{product.name}</p>
-                          <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 capitalize">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                          {status.text} ({product.stock})
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 capitalize">
+                          {product.category}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {product.colors.map((color, index) => (
-                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
-                            {color}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                            {status.text} ({product.stock})
                           </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {product.sizes.map((size, index) => (
-                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
-                            {size}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => startEditing(product)}
-                        className="text-blue-600 hover:text-blue-900 flex items-center"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {product.colors.map((color, index) => (
+                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
+                              {color}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {product.sizes.map((size, index) => (
+                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
+                              {size}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => startEditing(product)}
+                          className="text-blue-600 hover:text-blue-900 flex items-center"
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Instructions */}

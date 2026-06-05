@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Package,
   Bell,
+  RefreshCw,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -55,7 +56,7 @@ export function MarqueeAlertBar() {
               stockData.outOfStockCount > 1 ? "s are" : " is"
             } OUT OF STOCK`,
             link: "/admin/stock",
-            color: "from-red-600 to-red-800",
+            color: "bg-red-50 text-red-700 border-red-200",
             count: stockData.outOfStockCount,
             priority: 1, // Highest priority
           });
@@ -70,7 +71,7 @@ export function MarqueeAlertBar() {
               stockData.lowStockCount > 1 ? "s are" : " is"
             } running LOW on stock (5 or less)`,
             link: "/admin/stock",
-            color: "from-orange-500 to-orange-700",
+            color: "bg-orange-50 text-orange-700 border-orange-200",
             count: stockData.lowStockCount,
             priority: 2,
           });
@@ -90,7 +91,7 @@ export function MarqueeAlertBar() {
               ordersData.pendingCount > 1 ? "s are" : " is"
             } PENDING confirmation`,
             link: "/admin/orders",
-            color: "from-yellow-500 to-yellow-700",
+            color: "bg-yellow-50 text-yellow-700 border-yellow-200",
             count: ordersData.pendingCount,
             priority: 3,
           });
@@ -114,7 +115,7 @@ export function MarqueeAlertBar() {
                 stats.todayOrders > 1 ? "s" : ""
               } placed today`,
               link: "/admin/orders",
-              color: "from-purple-500 to-purple-700",
+              color: "bg-purple-50 text-purple-700 border-purple-200",
               count: stats.todayOrders,
               priority: 4,
             });
@@ -128,7 +129,7 @@ export function MarqueeAlertBar() {
               type: "system",
               message: `📦 ${stats.totalProducts} active products in store`,
               link: "/admin/products",
-              color: "from-blue-500 to-blue-700",
+              color: "bg-blue-50 text-blue-700 border-blue-200",
               count: stats.totalProducts,
               priority: 5,
             });
@@ -136,16 +137,9 @@ export function MarqueeAlertBar() {
         }
       }
 
-      // 3. Always add a system status alert
-      newAlerts.push({
-        id: "system-status",
-        type: "system",
-        message: "✅ System is operational",
-        link: "/admin/dashboard",
-        color: "from-green-500 to-green-700",
-        priority: 6,
-      });
-
+      // Only add system status if there are no other alerts
+      // Actually, we'll let the length === 0 check handle the "All systems normal" UI
+      
       // Sort by priority (lowest number = highest priority)
       newAlerts.sort((a, b) => a.priority - b.priority);
 
@@ -160,7 +154,7 @@ export function MarqueeAlertBar() {
           type: "system",
           message: "⚠️ Unable to fetch alerts - check connection",
           link: "/admin/dashboard",
-          color: "from-gray-500 to-gray-700",
+          color: "bg-red-50 text-red-700 border-red-200",
           priority: 1,
         },
       ]);
@@ -251,11 +245,11 @@ export function MarqueeAlertBar() {
 
   if (loading) {
     return (
-      <div className="relative z-50 h-10 bg-gradient-to-r from-gray-700 to-gray-800">
+      <div className="relative z-50 h-10 bg-gray-50 border-b border-gray-200">
         <div className="container mx-auto px-4 h-full flex items-center justify-center">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-white">Loading alerts...</span>
+            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="text-sm text-gray-500 font-medium">Checking systems...</span>
           </div>
         </div>
       </div>
@@ -264,10 +258,11 @@ export function MarqueeAlertBar() {
 
   if (alerts.length === 0) {
     return (
-      <div className="relative z-50 h-10 bg-gradient-to-r from-green-600 to-green-700 text-white">
+      <div className="relative z-50 h-10 bg-emerald-50 border-b border-emerald-100 text-emerald-700">
         <div className="container mx-auto px-4 h-full flex items-center justify-center">
-          <span className="text-sm font-medium">
-            ✅ All systems normal - No alerts
+          <span className="text-sm font-medium flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+            All systems normal - No alerts
           </span>
         </div>
       </div>
@@ -276,16 +271,16 @@ export function MarqueeAlertBar() {
 
   return (
     <div
-      className="relative z-50 h-10 overflow-hidden bg-gradient-to-r from-gray-900 to-gray-800"
+      className="relative z-50 h-10 overflow-hidden bg-white border-b border-gray-200 shadow-sm"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Control indicators */}
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
-        <div className="text-xs bg-black/50 text-white px-2 py-1 rounded flex items-center gap-1">
-          {isPaused ? "⏸️" : "▶️"}
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20">
+        <div className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-gray-200 font-medium shadow-sm">
+          {isPaused ? <span className="w-2 h-2 rounded-sm bg-gray-500"></span> : <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>}
           <span className="hidden sm:inline">
-            {alerts.length} alert{alerts.length !== 1 ? "s" : ""}
+            {alerts.length} Alert{alerts.length !== 1 ? "s" : ""}
           </span>
         </div>
       </div>
@@ -301,7 +296,7 @@ export function MarqueeAlertBar() {
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className={`flex items-center px-6 py-1 mx-4 rounded-full bg-gradient-to-r ${alert.color} text-white shadow-lg border border-white/10`}
+              className={`flex items-center px-4 py-1.5 mx-3 rounded-full ${alert.color} shadow-sm border`}
             >
               <div className="mr-2">{getAlertIcon(alert.type)}</div>
 
@@ -311,22 +306,22 @@ export function MarqueeAlertBar() {
 
               <Link
                 href={alert.link}
-                className="flex items-center text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors"
+                className="flex items-center text-xs bg-white/50 hover:bg-white/80 text-gray-800 px-2 py-1 rounded-md transition-colors"
               >
                 View
-                <ChevronRight className="w-3 h-3 ml-1" />
+                <ChevronRight className="w-3 h-3 ml-0.5" />
               </Link>
 
               <button
                 onClick={() => dismissAlert(alert.id)}
-                className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
+                className="ml-2 p-1 hover:bg-black/5 rounded-full transition-colors opacity-60 hover:opacity-100"
                 aria-label="Dismiss alert"
               >
                 <X className="w-3 h-3" />
               </button>
 
               {/* Separator */}
-              <div className="ml-4 w-1 h-1 rounded-full bg-white/30" />
+              <div className="ml-6 w-1 h-1 rounded-full bg-gray-300" />
             </div>
           ))}
 
@@ -334,7 +329,7 @@ export function MarqueeAlertBar() {
           {alerts.map((alert) => (
             <div
               key={`${alert.id}-dup`}
-              className={`flex items-center px-6 py-1 mx-4 rounded-full bg-gradient-to-r ${alert.color} text-white shadow-lg border border-white/10`}
+              className={`flex items-center px-4 py-1.5 mx-3 rounded-full ${alert.color} shadow-sm border`}
             >
               <div className="mr-2">{getAlertIcon(alert.type)}</div>
 
@@ -344,38 +339,38 @@ export function MarqueeAlertBar() {
 
               <Link
                 href={alert.link}
-                className="flex items-center text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors"
+                className="flex items-center text-xs bg-white/50 hover:bg-white/80 text-gray-800 px-2 py-1 rounded-md transition-colors"
               >
                 View
-                <ChevronRight className="w-3 h-3 ml-1" />
+                <ChevronRight className="w-3 h-3 ml-0.5" />
               </Link>
 
               <button
                 onClick={() => dismissAlert(alert.id)}
-                className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
+                className="ml-2 p-1 hover:bg-black/5 rounded-full transition-colors opacity-60 hover:opacity-100"
                 aria-label="Dismiss alert"
               >
                 <X className="w-3 h-3" />
               </button>
 
-              <div className="ml-4 w-1 h-1 rounded-full bg-white/30" />
+              <div className="ml-6 w-1 h-1 rounded-full bg-gray-300" />
             </div>
           ))}
         </div>
       </div>
 
       {/* Gradient fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-gray-900 to-transparent z-10 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none" />
 
       {/* Refresh button */}
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10">
+      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20">
         <button
           onClick={fetchAlerts}
-          className="text-xs bg-black/50 hover:bg-black/70 text-white px-2 py-1 rounded transition-colors flex items-center gap-1"
+          className="text-xs bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-full shadow-sm transition-colors flex items-center gap-1 font-medium"
           title="Refresh alerts"
         >
-          🔄
+          <RefreshCw className="w-3 h-3" />
           <span className="hidden sm:inline">Refresh</span>
         </button>
       </div>

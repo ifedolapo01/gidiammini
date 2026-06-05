@@ -59,7 +59,7 @@ export default function HeroCarousel() {
   };
 
   return (
-    <div className="relative w-full h-[360px] md:h-[520px] overflow-hidden bg-gray-50 border-b border-pink-100">
+    <div className="relative w-full h-[520px] md:h-[520px] overflow-hidden bg-gray-50 border-b border-pink-100">
       {/* Slides Container */}
       <div className="w-full h-full relative">
         {slides.map((slide, index) => (
@@ -72,28 +72,36 @@ export default function HeroCarousel() {
             {/* Background Pastel Gradient Overlay */}
             <div className={`absolute inset-0 bg-gradient-to-tr ${slide.bgColor} z-0`} />
 
+            {/* Mobile Image Banner */}
+            <div className="md:hidden w-full h-[45%] relative z-10">
+              <div
+                className="w-full h-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${slide.image})` }}
+              />
+            </div>
+
             {/* Left Column: Text Content */}
-            <div className="w-full md:w-1/2 h-full flex items-center justify-center p-6 md:p-16 relative z-10">
+            <div className="w-full h-[55%] md:h-full md:w-1/2 flex items-center justify-center px-12 md:px-16 pb-8 pt-4 md:py-16 relative z-10">
               <div className="max-w-xl text-center md:text-left">
-                <span className="inline-block px-3 py-1 mb-3 md:mb-4 bg-pink-100 text-pink-700 text-xs md:text-sm font-semibold rounded-full tracking-wide shadow-sm uppercase">
+                <span className="inline-block px-3 py-1 mb-2 md:mb-4 bg-pink-100 text-pink-700 text-xs md:text-sm font-semibold rounded-full tracking-wide shadow-sm uppercase">
                   New Arrival
                 </span>
-                <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-gray-900 leading-tight tracking-tight mb-3 md:mb-4">
+                <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-gray-900 leading-tight tracking-tight mb-2 md:mb-4">
                   {slide.title}
                 </h1>
-                <p className="text-sm sm:text-base md:text-lg text-gray-700 mb-6 md:mb-8 font-medium">
+                <p className="text-sm sm:text-base md:text-lg text-gray-700 mb-4 md:mb-8 font-medium">
                   {slide.subtitle}
                 </p>
                 <Link
                   href={slide.link}
-                  className="inline-block bg-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full font-bold hover:bg-pink-700 hover:scale-105 shadow-md hover:shadow-lg transition-all text-sm md:text-base cursor-pointer"
+                  className="inline-block bg-pink-600 text-white px-6 py-2.5 md:px-8 md:py-4 rounded-full font-bold hover:bg-pink-700 hover:scale-105 shadow-md hover:shadow-lg transition-all text-sm md:text-base cursor-pointer"
                 >
                   {slide.buttonText}
                 </Link>
               </div>
             </div>
 
-            {/* Right Column: Visual Image Banner */}
+            {/* Right Column: Visual Image Banner (Desktop) */}
             <div className="hidden md:block w-1/2 h-full relative z-10">
               <div
                 className="w-full h-full bg-cover bg-center"
@@ -102,12 +110,6 @@ export default function HeroCarousel() {
               {/* Soft visual curve separator */}
               <div className="absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-transparent to-transparent pointer-events-none" />
             </div>
-            
-            {/* Mobile Image Fallback - Behind overlay */}
-            <div
-              className="md:hidden absolute inset-0 w-full h-full bg-cover bg-center opacity-15 pointer-events-none"
-              style={{ backgroundImage: `url(${slide.image})` }}
-            />
           </div>
         ))}
       </div>
@@ -115,14 +117,14 @@ export default function HeroCarousel() {
       {/* Slide Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md hover:shadow-lg transition-all cursor-pointer"
+        className="absolute left-2 md:left-6 top-[22.5%] md:top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md hover:shadow-lg transition-all cursor-pointer"
         aria-label="Previous Slide"
       >
         <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md hover:shadow-lg transition-all cursor-pointer"
+        className="absolute right-2 md:right-6 top-[22.5%] md:top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md hover:shadow-lg transition-all cursor-pointer"
         aria-label="Next Slide"
       >
         <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
