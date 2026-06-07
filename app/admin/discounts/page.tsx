@@ -356,7 +356,7 @@ export default function DiscountsPage() {
                     <div className="relative">
                       {formData.type === 'FIXED' && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>}
                       <input
-                        type="number"
+                        type="number" onFocus={(e) => e.target.select()}
                         value={formData.value}
                         onChange={(e) => setFormData({...formData, value: e.target.value})}
                         className={`w-full border border-gray-300 rounded-lg py-2 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${formData.type === 'FIXED' ? 'pl-7 pr-3' : 'px-3'}`}

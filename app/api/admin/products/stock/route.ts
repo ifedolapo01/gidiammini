@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyAdminAuth } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   if (!(await verifyAdminAuth(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
     
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, category, stock, colors, sizes, price, main_image, images, pricing_config')
+      .select('id, name, category, sub_category, stock, colors, sizes, price, main_image, images, pricing_config')
       .eq('is_active', true)
       .order('stock', { ascending: true });
 

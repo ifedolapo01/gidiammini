@@ -5,6 +5,8 @@ export type PricingMode = 'single' | 'size' | 'color' | 'combination';
 export interface PricingConfig {
   mode: PricingMode;
   singleStock?: number;
+  singleSize?: string;
+  singleColor?: string;
   sizePrices?: Record<string, number>;
   sizeStock?: Record<string, number>;
   colorPrices?: Record<string, number>;

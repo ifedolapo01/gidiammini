@@ -43,12 +43,12 @@ export default function ProductCard({ product, discounts = [] }: ProductCardProp
           </div>
         )}
 
-        <div className="relative h-64 w-full overflow-hidden">
+        <div className="relative w-full overflow-hidden">
           {/* Remove onError handler for server component */}
           <img
             src={imageUrl}
             alt={product.name}
-            className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
+            className={`w-full h-auto block group-hover:scale-110 transition-transform duration-500 ${
               isOutOfStock ? 'opacity-70' : ''
             }`}
           />

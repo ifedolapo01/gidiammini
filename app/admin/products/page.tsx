@@ -24,10 +24,10 @@ interface Product {
 }
 
 const formatCategoryStr = (cat: string, sub: string | undefined | null) => {
-  if (!sub) return cat;
+  const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  if (!sub) return catTitle;
   const subClean = sub.replace(/-/g, ' ');
   const subTitle = subClean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   let formattedSub = subTitle;
   if (subTitle.toLowerCase().startsWith(catTitle.toLowerCase())) {
     formattedSub = subTitle.substring(catTitle.length).trim();
@@ -35,10 +35,17 @@ const formatCategoryStr = (cat: string, sub: string | undefined | null) => {
   return formattedSub ? `${catTitle} > ${formattedSub}` : catTitle;
 };
 
+const capitalizeText = (text: string | undefined | null) => {
+  if (!text) return '';
+  return text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+};
+
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingProduct, setDeletingProduct] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   useEffect(() => {
     fetchProducts();
@@ -73,11 +80,8 @@ export default function AdminProducts() {
     }
   };
   
-  const deleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      return;
-    }
-    
+  const executeDelete = async (id: string) => {
+    setIsDeleting(true);
     try {
       const response = await fetch('/api/admin/products', {
         method: 'DELETE',
@@ -95,12 +99,12 @@ export default function AdminProducts() {
         throw new Error(result.error || 'Failed to delete product');
       }
       
-      // Remove from local state
-      setProducts(products.filter(p => p.id !== id));
-      alert('Product deleted successfully');
+      window.location.reload();
     } catch (error: any) {
       console.error('Delete error:', error);
       alert('Error deleting product: ' + error.message);
+      setIsDeleting(false);
+      setDeletingProduct(null);
     }
   };
   
@@ -152,13 +156,15 @@ export default function AdminProducts() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left pl-16 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
@@ -174,11 +180,11 @@ export default function AdminProducts() {
                       const product = variants[0];
                       return (
                         <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 flex-shrink-0">
+                          <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
+                            <div className="flex items-center justify-start">
+                              <div className="w-12 flex-shrink-0">
                                 <img
-                                  className="h-10 w-10 rounded-lg object-cover"
+                                  className="w-12 h-auto rounded-lg block"
                                   src={product.main_image}
                                   alt={product.name}
                                   onError={(e) => {
@@ -186,41 +192,47 @@ export default function AdminProducts() {
                                   }}
                                 />
                               </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                              <div className="ml-4 text-left">
+                                <div className="text-sm font-bold text-gray-900">{product.name}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-sm italic">
-                            No variants
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {product.variantLabel && product.variantLabel !== 'Standard' ? (
+                              <span className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200">
+                                {product.variantLabel}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-sm italic">No variants</span>
+                            )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
-                              {product.category}
+                              {formatCategoryStr(product.category, product.sub_category)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
                             ₦{product.price.toLocaleString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              product.stock > 10 ? 'bg-green-100 text-green-800' : 
+                              product.stock > 5 ? 'bg-green-100 text-green-800' : 
                               product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 
                               'bg-red-100 text-red-800'
                             }`}>
                               {product.stock} units
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex items-center gap-1">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <div className="flex items-center justify-center gap-1">
                               <ImageIcon size={16} className="text-gray-400" />
                               <span className="text-gray-600">
                                 {1 + (product.images?.length || 0)}
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex gap-2">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                            <div className="flex justify-center gap-2">
                               <Link
                                 href={`/admin/products/edit/${product.productId}`}
                                 className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"
@@ -229,7 +241,7 @@ export default function AdminProducts() {
                                 <Edit size={18} />
                               </Link>
                               <button
-                                onClick={() => deleteProduct(product.productId)}
+                                onClick={() => setDeletingProduct(product.productId)}
                                 className="text-red-600 hover:text-red-900 transition-colors p-1 hover:bg-red-50 rounded"
                                 title="Delete product"
                               >
@@ -246,11 +258,11 @@ export default function AdminProducts() {
                     return (
                       <Fragment key={productId}>
                         <tr className="bg-gray-50 border-t-2 border-gray-200">
-                          <td className="px-6 py-3 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 flex-shrink-0 border border-gray-300 rounded-lg overflow-hidden">
+                          <td className="px-6 py-3 whitespace-nowrap text-left pl-16">
+                            <div className="flex items-center justify-start">
+                              <div className="w-12 flex-shrink-0 border border-gray-300 rounded-lg overflow-hidden">
                                 <img
-                                  className="h-10 w-10 object-cover"
+                                  className="w-12 h-auto block"
                                   src={parent.main_image}
                                   alt={parent.name}
                                   onError={(e) => {
@@ -258,23 +270,23 @@ export default function AdminProducts() {
                                   }}
                                 />
                               </div>
-                              <div className="ml-4">
+                              <div className="ml-4 text-left">
                                 <div className="text-sm font-bold text-gray-900">{parent.name}</div>
                                 <div className="text-xs text-gray-500">{variants.length} variations</div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap"></td>
-                          <td className="px-6 py-3 whitespace-nowrap">
+                          <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-center">
                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                {formatCategoryStr(parent.category, parent.sub_category)}
                              </span>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap"></td>
-                          <td className="px-6 py-3 whitespace-nowrap"></td>
-                          <td className="px-6 py-3 whitespace-nowrap"></td>
-                          <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
-                            <div className="flex gap-2">
+                          <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-center">
+                            <div className="flex justify-center gap-2">
                               <Link
                                 href={`/admin/products/edit/${parent.productId}`}
                                 className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"
@@ -283,7 +295,7 @@ export default function AdminProducts() {
                                 <Edit size={18} />
                               </Link>
                               <button
-                                onClick={() => deleteProduct(parent.productId)}
+                                onClick={() => setDeletingProduct(parent.productId)}
                                 className="text-red-600 hover:text-red-900 transition-colors p-1 hover:bg-red-50 rounded"
                                 title="Delete product"
                               >
@@ -311,53 +323,36 @@ export default function AdminProducts() {
                                 const product = sizeVariants[0];
                                 return (
                                   <tr key={product.id} className="hover:bg-blue-50 transition-colors border-l-[8px] border-blue-400 bg-white">
-                                    <td className="px-6 py-3 whitespace-nowrap pl-12 text-sm font-bold text-gray-800">
+                                    <td className="px-6 py-3 whitespace-nowrap pl-12 text-sm font-bold text-gray-800 text-center">
                                       Size: {size}
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
+                                    <td className="px-6 py-3 whitespace-nowrap text-center">
                                       <span className="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                                        Color: {product.extractedColor}
+                                        Color: {capitalizeText(product.extractedColor)}
                                       </span>
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap"></td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700">
+                                    <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700 text-center">
                                       ₦{product.price.toLocaleString()}
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
                                       <span className={`px-2 inline-flex text-xs leading-5 font-bold rounded-full border ${
-                                        product.stock > 10 ? 'bg-green-50 text-green-700 border-green-200' : 
+                                        product.stock > 5 ? 'bg-green-50 text-green-700 border-green-200' : 
                                         product.stock > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
                                         'bg-red-50 text-red-700 border-red-200'
                                       }`}>
                                         {product.stock} units
                                       </span>
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm">
-                                      <div className="flex items-center gap-1">
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
+                                      <div className="flex items-center justify-center gap-1">
                                         <ImageIcon size={16} className="text-gray-400" />
                                         <span className="text-gray-600">
-                                          {1 + (product.images?.length || 0)}
+                                          {product.extractedColor ? (product.colorImages?.[product.extractedColor] ? 1 : 0) : (product.colorImages?.[product.variantKey] ? 1 : 0)}
                                         </span>
                                       </div>
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
-                                      <div className="flex gap-2">
-                                        <Link
-                                          href={`/admin/products/edit/${product.productId}`}
-                                          className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"
-                                          title="Edit product"
-                                        >
-                                          <Edit size={18} />
-                                        </Link>
-                                        <button
-                                          onClick={() => deleteProduct(product.productId)}
-                                          className="text-red-600 hover:text-red-900 transition-colors p-1 hover:bg-red-50 rounded"
-                                          title="Delete product"
-                                        >
-                                          <Trash2 size={18} />
-                                        </button>
-                                      </div>
-                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-center"></td>
                                   </tr>
                                 );
                               }
@@ -365,41 +360,41 @@ export default function AdminProducts() {
                               return (
                                 <Fragment key={`${productId}-${size}`}>
                                   <tr className="bg-purple-50/50 border-l-4 border-purple-300">
-                                    <td className="px-6 py-2 whitespace-nowrap pl-12 text-sm font-bold text-gray-800">
+                                    <td className="px-6 py-2 whitespace-nowrap pl-12 text-sm font-bold text-gray-800 text-center">
                                       Size: {size}
                                     </td>
                                     <td colSpan={6}></td>
                                   </tr>
                                   {sizeVariants.map(product => (
                                     <tr key={product.id} className="hover:bg-blue-50 transition-colors border-l-[12px] border-blue-400 bg-white">
-                                      <td className="px-6 py-3 whitespace-nowrap"></td>
-                                      <td className="px-6 py-3 whitespace-nowrap pl-8">
+                                      <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                                      <td className="px-6 py-3 whitespace-nowrap pl-8 text-center">
                                         <span className="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                                          Color: {product.extractedColor}
+                                          Color: {capitalizeText(product.extractedColor)}
                                         </span>
                                       </td>
-                                      <td className="px-6 py-3 whitespace-nowrap"></td>
-                                      <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700">
+                                      <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                                      <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700 text-center">
                                         ₦{product.price.toLocaleString()}
                                       </td>
-                                      <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                      <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-bold rounded-full border ${
-                                          product.stock > 10 ? 'bg-green-50 text-green-700 border-green-200' : 
+                                          product.stock > 5 ? 'bg-green-50 text-green-700 border-green-200' : 
                                           product.stock > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
                                           'bg-red-50 text-red-700 border-red-200'
                                         }`}>
                                           {product.stock} units
                                         </span>
                                       </td>
-                                      <td className="px-6 py-3 whitespace-nowrap text-sm">
-                                        <div className="flex items-center gap-1">
+                                      <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
+                                        <div className="flex items-center justify-center gap-1">
                                           <ImageIcon size={16} className="text-gray-400" />
                                           <span className="text-gray-600">
-                                            {1 + (product.images?.length || 0)}
+                                            {product.extractedColor ? (product.colorImages?.[product.extractedColor] ? 1 : 0) : (product.colorImages?.[product.variantKey] ? 1 : 0)}
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="px-6 py-3 whitespace-nowrap"></td>
+                                      <td className="px-6 py-3 whitespace-nowrap text-center"></td>
                                     </tr>
                                   ))}
                                 </Fragment>
@@ -410,34 +405,34 @@ export default function AdminProducts() {
                           // Simple variants (only sizes or only colors)
                           return variants.map((product) => (
                             <tr key={product.id} className="hover:bg-blue-50 transition-colors border-l-4 border-blue-400 bg-white">
-                              <td className="px-6 py-3 whitespace-nowrap"></td>
-                              <td className="px-6 py-3 whitespace-nowrap">
+                              <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                              <td className="px-6 py-3 whitespace-nowrap text-center">
                                 <span className="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                                  {product.variantLabel}
+                                  {capitalizeText(product.variantLabel)}
                                 </span>
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap"></td>
-                              <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700">
+                              <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                              <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700 text-center">
                                 ₦{product.price.toLocaleString()}
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap text-sm">
+                              <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
                                 <span className={`px-2 inline-flex text-xs leading-5 font-bold rounded-full border ${
-                                  product.stock > 10 ? 'bg-green-50 text-green-700 border-green-200' : 
+                                  product.stock > 5 ? 'bg-green-50 text-green-700 border-green-200' : 
                                   product.stock > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
                                   'bg-red-50 text-red-700 border-red-200'
                                 }`}>
                                   {product.stock} units
                                 </span>
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap text-sm">
-                                <div className="flex items-center gap-1">
+                              <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
+                                <div className="flex items-center justify-center gap-1">
                                   <ImageIcon size={16} className="text-gray-400" />
                                   <span className="text-gray-600">
-                                    {1 + (product.images?.length || 0)}
+                                    {product.extractedColor ? (product.colorImages?.[product.extractedColor] ? 1 : 0) : (product.colorImages?.[product.variantKey] ? 1 : 0)}
                                   </span>
                                 </div>
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap"></td>
+                              <td className="px-6 py-3 whitespace-nowrap text-center"></td>
                             </tr>
                           ));
                         })()}
@@ -456,6 +451,40 @@ export default function AdminProducts() {
               <p className="text-sm text-gray-500">
                 {flattenProducts(products).filter(p => p.stock === 0).length} out of stock
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingProduct && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Product</h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this product? This action cannot be undone and will remove all variants associated with it.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeletingProduct(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => executeDelete(deletingProduct)}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Product'
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -38,7 +38,7 @@ export default function CartPage() {
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-lg flex-shrink-0"
+                  className="w-16 sm:w-20 md:w-24 h-auto block rounded-lg flex-shrink-0"
                 />
                 
                 <div className="flex-1 ml-3 sm:ml-4 md:ml-6 min-w-0"> {/* Added min-w-0 */}

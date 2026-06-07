@@ -10,6 +10,7 @@ export interface FlattenedProduct {
   stock: number;
   main_image: string | undefined;
   images: string[] | undefined;
+  colorImages?: Record<string, string>;
 }
 
 export function flattenProducts(products: any[]): FlattenedProduct[] {
@@ -22,13 +23,14 @@ export function flattenProducts(products: any[]): FlattenedProduct[] {
         productId: p.id,
         name: p.name,
         variantKey: 'single',
-        variantLabel: 'Standard',
+        variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
         category: p.category,
         sub_category: p.sub_category,
         price: p.price,
         stock: p.stock,
         main_image: p.main_image || (p.images && p.images[0]),
-        images: p.images
+        images: p.images,
+        colorImages: p.pricing_config?.colorImages
       });
     } else if (p.pricing_config.mode === 'combination') {
       const prices = p.pricing_config.combinationPrices || {};
@@ -41,13 +43,14 @@ export function flattenProducts(products: any[]): FlattenedProduct[] {
           productId: p.id,
           name: p.name,
           variantKey: 'single',
-          variantLabel: 'Standard',
+          variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
           category: p.category,
           sub_category: p.sub_category,
           price: p.price,
           stock: p.stock,
           main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images
+          images: p.images,
+          colorImages: p.pricing_config?.colorImages
         });
       }
 
@@ -64,7 +67,8 @@ export function flattenProducts(products: any[]): FlattenedProduct[] {
           price: prices[key] || 0,
           stock: stocks[key] || 0,
           main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images
+          images: p.images,
+          colorImages: p.pricing_config?.colorImages
         });
       });
     } else if (p.pricing_config.mode === 'size') {
@@ -78,13 +82,14 @@ export function flattenProducts(products: any[]): FlattenedProduct[] {
           productId: p.id,
           name: p.name,
           variantKey: 'single',
-          variantLabel: 'Standard',
+          variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
           category: p.category,
           sub_category: p.sub_category,
           price: p.price,
           stock: p.stock,
           main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images
+          images: p.images,
+          colorImages: p.pricing_config?.colorImages
         });
       }
 
@@ -100,7 +105,8 @@ export function flattenProducts(products: any[]): FlattenedProduct[] {
           price: prices[key] || 0,
           stock: stocks[key] || 0,
           main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images
+          images: p.images,
+          colorImages: p.pricing_config?.colorImages
         });
       });
     } else if (p.pricing_config.mode === 'color') {
@@ -114,13 +120,14 @@ export function flattenProducts(products: any[]): FlattenedProduct[] {
           productId: p.id,
           name: p.name,
           variantKey: 'single',
-          variantLabel: 'Standard',
+          variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
           category: p.category,
           sub_category: p.sub_category,
           price: p.price,
           stock: p.stock,
           main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images
+          images: p.images,
+          colorImages: p.pricing_config?.colorImages
         });
       }
 
@@ -136,7 +143,8 @@ export function flattenProducts(products: any[]): FlattenedProduct[] {
           price: prices[key] || 0,
           stock: stocks[key] || 0,
           main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images
+          images: p.images,
+          colorImages: p.pricing_config?.colorImages
         });
       });
     }

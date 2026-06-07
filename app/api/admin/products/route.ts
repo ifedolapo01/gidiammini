@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyAdminAuth } from '@/lib/auth';
 
 export const maxDuration = 30;
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   if (!(await verifyAdminAuth(request))) {

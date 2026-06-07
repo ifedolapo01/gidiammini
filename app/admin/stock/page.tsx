@@ -6,15 +6,20 @@ import { Package, RefreshCw, Plus, Edit, Save, X } from 'lucide-react';
 import { flattenProducts, FlattenedProduct } from '@/lib/product-flatten';
 
 const formatCategoryStr = (cat: string, sub: string | undefined | null) => {
-  if (!sub) return cat;
+  const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  if (!sub) return catTitle;
   const subClean = sub.replace(/-/g, ' ');
   const subTitle = subClean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   let formattedSub = subTitle;
   if (subTitle.toLowerCase().startsWith(catTitle.toLowerCase())) {
     formattedSub = subTitle.substring(catTitle.length).trim();
   }
   return formattedSub ? `${catTitle} > ${formattedSub}` : catTitle;
+};
+
+const capitalizeText = (text: string | undefined | null) => {
+  if (!text) return '';
+  return text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 };
 
 export default function StockManagementPage() {
@@ -98,6 +103,7 @@ export default function StockManagementPage() {
 
   const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= lowStockThreshold);
   const outOfStockProducts = products.filter(p => p.stock <= 0);
+  const mainProductsCount = new Set(products.map(p => p.productId)).size;
 
   if (loading) {
     return (
@@ -126,7 +132,7 @@ export default function StockManagementPage() {
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-600">Low Stock Threshold:</label>
             <input
-              type="number"
+              type="number" onFocus={(e) => e.target.select()}
               value={lowStockThreshold}
               onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 5)}
               className="w-20 border border-gray-500 rounded-lg px-3 py-1 text-sm text-black"
@@ -145,10 +151,14 @@ export default function StockManagementPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 md:mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 md:mb-8">
+        <div className="bg-white p-4 rounded-lg shadow border">
+          <p className="text-sm text-gray-600">Main Products</p>
+          <p className="text-2xl font-bold text-blue-600">{mainProductsCount}</p>
+        </div>
         <div className="bg-white p-4 rounded-lg shadow border">
           <p className="text-sm text-gray-600">Total Variations</p>
-          <p className="text-2xl font-bold text-gray-800">{products.length}</p>
+          <p className="text-2xl font-bold text-purple-600">{products.length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow border">
           <p className="text-sm text-gray-600">Low Stock ({lowStockThreshold} or less)</p>
@@ -184,19 +194,19 @@ export default function StockManagementPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left pl-16 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Variant
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stock Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -215,46 +225,54 @@ export default function StockManagementPage() {
                       const status = getStockStatus(product.stock);
                       return (
                         <tr key={product.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
+                          <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
+                            <div className="flex items-center justify-start gap-4">
                               {product.main_image ? (
-                                <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden">
-                                  <img src={product.main_image} alt={product.name} className="object-cover w-full h-full" />
+                                <div className="w-12 flex-shrink-0 relative rounded overflow-hidden">
+                                  <img src={product.main_image} alt={product.name} className="block w-full h-auto" />
                                 </div>
                               ) : (
-                                <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
+                                <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
                                   <Package className="h-5 w-5 text-gray-500" />
                                 </div>
                               )}
-                              <div>
-                                <p className="font-medium text-gray-900">{product.name}</p>
+                              <div className="text-left">
+                                <p className="font-bold text-gray-900">{product.name}</p>
                                 <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-sm italic">
-                            No variants
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {product.variantLabel && product.variantLabel !== 'Standard' ? (
+                              <span className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200">
+                                {product.variantLabel}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-sm italic">No variants</span>
+                            )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 capitalize">
-                              {product.category}
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 font-medium capitalize">
+                              {formatCategoryStr(product.category, product.sub_category)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                          <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
+                            <div className="flex items-center justify-start">
+                              <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
                                 {status.text} ({product.stock})
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => startEditing(product)}
-                              className="text-blue-600 hover:text-blue-900 flex items-center"
-                            >
-                              <Edit className="w-4 h-4 mr-1" />
-                              Update Stock
-                            </button>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                            <div className="flex justify-center">
+                              <button
+                                onClick={() => startEditing(product)}
+                                className="text-blue-600 hover:text-blue-900 flex items-center justify-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Update Stock
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -266,161 +284,80 @@ export default function StockManagementPage() {
                       <Fragment key={productId}>
                         {/* Parent Row */}
                         <tr className="bg-gray-50 border-t-2 border-gray-200">
-                          <td className="px-6 py-3 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
+                          <td className="px-6 py-3 whitespace-nowrap text-left pl-16">
+                            <div className="flex items-center justify-start gap-4">
                               {parent.main_image ? (
-                                <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden border border-gray-300">
-                                  <img src={parent.main_image} alt={parent.name} className="object-cover w-full h-full" />
+                                <div className="w-12 flex-shrink-0 relative rounded overflow-hidden border border-gray-300">
+                                  <img src={parent.main_image} alt={parent.name} className="block w-full h-auto" />
                                 </div>
                               ) : (
-                                <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center border border-gray-300">
+                                <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center border border-gray-300">
                                   <Package className="h-5 w-5 text-gray-500" />
                                 </div>
                               )}
-                              <div>
+                              <div className="text-left">
                                 <p className="font-bold text-gray-900">{parent.name}</p>
                                 <p className="text-xs text-gray-500">{variants.length} variations</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap"></td>
-                          <td className="px-6 py-3 whitespace-nowrap">
-                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 font-medium">
+                          <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-center">
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 font-medium capitalize">
                               {formatCategoryStr(parent.category, parent.sub_category)}
                             </span>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap"></td>
-                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-center"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-center"></td>
                         </tr>
                         {/* Child Rows */}
-                        {(() => {
-                          const hasCombination = variants.some(v => v.variantKey.includes('|'));
+                        {variants.map((product) => {
+                          const status = getStockStatus(product.stock);
                           
-                          if (hasCombination) {
-                            const sizeGroups = variants.reduce((acc, v) => {
-                              const [size, color] = v.variantKey.split('|');
-                              if (!acc[size]) acc[size] = [];
-                              acc[size].push({ ...v, extractedSize: size, extractedColor: color });
-                              return acc;
-                            }, {} as Record<string, any[]>);
-
-                            return Object.entries(sizeGroups).map(([size, sizeVariants]) => {
-                              if (sizeVariants.length === 1) {
-                                const product = sizeVariants[0];
-                                const status = getStockStatus(product.stock);
-                                return (
-                                  <tr key={product.id} className="hover:bg-blue-50 border-l-[8px] border-blue-400 bg-white">
-                                    <td className="px-6 py-3 whitespace-nowrap pl-12">
-                                      <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-gray-800">Size: {size}</span>
-                                        <span className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</span>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
-                                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
-                                        Color: {product.extractedColor}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-3 whitespace-nowrap"></td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
-                                      <div className="flex items-center">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
-                                          {status.text} ({product.stock})
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
-                                      <button
-                                        onClick={() => startEditing(product)}
-                                        className="text-blue-600 hover:text-blue-900 flex items-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
-                                      >
-                                        <Edit className="w-4 h-4 mr-1" />
-                                        Update Stock
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              }
-
-                              return (
-                                <Fragment key={`${productId}-${size}`}>
-                                  <tr className="bg-purple-50/50 border-l-4 border-purple-300">
-                                    <td className="px-6 py-2 whitespace-nowrap pl-12 text-sm font-bold text-gray-800">
-                                      Size: {size}
-                                    </td>
-                                    <td colSpan={4}></td>
-                                  </tr>
-                                  {sizeVariants.map(product => {
-                                    const status = getStockStatus(product.stock);
-                                    return (
-                                      <tr key={product.id} className="hover:bg-blue-50 border-l-[12px] border-blue-400 bg-white">
-                                        <td className="px-6 py-3 whitespace-nowrap pl-20">
-                                          <p className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</p>
-                                        </td>
-                                        <td className="px-6 py-3 whitespace-nowrap">
-                                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
-                                            Color: {product.extractedColor}
-                                          </span>
-                                        </td>
-                                        <td className="px-6 py-3 whitespace-nowrap"></td>
-                                        <td className="px-6 py-3 whitespace-nowrap">
-                                          <div className="flex items-center">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
-                                              {status.text} ({product.stock})
-                                            </span>
-                                          </div>
-                                        </td>
-                                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
-                                          <button
-                                            onClick={() => startEditing(product)}
-                                            className="text-blue-600 hover:text-blue-900 flex items-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
-                                          >
-                                            <Edit className="w-4 h-4 mr-1" />
-                                            Update Stock
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </Fragment>
-                              );
-                            });
+                          // Parse variant label
+                          let variantDisplay = capitalizeText(product.variantLabel);
+                          if (product.variantKey.includes('|')) {
+                            const [size, color] = product.variantKey.split('|');
+                            variantDisplay = `Size: ${size} • Color: ${capitalizeText(color)}`;
                           }
 
-                          // Simple variants (only sizes or only colors)
-                          return variants.map((product) => {
-                            const status = getStockStatus(product.stock);
-                            return (
-                              <tr key={product.id} className="hover:bg-blue-50 border-l-4 border-blue-400 bg-white">
-                                <td className="px-6 py-3 whitespace-nowrap pl-16">
-                                  <p className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</p>
-                                </td>
-                                <td className="px-6 py-3 whitespace-nowrap">
-                                  <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200">
-                                    {product.variantLabel}
+                          return (
+                            <tr key={product.id} className="hover:bg-blue-50 border-l-4 border-blue-400 bg-white">
+                              <td className="px-6 py-3 whitespace-nowrap text-center">
+                                {/* Empty cell for Product column indent */}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-center">
+                                <div className="flex flex-col items-center justify-center">
+                                  <span className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200 mb-1">
+                                    {variantDisplay}
                                   </span>
-                                </td>
-                                <td className="px-6 py-3 whitespace-nowrap"></td>
-                                <td className="px-6 py-3 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
-                                      {status.text} ({product.stock})
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                                  <span className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-center">
+                                {/* Empty Category column */}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-center">
+                                <div className="flex items-center justify-center">
+                                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
+                                    {status.text} ({product.stock})
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-center">
+                                <div className="flex justify-center">
                                   <button
                                     onClick={() => startEditing(product)}
-                                    className="text-blue-600 hover:text-blue-900 flex items-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
+                                    className="text-blue-600 hover:text-blue-900 flex items-center justify-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
                                   >
                                     <Edit className="w-4 h-4 mr-1" />
                                     Update Stock
                                   </button>
-                                </td>
-                              </tr>
-                            );
-                          });
-                        })()}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </Fragment>
                     );
                   });
@@ -486,7 +423,7 @@ export default function StockManagementPage() {
                     New Stock Quantity
                   </label>
                   <input
-                    type="number"
+                    type="number" onFocus={(e) => e.target.select()}
                     value={stockUpdates[editingProduct.id] ?? editingProduct.stock}
                     onChange={(e) => setStockUpdates({
                       ...stockUpdates,

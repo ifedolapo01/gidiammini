@@ -20,6 +20,8 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number"),
   category: z.string().min(1, "Category is required"),
   sub_category: z.string().optional(),
+  singleSize: z.string().optional(),
+  singleColor: z.string().optional(),
   stock: z.coerce.number().min(0, "Stock must be a positive number"),
   colors: z.array(z.object({ value: z.string() })).optional().default([]),
   sizes: z.array(z.object({ value: z.string() })).optional().default([]),
@@ -112,6 +114,8 @@ export default function EditProductPage(props: PageProps) {
       price: 0,
       category: "",
       sub_category: "",
+      singleSize: "",
+      singleColor: "",
       stock: 0,
       colors: [{ value: "" }],
       sizes: [{ value: "" }],
@@ -261,6 +265,8 @@ export default function EditProductPage(props: PageProps) {
           price: productData.price,
           category: productData.category || "",
           sub_category: (productData as any).sub_category || "",
+          singleSize: productData.pricing_config?.singleSize || "",
+          singleColor: productData.pricing_config?.singleColor || "",
           stock: productData.stock,
           sizing_type: productData.sizing_type || 'size',
           colors: productData.colors.length > 0 ? productData.colors.map(c => ({ value: c })) : [{ value: "" }],
@@ -481,6 +487,10 @@ export default function EditProductPage(props: PageProps) {
     if (!hasVariants) {
       totalStock = data.stock;
       pricingConfig.singleStock = totalStock;
+      if (data.singleSize) pricingConfig.singleSize = data.singleSize;
+      if (data.singleColor) pricingConfig.singleColor = data.singleColor;
+      if (data.singleSize) uniqueSizes.add(data.singleSize);
+      if (data.singleColor) uniqueColors.add(data.singleColor);
       minPrice = data.price;
     } else {
       if (hasSizes && hasColors) {
@@ -797,7 +807,7 @@ export default function EditProductPage(props: PageProps) {
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₦</span>
                         <input
                           {...register("price")}
-                          type="number"
+                          type="number" onFocus={(e) => e.target.select()}
                           className={`w-full border rounded-xl pl-8 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors ${errors.price ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                           min="0" step="100" placeholder="0"
                         />
@@ -808,11 +818,29 @@ export default function EditProductPage(props: PageProps) {
                       <label className="block text-sm font-bold text-gray-700 mb-2">Total Stock <span className="text-red-500">*</span></label>
                       <input
                         {...register("stock")}
-                        type="number"
+                        type="number" onFocus={(e) => e.target.select()}
                         className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors ${errors.stock ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                         min="0" placeholder="0"
                       />
                       {errors.stock && <p className="text-red-500 text-sm mt-1.5">{errors.stock.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Size/Age (Optional)</label>
+                      <input
+                        {...register("singleSize")}
+                        type="text"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors"
+                        placeholder="e.g., XL, 2-3 Years"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Color (Optional)</label>
+                      <input
+                        {...register("singleColor")}
+                        type="text"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors"
+                        placeholder="e.g., Red, Blue"
+                      />
                     </div>
                   </div>
                 ) : (
@@ -888,7 +916,7 @@ export default function EditProductPage(props: PageProps) {
                                 <div className="md:col-span-1">
                                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Price (₦)</label>
                                   <input
-                                    type="number"
+                                    type="number" onFocus={(e) => e.target.select()}
                                     value={variant.price || ''}
                                     onChange={(e) => {
                                       const newV = [...variants];
@@ -902,7 +930,7 @@ export default function EditProductPage(props: PageProps) {
                                 <div className="md:col-span-1">
                                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Stock Qty</label>
                                   <input
-                                    type="number"
+                                    type="number" onFocus={(e) => e.target.select()}
                                     value={variant.stock || ''}
                                     onChange={(e) => {
                                       const newV = [...variants];
@@ -951,7 +979,7 @@ export default function EditProductPage(props: PageProps) {
                                     <div className="relative w-28 sm:w-32">
                                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs">₦</span>
                                       <input
-                                        type="number"
+                                        type="number" onFocus={(e) => e.target.select()}
                                         value={color.price || ''}
                                         onChange={(e) => {
                                           const newV = [...variants];
@@ -963,7 +991,7 @@ export default function EditProductPage(props: PageProps) {
                                       />
                                     </div>
                                     <input
-                                      type="number"
+                                      type="number" onFocus={(e) => e.target.select()}
                                       value={color.stock || ''}
                                       onChange={(e) => {
                                         const newV = [...variants];
