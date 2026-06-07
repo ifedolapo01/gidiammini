@@ -57,3 +57,4 @@ dev.db
 scripts/*.js
 scripts/*.ts
 scripts/*.py
+test-*.js
