@@ -304,7 +304,9 @@ export default function AdminProducts() {
                               return acc;
                             }, {} as Record<string, any[]>);
 
-                            return Object.entries(sizeGroups).map(([size, sizeVariants]) => {
+                            return Object.entries(sizeGroups).map((entry) => {
+                              const size = entry[0];
+                              const sizeVariants = entry[1] as any[];
                               if (sizeVariants.length === 1) {
                                 const product = sizeVariants[0];
                                 return (
