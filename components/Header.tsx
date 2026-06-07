@@ -4,10 +4,12 @@ import { ShoppingBag, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { useState } from "react";
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function Header() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentCategory = searchParams?.get('category');
   
   // Don't render header on admin pages
   if (pathname?.startsWith('/admin')) {
@@ -15,6 +17,19 @@ export default function Header() {
   }
   const { getItemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isActive = (path: string, category?: string) => {
+    if (category) {
+      return pathname === path && currentCategory === category;
+    }
+    if (path === '/') {
+      return pathname === '/' && !currentCategory;
+    }
+    if (path === '/products') {
+      return pathname === '/products' && !currentCategory;
+    }
+    return pathname?.startsWith(path) && !currentCategory;
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-pink-100 shadow-sm">
@@ -42,21 +57,20 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-4 lg:space-x-6">
-            <Link href="/" className="text-gray-600 hover:text-pink-600 font-semibold text-sm lg:text-base transition-colors">
+            <Link href="/" className={`font-semibold text-sm lg:text-base transition-colors ${isActive('/') ? 'text-pink-600 border-b-2 border-pink-600 pb-1' : 'text-gray-600 hover:text-pink-600'}`}>
               Home
             </Link>
-            <Link href="/products" className="text-gray-600 hover:text-pink-600 font-semibold text-sm lg:text-base transition-colors">
+            <Link href="/products" className={`font-semibold text-sm lg:text-base transition-colors ${isActive('/products') ? 'text-pink-600 border-b-2 border-pink-600 pb-1' : 'text-gray-600 hover:text-pink-600'}`}>
               All Products
             </Link>
-            <Link href="/products?category=babies" className="text-gray-600 hover:text-pink-600 font-semibold text-sm lg:text-base transition-colors">
+            <Link href="/products?category=babies" className={`font-semibold text-sm lg:text-base transition-colors ${isActive('/products', 'babies') ? 'text-pink-600 border-b-2 border-pink-600 pb-1' : 'text-gray-600 hover:text-pink-600'}`}>
               Babies
             </Link>
-            <Link href="/products?category=kids" className="text-gray-600 hover:text-pink-600 font-semibold text-sm lg:text-base transition-colors">
+            <Link href="/products?category=kids" className={`font-semibold text-sm lg:text-base transition-colors ${isActive('/products', 'kids') ? 'text-pink-600 border-b-2 border-pink-600 pb-1' : 'text-gray-600 hover:text-pink-600'}`}>
               Kids & Pre-teens
             </Link>
-            <Link href="/products?category=maternity" className="text-gray-600 hover:text-pink-600 font-semibold text-sm lg:text-base transition-colors">
+            <Link href="/products?category=maternity" className={`font-semibold text-sm lg:text-base transition-colors ${isActive('/products', 'maternity') ? 'text-pink-600 border-b-2 border-pink-600 pb-1' : 'text-gray-600 hover:text-pink-600'}`}>
               Maternity
             </Link>
           </nav>
@@ -79,35 +93,35 @@ export default function Header() {
             <nav className="flex flex-col space-y-2 text-black">
               <Link
                 href="/"
-                className="py-2 px-3 sm:px-4 hover:bg-pink-50 rounded-lg text-sm sm:text-base font-medium"
+                className={`py-2 px-3 sm:px-4 rounded-lg text-sm sm:text-base font-medium ${isActive('/') ? 'bg-pink-100 text-pink-700' : 'hover:bg-pink-50'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Home
               </Link>
               <Link
                 href="/products"
-                className="py-2 px-3 sm:px-4 hover:bg-pink-50 rounded-lg text-sm sm:text-base font-medium"
+                className={`py-2 px-3 sm:px-4 rounded-lg text-sm sm:text-base font-medium ${isActive('/products') ? 'bg-pink-100 text-pink-700' : 'hover:bg-pink-50'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 All Products
               </Link>
               <Link
                 href="/products?category=babies"
-                className="py-2 px-3 sm:px-4 hover:bg-pink-50 rounded-lg text-sm sm:text-base font-medium"
+                className={`py-2 px-3 sm:px-4 rounded-lg text-sm sm:text-base font-medium ${isActive('/products', 'babies') ? 'bg-pink-100 text-pink-700' : 'hover:bg-pink-50'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Babies
               </Link>
               <Link
                 href="/products?category=kids"
-                className="py-2 px-3 sm:px-4 hover:bg-pink-50 rounded-lg text-sm sm:text-base font-medium"
+                className={`py-2 px-3 sm:px-4 rounded-lg text-sm sm:text-base font-medium ${isActive('/products', 'kids') ? 'bg-pink-100 text-pink-700' : 'hover:bg-pink-50'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Kids & Pre-teens
               </Link>
               <Link
                 href="/products?category=maternity"
-                className="py-2 px-3 sm:px-4 hover:bg-pink-50 rounded-lg text-sm sm:text-base font-medium"
+                className={`py-2 px-3 sm:px-4 rounded-lg text-sm sm:text-base font-medium ${isActive('/products', 'maternity') ? 'bg-pink-100 text-pink-700' : 'hover:bg-pink-50'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Maternity
