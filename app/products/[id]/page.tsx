@@ -114,6 +114,21 @@ export default function ProductDetailPage() {
     }
   }, [selectedSize, availableColors, selectedColor]);
 
+  // When selected color changes, swap the main image if a mapped image exists
+  useEffect(() => {
+    if (product && selectedColor && product.pricing_config) {
+      const config = product.pricing_config as any;
+      if (config.colorImages && config.colorImages[selectedColor]) {
+        const targetUrl = config.colorImages[selectedColor];
+        const allImages = [product.main_image, ...(product.images || [])].filter(Boolean);
+        const index = allImages.indexOf(targetUrl);
+        if (index !== -1) {
+          setCurrentImageIndex(index);
+        }
+      }
+    }
+  }, [selectedColor, product]);
+
   const handleShare = async (platform?: string) => {
     if (!product) return;
     
@@ -369,11 +384,11 @@ export default function ProductDetailPage() {
           <div>
             {/* Main Image */}
             <div className="relative rounded-xl md:rounded-2xl overflow-hidden shadow-lg mb-3 md:mb-4 bg-white">
-              <div className="aspect-square w-full">
+              <div className="w-full">
                 <img
                   src={productImages[currentImageIndex]}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto block"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/placeholder.jpg';
                   }}
@@ -615,7 +630,7 @@ export default function ProductDetailPage() {
                       aria-pressed={selectedSize === size}
                       disabled={currentStock <= 0}
                     >
-                      {size}
+                      {size.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                     </button>
                   ))}
                 </div>
@@ -646,11 +661,7 @@ export default function ProductDetailPage() {
                       aria-pressed={selectedColor === color}
                       disabled={currentStock <= 0}
                     >
-                      <span 
-                        className="w-4 h-4 md:w-5 md:h-5 rounded-full mr-2 border border-gray-300"
-                        style={{ backgroundColor: getColorHex(color) }}
-                      />
-                      <span className="text-sm md:text-base">{color}</span>
+                      <span className="text-sm md:text-base">{color.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
                     </button>
                   ))}
                 </div>

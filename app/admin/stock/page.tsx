@@ -1,30 +1,28 @@
 // app/admin/stock/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Package, RefreshCw, Plus, Edit, Save, X } from 'lucide-react';
+import { flattenProducts, FlattenedProduct } from '@/lib/product-flatten';
 
-interface ProductStock {
-  id: string;
-  name: string;
-  stock: number;
-  category: string;
-  colors: string[];
-  sizes: string[];
-  price: number;
-  main_image?: string;
-  images?: string[];
-  pricing_config?: any;
-}
+const formatCategoryStr = (cat: string, sub: string | undefined | null) => {
+  if (!sub) return cat;
+  const subClean = sub.replace(/-/g, ' ');
+  const subTitle = subClean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  let formattedSub = subTitle;
+  if (subTitle.toLowerCase().startsWith(catTitle.toLowerCase())) {
+    formattedSub = subTitle.substring(catTitle.length).trim();
+  }
+  return formattedSub ? `${catTitle} > ${formattedSub}` : catTitle;
+};
 
 export default function StockManagementPage() {
-  const [products, setProducts] = useState<ProductStock[]>([]);
+  const [products, setProducts] = useState<FlattenedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<FlattenedProduct | null>(null);
   const [stockUpdates, setStockUpdates] = useState<Record<string, number>>({});
-  const [newColors, setNewColors] = useState<Record<string, string[]>>({});
-  const [newSizes, setNewSizes] = useState<Record<string, string[]>>({});
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
 
   useEffect(() => {
@@ -37,7 +35,7 @@ export default function StockManagementPage() {
       const response = await fetch('/api/admin/products/stock');
       if (response.ok) {
         const data = await response.json();
-        setProducts(data.products || []);
+        setProducts(flattenProducts(data.products || []));
       }
     } catch (error) {
       console.error('Error loading stock:', error);
@@ -52,33 +50,25 @@ export default function StockManagementPage() {
     loadStock();
   };
 
-  const startEditing = (product: ProductStock) => {
-    setEditingProduct(product.id);
+  const startEditing = (product: FlattenedProduct) => {
+    setEditingProduct(product);
     setStockUpdates({
       ...stockUpdates,
       [product.id]: product.stock
     });
-    setNewColors({
-      ...newColors,
-      [product.id]: [...product.colors]
-    });
-    setNewSizes({
-      ...newSizes,
-      [product.id]: [...product.sizes]
-    });
   };
 
-  const saveChanges = async (productId: string) => {
+  const saveChanges = async () => {
+    if (!editingProduct) return;
     try {
-      const response = await fetch(`/api/admin/products/${productId}/stock`, {
+      const response = await fetch(`/api/admin/products/${editingProduct.productId}/stock`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          stock: stockUpdates[productId],
-          colors: newColors[productId],
-          sizes: newSizes[productId]
+          variantKey: editingProduct.variantKey,
+          stock: stockUpdates[editingProduct.id]
         }),
       });
 
@@ -100,65 +90,14 @@ export default function StockManagementPage() {
     setEditingProduct(null);
   };
 
-  const addColor = (productId: string) => {
-    setNewColors({
-      ...newColors,
-      [productId]: [...(newColors[productId] || []), '']
-    });
-  };
-
-  const removeColor = (productId: string, index: number) => {
-    const updatedColors = [...(newColors[productId] || [])];
-    updatedColors.splice(index, 1);
-    setNewColors({
-      ...newColors,
-      [productId]: updatedColors
-    });
-  };
-
-  const updateColor = (productId: string, index: number, value: string) => {
-    const updatedColors = [...(newColors[productId] || [])];
-    updatedColors[index] = value;
-    setNewColors({
-      ...newColors,
-      [productId]: updatedColors
-    });
-  };
-
-  const addSize = (productId: string) => {
-    setNewSizes({
-      ...newSizes,
-      [productId]: [...(newSizes[productId] || []), '']
-    });
-  };
-
-  const removeSize = (productId: string, index: number) => {
-    const updatedSizes = [...(newSizes[productId] || [])];
-    updatedSizes.splice(index, 1);
-    setNewSizes({
-      ...newSizes,
-      [productId]: updatedSizes
-    });
-  };
-
-  const updateSize = (productId: string, index: number, value: string) => {
-    const updatedSizes = [...(newSizes[productId] || [])];
-    updatedSizes[index] = value;
-    setNewSizes({
-      ...newSizes,
-      [productId]: updatedSizes
-    });
-  };
-
   const getStockStatus = (stock: number) => {
-  if (stock <= 0) return { text: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-  if (stock <= lowStockThreshold) return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-  return { text: 'In Stock', color: 'bg-green-100 text-green-800' };
-};
+    if (stock <= 0) return { text: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+    if (stock <= lowStockThreshold) return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+    return { text: 'In Stock', color: 'bg-green-100 text-green-800' };
+  };
 
-// Update the filter functions:
-const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= lowStockThreshold);
-const outOfStockProducts = products.filter(p => p.stock <= 0);
+  const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= lowStockThreshold);
+  const outOfStockProducts = products.filter(p => p.stock <= 0);
 
   if (loading) {
     return (
@@ -179,7 +118,7 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Stock Management</h1>
           <p className="text-gray-600 mt-1">
-            Manage product stock, colors, and sizes
+            Manage product stock quantities
           </p>
         </div>
         
@@ -208,7 +147,7 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 md:mb-8">
         <div className="bg-white p-4 rounded-lg shadow border">
-          <p className="text-sm text-gray-600">Total Products</p>
+          <p className="text-sm text-gray-600">Total Variations</p>
           <p className="text-2xl font-bold text-gray-800">{products.length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow border">
@@ -249,16 +188,13 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
                     Product
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Variant
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Category
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stock Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Colors
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sizes
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -266,70 +202,229 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((product) => {
-                  const status = getStockStatus(product.stock);
-                  
-                  return (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          {product.main_image || (product.images && product.images[0]) ? (
-                            <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden">
-                              <img src={product.main_image || (product.images && product.images[0]) || ''} alt={product.name} className="object-cover w-full h-full" />
+                {(() => {
+                  const groupedProducts = products.reduce((acc, product) => {
+                    if (!acc[product.productId]) acc[product.productId] = [];
+                    acc[product.productId].push(product);
+                    return acc;
+                  }, {} as Record<string, FlattenedProduct[]>);
+
+                  return Object.entries(groupedProducts).map(([productId, variants]) => {
+                    if (variants.length === 1 && variants[0].variantKey === 'single') {
+                      const product = variants[0];
+                      const status = getStockStatus(product.stock);
+                      return (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              {product.main_image ? (
+                                <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden">
+                                  <img src={product.main_image} alt={product.name} className="object-cover w-full h-full" />
+                                </div>
+                              ) : (
+                                <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
+                                  <Package className="h-5 w-5 text-gray-500" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-gray-900">{product.name}</p>
+                                <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
+                              </div>
                             </div>
-                          ) : (
-                            <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
-                              <Package className="h-5 w-5 text-gray-500" />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-sm italic">
+                            No variants
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 capitalize">
+                              {product.category}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                                {status.text} ({product.stock})
+                              </span>
                             </div>
-                          )}
-                          <div>
-                            <p className="font-medium text-gray-900">{product.name}</p>
-                            <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 capitalize">
-                          {product.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                            {status.text} ({product.stock})
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {product.colors.map((color, index) => (
-                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
-                              {color}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => startEditing(product)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center"
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Update Stock
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    // Grouped view for products with variants
+                    const parent = variants[0];
+                    return (
+                      <Fragment key={productId}>
+                        {/* Parent Row */}
+                        <tr className="bg-gray-50 border-t-2 border-gray-200">
+                          <td className="px-6 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              {parent.main_image ? (
+                                <div className="h-10 w-10 flex-shrink-0 relative rounded overflow-hidden border border-gray-300">
+                                  <img src={parent.main_image} alt={parent.name} className="object-cover w-full h-full" />
+                                </div>
+                              ) : (
+                                <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center border border-gray-300">
+                                  <Package className="h-5 w-5 text-gray-500" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-bold text-gray-900">{parent.name}</p>
+                                <p className="text-xs text-gray-500">{variants.length} variations</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                          <td className="px-6 py-3 whitespace-nowrap">
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 font-medium">
+                              {formatCategoryStr(parent.category, parent.sub_category)}
                             </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {product.sizes.map((size, index) => (
-                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
-                              {size}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => startEditing(product)}
-                          className="text-blue-600 hover:text-blue-900 flex items-center"
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                        </tr>
+                        {/* Child Rows */}
+                        {(() => {
+                          const hasCombination = variants.some(v => v.variantKey.includes('|'));
+                          
+                          if (hasCombination) {
+                            const sizeGroups = variants.reduce((acc, v) => {
+                              const [size, color] = v.variantKey.split('|');
+                              if (!acc[size]) acc[size] = [];
+                              acc[size].push({ ...v, extractedSize: size, extractedColor: color });
+                              return acc;
+                            }, {} as Record<string, any[]>);
+
+                            return Object.entries(sizeGroups).map(([size, sizeVariants]) => {
+                              if (sizeVariants.length === 1) {
+                                const product = sizeVariants[0];
+                                const status = getStockStatus(product.stock);
+                                return (
+                                  <tr key={product.id} className="hover:bg-blue-50 border-l-[8px] border-blue-400 bg-white">
+                                    <td className="px-6 py-3 whitespace-nowrap pl-12">
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-gray-800">Size: {size}</span>
+                                        <span className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
+                                        Color: {product.extractedColor}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap"></td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      <div className="flex items-center">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
+                                          {status.text} ({product.stock})
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                                      <button
+                                        onClick={() => startEditing(product)}
+                                        className="text-blue-600 hover:text-blue-900 flex items-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
+                                      >
+                                        <Edit className="w-4 h-4 mr-1" />
+                                        Update Stock
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              }
+
+                              return (
+                                <Fragment key={`${productId}-${size}`}>
+                                  <tr className="bg-purple-50/50 border-l-4 border-purple-300">
+                                    <td className="px-6 py-2 whitespace-nowrap pl-12 text-sm font-bold text-gray-800">
+                                      Size: {size}
+                                    </td>
+                                    <td colSpan={4}></td>
+                                  </tr>
+                                  {sizeVariants.map(product => {
+                                    const status = getStockStatus(product.stock);
+                                    return (
+                                      <tr key={product.id} className="hover:bg-blue-50 border-l-[12px] border-blue-400 bg-white">
+                                        <td className="px-6 py-3 whitespace-nowrap pl-20">
+                                          <p className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</p>
+                                        </td>
+                                        <td className="px-6 py-3 whitespace-nowrap">
+                                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
+                                            Color: {product.extractedColor}
+                                          </span>
+                                        </td>
+                                        <td className="px-6 py-3 whitespace-nowrap"></td>
+                                        <td className="px-6 py-3 whitespace-nowrap">
+                                          <div className="flex items-center">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
+                                              {status.text} ({product.stock})
+                                            </span>
+                                          </div>
+                                        </td>
+                                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                                          <button
+                                            onClick={() => startEditing(product)}
+                                            className="text-blue-600 hover:text-blue-900 flex items-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
+                                          >
+                                            <Edit className="w-4 h-4 mr-1" />
+                                            Update Stock
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </Fragment>
+                              );
+                            });
+                          }
+
+                          // Simple variants (only sizes or only colors)
+                          return variants.map((product) => {
+                            const status = getStockStatus(product.stock);
+                            return (
+                              <tr key={product.id} className="hover:bg-blue-50 border-l-4 border-blue-400 bg-white">
+                                <td className="px-6 py-3 whitespace-nowrap pl-16">
+                                  <p className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</p>
+                                </td>
+                                <td className="px-6 py-3 whitespace-nowrap">
+                                  <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200">
+                                    {product.variantLabel}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-3 whitespace-nowrap"></td>
+                                <td className="px-6 py-3 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
+                                      {status.text} ({product.stock})
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                                  <button
+                                    onClick={() => startEditing(product)}
+                                    className="text-blue-600 hover:text-blue-900 flex items-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
+                                  >
+                                    <Edit className="w-4 h-4 mr-1" />
+                                    Update Stock
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
+                      </Fragment>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
@@ -343,171 +438,83 @@ const outOfStockProducts = products.filter(p => p.stock <= 0);
           <li>• <strong>Stock automatically reduces</strong> when orders are confirmed</li>
           <li>• <strong>Stock automatically restores</strong> when confirmed orders are cancelled</li>
           <li>• <strong>Products with 0 stock are hidden</strong> from customer view</li>
-          <li>• <strong>Low stock items</strong> (5 or less) appear in the low stock count</li>
-          <li>• Click <strong>Edit</strong> to update stock quantity, colors, and sizes</li>
+          <li>• Click <strong>Update Stock</strong> to modify inventory numbers. To add completely new sizes or colors, use the main Edit Product page.</li>
         </ul>
       </div>
 
       {/* Edit Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-              <h2 className="text-xl font-bold text-gray-800">Edit Product Stock</h2>
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-white z-10 rounded-t-xl">
+              <h2 className="text-xl font-bold text-gray-800">Update Stock</h2>
               <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
             </div>
             
             <div className="p-6">
-              {(() => {
-                const product = products.find(p => p.id === editingProduct);
-                if (!product) return null;
-                
-                return (
-                  <div className="space-y-6">
-                    <div className="flex gap-6 items-start">
-                      {product.main_image || (product.images && product.images[0]) ? (
-                        <div className="w-64 flex-shrink-0 rounded-lg overflow-hidden border shadow-sm bg-white">
-                          <img 
-                            src={product.main_image || (product.images && product.images[0]) || ''} 
-                            alt={product.name} 
-                            className="w-full h-auto block" 
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-64 h-64 flex-shrink-0 bg-white rounded-lg flex items-center justify-center border shadow-sm">
-                          <Package className="w-20 h-20 text-gray-400" />
-                        </div>
-                      )}
-                      
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900">{product.name}</h3>
-                        <p className="text-gray-500 capitalize">{product.category}</p>
-                        <p className="text-gray-700 mt-2 font-medium">₦{product.price.toLocaleString()}</p>
-                      </div>
+              <div className="space-y-6">
+                <div className="flex gap-4 items-start">
+                  {editingProduct.main_image ? (
+                    <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border shadow-sm bg-white">
+                      <img 
+                        src={editingProduct.main_image} 
+                        alt={editingProduct.name} 
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
-                    
-                    <div className="space-y-8">
-                      {/* Stock Quantity */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-2">
-                          Stock Quantity
-                        </label>
-                        {product.pricing_config && product.pricing_config.mode !== 'single' ? (
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                            This product uses variant-level stock (Total: {product.stock}). Please use the main <a href={`/admin/products/edit/${product.id}`} className="font-bold underline hover:text-blue-600">Product Edit page</a> to update specific variant quantities.
-                          </div>
-                        ) : (
-                          <input
-                            type="number"
-                            value={stockUpdates[product.id] || product.stock}
-                            onChange={(e) => setStockUpdates({
-                              ...stockUpdates,
-                              [product.id]: parseInt(e.target.value) || 0
-                            })}
-                            className="w-full md:w-1/2 border border-gray-300 rounded-lg px-4 py-2.5 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            min="0"
-                          />
-                        )}
-                      </div>
-                      
-                      <div className="border-t border-gray-100"></div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Colors */}
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-800 mb-3">Colors</label>
-                          <div className="space-y-3">
-                            {(newColors[product.id] || []).map((color, index) => (
-                              <div key={index} className="flex items-center gap-2 group">
-                                <div className="relative flex-1">
-                                  <input
-                                    type="text"
-                                    value={color}
-                                    onChange={(e) => updateColor(product.id, index, e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                    placeholder="e.g. Black, White, Red"
-                                  />
-                                </div>
-                                <button
-                                  onClick={() => removeColor(product.id, index)}
-                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Remove color"
-                                >
-                                  <X className="w-5 h-5" />
-                                </button>
-                              </div>
-                            ))}
-                            {(newColors[product.id] || []).length === 0 && (
-                              <p className="text-sm text-gray-500 italic mb-3">No colors specified.</p>
-                            )}
-                            <button
-                              onClick={() => addColor(product.id)}
-                              className="w-full mt-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-all"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add Color
-                            </button>
-                          </div>
-                        </div>
-                        
-                        {/* Sizes */}
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-800 mb-3">Sizes</label>
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                              {(newSizes[product.id] || []).map((size, index) => (
-                                <div key={index} className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all bg-white">
-                                  <input
-                                    type="text"
-                                    value={size}
-                                    onChange={(e) => updateSize(product.id, index, e.target.value)}
-                                    className="flex-1 px-3 py-2 text-sm text-black w-full outline-none"
-                                    placeholder="e.g. S, M, L"
-                                  />
-                                  <button
-                                    onClick={() => removeSize(product.id, index)}
-                                    className="px-3 py-2 bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 border-l border-gray-300 transition-colors"
-                                    title="Remove size"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                            {(newSizes[product.id] || []).length === 0 && (
-                              <p className="text-sm text-gray-500 italic mb-3">No sizes specified.</p>
-                            )}
-                            <button
-                              onClick={() => addSize(product.id)}
-                              className="w-full mt-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-all"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add Size
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                  ) : (
+                    <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center border shadow-sm">
+                      <Package className="w-10 h-10 text-gray-400" />
                     </div>
+                  )}
+                  
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">{editingProduct.name}</h3>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-medium">
+                        {editingProduct.variantLabel}
+                      </span>
+                    </div>
+                    <p className="text-gray-700 mt-2 font-medium">₦{editingProduct.price.toLocaleString()}</p>
                   </div>
-                );
-              })()}
+                </div>
+                
+                <div className="pt-4 border-t border-gray-100">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    New Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={stockUpdates[editingProduct.id] ?? editingProduct.stock}
+                    onChange={(e) => setStockUpdates({
+                      ...stockUpdates,
+                      [editingProduct.id]: parseInt(e.target.value) || 0
+                    })}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-lg font-medium"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Current stock is {editingProduct.stock}. Updating this only affects the <strong>{editingProduct.variantLabel}</strong> variant.
+                  </p>
+                </div>
+              </div>
             </div>
             
             <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
               <button
                 onClick={cancelEditing}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium"
               >
                 Cancel
               </button>
               <button
-                onClick={() => saveChanges(editingProduct)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                onClick={saveChanges}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center font-medium shadow-sm"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Save Changes
+                Save Stock
               </button>
             </div>
           </div>

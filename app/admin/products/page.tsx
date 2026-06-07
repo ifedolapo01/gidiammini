@@ -1,9 +1,10 @@
 // app/admin/products/page.tsx - PRODUCTS LIST ONLY
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Edit, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
+import { flattenProducts } from '@/lib/product-flatten';
 
 interface Product {
   id: string;
@@ -21,6 +22,18 @@ interface Product {
   created_at: string;
   updated_at: string;
 }
+
+const formatCategoryStr = (cat: string, sub: string | undefined | null) => {
+  if (!sub) return cat;
+  const subClean = sub.replace(/-/g, ' ');
+  const subTitle = subClean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  let formattedSub = subTitle;
+  if (subTitle.toLowerCase().startsWith(catTitle.toLowerCase())) {
+    formattedSub = subTitle.substring(catTitle.length).trim();
+  }
+  return formattedSub ? `${catTitle} > ${formattedSub}` : catTitle;
+};
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -140,6 +153,7 @@ export default function AdminProducts() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
@@ -147,81 +161,298 @@ export default function AdminProducts() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0">
-                          <img
-                            className="h-10 w-10 rounded-lg object-cover"
-                            src={product.main_image}
-                            alt={product.name}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image';
-                            }}
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₦{product.price.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        product.stock > 10 ? 'bg-green-100 text-green-800' : 
-                        product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {product.stock} units
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center gap-1">
-                        <ImageIcon size={16} className="text-gray-400" />
-                        <span className="text-gray-600">
-                          {1 + (product.images?.length || 0)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/admin/products/edit/${product.id}`}
-                          className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"
-                          title="Edit product"
-                        >
-                          <Edit size={18} />
-                        </Link>
-                        <button
-                          onClick={() => deleteProduct(product.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors p-1 hover:bg-red-50 rounded"
-                          title="Delete product"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {(() => {
+                  const groupedProducts = flattenProducts(products).reduce((acc, product) => {
+                    if (!acc[product.productId]) acc[product.productId] = [];
+                    acc[product.productId].push(product);
+                    return acc;
+                  }, {} as Record<string, any[]>);
+
+                  return Object.entries(groupedProducts).map(([productId, variants]) => {
+                    if (variants.length === 1 && variants[0].variantKey === 'single') {
+                      const product = variants[0];
+                      return (
+                        <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 flex-shrink-0">
+                                <img
+                                  className="h-10 w-10 rounded-lg object-cover"
+                                  src={product.main_image}
+                                  alt={product.name}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image';
+                                  }}
+                                />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-sm italic">
+                            No variants
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+                              {product.category}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₦{product.price.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              product.stock > 10 ? 'bg-green-100 text-green-800' : 
+                              product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {product.stock} units
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex items-center gap-1">
+                              <ImageIcon size={16} className="text-gray-400" />
+                              <span className="text-gray-600">
+                                {1 + (product.images?.length || 0)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex gap-2">
+                              <Link
+                                href={`/admin/products/edit/${product.productId}`}
+                                className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"
+                                title="Edit product"
+                              >
+                                <Edit size={18} />
+                              </Link>
+                              <button
+                                onClick={() => deleteProduct(product.productId)}
+                                className="text-red-600 hover:text-red-900 transition-colors p-1 hover:bg-red-50 rounded"
+                                title="Delete product"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    // Grouped view
+                    const parent = variants[0];
+                    return (
+                      <Fragment key={productId}>
+                        <tr className="bg-gray-50 border-t-2 border-gray-200">
+                          <td className="px-6 py-3 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 flex-shrink-0 border border-gray-300 rounded-lg overflow-hidden">
+                                <img
+                                  className="h-10 w-10 object-cover"
+                                  src={parent.main_image}
+                                  alt={parent.name}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image';
+                                  }}
+                                />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-bold text-gray-900">{parent.name}</div>
+                                <div className="text-xs text-gray-500">{variants.length} variations</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                          <td className="px-6 py-3 whitespace-nowrap">
+                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                               {formatCategoryStr(parent.category, parent.sub_category)}
+                             </span>
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                          <td className="px-6 py-3 whitespace-nowrap"></td>
+                          <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                            <div className="flex gap-2">
+                              <Link
+                                href={`/admin/products/edit/${parent.productId}`}
+                                className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"
+                                title="Edit product"
+                              >
+                                <Edit size={18} />
+                              </Link>
+                              <button
+                                onClick={() => deleteProduct(parent.productId)}
+                                className="text-red-600 hover:text-red-900 transition-colors p-1 hover:bg-red-50 rounded"
+                                title="Delete product"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {/* Child Rows */}
+                        {(() => {
+                          const hasCombination = variants.some(v => v.variantKey.includes('|'));
+                          
+                          if (hasCombination) {
+                            const sizeGroups = variants.reduce((acc, v) => {
+                              const [size, color] = v.variantKey.split('|');
+                              if (!acc[size]) acc[size] = [];
+                              acc[size].push({ ...v, extractedSize: size, extractedColor: color });
+                              return acc;
+                            }, {} as Record<string, any[]>);
+
+                            return Object.entries(sizeGroups).map(([size, sizeVariants]) => {
+                              if (sizeVariants.length === 1) {
+                                const product = sizeVariants[0];
+                                return (
+                                  <tr key={product.id} className="hover:bg-blue-50 transition-colors border-l-[8px] border-blue-400 bg-white">
+                                    <td className="px-6 py-3 whitespace-nowrap pl-12 text-sm font-bold text-gray-800">
+                                      Size: {size}
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      <span className="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                        Color: {product.extractedColor}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap"></td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700">
+                                      ₦{product.price.toLocaleString()}
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                      <span className={`px-2 inline-flex text-xs leading-5 font-bold rounded-full border ${
+                                        product.stock > 10 ? 'bg-green-50 text-green-700 border-green-200' : 
+                                        product.stock > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
+                                        'bg-red-50 text-red-700 border-red-200'
+                                      }`}>
+                                        {product.stock} units
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                      <div className="flex items-center gap-1">
+                                        <ImageIcon size={16} className="text-gray-400" />
+                                        <span className="text-gray-600">
+                                          {1 + (product.images?.length || 0)}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                                      <div className="flex gap-2">
+                                        <Link
+                                          href={`/admin/products/edit/${product.productId}`}
+                                          className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"
+                                          title="Edit product"
+                                        >
+                                          <Edit size={18} />
+                                        </Link>
+                                        <button
+                                          onClick={() => deleteProduct(product.productId)}
+                                          className="text-red-600 hover:text-red-900 transition-colors p-1 hover:bg-red-50 rounded"
+                                          title="Delete product"
+                                        >
+                                          <Trash2 size={18} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              }
+
+                              return (
+                                <Fragment key={`${productId}-${size}`}>
+                                  <tr className="bg-purple-50/50 border-l-4 border-purple-300">
+                                    <td className="px-6 py-2 whitespace-nowrap pl-12 text-sm font-bold text-gray-800">
+                                      Size: {size}
+                                    </td>
+                                    <td colSpan={6}></td>
+                                  </tr>
+                                  {sizeVariants.map(product => (
+                                    <tr key={product.id} className="hover:bg-blue-50 transition-colors border-l-[12px] border-blue-400 bg-white">
+                                      <td className="px-6 py-3 whitespace-nowrap"></td>
+                                      <td className="px-6 py-3 whitespace-nowrap pl-8">
+                                        <span className="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                          Color: {product.extractedColor}
+                                        </span>
+                                      </td>
+                                      <td className="px-6 py-3 whitespace-nowrap"></td>
+                                      <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700">
+                                        ₦{product.price.toLocaleString()}
+                                      </td>
+                                      <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-bold rounded-full border ${
+                                          product.stock > 10 ? 'bg-green-50 text-green-700 border-green-200' : 
+                                          product.stock > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
+                                          'bg-red-50 text-red-700 border-red-200'
+                                        }`}>
+                                          {product.stock} units
+                                        </span>
+                                      </td>
+                                      <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                        <div className="flex items-center gap-1">
+                                          <ImageIcon size={16} className="text-gray-400" />
+                                          <span className="text-gray-600">
+                                            {1 + (product.images?.length || 0)}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className="px-6 py-3 whitespace-nowrap"></td>
+                                    </tr>
+                                  ))}
+                                </Fragment>
+                              );
+                            });
+                          }
+
+                          // Simple variants (only sizes or only colors)
+                          return variants.map((product) => (
+                            <tr key={product.id} className="hover:bg-blue-50 transition-colors border-l-4 border-blue-400 bg-white">
+                              <td className="px-6 py-3 whitespace-nowrap"></td>
+                              <td className="px-6 py-3 whitespace-nowrap">
+                                <span className="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                                  {product.variantLabel}
+                                </span>
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap"></td>
+                              <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-700">
+                                ₦{product.price.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                <span className={`px-2 inline-flex text-xs leading-5 font-bold rounded-full border ${
+                                  product.stock > 10 ? 'bg-green-50 text-green-700 border-green-200' : 
+                                  product.stock > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
+                                  'bg-red-50 text-red-700 border-red-200'
+                                }`}>
+                                  {product.stock} units
+                                </span>
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-sm">
+                                <div className="flex items-center gap-1">
+                                  <ImageIcon size={16} className="text-gray-400" />
+                                  <span className="text-gray-600">
+                                    {1 + (product.images?.length || 0)}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap"></td>
+                            </tr>
+                          ));
+                        })()}
+                      </Fragment>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="flex justify-between items-center">
               <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{products.length}</span> product{products.length !== 1 ? 's' : ''}
+                Showing <span className="font-medium">{flattenProducts(products).length}</span> item{flattenProducts(products).length !== 1 ? 's' : ''}
               </p>
               <p className="text-sm text-gray-500">
-                {products.filter(p => p.stock === 0).length} out of stock
+                {flattenProducts(products).filter(p => p.stock === 0).length} out of stock
               </p>
             </div>
           </div>

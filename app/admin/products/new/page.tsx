@@ -1,7 +1,7 @@
 // app/admin/products/new/page.tsx - ADD NEW PRODUCT
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Upload, X, ArrowLeft, Star, Plus } from "lucide-react";
 import Link from "next/link";
 import { uploadProductImage } from "@/app/actions/upload";
@@ -51,6 +51,7 @@ interface ImageFile {
   file: File | null;
   url: string;
   isMain: boolean;
+  assignedColor?: string;
   isUploading?: boolean;
 }
 
@@ -74,6 +75,8 @@ export default function AddProductPage() {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
+    getValues,
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema) as any,
     defaultValues: {
@@ -105,6 +108,31 @@ export default function AddProductPage() {
     name: "details",
   });
 
+  const handleTitleCaseBlur = (fieldPath: any) => {
+    const val = getValues(fieldPath);
+    if (typeof val === 'string' && val) {
+      const titleCased = val.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      setValue(fieldPath, titleCased, { shouldValidate: true, shouldDirty: true });
+    }
+  };
+
+  const handleStateTitleCaseBlur = (vIdx: number, cIdx?: number) => {
+    const newV = [...variants];
+    if (cIdx !== undefined) {
+      const val = newV[vIdx].colors[cIdx].name;
+      if (val) {
+        newV[vIdx].colors[cIdx].name = val.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        setVariants(newV);
+      }
+    } else {
+      const val = newV[vIdx].size;
+      if (val) {
+        newV[vIdx].size = val.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        setVariants(newV);
+      }
+    }
+  };
+
   const [images, setImages] = useState<ImageFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,6 +161,20 @@ export default function AddProductPage() {
   }
 
   const [variants, setVariants] = useState<VariantSize[]>([{ size: "", price: 0, stock: 0, colors: [] }]);
+
+  const uniqueColorsArray = useMemo(() => {
+    if (!hasVariants || !hasColors) return [];
+    const colors = new Set<string>();
+    variants.forEach(v => {
+      v.colors.forEach(c => {
+        const cn = c.name.trim();
+        if (cn) colors.add(cn);
+      });
+    });
+    return Array.from(colors);
+  }, [hasVariants, hasColors, variants]);
+
+  const uniqueColorsCount = uniqueColorsArray.length;
 
   // Watch the category field to update the sub_category options
   const selectedCategorySlug = useWatch({ control, name: "category" });
@@ -257,6 +299,7 @@ export default function AddProductPage() {
     }
 
     let totalStock = 0;
+    let minPrice = Infinity;
     let pricingConfig: any = { mode: 'single' };
     const uniqueSizes = new Set<string>();
     const uniqueColors = new Set<string>();
@@ -264,6 +307,7 @@ export default function AddProductPage() {
     if (!hasVariants) {
       totalStock = data.stock;
       pricingConfig.singleStock = totalStock;
+      minPrice = data.price;
     } else {
       if (hasSizes && hasColors) {
         pricingConfig.mode = 'combination';
@@ -281,6 +325,7 @@ export default function AddProductPage() {
               pricingConfig.combinationPrices[key] = c.price;
               pricingConfig.combinationStock[key] = c.stock;
               totalStock += c.stock;
+              if (c.price < minPrice) minPrice = c.price;
             }
           });
         });
@@ -296,6 +341,7 @@ export default function AddProductPage() {
             pricingConfig.sizePrices[s] = v.price;
             pricingConfig.sizeStock[s] = v.stock;
             totalStock += v.stock;
+            if (v.price < minPrice) minPrice = v.price;
           }
         });
       } else if (!hasSizes && hasColors) {
@@ -311,6 +357,7 @@ export default function AddProductPage() {
               pricingConfig.colorPrices[cn] = c.price;
               pricingConfig.colorStock[cn] = c.stock;
               totalStock += c.stock;
+              if (c.price < minPrice) minPrice = c.price;
             }
           });
         });
@@ -330,6 +377,7 @@ export default function AddProductPage() {
 
     try {
       const uploadedImages: string[] = [];
+      const colorImagesMap: Record<string, string> = {};
 
       for (const image of images) {
         let imageUrl = image.url;
@@ -341,6 +389,14 @@ export default function AddProductPage() {
           imageUrl = uploadResult.url!;
         }
         uploadedImages.push(imageUrl);
+        
+        if (image.assignedColor && !colorImagesMap[image.assignedColor]) {
+          colorImagesMap[image.assignedColor] = imageUrl;
+        }
+      }
+
+      if (Object.keys(colorImagesMap).length > 0) {
+        pricingConfig.colorImages = colorImagesMap;
       }
 
       const mainImageIndex = images.findIndex((img) => img.isMain);
@@ -350,7 +406,7 @@ export default function AddProductPage() {
       const productData = {
         name: data.name,
         description: data.description,
-        price: data.price,
+        price: minPrice === Infinity ? 0 : minPrice,
         category: data.category,
         sub_category: data.sub_category,
         main_image: mainImageUrl,
@@ -447,7 +503,7 @@ export default function AddProductPage() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Product Name <span className="text-red-500">*</span></label>
                   <input
-                    {...register("name")}
+                    {...register("name", { onBlur: () => handleTitleCaseBlur("name") })}
                     type="text"
                     className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors ${errors.name ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                     placeholder="e.g., Premium Cotton Tee"
@@ -617,6 +673,7 @@ export default function AddProductPage() {
                                     newV[vIdx].size = e.target.value;
                                     setVariants(newV);
                                   }}
+                                  onBlur={() => handleStateTitleCaseBlur(vIdx)}
                                   className="w-full border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
                                   placeholder={sizingType === 'age' ? "e.g., 3-6 Months" : "e.g., Medium"}
                                 />
@@ -684,6 +741,7 @@ export default function AddProductPage() {
                                         newV[vIdx].colors[cIdx].name = e.target.value;
                                         setVariants(newV);
                                       }}
+                                      onBlur={() => handleStateTitleCaseBlur(vIdx, cIdx)}
                                       className="flex-1 min-w-[120px] border-gray-300 rounded-lg px-3 py-1.5 text-sm text-black focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
                                       placeholder="Color Name"
                                     />
@@ -786,6 +844,11 @@ export default function AddProductPage() {
                   <div>
                     <label className="block text-sm font-bold text-gray-800">Product Images <span className="text-red-500">*</span></label>
                     <p className="text-xs text-gray-500 mt-0.5">Upload multiple. Click the star to set the main cover image.</p>
+                    {uniqueColorsCount > 0 && images.length < uniqueColorsCount && (
+                      <p className="text-xs font-bold text-amber-600 mt-1">
+                        ⚠️ Please upload at least {uniqueColorsCount} image{uniqueColorsCount !== 1 ? 's' : ''} to show the different colors you entered.
+                      </p>
+                    )}
                   </div>
                   <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
                     {images.length} image{images.length !== 1 ? "s" : ""} selected
@@ -821,32 +884,50 @@ export default function AddProductPage() {
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {images.map((image, index) => (
-                          <div key={index} className="relative group rounded-xl overflow-hidden shadow-sm aspect-square bg-gray-100">
-                            <div className={`absolute inset-0 border-4 rounded-xl z-10 pointer-events-none transition-colors ${image.isMain ? 'border-blue-500' : 'border-transparent'}`}></div>
-                            <img
-                              src={image.url}
-                              alt={`Product image ${index + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=Error'; }}
-                            />
-                            {image.isMain && (
-                              <div className="absolute top-2 left-2 z-20 bg-blue-500 text-white p-1.5 rounded-lg shadow-sm">
-                                <Star size={14} fill="white" />
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-center justify-center gap-2">
-                              {!image.isMain && (
-                                <button type="button" onClick={() => setAsMainImage(index)} className="bg-white p-2 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Set as main image">
-                                  <Star size={18} />
-                                </button>
+                          <div key={index} className="flex flex-col h-full justify-end gap-2">
+                            <div className="relative group rounded-xl overflow-hidden shadow-sm w-full">
+                              <div className={`absolute inset-0 border-4 rounded-xl z-10 pointer-events-none transition-colors ${image.isMain ? 'border-blue-500' : 'border-transparent'}`}></div>
+                              <img
+                                src={image.url}
+                                alt={`Product image ${index + 1}`}
+                                className="w-full h-auto block rounded-xl"
+                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=Error'; }}
+                              />
+                              {image.isMain && (
+                                <div className="absolute top-2 left-2 z-20 bg-blue-500 text-white p-1.5 rounded-lg shadow-sm">
+                                  <Star size={14} fill="white" />
+                                </div>
                               )}
-                              <button type="button" onClick={() => removeImage(index)} className="bg-white p-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors" title="Remove image">
-                                <X size={18} />
-                              </button>
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-center justify-center gap-2">
+                                {!image.isMain && (
+                                  <button type="button" onClick={() => setAsMainImage(index)} className="bg-white p-2 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Set as main image">
+                                    <Star size={18} />
+                                  </button>
+                                )}
+                                <button type="button" onClick={() => removeImage(index)} className="bg-white p-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors" title="Remove image">
+                                  <X size={18} />
+                                </button>
+                              </div>
                             </div>
+                            {uniqueColorsArray.length > 0 && (
+                              <select
+                                value={image.assignedColor || ""}
+                                onChange={(e) => {
+                                  const newImages = [...images];
+                                  newImages[index].assignedColor = e.target.value;
+                                  setImages(newImages);
+                                }}
+                                className={`w-full text-xs py-2 px-2 rounded-lg border-2 transition-colors focus:ring-2 focus:outline-none focus:ring-blue-500 ${image.assignedColor ? 'border-blue-500 bg-blue-50 text-blue-900 font-bold' : 'border-gray-200 bg-white text-gray-700 font-medium'}`}
+                              >
+                                <option value="">No Color Assigned</option>
+                                {uniqueColorsArray.map(c => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                            )}
                           </div>
                         ))}
-                        <label htmlFor="image-upload" className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors group">
+                        <label htmlFor="image-upload" className="self-end w-full flex flex-col items-center justify-center aspect-square border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors group">
                           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-200 group-hover:border-blue-200 group-hover:text-blue-500 mb-2 shadow-sm">
                             <Plus size={20} />
                           </div>

@@ -11,6 +11,7 @@ export interface PricingConfig {
   colorStock?: Record<string, number>;
   combinationPrices?: Record<string, number>;
   combinationStock?: Record<string, number>;
+  colorImages?: Record<string, string>;
 }
 
 export interface Product {
