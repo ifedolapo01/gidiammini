@@ -3,10 +3,10 @@
 import { ShoppingBag, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "./CartProvider";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { usePathname, useSearchParams } from 'next/navigation';
 
-export default function Header() {
+function HeaderContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentCategory = searchParams?.get('category');
@@ -131,5 +131,13 @@ export default function Header() {
         )}
       </div>
     </header>
+  );
+}
+
+export default function Header() {
+  return (
+    <Suspense fallback={<div className="h-[80px] bg-white border-b border-pink-100"></div>}>
+      <HeaderContent />
+    </Suspense>
   );
 }
