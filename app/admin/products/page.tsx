@@ -457,8 +457,14 @@ export default function AdminProducts() {
       )}
 
       {deletingProduct && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onMouseDown={() => setDeletingProduct(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Product</h2>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete this product? This action cannot be undone and will remove all variants associated with it.

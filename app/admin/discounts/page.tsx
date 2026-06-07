@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, Edit2, Loader2, Tag, Percent, Calendar } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Tag, Percent, Calendar, Send } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Discount {
@@ -10,7 +10,7 @@ interface Discount {
   name: string;
   type: 'PERCENTAGE' | 'FIXED';
   value: number;
-  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT';
+  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT' | 'VARIANT';
   target_id: string | null;
   is_active: boolean;
   start_date: string | null;
@@ -28,6 +28,9 @@ interface Category {
 interface Product {
   id: string;
   name: string;
+  sizes?: string[];
+  colors?: string[];
+  pricing_config?: any;
 }
 
 export default function DiscountsPage() {
@@ -42,17 +45,52 @@ export default function DiscountsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form State
+  const [notifyModalDiscount, setNotifyModalDiscount] = useState<Discount | null>(null);
+  const [notifySubject, setNotifySubject] = useState('');
+  const [notifyMessage, setNotifyMessage] = useState('');
+  const [isNotifying, setIsNotifying] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     type: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
     value: '',
-    scope: 'SITEWIDE' as 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT',
+    scope: 'SITEWIDE' as 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT' | 'VARIANT',
     target_id: '',
     is_active: true,
     start_date: '',
     end_date: ''
   });
+
+  const [addedVariants, setAddedVariants] = useState<{productId: string, size: string, color: string}[]>([]);
+  const [variantProductId, setVariantProductId] = useState('');
+  const [variantSize, setVariantSize] = useState('');
+  const [variantColor, setVariantColor] = useState('');
+
+  useEffect(() => {
+    if (formData.scope === 'VARIANT') {
+      const targetStr = addedVariants.map(v => `${v.productId}:${v.size}:${v.color}`).join(',');
+      setFormData(prev => ({...prev, target_id: targetStr}));
+    }
+  }, [addedVariants, formData.scope]);
+
+  useEffect(() => {
+    if (variantProductId && variantSize && variantColor) {
+      const selectedProduct = products.find(p => p.id === variantProductId);
+      const config = selectedProduct?.pricing_config;
+      let availableColors = selectedProduct?.colors || [];
+      
+      if (config && config.mode === 'combination') {
+        const combinationPrices = config.combinationPrices || {};
+        availableColors = Object.keys(combinationPrices)
+          .filter(key => key.startsWith(`${variantSize}|`))
+          .map(key => key.split('|')[1]);
+      }
+      
+      if (!availableColors.includes(variantColor) && availableColors.length > 0) {
+        setVariantColor('');
+      }
+    }
+  }, [variantProductId, variantSize, variantColor, products]);
 
   useEffect(() => {
     fetchData();
@@ -93,9 +131,18 @@ export default function DiscountsPage() {
         scope: discount.scope,
         target_id: discount.target_id || '',
         is_active: discount.is_active,
-        start_date: discount.start_date ? discount.start_date.substring(0, 16) : '',
-        end_date: discount.end_date ? discount.end_date.substring(0, 16) : ''
+        start_date: discount.start_date ? format(new Date(discount.start_date), "yyyy-MM-dd'T'HH:mm") : '',
+        end_date: discount.end_date ? format(new Date(discount.end_date), "yyyy-MM-dd'T'HH:mm") : ''
       });
+      if (discount.scope === 'VARIANT' && discount.target_id) {
+        const variants = discount.target_id.split(',').map(v => {
+          const parts = v.split(':');
+          return { productId: parts[0] || '', size: parts[1] || '', color: parts[2] || '' };
+        });
+        setAddedVariants(variants);
+      } else {
+        setAddedVariants([]);
+      }
     } else {
       setEditingId(null);
       setFormData({
@@ -108,6 +155,10 @@ export default function DiscountsPage() {
         start_date: '',
         end_date: ''
       });
+      setAddedVariants([]);
+      setVariantProductId('');
+      setVariantSize('');
+      setVariantColor('');
     }
     setIsModalOpen(true);
   };
@@ -191,6 +242,68 @@ export default function DiscountsPage() {
     }
   };
 
+  const handleNotifySubmit = async () => {
+    if (!notifyModalDiscount) return;
+    setIsNotifying(true);
+    try {
+      const res = await fetch('/api/admin/discounts/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discountId: notifyModalDiscount.id,
+          customSubject: notifySubject,
+          customMessage: notifyMessage
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        setNotifyModalDiscount(null);
+      } else {
+        alert('Failed to send notification: ' + data.error);
+      }
+    } catch (err) {
+      alert('Error sending notification');
+    } finally {
+      setIsNotifying(false);
+    }
+  };
+
+  const formatTarget = (discount: Discount) => {
+    if (!discount.target_id) return '';
+    
+    if (discount.scope === 'CATEGORY') {
+      const cat = categories.find(c => c.id === discount.target_id);
+      return cat ? cat.name : discount.target_id;
+    }
+    
+    if (discount.scope === 'SUBCATEGORY') {
+      for (const cat of categories) {
+        const sub = cat.subcategories?.find(s => s.id === discount.target_id);
+        if (sub) return `${cat.name} > ${sub.name}`;
+      }
+      return discount.target_id;
+    }
+    
+    if (discount.scope === 'PRODUCT') {
+      const prod = products.find(p => p.id === discount.target_id);
+      return prod ? prod.name : discount.target_id;
+    }
+    
+    if (discount.scope === 'VARIANT') {
+      const variants = discount.target_id.split(',');
+      const formatted = variants.map(v => {
+        const [prodId, size, color] = v.split(':');
+        const prod = products.find(p => p.id === prodId);
+        const pName = prod ? prod.name : 'Unknown Product';
+        return `${pName} (${size || 'Any'}, ${color || 'Any'})`;
+      });
+      return formatted.join(' | ');
+    }
+    
+    return discount.target_id;
+  };
+
   if (loading && discounts.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -258,8 +371,8 @@ export default function DiscountsPage() {
                         {discount.scope}
                       </span>
                       {discount.scope !== 'SITEWIDE' && (
-                        <p className="text-xs text-gray-500 mt-1 max-w-[150px] truncate" title={discount.target_id || ''}>
-                          Target: {discount.target_id}
+                        <p className="text-xs text-gray-500 mt-1" title={formatTarget(discount)}>
+                          Target: <span className="font-medium text-gray-700">{formatTarget(discount)}</span>
                         </p>
                       )}
                     </td>
@@ -292,10 +405,22 @@ export default function DiscountsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => openModal(discount)} className="text-gray-400 hover:text-blue-600 p-2 transition-colors">
+                      <button 
+                        onClick={() => {
+                          setNotifyModalDiscount(discount);
+                          const discountVal = discount.type === 'PERCENTAGE' ? `${discount.value}% OFF` : `₦${discount.value} OFF`;
+                          setNotifySubject(`Exciting News: ${discount.name} - ${discountVal}!`);
+                          setNotifyMessage(`Our ${discount.name} is starting! Get ready to save.`);
+                        }} 
+                        className="text-gray-400 hover:text-green-600 p-2 transition-colors" 
+                        title="Notify Subscribers"
+                      >
+                        <Send size={18} />
+                      </button>
+                      <button onClick={() => openModal(discount)} className="text-gray-400 hover:text-blue-600 p-2 transition-colors" title="Edit Discount">
                         <Edit2 size={18} />
                       </button>
-                      <button onClick={() => handleDelete(discount.id)} className="text-gray-400 hover:text-red-600 p-2 transition-colors">
+                      <button onClick={() => handleDelete(discount.id)} className="text-gray-400 hover:text-red-600 p-2 transition-colors" title="Delete Discount">
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -309,9 +434,15 @@ export default function DiscountsPage() {
 
       {/* Discount Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onMouseDown={closeModal}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
               <h2 className="text-xl font-bold text-gray-900">{editingId ? 'Edit Discount' : 'Create New Discount'}</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-700 p-1">
                 <Trash2 size={24} className="hidden" /> {/* Spacer */}
@@ -319,7 +450,7 @@ export default function DiscountsPage() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6">
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto">
               {error && (
                 <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
                   {error}
@@ -382,6 +513,7 @@ export default function DiscountsPage() {
                       <option value="CATEGORY">Category</option>
                       <option value="SUBCATEGORY">Subcategory</option>
                       <option value="PRODUCT">Specific Product</option>
+                      <option value="VARIANT">Product Variant</option>
                     </select>
                   </div>
                   
@@ -424,6 +556,152 @@ export default function DiscountsPage() {
                           <option value="">Select a product...</option>
                           {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
+                      )}
+
+                      {formData.scope === 'VARIANT' && (
+                        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Select Product</label>
+                              <select
+                                value={variantProductId}
+                                onChange={(e) => {
+                                  setVariantProductId(e.target.value);
+                                  setVariantSize('');
+                                  setVariantColor('');
+                                }}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                              >
+                                <option value="">Choose a product...</option>
+                                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              </select>
+                            </div>
+                            
+                            {variantProductId && (() => {
+                              const selectedProduct = products.find(p => p.id === variantProductId);
+                              const config = selectedProduct?.pricing_config;
+                              
+                              let availableSizes = selectedProduct?.sizes || [];
+                              let availableColors = selectedProduct?.colors || [];
+                              
+                              // If it's combination mode and a size is selected, filter colors
+                              if (config && config.mode === 'combination' && variantSize) {
+                                const combinationPrices = config.combinationPrices || {};
+                                availableColors = Object.keys(combinationPrices)
+                                  .filter(key => key.startsWith(`${variantSize}|`))
+                                  .map(key => key.split('|')[1]);
+                              }
+                              
+                              // Ensure color selection is valid when size changes
+                              // (useEffect logic has been moved to the top level of the component)
+
+                              return (
+                                <div className="grid grid-cols-2 gap-3">
+                                  {availableSizes.length > 0 && (
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Select Size/Age</label>
+                                      <select
+                                        value={variantSize}
+                                        onChange={(e) => setVariantSize(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                                      >
+                                        <option value="" disabled>Choose size...</option>
+                                        {availableSizes.map(size => (
+                                          <option key={size} value={size}>{size}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                  
+                                  {availableColors.length > 0 && (
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Select Color</label>
+                                      <select
+                                        value={variantColor}
+                                        onChange={(e) => setVariantColor(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                                        disabled={config?.mode === 'combination' && !variantSize}
+                                      >
+                                        <option value="" disabled>{config?.mode === 'combination' && !variantSize ? 'Select size first...' : 'Choose color...'}</option>
+                                        {availableColors.map(color => (
+                                          <option key={color} value={color}>{color}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                            
+                            <div className="flex justify-end pt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!variantProductId) return;
+                                  
+                                  const selectedProduct = products.find(p => p.id === variantProductId);
+                                  const hasSizes = (selectedProduct?.sizes || []).length > 0;
+                                  const hasColors = (selectedProduct?.colors || []).length > 0;
+                                  
+                                  if (hasSizes && !variantSize) return alert('Please select a size');
+                                  if (hasColors && !variantColor) return alert('Please select a color');
+                                  
+                                  // Avoid duplicates
+                                  const isDuplicate = addedVariants.some(v => 
+                                    v.productId === variantProductId && 
+                                    v.size === variantSize && 
+                                    v.color === variantColor
+                                  );
+                                  
+                                  if (isDuplicate) return alert('This variant has already been added.');
+                                  
+                                  setAddedVariants([...addedVariants, {
+                                    productId: variantProductId,
+                                    size: variantSize,
+                                    color: variantColor
+                                  }]);
+                                  
+                                  // Reset selections
+                                  setVariantSize('');
+                                  setVariantColor('');
+                                }}
+                                disabled={!variantProductId}
+                                className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                              >
+                                <Plus size={14} /> Add Variant to Discount
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {addedVariants.length > 0 && (
+                            <div className="mt-4 border-t border-gray-200 pt-4">
+                              <label className="block text-xs font-semibold text-gray-700 mb-2">Targeted Variants ({addedVariants.length})</label>
+                              <div className="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-1">
+                                {addedVariants.map((v, i) => {
+                                  const p = products.find(prod => prod.id === v.productId);
+                                  return (
+                                    <div key={i} className="flex items-center justify-between bg-white border border-gray-200 p-2 rounded-md shadow-sm">
+                                      <div className="text-sm">
+                                        <span className="font-medium text-gray-900">{p?.name || 'Unknown Product'}</span>
+                                        <span className="text-gray-500 ml-2">
+                                          {v.size && `• ${v.size} `}
+                                          {v.color && `• ${v.color}`}
+                                        </span>
+                                      </div>
+                                      <button 
+                                        type="button"
+                                        onClick={() => setAddedVariants(addedVariants.filter((_, idx) => idx !== i))}
+                                        className="text-gray-400 hover:text-red-500 p-1"
+                                      >
+                                        &times;
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -480,6 +758,58 @@ export default function DiscountsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Notify Modal */}
+      {notifyModalDiscount && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onMouseDown={() => setNotifyModalDiscount(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 animate-in fade-in zoom-in duration-200" onMouseDown={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Notify Subscribers</h2>
+            <p className="text-gray-600 mb-6">
+              Send an immediate email to all your active subscribers about <strong>{notifyModalDiscount.name}</strong>.
+            </p>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Subject</label>
+                <input
+                  type="text"
+                  value={notifySubject}
+                  onChange={(e) => setNotifySubject(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Message</label>
+                <textarea
+                  value={notifyMessage}
+                  onChange={(e) => setNotifyMessage(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 outline-none h-32"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setNotifyModalDiscount(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                disabled={isNotifying}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleNotifySubmit}
+                disabled={isNotifying || !notifySubject || !notifyMessage}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+              >
+                {isNotifying ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {isNotifying ? 'Sending...' : 'Send Now'}
+              </button>
+            </div>
           </div>
         </div>
       )}

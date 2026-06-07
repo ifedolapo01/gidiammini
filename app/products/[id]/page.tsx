@@ -89,7 +89,7 @@ export default function ProductDetailPage() {
 
   const currentBasePrice = product ? getVariantPrice(product, selectedSize, selectedColor) : 0;
   const currentStock = product ? getVariantStock(product, selectedSize, selectedColor) : 0;
-  const bestDiscount = product ? getBestDiscount(product, discounts, currentBasePrice) : null;
+  const bestDiscount = product ? getBestDiscount(product, discounts, currentBasePrice, selectedSize, selectedColor) : null;
   const finalPrice = product ? calculateDiscountedPrice(currentBasePrice, bestDiscount) : 0;
 
   // Derive available colors based on selected size for combination mode

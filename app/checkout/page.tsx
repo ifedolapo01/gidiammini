@@ -33,7 +33,8 @@ export default function CheckoutPage() {
     phone: '',
     address: '',
     city: '',
-    note: ''
+    note: '',
+    subscribeToNewsletter: false
   });
 
   const pickupAddress = "Suite 5, XYZ Plaza, Central Business District, Abuja";
@@ -196,6 +197,22 @@ export default function CheckoutPage() {
       }
 
       if (result.success) {
+        // Handle Newsletter Subscription
+        if (formData.subscribeToNewsletter) {
+          try {
+            await fetch('/api/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: formData.email,
+                name: `${formData.firstName} ${formData.lastName}`
+              }),
+            });
+          } catch (e) {
+            console.error('Subscription failed but order succeeded', e);
+          }
+        }
+
         clearCart();
         setStep('confirmation');
       } else {
@@ -442,6 +459,23 @@ function CustomerInformation({ deliveryOption, isPickupAvailable, selectedState,
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, phone: e.target.value})}
           placeholder="Phone Number"
         />
+      </div>
+
+      <div className="mt-4 flex items-start">
+        <div className="flex items-center h-5">
+          <input
+            id="subscribe"
+            name="subscribe"
+            type="checkbox"
+            checked={formData.subscribeToNewsletter}
+            onChange={(e) => setFormData({...formData, subscribeToNewsletter: e.target.checked})}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+        </div>
+        <div className="ml-3 text-sm">
+          <label htmlFor="subscribe" className="font-medium text-gray-700">Keep me updated</label>
+          <p className="text-gray-500">Send me exclusive offers and upcoming discounts.</p>
+        </div>
       </div>
 
       {deliveryOption === 'delivery' && (

@@ -381,8 +381,14 @@ export default function StockManagementPage() {
 
       {/* Edit Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onMouseDown={cancelEditing}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-xl max-w-lg w-full"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-white z-10 rounded-t-xl">
               <h2 className="text-xl font-bold text-gray-800">Update Stock</h2>
               <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700">

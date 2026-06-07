@@ -4,6 +4,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import { CartProvider } from '@/components/CartProvider';
 import { Analytics } from "@vercel/analytics/next";
+import StorefrontDiscountManager from '@/components/StorefrontDiscountManager';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <CartProvider>
+          <StorefrontDiscountManager />
           <Header />
           <main className="min-h-screen overflow-x-hidden">{children}</main>
           <Analytics />

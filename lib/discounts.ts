@@ -5,14 +5,14 @@ export interface Discount {
   name: string;
   type: 'PERCENTAGE' | 'FIXED';
   value: number;
-  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT';
+  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT' | 'VARIANT';
   target_id: string | null;
   is_active: boolean;
   start_date: string | null;
   end_date: string | null;
 }
 
-export function getBestDiscount(product: any, discounts: Discount[], currentPrice?: number): Discount | null {
+export function getBestDiscount(product: any, discounts: Discount[], currentPrice?: number, selectedSize?: string, selectedColor?: string): Discount | null {
   if (!discounts || discounts.length === 0) return null;
 
   const now = new Date();
@@ -31,6 +31,23 @@ export function getBestDiscount(product: any, discounts: Discount[], currentPric
     if (d.scope === 'CATEGORY' && d.target_id === product.category) return true;
     if (d.scope === 'SUBCATEGORY' && d.target_id === product.sub_category) return true;
     if (d.scope === 'PRODUCT' && d.target_id === product.id) return true;
+    if (d.scope === 'VARIANT' && d.target_id) {
+      // target_id format: productId:size:color,productId:size:color
+      const variantTargets = d.target_id.split(',');
+      
+      return variantTargets.some(target => {
+        const [targetProdId, targetSize, targetColor] = target.split(':');
+        
+        if (targetProdId !== product.id) return false;
+        
+        // Exact matching for specific variants
+        // Both size and color must match if they are provided in the target
+        const sizeMatches = !targetSize || targetSize === selectedSize;
+        const colorMatches = !targetColor || targetColor === selectedColor;
+        
+        return sizeMatches && colorMatches;
+      });
+    }
     
     return false;
   });

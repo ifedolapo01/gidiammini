@@ -12,6 +12,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
 
+  const isActive = (path: string) => {
+    return pathname === path || pathname.startsWith(`${path}/`);
+  };
+
   useEffect(() => {
     // Just check auth, don't redirect
     const checkAuth = async () => {
@@ -74,22 +78,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 {/* Desktop Navigation - Hidden on mobile */}
                 <nav className="hidden md:flex space-x-4 ml-6">
-                  <Link href="/admin/dashboard" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                  <Link href="/admin/dashboard" className={`px-3 py-2 transition-colors ${isActive('/admin/dashboard') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                     Dashboard
                   </Link>
-                  <Link href="/admin/products" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                  <Link href="/admin/products" className={`px-3 py-2 transition-colors ${isActive('/admin/products') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                     Products
                   </Link>
-                  <Link href="/admin/orders" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                  <Link href="/admin/orders" className={`px-3 py-2 transition-colors ${isActive('/admin/orders') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                     Orders
                   </Link>
-                  <Link href="/admin/stock" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                  <Link href="/admin/stock" className={`px-3 py-2 transition-colors ${isActive('/admin/stock') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                     Stock Management
                   </Link>
-                  <Link href="/admin/categories" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                  <Link href="/admin/categories" className={`px-3 py-2 transition-colors ${isActive('/admin/categories') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                     Categories
                   </Link>
-                  <Link href="/admin/discounts" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                  <Link href="/admin/discounts" className={`px-3 py-2 transition-colors ${isActive('/admin/discounts') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                     Discounts
                   </Link>
                 </nav>
@@ -109,37 +113,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <nav className="flex flex-col space-y-2">
                   <Link 
                     href="/admin/dashboard" 
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/dashboard') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                   >
                     Dashboard
                   </Link>
                   <Link 
                     href="/admin/products" 
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/products') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                   >
                     Products
                   </Link>
                   <Link 
                     href="/admin/orders" 
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/orders') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                   >
                     Orders
                   </Link>
                   <Link 
                     href="/admin/stock" 
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/stock') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                   >
                     Stock Management
                   </Link>
                   <Link 
                     href="/admin/categories" 
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/categories') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                   >
                     Categories
                   </Link>
                   <Link 
                     href="/admin/discounts" 
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-lg"
+                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/discounts') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                   >
                     Discounts
                   </Link>
