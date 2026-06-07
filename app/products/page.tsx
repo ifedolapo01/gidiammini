@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
 import { Filter } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -10,13 +10,15 @@ import { ProductCardProduct } from '@/types/product';
 
 function ProductsListContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const categoryParam = searchParams?.get('category') || 'all';
+  const subCategoryParam = searchParams?.get('subcategory') || 'all';
 
   const [products, setProducts] = useState<ProductCardProduct[]>([]);
   const [categories, setCategories] = useState<{name: string, slug: string, subcategories?: {name: string, slug: string}[]}[]>([]);
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>(subCategoryParam);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showOutOfStock, setShowOutOfStock] = useState(false);
@@ -24,8 +26,8 @@ function ProductsListContent() {
   // Sync state if URL query param changes
   useEffect(() => {
     setSelectedCategory(categoryParam);
-    setSelectedSubCategory('all');
-  }, [categoryParam]);
+    setSelectedSubCategory(subCategoryParam);
+  }, [categoryParam, subCategoryParam]);
 
   useEffect(() => {
     loadData();
@@ -134,8 +136,7 @@ function ProductsListContent() {
                     <div key={category.slug} className="space-y-1">
                       <button
                         onClick={() => {
-                          setSelectedCategory(category.slug);
-                          setSelectedSubCategory('all');
+                          router.push(`/products?category=${category.slug}&subcategory=all`, { scroll: false });
                         }}
                         className={`block w-full text-left px-3 py-2 rounded transition-colors ${
                           selectedCategory === category.slug
@@ -150,7 +151,9 @@ function ProductsListContent() {
                       {selectedCategory === category.slug && category.subcategories && category.subcategories.length > 0 && (
                         <div className="pl-4 pr-2 py-1 space-y-1 border-l-2 border-pink-100 ml-2 mb-2">
                           <button
-                            onClick={() => setSelectedSubCategory('all')}
+                            onClick={() => {
+                              router.push(`/products?category=${category.slug}&subcategory=all`, { scroll: false });
+                            }}
                             className={`block w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
                               selectedSubCategory === 'all'
                                 ? 'text-pink-600 font-semibold bg-pink-50/50'
@@ -162,7 +165,9 @@ function ProductsListContent() {
                           {category.subcategories.map(sub => (
                             <button
                               key={sub.slug}
-                              onClick={() => setSelectedSubCategory(sub.slug)}
+                              onClick={() => {
+                                router.push(`/products?category=${category.slug}&subcategory=${sub.slug}`, { scroll: false });
+                              }}
                               className={`block w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
                                 selectedSubCategory === sub.slug
                                   ? 'text-pink-600 font-semibold bg-pink-50/50'

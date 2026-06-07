@@ -34,7 +34,7 @@ const slides: Slide[] = [
     image: '/images/carousel_kids.png',
     title: 'Outfits Crafted for Playful Days',
     subtitle: 'Vibrant, durable clothing for active kids and pre-teens to run, jump, and explore.',
-    buttonText: 'Shop Kids & Pre-Teens',
+    buttonText: 'Shop Kids & Pre-teens',
     link: '/products?category=kids',
     bgColor: 'from-blue-100 to-teal-50'
   }

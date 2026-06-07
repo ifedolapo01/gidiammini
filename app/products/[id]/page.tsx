@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
 import { getProduct } from '@/lib/supabase/actions';
 import { createClient } from '@/lib/supabase/client';
@@ -14,6 +14,7 @@ import { getVariantPrice } from '@/lib/pricing';
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const { addToCart } = useCart();
   
   const [product, setProduct] = useState<Product | null>(null);
@@ -314,13 +315,13 @@ export default function ProductDetailPage() {
       {/* Mobile Back Button & Actions */}
       <div className="sticky top-0 z-40 bg-white border-b md:hidden">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Link
-            href="/products"
+          <button
+            onClick={() => router.back()}
             className="flex items-center text-gray-700"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
             <span className="text-sm">Back</span>
-          </Link>
+          </button>
           
           <div className="flex items-center space-x-3">
             <button 
@@ -379,6 +380,16 @@ export default function ProductDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-8">
+        {/* Desktop Back Button */}
+        <div className="hidden md:flex mb-6">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 mr-1" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12">
           {/* Product Images */}
           <div>
@@ -503,7 +514,7 @@ export default function ProductDetailPage() {
             <div className="hidden md:flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm capitalize">
-                  {product.category}
+                  {product.category.toLowerCase() === 'kids' ? 'Kids & Pre-teens' : product.category}
                 </span>
                 {currentStock <= 5 && currentStock > 0 && (
                   <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">

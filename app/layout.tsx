@@ -43,7 +43,7 @@ export default function RootLayout({
                   <ul className="space-y-2 text-gray-400 text-sm md:text-base">
                     <li><a href="/products" className="hover:text-white">All Products</a></li>
                     <li><a href="/products?category=babies" className="hover:text-white">Babies</a></li>
-                    <li><a href="/products?category=kids" className="hover:text-white">Kids</a></li>
+                    <li><a href="/products?category=kids" className="hover:text-white">Kids & Pre-teens</a></li>
                     <li><a href="/products?category=maternity" className="hover:text-white">Maternity</a></li>
                   </ul>
                 </div>

@@ -54,7 +54,7 @@ export default function Header() {
               Babies
             </Link>
             <Link href="/products?category=kids" className="text-gray-600 hover:text-pink-600 font-semibold text-sm lg:text-base transition-colors">
-              Kids & Pre-Teens
+              Kids & Pre-teens
             </Link>
             <Link href="/products?category=maternity" className="text-gray-600 hover:text-pink-600 font-semibold text-sm lg:text-base transition-colors">
               Maternity
@@ -103,7 +103,7 @@ export default function Header() {
                 className="py-2 px-3 sm:px-4 hover:bg-pink-50 rounded-lg text-sm sm:text-base font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Kids & Pre-Teens
+                Kids & Pre-teens
               </Link>
               <Link
                 href="/products?category=maternity"

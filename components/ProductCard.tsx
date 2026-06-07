@@ -48,7 +48,7 @@ export default function ProductCard({ product, discounts = [] }: ProductCardProp
           <img
             src={imageUrl}
             alt={product.name}
-            className={`w-full h-auto block group-hover:scale-110 transition-transform duration-500 ${
+            className={`w-full aspect-[4/3] object-cover block group-hover:scale-110 transition-transform duration-500 ${
               isOutOfStock ? 'opacity-70' : ''
             }`}
           />
@@ -82,7 +82,7 @@ export default function ProductCard({ product, discounts = [] }: ProductCardProp
           </p>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500 capitalize">
-              {category}
+              {category.toLowerCase() === 'kids' ? 'Kids & Pre-teens' : category}
             </span>
             <span className="text-sm font-medium text-blue-600">
               View Details →
