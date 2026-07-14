@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Spinner } from '@/components/ui';
+import { Spinner, ThemeToggle } from '@/components/ui';
 import { MarqueeAlertBar } from './components/marquee-alert-bar';
 import { adminConfig } from './config';
 
@@ -100,12 +100,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
               </div>
 
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-destructive-background text-destructive border border-destructive-border rounded-control hover:bg-destructive-border transition-colors text-body-sm whitespace-nowrap ml-4"
-              >
-                Logout
-              </button>
+              <div className="flex items-center gap-2 ml-4">
+                <ThemeToggle />
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-destructive-background text-destructive border border-destructive-border rounded-control hover:bg-destructive-border transition-colors text-body-sm whitespace-nowrap"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
 
             {/* Mobile Navigation Menu */}

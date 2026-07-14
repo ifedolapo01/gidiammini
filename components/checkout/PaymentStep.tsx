@@ -49,7 +49,7 @@ export default function PaymentStep({
             <p className="text-text-secondary text-body-sm md:text-body-md">Order #{orderNumber}</p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className={`px-3 py-1 rounded-full text-caption-md md:text-body-sm font-medium ${
-                deliveryOption === 'pickup' ? 'bg-info-background text-info' : 'bg-text-primary text-text-inverse'
+                deliveryOption === 'pickup' ? 'bg-info-background text-info' : 'bg-surface-inverse text-on-inverse'
               }`}>
                 {deliveryOption === 'pickup'
                   ? 'Pickup (Abuja Only)'

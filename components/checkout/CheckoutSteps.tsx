@@ -40,5 +40,5 @@ function StepItem({ step, currentStep, label }: { step: string, currentStep: str
 }
 
 function StepDivider() {
-  return <div className="w-12 md:w-24 h-0.5 mx-2 md:mx-4 bg-text-primary"></div>;
+  return <div className="w-12 md:w-24 h-0.5 mx-2 md:mx-4 bg-surface-inverse"></div>;
 }

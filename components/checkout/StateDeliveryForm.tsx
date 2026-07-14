@@ -3,6 +3,7 @@
 
 import { Home, Store } from 'lucide-react';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { Select } from '@/components/ui';
 
 interface StateDeliveryFormProps {
   selectedState: string;
@@ -42,10 +43,9 @@ export default function StateDeliveryForm({
         <label className="block text-body-sm font-medium text-text-primary mb-2 sm:mb-3">
           Select Your State *
         </label>
-        <select
+        <Select
           value={selectedState}
           onChange={(e) => handleStateChange(e.target.value)}
-          className="w-full border border-border-strong rounded-control px-3 sm:px-4 py-2 sm:py-3 bg-surface text-body-sm sm:text-body-md md:text-body-lg font-medium text-text-primary focus-visible:border-focus"
           required
         >
           <option value="Abuja">Abuja (₦3,000 delivery / Free pickup)</option>
@@ -54,7 +54,7 @@ export default function StateDeliveryForm({
           <option value="Kano">Kano (₦5,000 delivery)</option>
           <option value="Oyo">Oyo (₦5,000 delivery)</option>
           <option value="Other">Other States (₦5,000 delivery)</option>
-        </select>
+        </Select>
         <p className="text-caption-md sm:text-body-sm text-text-secondary mt-1 sm:mt-2">
           Pickup is only available in Abuja. Delivery to other states is to designated parks.
         </p>
@@ -141,30 +141,30 @@ function DeliveryOption({ deliveryOption, setDeliveryOption, selectedState, getD
       onClick={() => setDeliveryOption('delivery')}
       className={`flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 border-2 rounded-surface transition-all min-w-[140px] sm:min-w-0 sm:min-h-[140px] md:min-h-[180px] w-full flex-shrink-0 sm:flex-shrink ${
         deliveryOption === 'delivery'
-          ? 'border-primary bg-text-primary'
+          ? 'border-primary bg-surface-inverse'
           : 'border-border-strong hover:border-border-strong hover:bg-surface-hover'
       }`}
     >
       <Home className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 mb-1 sm:mb-2 md:mb-3 ${
         deliveryOption === 'delivery'
-          ? 'text-text-inverse'
+          ? 'text-on-inverse'
           : 'text-text-primary'
       }`} />
       <span className={`font-bold text-body-sm sm:text-body-md md:text-body-lg ${
-        deliveryOption === 'delivery' ? 'text-text-inverse' : 'text-text-primary'
+        deliveryOption === 'delivery' ? 'text-on-inverse' : 'text-text-primary'
       }`}>
         Delivery
       </span>
       <span className={`mt-0.5 sm:mt-1 md:mt-2 text-caption-md sm:text-body-sm md:text-body-md font-semibold ${
         deliveryOption === 'delivery'
-          ? 'text-text-inverse'
+          ? 'text-on-inverse'
           : 'text-text-primary'
       }`}>
         {formatCurrency(getDeliveryFee(selectedState))}
       </span>
       <div className="mt-2 sm:mt-3 md:mt-4 text-center">
         <p className={`font-medium text-caption-md ${
-          deliveryOption === 'delivery' ? 'text-text-inverse/80' : 'text-text-primary'
+          deliveryOption === 'delivery' ? 'text-on-inverse/80' : 'text-text-primary'
         }`}>
           {selectedState === 'Abuja'
             ? 'Door-to-door'
@@ -172,7 +172,7 @@ function DeliveryOption({ deliveryOption, setDeliveryOption, selectedState, getD
           }
         </p>
         <p className={`text-caption-md mt-0.5 ${
-          deliveryOption === 'delivery' ? 'text-text-inverse/70' : 'text-text-secondary'
+          deliveryOption === 'delivery' ? 'text-on-inverse/70' : 'text-text-secondary'
         }`}>
           {selectedState === 'Abuja'
             ? '3-5 days'
@@ -194,18 +194,18 @@ function DeliveryInfo({ deliveryOption, isPickupAvailable, selectedState }: any)
     <div className={`mt-4 sm:mt-6 p-3 sm:p-4 rounded-surface ${
       deliveryOption === 'pickup' && isPickupAvailable
         ? 'bg-primary/10 border border-primary/30'
-        : 'bg-text-primary border border-text-primary'
+        : 'bg-surface-inverse border border-surface-inverse'
     }`}>
       <div className="flex items-center">
         {deliveryOption === 'pickup' && isPickupAvailable ? (
           <Store className="w-4 h-4 sm:w-5 sm:h-5 text-primary mr-2" />
         ) : (
-          <Home className="w-4 h-4 sm:w-5 sm:h-5 text-text-inverse mr-2" />
+          <Home className="w-4 h-4 sm:w-5 sm:h-5 text-on-inverse mr-2" />
         )}
         <h4 className={`font-bold text-body-sm sm:text-body-md ${
           deliveryOption === 'pickup' && isPickupAvailable
             ? 'text-primary'
-            : 'text-text-inverse'
+            : 'text-on-inverse'
         }`}>
           {deliveryOption === 'pickup' && isPickupAvailable
             ? 'Pickup Information:'
@@ -216,7 +216,7 @@ function DeliveryInfo({ deliveryOption, isPickupAvailable, selectedState }: any)
       <p className={`text-caption-md sm:text-body-sm mt-1 sm:mt-2 ${
         deliveryOption === 'pickup' && isPickupAvailable
           ? 'text-primary'
-          : 'text-text-inverse/80'
+          : 'text-on-inverse/80'
       }`}>
         {deliveryOption === 'pickup' && isPickupAvailable
           ? `Collect your order from our store in ${selectedState}. We'll contact you when your order is ready for pickup.`

@@ -208,7 +208,7 @@ function OrderDetailsCard({
               deliveryOption === 'pickup' && isPickupAvailable
                 ? 'bg-info-background text-info'
                 : selectedState === 'Abuja'
-                ? 'bg-text-primary text-text-inverse'
+                ? 'bg-surface-inverse text-on-inverse'
                 : 'bg-background-tertiary text-text-secondary'
             }`}>
               {deliveryOption === 'pickup' && isPickupAvailable

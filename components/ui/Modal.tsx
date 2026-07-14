@@ -27,6 +27,16 @@ interface ModalProps {
   size?: ModalSize;
   /** Close when the backdrop is clicked (default true). */
   dismissible?: boolean;
+  /** Suppress the built-in header row entirely; children own the header and close control. */
+  hideHeader?: boolean;
+  /** Accessible name for the dialog when hideHeader is set (or title is omitted). */
+  ariaLabel?: string;
+  /** Extra classes on the built-in header row — e.g. a tinted or bordered header for forms. */
+  headerClassName?: string;
+  /** Remove the default body padding, letting children control their own (pairs with hideHeader for full-bleed content). */
+  padded?: boolean;
+  /** Cap the dialog height and let the body scroll — for large forms. */
+  scrollable?: boolean;
   children: React.ReactNode;
   className?: string;
 }
@@ -37,6 +47,11 @@ export function Modal({
   title,
   size = 'md',
   dismissible = true,
+  hideHeader = false,
+  ariaLabel,
+  headerClassName,
+  padded = true,
+  scrollable = false,
   children,
   className,
 }: ModalProps) {
@@ -66,7 +81,8 @@ export function Modal({
   return (
     <dialog
       ref={dialogRef}
-      aria-labelledby={title ? titleId : undefined}
+      aria-label={ariaLabel}
+      aria-labelledby={!ariaLabel && title ? titleId : undefined}
       onCancel={(event) => {
         /* Escape key: keep state in sync with the parent. */
         event.preventDefault();
@@ -81,27 +97,30 @@ export function Modal({
         'backdrop:bg-overlay backdrop:backdrop-blur-sm',
         'open:animate-modalIn',
         sizes[size],
+        scrollable && 'flex flex-col max-h-[85vh]',
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-4 p-6 pb-0">
-        {title ? (
-          <h2 id={titleId} className="text-h5 font-semibold">
-            {title}
-          </h2>
-        ) : (
-          <span />
-        )}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close dialog"
-          className="-m-2 rounded-control p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
-        >
-          <X className="size-5" aria-hidden="true" />
-        </button>
-      </div>
-      <div className="p-6">{children}</div>
+      {!hideHeader && (
+        <div className={cn('flex items-start justify-between gap-4 p-6 pb-0', scrollable && 'shrink-0', headerClassName)}>
+          {title ? (
+            <h2 id={titleId} className="text-h5 font-semibold">
+              {title}
+            </h2>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            className="-m-2 rounded-control p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
+          >
+            <X className="size-5" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      <div className={cn(padded && 'p-6', scrollable && 'overflow-y-auto')}>{children}</div>
     </dialog>
   );
 }

@@ -9,3 +9,6 @@ export { Badge, type BadgeTone, type BadgeVariant } from './Badge';
 export { Spinner, type SpinnerSize } from './Spinner';
 export { Skeleton } from './Skeleton';
 export { Modal, type ModalSize } from './Modal';
+export { Select, type SelectProps, type SelectSize } from './Select';
+export { Checkbox, type CheckboxProps } from './Checkbox';
+export { ThemeToggle } from './ThemeToggle';

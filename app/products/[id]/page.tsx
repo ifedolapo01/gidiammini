@@ -730,7 +730,7 @@ export default function ProductDetailPage() {
                   <p className="text-destructive font-medium mb-2">This item is currently out of stock</p>
                   <button
                     onClick={() => window.location.href = '/products'}
-                    className="w-full bg-text-primary text-text-inverse py-4 rounded-control font-semibold hover:opacity-90 transition-all text-body-lg"
+                    className="w-full bg-surface-inverse text-on-inverse py-4 rounded-control font-semibold hover:opacity-90 transition-all text-body-lg"
                   >
                     Browse Other Products
                   </button>
@@ -751,7 +751,7 @@ export default function ProductDetailPage() {
                 <div className="mt-3 space-y-2">
                   <button
                     onClick={() => window.location.href = '/products'}
-                    className="w-full bg-text-primary text-text-inverse py-3 rounded-control font-medium hover:opacity-90"
+                    className="w-full bg-surface-inverse text-on-inverse py-3 rounded-control font-medium hover:opacity-90"
                   >
                     Browse Available Products
                   </button>

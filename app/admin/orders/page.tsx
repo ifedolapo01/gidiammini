@@ -15,7 +15,7 @@ import {
   Eye,
   Send
 } from 'lucide-react';
-import { Badge, Button, Input, Spinner } from '@/components/ui';
+import { Badge, Button, Input, Select, Spinner } from '@/components/ui';
 import OrderDetailsModal from './components/OrderDetailsModal';
 import { Order, OrderItem } from '@/types/product';
 import { formatCurrency } from '@/lib/commerce/pricing';
@@ -427,17 +427,17 @@ export default function AdminOrders() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <select
+                      <Select
                         value={order.status}
                         onChange={(e) => updateOrderStatus(order.id, e.target.value as Order['status'])}
-                        className="rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text-primary"
+                        className="w-auto"
                       >
                         {getStatusOptions(order.status).map((status) => (
                           <option key={status} value={status}>
                             {status.charAt(0).toUpperCase() + status.slice(1)}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       <Button
                         size="sm"
                         onClick={() => openOrderDetails(order)}

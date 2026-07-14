@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { useState, Suspense } from "react";
 import { usePathname, useSearchParams } from 'next/navigation';
+import { ThemeToggle } from '@/components/ui';
 
 function HeaderContent() {
   const pathname = usePathname();
@@ -76,7 +77,8 @@ function HeaderContent() {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <ThemeToggle />
             <Link href="/cart" className="relative p-1 hover:bg-primary/10 rounded-full transition-colors">
               <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-text-secondary" />
               {getItemCount() > 0 && (

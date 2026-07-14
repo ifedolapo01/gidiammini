@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Edit2, Tag, Percent, Calendar, Send } from 'lucide-react';
 import { format } from 'date-fns';
-import { Button, Input, Textarea, Badge, Spinner } from '@/components/ui';
+import { Button, Input, Textarea, Badge, Spinner, Modal, Select, Checkbox } from '@/components/ui';
 import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
 
 interface Category {
@@ -474,24 +474,16 @@ export default function DiscountsPage() {
       {renderTable(historyDiscounts, true)}
 
       {/* Discount Modal */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm"
-          onMouseDown={closeModal}
-        >
-          <div
-            className="bg-surface rounded-overlay shadow-elevation-4 w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-border-light flex justify-between items-center bg-background-secondary/50 shrink-0">
-              <h2 className="text-h5 font-bold text-text-primary">{editingId ? 'Edit Discount' : 'Create New Discount'}</h2>
-              <button onClick={closeModal} className="text-text-muted hover:text-text-primary p-1">
-                <Trash2 size={24} className="hidden" /> {/* Spacer */}
-                <span className="text-h4 leading-none">&times;</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto">
+      <Modal
+        open={isModalOpen}
+        onClose={closeModal}
+        size="lg"
+        scrollable
+        padded={false}
+        title={editingId ? 'Edit Discount' : 'Create New Discount'}
+        headerClassName="border-b border-border-light bg-background-secondary/50"
+      >
+        <form onSubmit={handleSubmit} className="p-6">
               {error && (
                 <div className="mb-4 p-3 bg-destructive-background text-destructive text-body-sm rounded-control border border-destructive-border">
                   {error}
@@ -513,14 +505,13 @@ export default function DiscountsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-body-sm font-semibold text-text-primary mb-1.5">Discount Type</label>
-                    <select
+                    <Select
                       value={formData.type}
                       onChange={(e) => setFormData({...formData, type: e.target.value as any})}
-                      className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary"
                     >
                       <option value="PERCENTAGE">Percentage (%)</option>
                       <option value="FIXED">Fixed Amount (₦)</option>
-                    </select>
+                    </Select>
                   </div>
                   <div>
                     <label className="block text-body-sm font-semibold text-text-primary mb-1.5">Value</label>
@@ -544,58 +535,54 @@ export default function DiscountsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-body-sm font-semibold text-text-primary mb-1.5">Scope</label>
-                    <select
+                    <Select
                       value={formData.scope}
                       onChange={(e) => setFormData({...formData, scope: e.target.value as any, target_id: ''})}
-                      className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary"
                     >
                       <option value="SITEWIDE">Sitewide</option>
                       <option value="CATEGORY">Category</option>
                       <option value="SUBCATEGORY">Subcategory</option>
                       <option value="PRODUCT">Specific Product</option>
                       <option value="VARIANT">Product Variant</option>
-                    </select>
+                    </Select>
                   </div>
 
                   {formData.scope !== 'SITEWIDE' && (
                     <div>
                       <label className="block text-body-sm font-semibold text-text-primary mb-1.5">Target</label>
                       {formData.scope === 'CATEGORY' && (
-                        <select
+                        <Select
                           value={formData.target_id}
                           onChange={(e) => setFormData({...formData, target_id: e.target.value})}
-                          className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary"
                           required
                         >
                           <option value="">Select a category...</option>
                           {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
-                        </select>
+                        </Select>
                       )}
 
                       {formData.scope === 'SUBCATEGORY' && (
-                        <select
+                        <Select
                           value={formData.target_id}
                           onChange={(e) => setFormData({...formData, target_id: e.target.value})}
-                          className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary"
                           required
                         >
                           <option value="">Select a subcategory...</option>
                           {categories.flatMap(c => c.subcategories || []).map(s => (
                             <option key={s.id} value={s.slug}>{s.name}</option>
                           ))}
-                        </select>
+                        </Select>
                       )}
 
                       {formData.scope === 'PRODUCT' && (
-                        <select
+                        <Select
                           value={formData.target_id}
                           onChange={(e) => setFormData({...formData, target_id: e.target.value})}
-                          className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary"
                           required
                         >
                           <option value="">Select a product...</option>
                           {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
+                        </Select>
                       )}
 
                       {formData.scope === 'VARIANT' && (
@@ -603,18 +590,18 @@ export default function DiscountsPage() {
                           <div className="space-y-3">
                             <div>
                               <label className="block text-caption-md font-medium text-text-primary mb-1">Select Product</label>
-                              <select
+                              <Select
+                                size="sm"
                                 value={variantProductId}
                                 onChange={(e) => {
                                   setVariantProductId(e.target.value);
                                   setVariantSize('');
                                   setVariantColor('');
                                 }}
-                                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary text-body-sm"
                               >
                                 <option value="">Choose a product...</option>
                                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                              </select>
+                              </Select>
                             </div>
                             
                             {variantProductId && (() => {
@@ -640,33 +627,33 @@ export default function DiscountsPage() {
                                   {availableSizes.length > 0 && (
                                     <div>
                                       <label className="block text-caption-md font-medium text-text-primary mb-1">Select Size/Age</label>
-                                      <select
+                                      <Select
+                                        size="sm"
                                         value={variantSize}
                                         onChange={(e) => setVariantSize(e.target.value)}
-                                        className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary text-body-sm"
                                       >
                                         <option value="" disabled>Choose size...</option>
                                         {availableSizes.map(size => (
                                           <option key={size} value={size}>{size}</option>
                                         ))}
-                                      </select>
+                                      </Select>
                                     </div>
                                   )}
 
                                   {availableColors.length > 0 && (
                                     <div>
                                       <label className="block text-caption-md font-medium text-text-primary mb-1">Select Color</label>
-                                      <select
+                                      <Select
+                                        size="sm"
                                         value={variantColor}
                                         onChange={(e) => setVariantColor(e.target.value)}
-                                        className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary text-body-sm"
                                         disabled={config?.mode === 'combination' && !variantSize}
                                       >
                                         <option value="" disabled>{config?.mode === 'combination' && !variantSize ? 'Select size first...' : 'Choose color...'}</option>
                                         {availableColors.map(color => (
                                           <option key={color} value={color}>{color}</option>
                                         ))}
-                                      </select>
+                                      </Select>
                                     </div>
                                   )}
                                 </div>
@@ -770,12 +757,10 @@ export default function DiscountsPage() {
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="is_active"
                     checked={formData.is_active}
                     onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                    className="w-4 h-4 text-primary rounded-control border-border"
                   />
                   <label htmlFor="is_active" className="text-body-sm font-medium text-text-primary">Active (Apply this discount immediately)</label>
                 </div>
@@ -798,15 +783,11 @@ export default function DiscountsPage() {
                 </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Notify Modal */}
       {notifyModalDiscount && (
-        <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4" onMouseDown={() => setNotifyModalDiscount(null)}>
-          <div className="bg-surface rounded-overlay shadow-elevation-4 max-w-lg w-full p-6 animate-in fade-in zoom-in duration-200" onMouseDown={(e) => e.stopPropagation()}>
-            <h2 className="text-h5 font-bold text-text-primary mb-2">Notify Subscribers</h2>
+        <Modal open onClose={() => setNotifyModalDiscount(null)} title="Notify Subscribers" size="md">
             <p className="text-text-secondary mb-6">
               Send an immediate email to all your active subscribers about <strong>{notifyModalDiscount.name}</strong>.
             </p>
@@ -850,8 +831,7 @@ export default function DiscountsPage() {
                 {isNotifying ? 'Sending...' : 'Send Now'}
               </Button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

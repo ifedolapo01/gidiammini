@@ -3,8 +3,8 @@
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
-import { Package, RefreshCw, Plus, Edit, Save, X } from 'lucide-react';
-import { Button, Input, Spinner } from '@/components/ui';
+import { Package, RefreshCw, Plus, Edit, Save } from 'lucide-react';
+import { Button, Input, Spinner, Modal } from '@/components/ui';
 import { flattenProducts, FlattenedProduct } from '@/lib/commerce/product-flatten';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
@@ -387,21 +387,7 @@ export default function StockManagementPage() {
 
       {/* Edit Modal */}
       {editingProduct && (
-        <div
-          className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4"
-          onMouseDown={cancelEditing}
-        >
-          <div
-            className="bg-surface rounded-overlay shadow-elevation-4 max-w-lg w-full"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-border flex justify-between items-center bg-surface z-10 rounded-t-overlay">
-              <h2 className="text-h5 font-bold text-text-primary">Update Stock</h2>
-              <button onClick={cancelEditing} className="text-text-secondary hover:text-text-primary">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
+        <Modal open onClose={cancelEditing} title="Update Stock" size="md" padded={false}>
             <div className="p-6">
               <div className="space-y-6">
                 <div className="flex gap-4 items-start">
@@ -464,8 +450,7 @@ export default function StockManagementPage() {
                 Save Stock
               </Button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

@@ -42,6 +42,15 @@
   --overlay: rgb(0 0 0 / 0.5);
   --disabled: #d1d5db;
 
+  /* --- Fixed-inverse surface ---
+     Deliberately NOT overridden under [data-theme="dark"]: for chrome that
+     must always read as a dark, high-contrast block regardless of the
+     active theme (footers, permanent CTA bars). Do not use text-primary/
+     text-inverse for this — those are designed to flip with theme and will
+     cancel out into a light block in dark mode. */
+  --surface-inverse: #171717;
+  --on-inverse: #ededed;
+
   /* --- Status ---
      Values chosen to hold WCAG AA (4.5:1) both as text on the paired
      *-background tint and as a solid fill under text-inverse. */
@@ -217,6 +226,8 @@
   --color-divider: var(--divider);
   --color-overlay: var(--overlay);
   --color-disabled: var(--disabled);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-on-inverse: var(--on-inverse);
   --color-success: var(--success);
   --color-success-background: var(--success-background);
   --color-success-border: var(--success-border);

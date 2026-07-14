@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/commerce/pricing';
 
+import { Checkbox } from '@/components/ui';
 import CheckoutSteps from '@/components/checkout/CheckoutSteps';
 import EmptyCart from '@/components/checkout/EmptyCart';
 import StateDeliveryForm from '@/components/checkout/StateDeliveryForm';
@@ -465,13 +466,11 @@ function CustomerInformation({ deliveryOption, isPickupAvailable, selectedState,
 
       <div className="mt-4 flex items-start">
         <div className="flex items-center h-5">
-          <input
+          <Checkbox
             id="subscribe"
             name="subscribe"
-            type="checkbox"
             checked={formData.subscribeToNewsletter}
             onChange={(e) => setFormData({...formData, subscribeToNewsletter: e.target.checked})}
-            className="w-4 h-4 text-primary border-border-strong rounded-control"
           />
         </div>
         <div className="ml-3 text-body-sm">

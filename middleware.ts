@@ -7,9 +7,12 @@ export async function middleware(request: NextRequest) {
   const adminToken = request.cookies.get('admin-token')?.value;
   const isAdminPath = request.nextUrl.pathname.startsWith('/admin');
   const isLoginPage = request.nextUrl.pathname === '/admin/login';
-  
-  // Rule 1: Allow access to login page for everyone
-  if (isLoginPage) {
+  // The white-label favicon (app/admin/icon.tsx) must be publicly fetchable —
+  // browsers request it unauthenticated, including from the login page itself.
+  const isPublicAdminAsset = request.nextUrl.pathname === '/admin/icon';
+
+  // Rule 1: Allow access to login page and public admin assets for everyone
+  if (isLoginPage || isPublicAdminAsset) {
     return NextResponse.next();
   }
   

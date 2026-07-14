@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Upload, X, ArrowLeft, Star, Plus } from "lucide-react";
 import Link from "next/link";
-import { Button, Input, Textarea, Spinner } from "@/components/ui";
+import { Button, Input, Textarea, Spinner, Select, Checkbox } from "@/components/ui";
 import { uploadProductImage } from "@/app/actions/upload";
 import imageCompression from "browser-image-compression";
 import { PricingMode } from "@/types/product";
@@ -538,31 +538,31 @@ export default function AddProductPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-body-sm font-bold text-text-primary mb-2">Category <span className="text-destructive">*</span></label>
-                    <select
+                    <Select
                       {...register("category")}
-                      className={`w-full h-11 rounded-control border px-3 text-text-primary bg-surface transition-colors ${errors.category ? 'border-destructive' : 'border-border'}`}
+                      invalid={!!errors.category}
                       disabled={loadingCategories}
                     >
                       <option value="">Select a category...</option>
                       {categories.map(cat => (
                         <option key={cat.id} value={cat.slug}>{cat.name}</option>
                       ))}
-                    </select>
+                    </Select>
                     {errors.category && <p className="text-destructive text-body-sm mt-1.5">{errors.category.message}</p>}
                   </div>
 
                   {selectedCategory && selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && (
                     <div>
                       <label className="block text-body-sm font-bold text-text-primary mb-2">Subcategory</label>
-                      <select
+                      <Select
                         {...register("sub_category")}
-                        className="w-full h-11 rounded-control border border-border px-3 text-text-primary bg-surface transition-colors"
+                        invalid={!!errors.sub_category}
                       >
                         <option value="">No subcategory (optional)</option>
                         {selectedCategory.subcategories.map(sub => (
                           <option key={sub.id} value={sub.slug}>{sub.name}</option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                   )}
                 </div>
@@ -580,9 +580,7 @@ export default function AddProductPage() {
                   </div>
                   <div className="flex items-center gap-2 bg-surface px-4 py-2 rounded-control border border-border">
                     <label className="text-body-sm font-medium text-text-primary cursor-pointer flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="rounded-control border-border-strong accent-primary"
+                      <Checkbox
                         checked={hasVariants}
                         onChange={(e) => {
                           setHasVariants(e.target.checked);
@@ -647,20 +645,16 @@ export default function AddProductPage() {
                   <div className="space-y-6">
                     <div className="flex flex-wrap gap-4 p-4 bg-surface rounded-control border border-border">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={hasSizes}
                           onChange={(e) => setHasSizes(e.target.checked)}
-                          className="rounded-control border-border-strong accent-primary w-4 h-4"
                         />
                         <span className="text-body-sm font-medium text-text-primary">Has Sizes/Ages</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={hasColors}
                           onChange={(e) => setHasColors(e.target.checked)}
-                          className="rounded-control border-border-strong accent-primary w-4 h-4"
                         />
                         <span className="text-body-sm font-medium text-text-primary">Has Colors</span>
                       </label>

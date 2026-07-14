@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Tag, Layers } from 'lucide-react';
-import { Button, Input, Spinner } from '@/components/ui';
+import { Button, Input, Select, Spinner } from '@/components/ui';
 
 interface Subcategory {
   id: string;
@@ -257,7 +257,7 @@ export default function CategoriesPage() {
             <form onSubmit={handleAddSubcategory} className="space-y-4">
               <div>
                 <label className="block text-body-sm font-medium text-text-primary mb-1">Parent Category</label>
-                <select
+                <Select
                   value={selectedCategoryForSub}
                   onChange={(e) => {
                     setSelectedCategoryForSub(e.target.value);
@@ -265,14 +265,13 @@ export default function CategoriesPage() {
                       setNewSubSlug(`${e.target.value}-${newSubName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`);
                     }
                   }}
-                  className="w-full rounded-control border border-border bg-surface px-3 py-2 text-text-primary"
                   required
                 >
                   <option value="">Select a category...</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.slug}>{cat.name}</option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="block text-body-sm font-medium text-text-primary mb-1">Subcategory Name</label>
