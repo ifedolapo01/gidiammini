@@ -1,3 +1,4 @@
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 // app/checkout/page.tsx
 'use client';
 
@@ -7,6 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
+import { formatCurrency } from '@/lib/commerce/pricing';
 
 import CheckoutSteps from '@/components/checkout/CheckoutSteps';
 import EmptyCart from '@/components/checkout/EmptyCart';
@@ -232,17 +234,17 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen bg-background-secondary overflow-x-hidden">
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Return to Cart Header - Mobile optimized */}
         {step === 'form' && (
           <div className="mb-3">
             <Link
               href="/cart"
-              className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium py-1 px-1"
+              className="inline-flex items-center text-primary hover:text-primary-hover font-medium py-1 px-1"
             >
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">Return to Cart</span>
+              <span className="text-caption-md sm:text-body-sm">Return to Cart</span>
             </Link>
           </div>
         )}
@@ -254,13 +256,13 @@ export default function CheckoutPage() {
 
         {/* Page Title - Mobile responsive */}
         <div className="mb-3 sm:mb-4 md:mb-6">
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 text-gray-900">
+          <h1 className="text-body-lg sm:text-h5 md:text-h4 lg:text-h3 font-bold mb-1 text-text-primary">
             {step === 'form' && 'Checkout'}
             {step === 'payment' && 'Make Payment'}
             {step === 'confirmation' && 'Order Submitted!'}
           </h1>
-          
-          <p className="text-xs sm:text-sm text-gray-600">
+
+          <p className="text-caption-md sm:text-body-sm text-text-secondary">
             {step === 'form' && 'Complete your purchase'}
             {step === 'payment' && 'Transfer funds and upload receipt'}
             {step === 'confirmation' && 'Your order has been submitted'}
@@ -292,7 +294,7 @@ export default function CheckoutPage() {
                 {/* Submit Button - Desktop */}
                 <button
                   type="submit"
-                  className="hidden md:block w-full bg-blue-600 text-white py-3 md:py-4 rounded-lg md:rounded-xl font-semibold text-base md:text-lg hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="hidden md:block w-full bg-primary text-primary-foreground py-3 md:py-4 rounded-control font-semibold text-body-md md:text-body-lg hover:bg-primary-hover transition-all duration-300 shadow-elevation-3 hover:shadow-elevation-4"
                 >
                   Proceed to Payment
                 </button>
@@ -315,14 +317,14 @@ export default function CheckoutPage() {
               </div>
 
               {/* Mobile Bottom Bar */}
-              <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-3 sm:p-4">
+              <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t shadow-elevation-3 z-50 p-3 sm:p-4">
                 <div className="flex justify-between items-center mb-3 sm:mb-4">
                   <div>
-                    <p className="text-xs sm:text-sm text-gray-600">Total Amount</p>
-                    <p className="font-bold text-lg sm:text-xl text-blue-600">₦{total.toLocaleString()}</p>
+                    <p className="text-caption-md sm:text-body-sm text-text-secondary">Total Amount</p>
+                    <p className="font-bold text-body-lg sm:text-h5 text-primary">{formatCurrency(total)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Includes tax & shipping</p>
+                    <p className="text-caption-md text-text-secondary">Includes tax & shipping</p>
                     <button
                       type="button"
                       onClick={() => {
@@ -332,7 +334,7 @@ export default function CheckoutPage() {
                           (modal as any).showModal?.();
                         }
                       }}
-                      className="text-xs sm:text-sm text-blue-600 font-medium mt-1"
+                      className="text-caption-md sm:text-body-sm text-primary font-medium mt-1"
                     >
                       View Details
                     </button>
@@ -341,7 +343,7 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   form="checkout-form"
-                  className="w-full bg-blue-600 text-white py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-blue-700"
+                  className="w-full bg-primary text-primary-foreground py-3 sm:py-4 rounded-control font-semibold text-body-md sm:text-body-lg hover:bg-primary-hover"
                 >
                   Proceed to Payment
                 </button>
@@ -350,10 +352,10 @@ export default function CheckoutPage() {
               {/* Mobile Order Summary Modal */}
               <dialog id="mobile-order-summary" className="modal modal-bottom sm:modal-middle">
                 <div className="modal-box max-h-[80vh] overflow-y-auto p-0 w-full max-w-full sm:max-w-md">
-                  <div className="sticky top-0 bg-white border-b p-3 sm:p-4">
-                    <h3 className="text-base sm:text-lg font-bold">Order Summary</h3>
+                  <div className="sticky top-0 bg-surface border-b p-3 sm:p-4">
+                    <h3 className="text-body-md sm:text-body-lg font-bold">Order Summary</h3>
                     <button
-                      className="absolute right-3 sm:right-4 top-3 sm:top-4 text-lg"
+                      className="absolute right-3 sm:right-4 top-3 sm:top-4 text-body-lg"
                       onClick={() => {
                         const modal = document.getElementById('mobile-order-summary');
                         if (modal) {
@@ -421,8 +423,8 @@ export default function CheckoutPage() {
 // CustomerInformation component
 function CustomerInformation({ deliveryOption, isPickupAvailable, selectedState, formData, setFormData }: any) {
   return (
-    <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
-      <h2 className="text-base sm:text-lg md:text-xl font-bold mb-3 sm:mb-4 md:mb-6 text-gray-800">
+    <div className="bg-surface p-3 sm:p-4 md:p-6 rounded-surface shadow-elevation-1 border border-border">
+      <h2 className="text-body-md sm:text-body-lg md:text-h5 font-bold mb-3 sm:mb-4 md:mb-6 text-text-primary">
         {deliveryOption === 'pickup' && isPickupAvailable 
           ? 'Pickup Information' 
           : 'Delivery Information'
@@ -469,12 +471,12 @@ function CustomerInformation({ deliveryOption, isPickupAvailable, selectedState,
             type="checkbox"
             checked={formData.subscribeToNewsletter}
             onChange={(e) => setFormData({...formData, subscribeToNewsletter: e.target.checked})}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-primary border-border-strong rounded-control"
           />
         </div>
-        <div className="ml-3 text-sm">
-          <label htmlFor="subscribe" className="font-medium text-gray-700">Keep me updated</label>
-          <p className="text-gray-500">Send me exclusive offers and upcoming discounts.</p>
+        <div className="ml-3 text-body-sm">
+          <label htmlFor="subscribe" className="font-medium text-text-primary">Keep me updated</label>
+          <p className="text-text-secondary">Send me exclusive offers and upcoming discounts.</p>
         </div>
       </div>
 
@@ -489,14 +491,14 @@ function CustomerInformation({ deliveryOption, isPickupAvailable, selectedState,
       )}
       
       <div className="mt-3 sm:mt-4 md:mt-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-body-sm font-medium text-text-primary mb-1">
           Additional Note (Optional)
         </label>
         <textarea
           value={formData.note}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, note: e.target.value})}
           placeholder="Any special instructions or notes for your order..."
-          className="w-full border border-gray-300 text-black rounded-lg px-3 sm:px-4 py-2 sm:py-3 h-24 sm:h-32 text-sm"
+          className="w-full border border-border-strong bg-surface text-text-primary rounded-control px-3 sm:px-4 py-2 sm:py-3 h-24 sm:h-32 text-body-sm focus-visible:border-focus"
           rows={3}
         />
       </div>
@@ -507,7 +509,7 @@ function CustomerInformation({ deliveryOption, isPickupAvailable, selectedState,
 function FormInput({ type = 'text', label, value, onChange, placeholder }: any) {
   return (
     <div>
-      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-caption-md sm:text-body-sm font-medium text-text-primary mb-1">
         {label}
       </label>
       <input
@@ -515,7 +517,7 @@ function FormInput({ type = 'text', label, value, onChange, placeholder }: any) 
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full border border-gray-300 text-black rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="w-full border border-border-strong bg-surface text-text-primary rounded-control px-3 sm:px-4 py-2 sm:py-3 text-body-sm focus-visible:border-focus"
         required
       />
     </div>
@@ -543,10 +545,10 @@ function AddressFields({ selectedState, address, city, setAddress, setCity }: an
         />
       </div>
       {selectedState !== 'Abuja' && (
-        <div className="mt-3 p-2 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-xs sm:text-sm text-yellow-700">
-            <strong>Note:</strong> For {selectedState}, we deliver to designated parks only. 
-            Please specify which park you prefer, and you'll need to collect your order from there.
+        <div className="mt-3 p-2 sm:p-3 bg-warning-background border border-warning-border rounded-control">
+          <p className="text-caption-md sm:text-body-sm text-warning">
+            <strong>Note:</strong> For {selectedState}, we deliver to designated parks only.
+            Please specify which park you prefer and you'll need to collect your order from there.
           </p>
         </div>
       )}

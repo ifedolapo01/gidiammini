@@ -1,4 +1,4 @@
-// lib/discounts.ts
+/** COMMERCE layer — shared discount logic. Used by Storefront and Admin. */
 
 export interface Discount {
   id: string;
@@ -10,6 +10,16 @@ export interface Discount {
   is_active: boolean;
   start_date: string | null;
   end_date: string | null;
+  created_at?: string;
+}
+
+export function formatDiscountValue(
+  discount: Pick<Discount, 'type' | 'value'>,
+  fixedStyle: 'off' | 'save' = 'off'
+): string {
+  if (discount.type === 'PERCENTAGE') return `${discount.value}% OFF`;
+  const amount = `₦${discount.value.toLocaleString()}`;
+  return fixedStyle === 'save' ? `Save ${amount}` : `${amount} OFF`;
 }
 
 export function getBestDiscount(product: any, discounts: Discount[], currentPrice?: number, selectedSize?: string, selectedColor?: string): Discount | null {

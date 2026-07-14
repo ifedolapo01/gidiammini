@@ -35,6 +35,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'No active discounts.' });
     }
 
+    // 2.5 Automatically deactivate expired discounts
+    const expiredIds = discounts
+      .filter((d) => d.end_date && new Date(d.end_date) < now)
+      .map((d) => d.id);
+
+    if (expiredIds.length > 0) {
+      await supabase
+        .from('discounts')
+        .update({ is_active: false })
+        .in('id', expiredIds);
+    }
+
+    // Filter out expired discounts so we don't send emails for them
+    const validDiscounts = discounts.filter((d) => !expiredIds.includes(d.id));
+
+    if (validDiscounts.length === 0) {
+      return NextResponse.json({ success: true, message: `Deactivated ${expiredIds.length} expired discounts. No active discounts remaining.` });
+    }
+
     // 3. Setup Nodemailer
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -56,7 +75,7 @@ export async function GET(req: NextRequest) {
     let subscribers: any[] | null = null;
 
     // 4. Process each discount
-    for (const discount of discounts) {
+    for (const discount of validDiscounts) {
       const notifiedPhases: string[] = discount.notified_phases || [];
       const start = discount.start_date ? new Date(discount.start_date) : now;
       const end = discount.end_date ? new Date(discount.end_date) : null;

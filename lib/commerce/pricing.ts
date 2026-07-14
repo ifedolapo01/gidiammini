@@ -1,4 +1,13 @@
+/** COMMERCE layer — shared variant pricing logic. Used by Storefront and Admin. */
 import { Product, PricingConfig } from '@/types/product';
+
+export function formatCurrency(amount: number): string {
+  return `₦${amount.toLocaleString()}`;
+}
+
+export function formatPriceRange(min: number, max: number): string {
+  return min === max ? formatCurrency(min) : `${formatCurrency(min)} - ${formatCurrency(max)}`;
+}
 
 export function getVariantPrice(
   product: Product,

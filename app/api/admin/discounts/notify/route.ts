@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     if (!discountId || !customSubject || !customMessage) {
       return NextResponse.json(
-        { success: false, error: 'discountId, customSubject, and customMessage are required' },
+        { success: false, error: 'discountId, customSubject and customMessage are required' },
         { status: 400 }
       );
     }

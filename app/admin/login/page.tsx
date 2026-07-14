@@ -1,9 +1,14 @@
-// app/admin/login/page.tsx - UPDATED
+/**
+ * ADMIN layer — login page for the white-label Commerce Admin.
+ * Composed from Core primitives; branding comes from adminConfig + tokens.
+ */
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
+import { Button, Input } from '@/components/ui';
+import { adminConfig } from '../config';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -17,16 +22,16 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         router.push('/admin/dashboard');
         router.refresh();
@@ -42,58 +47,63 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-        <h1 className="text-2xl font-bold mb-2 text-blue-600">GidiamMini Admin</h1>
-        <p className="text-gray-600 mb-6 text-sm">Use: admin@gidiammini.com</p>
-        
+    <div className="min-h-screen flex items-center justify-center bg-background-secondary px-4">
+      <div className="bg-surface p-8 rounded-surface shadow-elevation-3 w-full max-w-sm">
+        <h1 className="text-h4 font-bold mb-2 text-primary">{adminConfig.brandName}</h1>
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1 text-black">Email</label>
-            <input
+            <label htmlFor="admin-email" className="block text-body-sm font-medium mb-1 text-text-primary">
+              Email
+            </label>
+            <Input
+              id="admin-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-lg px-4 py-2 text-black"
-              placeholder="admin@gidiammini.com"
+              placeholder="admin@example.com"
+              autoComplete="email"
+              invalid={!!error}
               required
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium mb-1 text-black">Password</label>
+            <label htmlFor="admin-password" className="block text-body-sm font-medium mb-1 text-text-primary">
+              Password
+            </label>
             <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
+              <Input
+                id="admin-password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border rounded-lg px-4 py-2 text-black pr-10"
                 placeholder="Enter your password"
+                autoComplete="current-password"
+                invalid={!!error}
                 required
+                className="pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
               </button>
             </div>
           </div>
-          
+
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm font-medium">{error}</p>
+            <div role="alert" className="p-3 bg-destructive-background border border-destructive-border rounded-control">
+              <p className="text-destructive text-body-sm font-medium">{error}</p>
             </div>
           )}
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400"
-          >
+
+          <Button type="submit" loading={loading} className="w-full font-semibold">
             {loading ? 'Logging in...' : 'Login to Dashboard'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

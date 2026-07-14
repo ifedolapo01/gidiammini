@@ -1,5 +1,6 @@
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 // app/page.tsx - KEEP AS SERVER COMPONENT
-import ProductCard from '@/components/ProductCard';
+import ProductCard from '@/components/commerce/ProductCard';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ProductCardProduct } from '@/types/product';
@@ -39,7 +40,7 @@ export default async function HomePage() {
   const discounts = discountsData || [];
 
   return (
-    <div className="bg-pink-50/20">
+    <div className="bg-primary/5">
       {/* Hero Carousel Section */}
       <HeroCarousel />
 
@@ -49,16 +50,16 @@ export default async function HomePage() {
           <div className="container mx-auto px-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-10">
               <div>
-                <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+                <h2 className="text-h4 md:text-h2 font-extrabold text-text-primary tracking-tight">
                   Featured Arrivals
                 </h2>
-                <p className="text-gray-500 mt-1 text-sm md:text-base">
+                <p className="text-text-secondary mt-1 text-body-sm md:text-body-md">
                   Specially handpicked clothing and accessories for your family
                 </p>
               </div>
-              <Link 
-                href="/products" 
-                className="mt-4 sm:mt-0 px-6 py-2.5 rounded-full bg-pink-100 text-pink-700 hover:bg-pink-200 font-bold transition-all text-sm md:text-base text-center inline-block"
+              <Link
+                href="/products"
+                className="mt-4 sm:mt-0 px-6 py-2.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 font-bold transition-all text-body-sm md:text-body-md text-center inline-block"
               >
                 View All Collection →
               </Link>
@@ -74,13 +75,13 @@ export default async function HomePage() {
       )}
 
       {/* Categories */}
-      <section className="py-12 md:py-20 bg-white border-t border-b border-pink-100/50">
+      <section className="py-12 md:py-20 bg-surface border-t border-b border-primary/10">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-xl mx-auto mb-12">
-            <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+            <h2 className="text-h4 md:text-h2 font-extrabold text-text-primary tracking-tight">
               Shop by Category
             </h2>
-            <p className="text-gray-500 mt-2 text-sm md:text-base">
+            <p className="text-text-secondary mt-2 text-body-sm md:text-body-md">
               Find exactly what you need for every milestone of the journey.
             </p>
           </div>
@@ -90,11 +91,11 @@ export default async function HomePage() {
               <Link 
                 key={cat.id}
                 href={`/products?category=${cat.slug}`}
-                className="relative group overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                className="relative group overflow-hidden rounded-surface shadow-elevation-2 hover:shadow-elevation-4 transition-all hover:-translate-y-1"
               >
-                <div className={`h-56 md:h-72 bg-gradient-to-br ${cat.color || 'from-sky-300/80 to-indigo-400/90'} flex flex-col justify-end p-6 md:p-8 text-white`}>
-                  <h3 className="text-2xl md:text-3xl font-extrabold mb-1">{cat.name}</h3>
-                  <p className="text-white/90 text-sm font-medium line-clamp-2">
+                <div className={`h-56 md:h-72 bg-gradient-to-br ${cat.color || 'from-secondary/80 to-accent/90'} flex flex-col justify-end p-6 md:p-8 text-text-inverse`}>
+                  <h3 className="text-h4 md:text-h3 font-extrabold mb-1">{cat.name}</h3>
+                  <p className="text-text-inverse/90 text-body-sm font-medium line-clamp-2">
                     {cat.subcategories && cat.subcategories.length > 0 
                       ? cat.subcategories.map((s: any) => s.name).join(' • ')
                       : `Shop our ${cat.name.toLowerCase()} collection`}

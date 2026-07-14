@@ -1,10 +1,18 @@
-// app/admin/layout.tsx - RESPONSIVE VERSION
+/**
+ * ADMIN layer — layout shell for the white-label Commerce Admin.
+ * Depends only on Core (tokens, primitives) and admin config; brand
+ * appearance comes from the .theme-admin token scope.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { Menu, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui';
 import { MarqueeAlertBar } from './components/marquee-alert-bar';
+import { adminConfig } from './config';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -21,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const checkAuth = async () => {
       setLoading(false); // Let middleware handle redirects
     };
-    
+
     checkAuth();
   }, []);
 
@@ -37,19 +45,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="theme-admin min-h-screen flex items-center justify-center">
+        <Spinner size="xl" className="text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="theme-admin min-h-screen bg-background-tertiary">
       {pathname !== '/admin/login' && <MarqueeAlertBar />}
-      
+
       {/* Admin Header - Only show if not on login page */}
       {pathname !== '/admin/login' && (
-        <header className="bg-white border-b shadow-sm">
+        <header className="bg-surface border-b border-border shadow-elevation-1">
           <div className="container mx-auto px-4 sm:px-6 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center justify-between w-full md:w-auto">
@@ -57,51 +65,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="md:hidden text-gray-600 hover:text-gray-900 focus:outline-none"
+                    className="md:hidden text-text-secondary hover:text-text-primary"
                     aria-label="Toggle menu"
+                    aria-expanded={mobileMenuOpen}
                   >
                     {mobileMenuOpen ? (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <X className="size-6" aria-hidden="true" />
                     ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
+                      <Menu className="size-6" aria-hidden="true" />
                     )}
                   </button>
-                  
-                  <Link href="/admin/dashboard" className="text-xl font-bold text-gray-800">
-                    GidiamMini Admin
+
+                  <Link href="/admin/dashboard" className="text-h5 font-bold text-text-primary">
+                    {adminConfig.brandName}
                   </Link>
                 </div>
 
                 {/* Desktop Navigation - Hidden on mobile */}
                 <nav className="hidden md:flex space-x-4 ml-6">
-                  <Link href="/admin/dashboard" className={`px-3 py-2 transition-colors ${isActive('/admin/dashboard') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Dashboard
-                  </Link>
-                  <Link href="/admin/products" className={`px-3 py-2 transition-colors ${isActive('/admin/products') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Products
-                  </Link>
-                  <Link href="/admin/orders" className={`px-3 py-2 transition-colors ${isActive('/admin/orders') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Orders
-                  </Link>
-                  <Link href="/admin/stock" className={`px-3 py-2 transition-colors ${isActive('/admin/stock') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Stock Management
-                  </Link>
-                  <Link href="/admin/categories" className={`px-3 py-2 transition-colors ${isActive('/admin/categories') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Categories
-                  </Link>
-                  <Link href="/admin/discounts" className={`px-3 py-2 transition-colors ${isActive('/admin/discounts') ? 'text-blue-600 font-bold border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Discounts
-                  </Link>
+                  {adminConfig.navigation.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        'px-3 py-2 transition-colors',
+                        isActive(item.href)
+                          ? 'text-primary font-bold border-b-2 border-primary'
+                          : 'text-text-secondary hover:text-text-primary',
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
                 </nav>
               </div>
-              
+
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm whitespace-nowrap ml-4"
+                className="px-4 py-2 bg-destructive-background text-destructive border border-destructive-border rounded-control hover:bg-destructive-border transition-colors text-body-sm whitespace-nowrap ml-4"
               >
                 Logout
               </button>
@@ -109,65 +110,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Mobile Navigation Menu */}
             {mobileMenuOpen && (
-              <div className="md:hidden mt-4 pb-4 border-t pt-4">
+              <div className="md:hidden mt-4 pb-4 border-t border-divider pt-4">
                 <nav className="flex flex-col space-y-2">
-                  <Link 
-                    href="/admin/dashboard" 
-                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/dashboard') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link 
-                    href="/admin/products" 
-                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/products') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
-                  >
-                    Products
-                  </Link>
-                  <Link 
-                    href="/admin/orders" 
-                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/orders') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
-                  >
-                    Orders
-                  </Link>
-                  <Link 
-                    href="/admin/stock" 
-                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/stock') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
-                  >
-                    Stock Management
-                  </Link>
-                  <Link 
-                    href="/admin/categories" 
-                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/categories') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
-                  >
-                    Categories
-                  </Link>
-                  <Link 
-                    href="/admin/discounts" 
-                    className={`px-4 py-3 rounded-lg transition-colors ${isActive('/admin/discounts') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
-                  >
-                    Discounts
-                  </Link>
+                  {adminConfig.navigation.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        'px-4 py-3 rounded-control transition-colors',
+                        isActive(item.href)
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover',
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
                 </nav>
               </div>
             )}
           </div>
         </header>
       )}
-      
+
       <main className="container mx-auto px-4 sm:px-6 py-6 md:py-8">
         {pathname !== '/admin/login' && (
-          <div className="md:hidden mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow-sm">
+          <div className="md:hidden mb-6 bg-warning-background border-l-4 border-warning p-4 rounded-surface shadow-elevation-1">
             <div className="flex items-start">
-              <div className="flex-shrink-0 pt-0.5">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+              <div className="shrink-0 pt-0.5">
+                <svg className="size-5 text-warning" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">Desktop View Recommended</h3>
-                <div className="mt-1 text-sm text-yellow-700">
+                <h3 className="text-body-sm font-medium text-text-primary">Desktop View Recommended</h3>
+                <div className="mt-1 text-body-sm text-text-secondary">
                   <p>
-                    For the best experience using the admin portal, please enable <strong>"Desktop site"</strong> in your browser settings (usually found by tapping the three vertical dots <span className="font-bold text-lg leading-none align-middle">⋮</span>).
+                    For the best experience using the admin portal, please enable <strong>"Desktop site"</strong> in your browser settings (usually found by tapping the three vertical dots <span className="font-bold text-body-lg leading-none align-middle">⋮</span>).
                   </p>
                 </div>
               </div>

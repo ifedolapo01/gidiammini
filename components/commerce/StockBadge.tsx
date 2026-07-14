@@ -1,0 +1,54 @@
+/** COMMERCE layer — shared stock-status badge. Used by Storefront and Admin. */
+import { Badge, type BadgeVariant } from '@/components/ui';
+import { getStockStatus } from '@/lib/commerce/stock';
+
+interface StockBadgeProps {
+  stock: number;
+  lowStockThreshold?: number;
+  variant?: BadgeVariant;
+  /** Hide the badge entirely when stock is healthy (default true). */
+  hideWhenInStock?: boolean;
+  labels?: { in?: string; low?: string; out?: string };
+  /** How to render the numeric count alongside the label. */
+  countFormat?: 'none' | 'parens' | 'colon' | 'units';
+  className?: string;
+}
+
+export function StockBadge({
+  stock,
+  lowStockThreshold = 5,
+  variant = 'solid',
+  hideWhenInStock = true,
+  labels,
+  countFormat = 'none',
+  className,
+}: StockBadgeProps) {
+  const status = getStockStatus(stock, lowStockThreshold);
+
+  if (status.level === 'in' && hideWhenInStock) return null;
+
+  if (countFormat === 'units') {
+    return (
+      <Badge tone={status.tone} variant={variant} className={className}>
+        {stock} units
+      </Badge>
+    );
+  }
+
+  const label =
+    status.level === 'out' ? (labels?.out ?? status.text)
+    : status.level === 'low' ? (labels?.low ?? status.text)
+    : (labels?.in ?? status.text);
+
+  const suffix =
+    countFormat === 'parens' ? ` (${stock})`
+    : countFormat === 'colon' && status.level === 'low' ? `: ${stock}`
+    : '';
+
+  return (
+    <Badge tone={status.tone} variant={variant} className={className}>
+      {label}
+      {suffix}
+    </Badge>
+  );
+}

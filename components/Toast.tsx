@@ -1,3 +1,4 @@
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 // components/Toast.tsx
 'use client';
 
@@ -29,10 +30,10 @@ export default function Toast({
   
   if (!visible) return null;
   
-  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-  
+  const bgColor = type === 'success' ? 'bg-success' : 'bg-destructive';
+
   return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${bgColor} text-white animate-fadeIn`}>
+    <div className={`fixed top-4 right-4 z-50 p-4 rounded-overlay shadow-elevation-3 ${bgColor} text-text-inverse animate-fadeIn`}>
       {message}
     </div>
   );

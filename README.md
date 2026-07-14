@@ -1,6 +1,6 @@
 # GidiamMini - Baby, Kids & Maternity E-commerce
 
-A modern, boutique e-commerce website for baby clothing, kids wear, maternity apparel, and essentials, built with Next.js, TypeScript, and Tailwind CSS.
+A modern, boutique e-commerce website for baby clothing, kids wear, maternity apparel and essentials, built with Next.js, TypeScript and Tailwind CSS.
 
 ## Features
 - 🛒 Complete shopping cart functionality

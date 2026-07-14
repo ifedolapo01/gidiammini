@@ -1,8 +1,11 @@
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
 import { useCart } from '@/components/CartProvider';
 import { Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { QuantitySelector } from '@/components/commerce/QuantitySelector';
+import { formatCurrency } from '@/lib/commerce/pricing';
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, getTotal } = useCart();
@@ -11,13 +14,13 @@ export default function CartPage() {
     return (
       <div className="container mx-auto px-4 py-16 text-center overflow-x-hidden">
         <div className="max-w-md mx-auto">
-          <h1 className="text-xl sm:text-2xl font-bold mb-4">Your cart is empty</h1>
-          <p className="text-gray-600 text-sm sm:text-base mb-8">
+          <h1 className="text-h5 sm:text-h4 font-bold mb-4">Your cart is empty</h1>
+          <p className="text-text-secondary text-body-sm sm:text-body-md mb-8">
             Add some products to your cart to see them here.
           </p>
           <Link
             href="/products"
-            className="inline-block bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-700"
+            className="inline-block bg-primary text-primary-foreground px-4 sm:px-6 py-2 sm:py-3 rounded-control font-semibold text-body-sm sm:text-body-md hover:bg-primary-hover"
           >
             Continue Shopping
           </Link>
@@ -28,49 +31,41 @@ export default function CartPage() {
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 overflow-x-hidden">
-      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 md:mb-8">Shopping Cart</h1>
-      
+      <h1 className="text-h5 sm:text-h4 md:text-h3 font-bold mb-4 sm:mb-6 md:mb-8">Shopping Cart</h1>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm border">
+          <div className="bg-surface rounded-surface shadow-elevation-1 border border-border">
             {items.map((item) => (
-              <div key={item.productId} className="flex items-center border-b p-3 sm:p-4 md:p-6 last:border-b-0 text-black">
+              <div key={item.productId} className="flex items-center border-b border-border p-3 sm:p-4 md:p-6 last:border-b-0 text-text-primary">
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-16 sm:w-20 md:w-24 h-auto block rounded-lg flex-shrink-0"
+                  className="w-16 sm:w-20 md:w-24 h-auto block rounded-surface flex-shrink-0"
                 />
-                
+
                 <div className="flex-1 ml-3 sm:ml-4 md:ml-6 min-w-0"> {/* Added min-w-0 */}
-                  <h3 className="font-semibold text-sm sm:text-base md:text-lg truncate">{item.name}</h3>
-                  <p className="text-gray-600 text-xs sm:text-sm mt-1 truncate">
+                  <h3 className="font-semibold text-body-sm sm:text-body-md md:text-body-lg truncate">{item.name}</h3>
+                  <p className="text-text-secondary text-caption-md sm:text-body-sm mt-1 truncate">
                     {item.color && `Color: ${item.color}`}
                     {item.size && ` • Size/Age: ${item.size}`}
                   </p>
                   <div className="flex items-center justify-between mt-2 sm:mt-3 md:mt-4 flex-wrap sm:flex-nowrap gap-2">
-                    <div className="flex items-center order-1 sm:order-none">
-                      <button
-                        onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity - 1)}
-                        className="w-7 h-7 sm:w-8 sm:h-8 border rounded-l text-sm flex items-center justify-center hover:bg-gray-50"
-                      >
-                        -
-                      </button>
-                      <span className="w-8 sm:w-10 text-center text-sm sm:text-base">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity + 1)}
-                        className="w-7 h-7 sm:w-8 sm:h-8 border rounded-r text-sm flex items-center justify-center hover:bg-gray-50"
-                      >
-                        +
-                      </button>
+                    <div className="order-1 sm:order-none">
+                      <QuantitySelector
+                        size="sm"
+                        quantity={item.quantity}
+                        onChange={(next) => updateQuantity(item.productId, item.size, item.color, next)}
+                      />
                     </div>
-                    
+
                     <div className="flex items-center order-2 sm:order-none ml-auto sm:ml-0">
-                      <span className="text-sm sm:text-base md:text-lg font-semibold whitespace-nowrap">
-                        ₦{(item.price * item.quantity).toLocaleString()}
+                      <span className="text-body-sm sm:text-body-md md:text-body-lg font-semibold whitespace-nowrap">
+                        {formatCurrency(item.price * item.quantity)}
                       </span>
                       <button
                         onClick={() => removeFromCart(item.productId, item.size, item.color)}
-                        className="text-red-500 hover:text-red-700 ml-3 sm:ml-4 md:ml-6"
+                        className="text-destructive/70 hover:text-destructive ml-3 sm:ml-4 md:ml-6"
                         aria-label="Remove item"
                       >
                         <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -85,46 +80,46 @@ export default function CartPage() {
 
         {/* Order Summary */}
         <div>
-          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 sticky top-20 sm:top-24 text-black">
-            <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Order Summary</h2>
-            
+          <div className="bg-surface rounded-surface shadow-elevation-1 border border-border p-4 sm:p-6 sticky top-20 sm:top-24 text-text-primary">
+            <h2 className="text-body-lg sm:text-h5 font-bold mb-4 sm:mb-6">Order Summary</h2>
+
             <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-              <div className="flex justify-between text-sm sm:text-base">
+              <div className="flex justify-between text-body-sm sm:text-body-md">
                 <span>Subtotal ({items.length} items)</span>
-                <span>₦{getTotal().toLocaleString()}</span>
+                <span>{formatCurrency(getTotal())}</span>
               </div>
-              <div className="flex justify-between text-sm sm:text-base">
+              <div className="flex justify-between text-body-sm sm:text-body-md">
                 <span>Shipping</span>
-                <span className="text-gray-600">Calculated at checkout</span>
+                <span className="text-text-secondary">Calculated at checkout</span>
               </div>
-              <div className="flex justify-between text-sm sm:text-base">
+              <div className="flex justify-between text-body-sm sm:text-body-md">
                 <span>Tax (7.5%)</span>
-                <span>₦{(getTotal() * 0.075).toLocaleString()}</span>
+                <span>{formatCurrency(getTotal() * 0.075)}</span>
               </div>
             </div>
-            
-            <div className="border-t pt-3 sm:pt-4 mb-4 sm:mb-6">
-              <div className="flex justify-between text-base sm:text-lg font-bold">
+
+            <div className="border-t border-border pt-3 sm:pt-4 mb-4 sm:mb-6">
+              <div className="flex justify-between text-body-md sm:text-body-lg font-bold">
                 <span>Estimated Total</span>
-                <span className='text-blue-600'>
-                  ₦{(getTotal() + (getTotal() * 0.075)).toLocaleString()}
+                <span className='text-primary'>
+                  {formatCurrency(getTotal() + (getTotal() * 0.075))}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
+              <p className="text-caption-md sm:text-body-sm text-text-secondary mt-1 sm:mt-2">
                 Shipping fee will be added based on location
               </p>
             </div>
-            
+
             <Link
               href="/checkout"
-              className="block w-full bg-blue-600 text-white text-center py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-700 mb-3 sm:mb-4"
+              className="block w-full bg-primary text-primary-foreground text-center py-2 sm:py-3 rounded-control font-semibold text-body-sm sm:text-body-md hover:bg-primary-hover mb-3 sm:mb-4"
             >
               Proceed to Checkout
             </Link>
-            
+
             <Link
               href="/products"
-              className="block w-full border text-center py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-50"
+              className="block w-full border border-border text-center py-2 sm:py-3 rounded-control font-semibold text-body-sm sm:text-body-md hover:bg-surface-hover"
             >
               Continue Shopping
             </Link>

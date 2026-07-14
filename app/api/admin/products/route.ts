@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     // Validate
     if (!body.name || body.price === undefined || body.price === null || !body.main_image) {
       return NextResponse.json(
-        { success: false, error: 'Product name, price, and image are required' },
+        { success: false, error: 'Product name, price and image are required' },
         { status: 400, headers }
       );
     }

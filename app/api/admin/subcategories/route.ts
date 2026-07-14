@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     
     if (!body.name || !body.slug || !body.category_slug) {
       return NextResponse.json(
-        { success: false, error: 'Name, slug, and category_slug are required' },
+        { success: false, error: 'Name, slug and category_slug are required' },
         { status: 400 }
       );
     }

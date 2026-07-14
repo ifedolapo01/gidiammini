@@ -1,4 +1,7 @@
-// app/admin/components/marquee-alert-bar.tsx
+/**
+ * ADMIN layer — operational alerts ticker for the Commerce Admin shell.
+ * Token-based via semantic status tones; no business branding.
+ */
 "use client";
 
 import {
@@ -13,13 +16,23 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+type AlertTone = "destructive" | "warning" | "info" | "accent";
+
+const toneClasses: Record<AlertTone, string> = {
+  destructive: "bg-destructive-background text-destructive border-destructive-border",
+  warning: "bg-warning-background text-warning border-warning-border",
+  info: "bg-info-background text-info border-info-border",
+  accent: "bg-accent/10 text-accent border-accent/30",
+};
 
 interface AlertItem {
   id: string;
   type: "stock" | "out-of-stock" | "pending-orders" | "system" | "low-stock";
   message: string;
   link: string;
-  color: string;
+  tone: AlertTone;
   count?: number;
   priority: number;
 }
@@ -56,7 +69,7 @@ export function MarqueeAlertBar() {
               stockData.outOfStockCount > 1 ? "s are" : " is"
             } OUT OF STOCK`,
             link: "/admin/stock",
-            color: "bg-red-50 text-red-700 border-red-200",
+            tone: "destructive",
             count: stockData.outOfStockCount,
             priority: 1, // Highest priority
           });
@@ -71,7 +84,7 @@ export function MarqueeAlertBar() {
               stockData.lowStockCount > 1 ? "s are" : " is"
             } running LOW on stock (5 or less)`,
             link: "/admin/stock",
-            color: "bg-orange-50 text-orange-700 border-orange-200",
+            tone: "warning",
             count: stockData.lowStockCount,
             priority: 2,
           });
@@ -91,7 +104,7 @@ export function MarqueeAlertBar() {
               ordersData.pendingCount > 1 ? "s are" : " is"
             } PENDING confirmation`,
             link: "/admin/orders",
-            color: "bg-yellow-50 text-yellow-700 border-yellow-200",
+            tone: "warning",
             count: ordersData.pendingCount,
             priority: 3,
           });
@@ -115,7 +128,7 @@ export function MarqueeAlertBar() {
                 stats.todayOrders > 1 ? "s" : ""
               } placed today`,
               link: "/admin/orders",
-              color: "bg-purple-50 text-purple-700 border-purple-200",
+              tone: "accent",
               count: stats.todayOrders,
               priority: 4,
             });
@@ -129,7 +142,7 @@ export function MarqueeAlertBar() {
               type: "system",
               message: `📦 ${stats.totalProducts} active products in store`,
               link: "/admin/products",
-              color: "bg-blue-50 text-blue-700 border-blue-200",
+              tone: "info",
               count: stats.totalProducts,
               priority: 5,
             });
@@ -137,9 +150,6 @@ export function MarqueeAlertBar() {
         }
       }
 
-      // Only add system status if there are no other alerts
-      // Actually, we'll let the length === 0 check handle the "All systems normal" UI
-      
       // Sort by priority (lowest number = highest priority)
       newAlerts.sort((a, b) => a.priority - b.priority);
 
@@ -154,7 +164,7 @@ export function MarqueeAlertBar() {
           type: "system",
           message: "⚠️ Unable to fetch alerts - check connection",
           link: "/admin/dashboard",
-          color: "bg-red-50 text-red-700 border-red-200",
+          tone: "destructive",
           priority: 1,
         },
       ]);
@@ -183,6 +193,9 @@ export function MarqueeAlertBar() {
     if (!marqueeRef.current || !containerRef.current || alerts.length === 0)
       return;
 
+    // Accessibility: no auto-scroll for users who prefer reduced motion
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     let lastTime = 0;
 
     const animate = (timestamp: number) => {
@@ -194,7 +207,6 @@ export function MarqueeAlertBar() {
         positionRef.current -= speedRef.current * (delta / 16);
 
         const marqueeWidth = marqueeRef.current.scrollWidth / 2; // Divided by 2 because we duplicate
-        const containerWidth = containerRef.current.offsetWidth;
 
         // Reset position when entire marquee has scrolled through
         if (Math.abs(positionRef.current) >= marqueeWidth) {
@@ -223,15 +235,15 @@ export function MarqueeAlertBar() {
   const getAlertIcon = (type: string) => {
     switch (type) {
       case "out-of-stock":
-        return <AlertTriangle className="w-4 h-4 animate-pulse" />;
+        return <AlertTriangle className="size-4 animate-pulse" />;
       case "low-stock":
-        return <Package className="w-4 h-4" />;
+        return <Package className="size-4" />;
       case "pending-orders":
-        return <ShoppingBag className="w-4 h-4" />;
+        return <ShoppingBag className="size-4" />;
       case "system":
-        return <Bell className="w-4 h-4" />;
+        return <Bell className="size-4" />;
       default:
-        return <AlertCircle className="w-4 h-4" />;
+        return <AlertCircle className="size-4" />;
     }
   };
 
@@ -243,13 +255,45 @@ export function MarqueeAlertBar() {
     return alert.message;
   };
 
+  const AlertPill = ({ alert }: { alert: AlertItem }) => (
+    <div
+      className={cn(
+        "flex items-center px-4 py-1.5 mx-3 rounded-full border shadow-elevation-1",
+        toneClasses[alert.tone],
+      )}
+    >
+      <div className="mr-2">{getAlertIcon(alert.type)}</div>
+
+      <span className="text-body-sm font-medium mr-3">{formatMessage(alert)}</span>
+
+      <Link
+        href={alert.link}
+        className="flex items-center text-caption-md bg-surface/50 hover:bg-surface/80 text-text-primary px-2 py-1 rounded-control transition-colors"
+      >
+        View
+        <ChevronRight className="size-3 ml-0.5" aria-hidden="true" />
+      </Link>
+
+      <button
+        onClick={() => dismissAlert(alert.id)}
+        className="ml-2 p-1 hover:bg-text-primary/5 rounded-full transition-colors opacity-60 hover:opacity-100"
+        aria-label="Dismiss alert"
+      >
+        <X className="size-3" aria-hidden="true" />
+      </button>
+
+      {/* Separator */}
+      <div className="ml-6 w-1 h-1 rounded-full bg-border-strong" />
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="relative z-50 h-10 bg-gray-50 border-b border-gray-200">
+      <div className="relative z-50 h-10 bg-background-secondary border-b border-border">
         <div className="container mx-auto px-4 h-full flex items-center justify-center">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-500 font-medium">Checking systems...</span>
+            <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse"></div>
+            <span className="text-body-sm text-text-muted font-medium">Checking systems...</span>
           </div>
         </div>
       </div>
@@ -258,10 +302,10 @@ export function MarqueeAlertBar() {
 
   if (alerts.length === 0) {
     return (
-      <div className="relative z-50 h-10 bg-emerald-50 border-b border-emerald-100 text-emerald-700">
+      <div className="relative z-50 h-10 bg-success-background border-b border-success-border text-success">
         <div className="container mx-auto px-4 h-full flex items-center justify-center">
-          <span className="text-sm font-medium flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+          <span className="text-body-sm font-medium flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-success"></div>
             All systems normal - No alerts
           </span>
         </div>
@@ -271,14 +315,18 @@ export function MarqueeAlertBar() {
 
   return (
     <div
-      className="relative z-50 h-10 overflow-hidden bg-white border-b border-gray-200 shadow-sm"
+      className="relative z-50 h-10 overflow-hidden bg-surface border-b border-border shadow-elevation-1"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Control indicators */}
       <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20">
-        <div className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-gray-200 font-medium shadow-sm">
-          {isPaused ? <span className="w-2 h-2 rounded-sm bg-gray-500"></span> : <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>}
+        <div className="text-caption-md bg-background-tertiary text-text-secondary px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-border font-medium shadow-elevation-1">
+          {isPaused ? (
+            <span className="w-2 h-2 rounded-sm bg-text-muted"></span>
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+          )}
           <span className="hidden sm:inline">
             {alerts.length} Alert{alerts.length !== 1 ? "s" : ""}
           </span>
@@ -289,88 +337,33 @@ export function MarqueeAlertBar() {
       <div ref={containerRef} className="absolute inset-0 flex items-center">
         <div
           ref={marqueeRef}
-          className="flex items-center whitespace-nowrap transition-transform duration-0"
+          className="flex items-center whitespace-nowrap"
           style={{ willChange: "transform" }}
         >
           {/* Original alerts */}
           {alerts.map((alert) => (
-            <div
-              key={alert.id}
-              className={`flex items-center px-4 py-1.5 mx-3 rounded-full ${alert.color} shadow-sm border`}
-            >
-              <div className="mr-2">{getAlertIcon(alert.type)}</div>
-
-              <span className="text-sm font-medium mr-3">
-                {formatMessage(alert)}
-              </span>
-
-              <Link
-                href={alert.link}
-                className="flex items-center text-xs bg-white/50 hover:bg-white/80 text-gray-800 px-2 py-1 rounded-md transition-colors"
-              >
-                View
-                <ChevronRight className="w-3 h-3 ml-0.5" />
-              </Link>
-
-              <button
-                onClick={() => dismissAlert(alert.id)}
-                className="ml-2 p-1 hover:bg-black/5 rounded-full transition-colors opacity-60 hover:opacity-100"
-                aria-label="Dismiss alert"
-              >
-                <X className="w-3 h-3" />
-              </button>
-
-              {/* Separator */}
-              <div className="ml-6 w-1 h-1 rounded-full bg-gray-300" />
-            </div>
+            <AlertPill key={alert.id} alert={alert} />
           ))}
 
           {/* Duplicate alerts for seamless loop */}
           {alerts.map((alert) => (
-            <div
-              key={`${alert.id}-dup`}
-              className={`flex items-center px-4 py-1.5 mx-3 rounded-full ${alert.color} shadow-sm border`}
-            >
-              <div className="mr-2">{getAlertIcon(alert.type)}</div>
-
-              <span className="text-sm font-medium mr-3">
-                {formatMessage(alert)}
-              </span>
-
-              <Link
-                href={alert.link}
-                className="flex items-center text-xs bg-white/50 hover:bg-white/80 text-gray-800 px-2 py-1 rounded-md transition-colors"
-              >
-                View
-                <ChevronRight className="w-3 h-3 ml-0.5" />
-              </Link>
-
-              <button
-                onClick={() => dismissAlert(alert.id)}
-                className="ml-2 p-1 hover:bg-black/5 rounded-full transition-colors opacity-60 hover:opacity-100"
-                aria-label="Dismiss alert"
-              >
-                <X className="w-3 h-3" />
-              </button>
-
-              <div className="ml-6 w-1 h-1 rounded-full bg-gray-300" />
-            </div>
+            <AlertPill key={`${alert.id}-dup`} alert={alert} />
           ))}
         </div>
       </div>
 
       {/* Gradient fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-surface via-surface/80 to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-surface via-surface/80 to-transparent z-10 pointer-events-none" />
 
       {/* Refresh button */}
       <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20">
         <button
           onClick={fetchAlerts}
-          className="text-xs bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-full shadow-sm transition-colors flex items-center gap-1 font-medium"
+          className="text-caption-md bg-surface hover:bg-surface-hover border border-border text-text-secondary px-2.5 py-1.5 rounded-full shadow-elevation-1 transition-colors flex items-center gap-1 font-medium"
           title="Refresh alerts"
         >
-          <RefreshCw className="w-3 h-3" />
+          <RefreshCw className="size-3" aria-hidden="true" />
           <span className="hidden sm:inline">Refresh</span>
         </button>
       </div>

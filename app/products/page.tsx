@@ -1,12 +1,14 @@
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 // app/products/page.tsx - UPDATED FOR DYNAMIC URL CATEGORY FILTER
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import ProductCard from '@/components/ProductCard';
+import ProductCard from '@/components/commerce/ProductCard';
 import { Filter } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ProductCardProduct } from '@/types/product';
+import { Button, Skeleton, Spinner } from '@/components/ui';
 
 function ProductsListContent() {
   const searchParams = useSearchParams();
@@ -37,7 +39,7 @@ function ProductsListContent() {
     setLoading(true);
     try {
       const supabase = createClient();
-      
+
       // Fetch products
       let query = supabase
         .from('products')
@@ -63,7 +65,7 @@ function ProductsListContent() {
         .from('categories')
         .select('name, slug, subcategories(name, slug)')
         .order('name');
-        
+
       // Fetch Discounts
       const discountsPromise = supabase
         .from('discounts')
@@ -79,15 +81,15 @@ function ProductsListContent() {
       if (!productsRes.error) {
         setProducts(productsRes.data as ProductCardProduct[] || []);
       }
-      
+
       if (!categoriesRes.error) {
         setCategories(categoriesRes.data || []);
       }
-      
+
       if (!discountsRes.error) {
         setDiscounts(discountsRes.data || []);
       }
-      
+
     } catch (error) {
       console.error('Error loading data:', error);
       setProducts([]);
@@ -101,33 +103,33 @@ function ProductsListContent() {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Filters Sidebar */}
         <aside className={`md:w-64 ${showFilters ? 'block' : 'hidden md:block'}`}>
-          <div className="sticky top-24 bg-white p-6 rounded-lg shadow-sm border border-pink-100">
+          <div className="sticky top-24 bg-surface p-6 rounded-surface shadow-elevation-1 border border-primary/10">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold flex items-center text-gray-900">
-                <Filter className="w-5 h-5 mr-2 text-pink-500" />
+              <h3 className="text-body-lg font-semibold flex items-center text-text-primary">
+                <Filter className="w-5 h-5 mr-2 text-primary" />
                 Filters
               </h3>
-              <button 
+              <button
                 onClick={() => setShowFilters(false)}
-                className="md:hidden text-gray-500"
+                className="md:hidden text-text-secondary"
               >
                 ✕
               </button>
             </div>
-            
+
             <div className="space-y-6">
               <div>
-                <h4 className="font-medium mb-3 text-gray-700">Category</h4>
+                <h4 className="font-medium mb-3 text-text-primary">Category</h4>
                 <div className="space-y-2">
                   <button
                     onClick={() => {
                       setSelectedCategory('all');
                       setSelectedSubCategory('all');
                     }}
-                    className={`block w-full text-left px-3 py-2 rounded transition-colors ${
+                    className={`block w-full text-left px-3 py-2 rounded-control transition-colors ${
                       selectedCategory === 'all'
-                        ? 'bg-pink-50 text-pink-600 border border-pink-200 font-semibold'
-                        : 'hover:bg-gray-50 text-gray-700 font-medium'
+                        ? 'bg-primary/10 text-primary border border-primary/20 font-semibold'
+                        : 'hover:bg-surface-hover text-text-primary font-medium'
                     }`}
                   >
                     All Products
@@ -138,26 +140,26 @@ function ProductsListContent() {
                         onClick={() => {
                           router.push(`/products?category=${category.slug}&subcategory=all`, { scroll: false });
                         }}
-                        className={`block w-full text-left px-3 py-2 rounded transition-colors ${
+                        className={`block w-full text-left px-3 py-2 rounded-control transition-colors ${
                           selectedCategory === category.slug
-                            ? 'bg-pink-50 text-pink-600 border border-pink-200 font-semibold'
-                            : 'hover:bg-gray-50 text-gray-700 font-medium'
+                            ? 'bg-primary/10 text-primary border border-primary/20 font-semibold'
+                            : 'hover:bg-surface-hover text-text-primary font-medium'
                         }`}
                       >
                         {category.name}
                       </button>
-                      
+
                       {/* Subcategories (only show if parent category is selected) */}
                       {selectedCategory === category.slug && category.subcategories && category.subcategories.length > 0 && (
-                        <div className="pl-4 pr-2 py-1 space-y-1 border-l-2 border-pink-100 ml-2 mb-2">
+                        <div className="pl-4 pr-2 py-1 space-y-1 border-l-2 border-primary/10 ml-2 mb-2">
                           <button
                             onClick={() => {
                               router.push(`/products?category=${category.slug}&subcategory=all`, { scroll: false });
                             }}
-                            className={`block w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-control text-body-sm transition-colors ${
                               selectedSubCategory === 'all'
-                                ? 'text-pink-600 font-semibold bg-pink-50/50'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                ? 'text-primary font-semibold bg-primary/10'
+                                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                             }`}
                           >
                             All {category.name}
@@ -168,10 +170,10 @@ function ProductsListContent() {
                               onClick={() => {
                                 router.push(`/products?category=${category.slug}&subcategory=${sub.slug}`, { scroll: false });
                               }}
-                              className={`block w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                              className={`block w-full text-left px-3 py-1.5 rounded-control text-body-sm transition-colors ${
                                 selectedSubCategory === sub.slug
-                                  ? 'text-pink-600 font-semibold bg-pink-50/50'
-                                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                  ? 'text-primary font-semibold bg-primary/10'
+                                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                               }`}
                             >
                               {sub.name}
@@ -191,30 +193,32 @@ function ProductsListContent() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Our Collection</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-h3 font-extrabold text-text-primary tracking-tight">Our Collection</h1>
+              <p className="text-text-secondary mt-1">
                 {loading ? 'Loading...' : `${products.length} products found`}
               </p>
             </div>
-            <button 
+            <Button
+              variant="outline"
+              size="md"
               onClick={() => setShowFilters(true)}
-              className="md:hidden flex items-center px-4 py-2 border border-pink-200 rounded-lg text-pink-600 font-medium bg-white"
+              className="md:hidden"
             >
               <Filter className="w-4 h-4 mr-2" />
               Filters
-            </button>
+            </Button>
           </div>
-          
+
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-200 rounded-lg h-96 animate-pulse"></div>
+                <Skeleton key={i} className="h-96" />
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl border border-pink-100/50 p-8 shadow-sm">
-              <p className="text-gray-500 text-lg font-medium">No products found in this category.</p>
-              <p className="text-gray-400 text-sm mt-2">
+            <div className="text-center py-16 bg-surface rounded-surface border border-primary/10 p-8 shadow-elevation-1">
+              <p className="text-text-secondary text-body-lg font-medium">No products found in this category.</p>
+              <p className="text-text-muted text-body-sm mt-2">
                 Check back soon or browse other collections!
               </p>
             </div>
@@ -235,8 +239,8 @@ export default function ProductsPage() {
   return (
     <Suspense fallback={
       <div className="container mx-auto px-4 py-16 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500 mx-auto mb-4"></div>
-        <p className="text-gray-500">Loading collection...</p>
+        <Spinner size="xl" className="text-primary mx-auto mb-4" />
+        <p className="text-text-secondary">Loading collection...</p>
       </div>
     }>
       <ProductsListContent />

@@ -1,3 +1,5 @@
+/** COMMERCE layer — shared variant flattening logic. Used by Storefront and Admin. */
+
 export interface FlattenedProduct {
   id: string; // A unique composite key (e.g., productId-variantKey)
   productId: string; // The original product ID

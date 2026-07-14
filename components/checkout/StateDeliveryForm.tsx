@@ -1,6 +1,8 @@
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
 import { Home, Store } from 'lucide-react';
+import { formatCurrency } from '@/lib/commerce/pricing';
 
 interface StateDeliveryFormProps {
   selectedState: string;
@@ -17,7 +19,7 @@ export default function StateDeliveryForm({
   setDeliveryOption,
   pickupAddress
 }: StateDeliveryFormProps) {
-  
+
   const getDeliveryFee = (state: string): number => {
     return state === 'Abuja' ? 3000 : 5000;
   };
@@ -32,18 +34,18 @@ export default function StateDeliveryForm({
   };
 
   return (
-    <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
-      <h2 className="text-base sm:text-lg md:text-xl font-bold mb-3 sm:mb-4 md:mb-6 text-gray-800">Delivery Method</h2>
-      
+    <div className="bg-surface p-3 sm:p-4 md:p-6 rounded-surface shadow-elevation-1 border border-border">
+      <h2 className="text-body-md sm:text-body-lg md:text-h5 font-bold mb-3 sm:mb-4 md:mb-6 text-text-primary">Delivery Method</h2>
+
       {/* State Selection */}
       <div className="mb-4 sm:mb-6 md:mb-8">
-        <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">
+        <label className="block text-body-sm font-medium text-text-primary mb-2 sm:mb-3">
           Select Your State *
         </label>
-        <select 
+        <select
           value={selectedState}
           onChange={(e) => handleStateChange(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 sm:px-4 py-2 sm:py-3 bg-white text-sm sm:text-base md:text-lg font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full border border-border-strong rounded-control px-3 sm:px-4 py-2 sm:py-3 bg-surface text-body-sm sm:text-body-md md:text-body-lg font-medium text-text-primary focus-visible:border-focus"
           required
         >
           <option value="Abuja">Abuja (₦3,000 delivery / Free pickup)</option>
@@ -53,32 +55,32 @@ export default function StateDeliveryForm({
           <option value="Oyo">Oyo (₦5,000 delivery)</option>
           <option value="Other">Other States (₦5,000 delivery)</option>
         </select>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">
+        <p className="text-caption-md sm:text-body-sm text-text-secondary mt-1 sm:mt-2">
           Pickup is only available in Abuja. Delivery to other states is to designated parks.
         </p>
       </div>
-      
+
       {/* Delivery Option Selection - Horizontal on mobile, grid on desktop */}
       <div className="flex sm:grid sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 overflow-x-auto pb-2 -mx-3 sm:mx-0 px-3 sm:px-0">
         {/* Pickup Option */}
-        <PickupOption 
+        <PickupOption
           isPickupAvailable={isPickupAvailable}
           deliveryOption={deliveryOption}
           setDeliveryOption={setDeliveryOption}
           pickupAddress={pickupAddress}
         />
-        
+
         {/* Delivery Option */}
-        <DeliveryOption 
+        <DeliveryOption
           deliveryOption={deliveryOption}
           setDeliveryOption={setDeliveryOption}
           selectedState={selectedState}
           getDeliveryFee={getDeliveryFee}
         />
       </div>
-      
+
       {/* Additional Info */}
-      <DeliveryInfo 
+      <DeliveryInfo
         deliveryOption={deliveryOption}
         isPickupAvailable={isPickupAvailable}
         selectedState={selectedState}
@@ -93,38 +95,38 @@ function PickupOption({ isPickupAvailable, deliveryOption, setDeliveryOption, pi
       type="button"
       onClick={() => isPickupAvailable && setDeliveryOption('pickup')}
       disabled={!isPickupAvailable}
-      className={`flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 border-2 rounded-lg sm:rounded-xl transition-all min-w-[140px] sm:min-w-0 sm:min-h-[140px] md:min-h-[180px] w-full flex-shrink-0 sm:flex-shrink ${
+      className={`flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 border-2 rounded-surface transition-all min-w-[140px] sm:min-w-0 sm:min-h-[140px] md:min-h-[180px] w-full flex-shrink-0 sm:flex-shrink ${
         deliveryOption === 'pickup' && isPickupAvailable
-          ? 'border-blue-500 bg-blue-50'
+          ? 'border-primary bg-primary/10'
           : !isPickupAvailable
-          ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
-          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+          ? 'border-border-strong bg-background-tertiary cursor-not-allowed'
+          : 'border-border-strong hover:border-border-strong hover:bg-surface-hover'
       }`}
     >
       <Store className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 mb-1 sm:mb-2 md:mb-3 ${
-        deliveryOption === 'pickup' && isPickupAvailable 
-          ? 'text-blue-600' 
-          : 'text-gray-500'
+        deliveryOption === 'pickup' && isPickupAvailable
+          ? 'text-primary'
+          : 'text-text-secondary'
       }`} />
-      <span className="font-bold text-sm sm:text-base md:text-lg text-gray-900">Pickup</span>
-      <span className={`mt-0.5 sm:mt-1 md:mt-2 text-xs sm:text-sm md:text-base ${
-        deliveryOption === 'pickup' && isPickupAvailable 
-          ? 'text-blue-600 font-semibold' 
-          : 'text-gray-700'
+      <span className="font-bold text-body-sm sm:text-body-md md:text-body-lg text-text-primary">Pickup</span>
+      <span className={`mt-0.5 sm:mt-1 md:mt-2 text-caption-md sm:text-body-sm md:text-body-md ${
+        deliveryOption === 'pickup' && isPickupAvailable
+          ? 'text-primary font-semibold'
+          : 'text-text-primary'
       }`}>
         {isPickupAvailable ? 'Free' : 'Not Available'}
       </span>
       <div className="mt-2 sm:mt-3 md:mt-4 text-center">
-        <p className="font-medium text-xs text-gray-700">Pickup Address:</p>
-        <p className="text-gray-600 text-xs mt-0.5 line-clamp-2">{pickupAddress}</p>
+        <p className="font-medium text-caption-md text-text-primary">Pickup Address:</p>
+        <p className="text-text-secondary text-caption-md mt-0.5 line-clamp-2">{pickupAddress}</p>
       </div>
       {!isPickupAvailable && (
-        <div className="mt-2 bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full text-xs">
+        <div className="mt-2 bg-background-tertiary text-text-primary px-1.5 py-0.5 rounded-full text-caption-md">
           Abuja Only
         </div>
       )}
       {deliveryOption === 'pickup' && isPickupAvailable && (
-        <div className="mt-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs sm:text-sm">
+        <div className="mt-2 bg-primary/10 text-primary px-2 py-0.5 rounded-full text-caption-md sm:text-body-sm">
           Selected
         </div>
       )}
@@ -137,49 +139,49 @@ function DeliveryOption({ deliveryOption, setDeliveryOption, selectedState, getD
     <button
       type="button"
       onClick={() => setDeliveryOption('delivery')}
-      className={`flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 border-2 rounded-lg sm:rounded-xl transition-all min-w-[140px] sm:min-w-0 sm:min-h-[140px] md:min-h-[180px] w-full flex-shrink-0 sm:flex-shrink ${
+      className={`flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 border-2 rounded-surface transition-all min-w-[140px] sm:min-w-0 sm:min-h-[140px] md:min-h-[180px] w-full flex-shrink-0 sm:flex-shrink ${
         deliveryOption === 'delivery'
-          ? 'border-blue-500 bg-gray-900'
-          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+          ? 'border-primary bg-text-primary'
+          : 'border-border-strong hover:border-border-strong hover:bg-surface-hover'
       }`}
     >
       <Home className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 mb-1 sm:mb-2 md:mb-3 ${
-        deliveryOption === 'delivery' 
-          ? 'text-white'
-          : 'text-gray-700'
+        deliveryOption === 'delivery'
+          ? 'text-text-inverse'
+          : 'text-text-primary'
       }`} />
-      <span className={`font-bold text-sm sm:text-base md:text-lg ${
-        deliveryOption === 'delivery' ? 'text-white' : 'text-gray-900'
+      <span className={`font-bold text-body-sm sm:text-body-md md:text-body-lg ${
+        deliveryOption === 'delivery' ? 'text-text-inverse' : 'text-text-primary'
       }`}>
         Delivery
       </span>
-      <span className={`mt-0.5 sm:mt-1 md:mt-2 text-xs sm:text-sm md:text-base font-semibold ${
-        deliveryOption === 'delivery' 
-          ? 'text-white' 
-          : 'text-gray-900'
+      <span className={`mt-0.5 sm:mt-1 md:mt-2 text-caption-md sm:text-body-sm md:text-body-md font-semibold ${
+        deliveryOption === 'delivery'
+          ? 'text-text-inverse'
+          : 'text-text-primary'
       }`}>
-        ₦{getDeliveryFee(selectedState).toLocaleString()}
+        {formatCurrency(getDeliveryFee(selectedState))}
       </span>
       <div className="mt-2 sm:mt-3 md:mt-4 text-center">
-        <p className={`font-medium text-xs ${
-          deliveryOption === 'delivery' ? 'text-gray-300' : 'text-gray-700'
+        <p className={`font-medium text-caption-md ${
+          deliveryOption === 'delivery' ? 'text-text-inverse/80' : 'text-text-primary'
         }`}>
-          {selectedState === 'Abuja' 
-            ? 'Door-to-door' 
+          {selectedState === 'Abuja'
+            ? 'Door-to-door'
             : 'Park drop-off'
           }
         </p>
-        <p className={`text-xs mt-0.5 ${
-          deliveryOption === 'delivery' ? 'text-gray-400' : 'text-gray-600'
+        <p className={`text-caption-md mt-0.5 ${
+          deliveryOption === 'delivery' ? 'text-text-inverse/70' : 'text-text-secondary'
         }`}>
-          {selectedState === 'Abuja' 
-            ? '3-5 days' 
+          {selectedState === 'Abuja'
+            ? '3-5 days'
             : 'Park pickup'
           }
         </p>
       </div>
       {deliveryOption === 'delivery' && (
-        <div className="mt-2 bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs sm:text-sm">
+        <div className="mt-2 bg-surface text-primary px-2 py-0.5 rounded-full text-caption-md sm:text-body-sm">
           Selected
         </div>
       )}
@@ -189,34 +191,34 @@ function DeliveryOption({ deliveryOption, setDeliveryOption, selectedState, getD
 
 function DeliveryInfo({ deliveryOption, isPickupAvailable, selectedState }: any) {
   return (
-    <div className={`mt-4 sm:mt-6 p-3 sm:p-4 rounded-lg ${
-      deliveryOption === 'pickup' && isPickupAvailable 
-        ? 'bg-blue-50 border border-blue-200'
-        : 'bg-gray-900 border border-gray-800'
+    <div className={`mt-4 sm:mt-6 p-3 sm:p-4 rounded-surface ${
+      deliveryOption === 'pickup' && isPickupAvailable
+        ? 'bg-primary/10 border border-primary/30'
+        : 'bg-text-primary border border-text-primary'
     }`}>
       <div className="flex items-center">
         {deliveryOption === 'pickup' && isPickupAvailable ? (
-          <Store className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2" />
+          <Store className="w-4 h-4 sm:w-5 sm:h-5 text-primary mr-2" />
         ) : (
-          <Home className="w-4 h-4 sm:w-5 sm:h-5 text-white mr-2" />
+          <Home className="w-4 h-4 sm:w-5 sm:h-5 text-text-inverse mr-2" />
         )}
-        <h4 className={`font-bold text-sm sm:text-base ${
-          deliveryOption === 'pickup' && isPickupAvailable 
-            ? 'text-blue-900'
-            : 'text-white'
+        <h4 className={`font-bold text-body-sm sm:text-body-md ${
+          deliveryOption === 'pickup' && isPickupAvailable
+            ? 'text-primary'
+            : 'text-text-inverse'
         }`}>
-          {deliveryOption === 'pickup' && isPickupAvailable 
-            ? 'Pickup Information:' 
+          {deliveryOption === 'pickup' && isPickupAvailable
+            ? 'Pickup Information:'
             : 'Delivery Information:'
           }
         </h4>
       </div>
-      <p className={`text-xs sm:text-sm mt-1 sm:mt-2 ${
-        deliveryOption === 'pickup' && isPickupAvailable 
-          ? 'text-blue-800'
-          : 'text-gray-300'
+      <p className={`text-caption-md sm:text-body-sm mt-1 sm:mt-2 ${
+        deliveryOption === 'pickup' && isPickupAvailable
+          ? 'text-primary'
+          : 'text-text-inverse/80'
       }`}>
-        {deliveryOption === 'pickup' && isPickupAvailable 
+        {deliveryOption === 'pickup' && isPickupAvailable
           ? `Collect your order from our store in ${selectedState}. We'll contact you when your order is ready for pickup.`
           : selectedState === 'Abuja'
           ? `Your order will be delivered to your address in ${selectedState}. Please ensure someone is available to receive it.`

@@ -1,9 +1,13 @@
+/** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/stock/page.tsx
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
 import { Package, RefreshCw, Plus, Edit, Save, X } from 'lucide-react';
-import { flattenProducts, FlattenedProduct } from '@/lib/product-flatten';
+import { Button, Input, Spinner } from '@/components/ui';
+import { flattenProducts, FlattenedProduct } from '@/lib/commerce/product-flatten';
+import { formatCurrency } from '@/lib/commerce/pricing';
+import { StockBadge } from '@/components/commerce/StockBadge';
 
 const formatCategoryStr = (cat: string, sub: string | undefined | null) => {
   const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -95,12 +99,6 @@ export default function StockManagementPage() {
     setEditingProduct(null);
   };
 
-  const getStockStatus = (stock: number) => {
-    if (stock <= 0) return { text: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-    if (stock <= lowStockThreshold) return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-    return { text: 'In Stock', color: 'bg-green-100 text-green-800' };
-  };
-
   const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= lowStockThreshold);
   const outOfStockProducts = products.filter(p => p.stock <= 0);
   const mainProductsCount = new Set(products.map(p => p.productId)).size;
@@ -110,8 +108,10 @@ export default function StockManagementPage() {
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <div className="text-lg text-gray-600">Loading stock data...</div>
+            <div className="flex justify-center mb-4">
+              <Spinner size="xl" className="text-primary" />
+            </div>
+            <div className="text-body-lg text-text-secondary">Loading stock data...</div>
           </div>
         </div>
       </div>
@@ -122,68 +122,69 @@ export default function StockManagementPage() {
     <div className="p-4 md:p-6 lg:p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Stock Management</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-h4 md:text-h3 font-bold text-text-primary">Stock Management</h1>
+          <p className="text-text-secondary mt-1">
             Manage product stock quantities
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3 mt-4 md:mt-0">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Low Stock Threshold:</label>
-            <input
+            <label className="text-body-sm text-text-secondary">Low Stock Threshold:</label>
+            <Input
               type="number" onFocus={(e) => e.target.select()}
               value={lowStockThreshold}
               onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 5)}
-              className="w-20 border border-gray-500 rounded-lg px-3 py-1 text-sm text-black"
+              size="sm"
+              className="w-20"
               min="1"
             />
           </div>
-          <button
+          <Button
+            variant="outline"
             onClick={refreshStock}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 text-black bg-white border border-gray-500 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 md:mb-8">
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <p className="text-sm text-gray-600">Main Products</p>
-          <p className="text-2xl font-bold text-blue-600">{mainProductsCount}</p>
+        <div className="bg-surface p-4 rounded-surface shadow-elevation-1 border border-border">
+          <p className="text-body-sm text-text-secondary">Main Products</p>
+          <p className="text-h4 font-bold text-primary">{mainProductsCount}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <p className="text-sm text-gray-600">Total Variations</p>
-          <p className="text-2xl font-bold text-purple-600">{products.length}</p>
+        <div className="bg-surface p-4 rounded-surface shadow-elevation-1 border border-border">
+          <p className="text-body-sm text-text-secondary">Total Variations</p>
+          <p className="text-h4 font-bold text-accent">{products.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <p className="text-sm text-gray-600">Low Stock ({lowStockThreshold} or less)</p>
-          <p className="text-2xl font-bold text-yellow-600">{lowStockProducts.length}</p>
+        <div className="bg-surface p-4 rounded-surface shadow-elevation-1 border border-border">
+          <p className="text-body-sm text-text-secondary">Low Stock ({lowStockThreshold} or less)</p>
+          <p className="text-h4 font-bold text-warning">{lowStockProducts.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <p className="text-sm text-gray-600">Out of Stock</p>
-          <p className="text-2xl font-bold text-red-600">{outOfStockProducts.length}</p>
+        <div className="bg-surface p-4 rounded-surface shadow-elevation-1 border border-border">
+          <p className="text-body-sm text-text-secondary">Out of Stock</p>
+          <p className="text-h4 font-bold text-destructive">{outOfStockProducts.length}</p>
         </div>
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-xl shadow border overflow-hidden">
+      <div className="bg-surface rounded-surface shadow-elevation-1 border border-border overflow-hidden">
         {products.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-background-tertiary text-text-muted rounded-full flex items-center justify-center mb-4">
               <Package size={32} />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">No products found</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
+            <h3 className="text-body-lg font-bold text-text-primary mb-1">No products found</h3>
+            <p className="text-text-secondary max-w-md mx-auto mb-6">
               You haven't added any products to your store yet. Add some products to start managing their stock.
             </p>
-            <a 
-              href="/admin/products/new" 
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium transition-colors shadow-sm"
+            <a
+              href="/admin/products/new"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-control hover:bg-primary-hover flex items-center gap-2 font-medium transition-colors shadow-elevation-1"
             >
               <Plus size={18} />
               Add Your First Product
@@ -191,27 +192,27 @@ export default function StockManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-divider">
+              <thead className="bg-background-secondary">
                 <tr>
-                  <th className="px-6 py-3 text-left pl-16 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left pl-16 text-caption-md font-medium text-text-secondary uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-caption-md font-medium text-text-secondary uppercase tracking-wider">
                     Variant
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-caption-md font-medium text-text-secondary uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-caption-md font-medium text-text-secondary uppercase tracking-wider">
                     Stock Status
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-caption-md font-medium text-text-secondary uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-surface divide-y divide-divider">
                 {(() => {
                   const groupedProducts = products.reduce((acc, product) => {
                     if (!acc[product.productId]) acc[product.productId] = [];
@@ -222,52 +223,55 @@ export default function StockManagementPage() {
                   return Object.entries(groupedProducts).map(([productId, variants]) => {
                     if (variants.length === 1 && variants[0].variantKey === 'single') {
                       const product = variants[0];
-                      const status = getStockStatus(product.stock);
                       return (
-                        <tr key={product.id} className="hover:bg-gray-50">
+                        <tr key={product.id} className="hover:bg-surface-hover">
                           <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
                             <div className="flex items-center justify-start gap-4">
                               {product.main_image ? (
-                                <div className="w-12 flex-shrink-0 relative rounded overflow-hidden">
+                                <div className="w-12 flex-shrink-0 relative rounded-control overflow-hidden">
                                   <img src={product.main_image} alt={product.name} className="block w-full h-auto" />
                                 </div>
                               ) : (
-                                <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center">
-                                  <Package className="h-5 w-5 text-gray-500" />
+                                <div className="w-12 h-12 flex-shrink-0 bg-background-tertiary rounded-control flex items-center justify-center">
+                                  <Package className="h-5 w-5 text-text-secondary" />
                                 </div>
                               )}
                               <div className="text-left">
-                                <p className="font-bold text-gray-900">{product.name}</p>
-                                <p className="text-sm text-gray-500">₦{product.price.toLocaleString()}</p>
+                                <p className="font-bold text-text-primary">{product.name}</p>
+                                <p className="text-body-sm text-text-secondary">{formatCurrency(product.price)}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             {product.variantLabel && product.variantLabel !== 'Standard' ? (
-                              <span className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200">
+                              <span className="px-3 py-1 text-caption-md rounded-full bg-accent/10 text-accent font-bold border border-accent/30">
                                 {product.variantLabel}
                               </span>
                             ) : (
-                              <span className="text-gray-400 text-sm italic">No variants</span>
+                              <span className="text-text-muted text-body-sm italic">No variants</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 font-medium capitalize">
+                            <span className="px-2 py-1 text-caption-md rounded-full bg-background-tertiary text-text-primary font-medium capitalize">
                               {formatCategoryStr(product.category, product.sub_category)}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
                             <div className="flex items-center justify-start">
-                              <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
-                                {status.text} ({product.stock})
-                              </span>
+                              <StockBadge
+                                stock={product.stock}
+                                lowStockThreshold={lowStockThreshold}
+                                hideWhenInStock={false}
+                                countFormat="parens"
+                                className="px-3 py-1.5 font-bold"
+                              />
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                          <td className="px-6 py-4 whitespace-nowrap text-body-sm font-medium text-center">
                             <div className="flex justify-center">
                               <button
                                 onClick={() => startEditing(product)}
-                                className="text-blue-600 hover:text-blue-900 flex items-center justify-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
+                                className="text-primary hover:text-primary-hover flex items-center justify-center bg-surface px-3 py-1.5 rounded-control border border-primary/30 shadow-elevation-1 transition-all"
                               >
                                 <Edit className="w-4 h-4 mr-1" />
                                 Update Stock
@@ -283,27 +287,27 @@ export default function StockManagementPage() {
                     return (
                       <Fragment key={productId}>
                         {/* Parent Row */}
-                        <tr className="bg-gray-50 border-t-2 border-gray-200">
+                        <tr className="bg-background-secondary border-t-2 border-border">
                           <td className="px-6 py-3 whitespace-nowrap text-left pl-16">
                             <div className="flex items-center justify-start gap-4">
                               {parent.main_image ? (
-                                <div className="w-12 flex-shrink-0 relative rounded overflow-hidden border border-gray-300">
+                                <div className="w-12 flex-shrink-0 relative rounded-control overflow-hidden border border-border-strong">
                                   <img src={parent.main_image} alt={parent.name} className="block w-full h-auto" />
                                 </div>
                               ) : (
-                                <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded flex items-center justify-center border border-gray-300">
-                                  <Package className="h-5 w-5 text-gray-500" />
+                                <div className="w-12 h-12 flex-shrink-0 bg-background-tertiary rounded-control flex items-center justify-center border border-border-strong">
+                                  <Package className="h-5 w-5 text-text-secondary" />
                                 </div>
                               )}
                               <div className="text-left">
-                                <p className="font-bold text-gray-900">{parent.name}</p>
-                                <p className="text-xs text-gray-500">{variants.length} variations</p>
+                                <p className="font-bold text-text-primary">{parent.name}</p>
+                                <p className="text-caption-md text-text-secondary">{variants.length} variations</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-3 whitespace-nowrap text-center"></td>
                           <td className="px-6 py-3 whitespace-nowrap text-center">
-                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 font-medium capitalize">
+                            <span className="px-2 py-1 text-caption-md rounded-full bg-background-tertiary text-text-primary font-medium capitalize">
                               {formatCategoryStr(parent.category, parent.sub_category)}
                             </span>
                           </td>
@@ -312,8 +316,6 @@ export default function StockManagementPage() {
                         </tr>
                         {/* Child Rows */}
                         {variants.map((product) => {
-                          const status = getStockStatus(product.stock);
-                          
                           // Parse variant label
                           let variantDisplay = capitalizeText(product.variantLabel);
                           if (product.variantKey.includes('|')) {
@@ -322,16 +324,16 @@ export default function StockManagementPage() {
                           }
 
                           return (
-                            <tr key={product.id} className="hover:bg-blue-50 border-l-4 border-blue-400 bg-white">
+                            <tr key={product.id} className="hover:bg-primary/10 border-l-4 border-primary/40 bg-surface">
                               <td className="px-6 py-3 whitespace-nowrap text-center">
                                 {/* Empty cell for Product column indent */}
                               </td>
                               <td className="px-6 py-3 whitespace-nowrap text-center">
                                 <div className="flex flex-col items-center justify-center">
-                                  <span className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200 mb-1">
+                                  <span className="px-3 py-1 text-caption-md rounded-full bg-accent/10 text-accent font-bold border border-accent/30 mb-1">
                                     {variantDisplay}
                                   </span>
-                                  <span className="text-sm text-gray-600 font-medium">₦{product.price.toLocaleString()}</span>
+                                  <span className="text-body-sm text-text-secondary font-medium">{formatCurrency(product.price)}</span>
                                 </div>
                               </td>
                               <td className="px-6 py-3 whitespace-nowrap text-center">
@@ -339,16 +341,20 @@ export default function StockManagementPage() {
                               </td>
                               <td className="px-6 py-3 whitespace-nowrap text-center">
                                 <div className="flex items-center justify-center">
-                                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${status.color.replace('bg-', 'bg-opacity-20 bg-').replace('text-', 'border-opacity-50 border-')}`}>
-                                    {status.text} ({product.stock})
-                                  </span>
+                                  <StockBadge
+                                    stock={product.stock}
+                                    lowStockThreshold={lowStockThreshold}
+                                    hideWhenInStock={false}
+                                    countFormat="parens"
+                                    className="px-3 py-1.5 font-bold"
+                                  />
                                 </div>
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-center">
+                              <td className="px-6 py-3 whitespace-nowrap text-body-sm font-medium text-center">
                                 <div className="flex justify-center">
                                   <button
                                     onClick={() => startEditing(product)}
-                                    className="text-blue-600 hover:text-blue-900 flex items-center justify-center bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:shadow transition-all"
+                                    className="text-primary hover:text-primary-hover flex items-center justify-center bg-surface px-3 py-1.5 rounded-control border border-primary/30 shadow-elevation-1 transition-all"
                                   >
                                     <Edit className="w-4 h-4 mr-1" />
                                     Update Stock
@@ -369,9 +375,9 @@ export default function StockManagementPage() {
       </div>
 
       {/* Instructions */}
-      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-bold text-blue-900 mb-2">How Stock Management Works:</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="mt-8 p-4 bg-info-background border border-info-border rounded-surface">
+        <h3 className="font-bold text-info mb-2">How Stock Management Works:</h3>
+        <ul className="text-body-sm text-info space-y-1">
           <li>• <strong>Stock automatically reduces</strong> when orders are confirmed</li>
           <li>• <strong>Stock automatically restores</strong> when confirmed orders are cancelled</li>
           <li>• <strong>Products with 0 stock are hidden</strong> from customer view</li>
@@ -381,84 +387,82 @@ export default function StockManagementPage() {
 
       {/* Edit Modal */}
       {editingProduct && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div
+          className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4"
           onMouseDown={cancelEditing}
         >
-          <div 
-            className="bg-white rounded-xl shadow-xl max-w-lg w-full"
+          <div
+            className="bg-surface rounded-overlay shadow-elevation-4 max-w-lg w-full"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-white z-10 rounded-t-xl">
-              <h2 className="text-xl font-bold text-gray-800">Update Stock</h2>
-              <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-surface z-10 rounded-t-overlay">
+              <h2 className="text-h5 font-bold text-text-primary">Update Stock</h2>
+              <button onClick={cancelEditing} className="text-text-secondary hover:text-text-primary">
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="space-y-6">
                 <div className="flex gap-4 items-start">
                   {editingProduct.main_image ? (
-                    <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border shadow-sm bg-white">
-                      <img 
-                        src={editingProduct.main_image} 
-                        alt={editingProduct.name} 
-                        className="w-full h-full object-cover" 
+                    <div className="w-20 h-20 flex-shrink-0 rounded-control overflow-hidden border border-border shadow-elevation-1 bg-surface">
+                      <img
+                        src={editingProduct.main_image}
+                        alt={editingProduct.name}
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ) : (
-                    <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center border shadow-sm">
-                      <Package className="w-10 h-10 text-gray-400" />
+                    <div className="w-20 h-20 flex-shrink-0 bg-background-tertiary rounded-control flex items-center justify-center border border-border shadow-elevation-1">
+                      <Package className="w-10 h-10 text-text-muted" />
                     </div>
                   )}
-                  
+
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">{editingProduct.name}</h3>
+                    <h3 className="text-body-lg font-bold text-text-primary">{editingProduct.name}</h3>
                     <div className="mt-1 flex items-center gap-2">
-                      <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-medium">
+                      <span className="px-2 py-1 text-caption-md rounded-full bg-accent/10 text-accent font-medium">
                         {editingProduct.variantLabel}
                       </span>
                     </div>
-                    <p className="text-gray-700 mt-2 font-medium">₦{editingProduct.price.toLocaleString()}</p>
+                    <p className="text-text-primary mt-2 font-medium">{formatCurrency(editingProduct.price)}</p>
                   </div>
                 </div>
-                
-                <div className="pt-4 border-t border-gray-100">
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
+
+                <div className="pt-4 border-t border-border-light">
+                  <label className="block text-body-sm font-semibold text-text-primary mb-2">
                     New Stock Quantity
                   </label>
-                  <input
+                  <Input
                     type="number" onFocus={(e) => e.target.select()}
                     value={stockUpdates[editingProduct.id] ?? editingProduct.stock}
                     onChange={(e) => setStockUpdates({
                       ...stockUpdates,
                       [editingProduct.id]: parseInt(e.target.value) || 0
                     })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-lg font-medium"
+                    size="lg"
+                    className="font-medium"
                     min="0"
                   />
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-caption-md text-text-secondary mt-2">
                     Current stock is {editingProduct.stock}. Updating this only affects the <strong>{editingProduct.variantLabel}</strong> variant.
                   </p>
                 </div>
               </div>
             </div>
-            
-            <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
-              <button
+
+            <div className="p-6 border-t border-border bg-background-secondary flex justify-end gap-3 rounded-b-overlay">
+              <Button
+                variant="outline"
                 onClick={cancelEditing}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium"
               >
                 Cancel
-              </button>
-              <button
-                onClick={saveChanges}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center font-medium shadow-sm"
-              >
-                <Save className="w-4 h-4 mr-2" />
+              </Button>
+              <Button onClick={saveChanges}>
+                <Save className="w-4 h-4" />
                 Save Stock
-              </button>
+              </Button>
             </div>
           </div>
         </div>

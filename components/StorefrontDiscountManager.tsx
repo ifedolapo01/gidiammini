@@ -1,8 +1,10 @@
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { X, Tag, Clock, Sparkles } from 'lucide-react';
-import { Discount } from '@/lib/discounts';
+import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
+import { Badge } from '@/components/ui';
 
 type DiscountPhase = 'STARTING_SOON' | 'DAY_1' | 'MIDDLE_DAY' | 'LAST_DAY' | 'NONE';
 
@@ -156,75 +158,71 @@ export default function StorefrontDiscountManager() {
     return `${m}m ${s}s`;
   };
 
-  const getDiscountValueString = (d: Discount) => {
-    return d.type === 'PERCENTAGE' ? `${d.value}% OFF` : `₦${d.value.toLocaleString()} OFF`;
-  };
-
   if (!activeDiscount) return null;
 
   return (
     <>
       {/* Persistent Banner */}
       {showBanner && (
-        <div className="bg-blue-600 text-white px-4 py-2 text-center text-sm md:text-base font-medium flex items-center justify-center gap-2">
-          <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
+        <div className="bg-info text-text-inverse px-4 py-2 text-center text-body-sm md:text-body-md font-medium flex items-center justify-center gap-2">
+          <Sparkles className="w-4 h-4 text-accent animate-pulse" />
           <span className="font-bold">{activeDiscount.name}:</span>
-          <span>{getDiscountValueString(activeDiscount)}</span>
-          <span className="bg-blue-800 px-2 py-0.5 rounded-full text-xs font-bold ml-2">
+          <span>{formatDiscountValue(activeDiscount)}</span>
+          <Badge tone="info" variant="solid" className="ml-2">
             {timeLeft}
-          </span>
+          </Badge>
         </div>
       )}
 
       {/* Smart Pop-up Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4" onMouseDown={closeModal}>
-          <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-300"
+        <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-[100] p-4" onMouseDown={closeModal}>
+          <div
+            className="bg-surface rounded-overlay shadow-elevation-4 max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-300"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-center relative">
-              <button 
+            <div className="bg-gradient-to-r from-info to-info/80 p-6 text-center relative">
+              <button
                 onClick={closeModal}
-                className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+                className="absolute top-4 right-4 text-text-inverse/80 hover:text-text-inverse transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
-              
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
-                <Tag className="w-8 h-8 text-white" />
+
+              <div className="w-16 h-16 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
+                <Tag className="w-8 h-8 text-text-inverse" />
               </div>
-              
-              <h2 className="text-2xl font-bold text-white mb-1">
+
+              <h2 className="text-h4 font-bold text-text-inverse mb-1">
                 {phase === 'STARTING_SOON' && 'Coming Soon!'}
                 {phase === 'DAY_1' && 'Sale is Live!'}
                 {phase === 'MIDDLE_DAY' && 'Still Going Strong!'}
                 {phase === 'LAST_DAY' && 'Last Chance!'}
               </h2>
             </div>
-            
+
             <div className="p-8 text-center">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{activeDiscount.name}</h3>
-              
-              <div className="text-4xl font-black text-blue-600 mb-4 tracking-tight">
-                {getDiscountValueString(activeDiscount)}
+              <h3 className="text-h5 font-bold text-text-primary mb-2">{activeDiscount.name}</h3>
+
+              <div className="text-h2 font-black text-info mb-4 tracking-tight">
+                {formatDiscountValue(activeDiscount)}
               </div>
-              
-              <p className="text-gray-600 mb-6 leading-relaxed">
+
+              <p className="text-text-secondary mb-6 leading-relaxed">
                 {phase === 'STARTING_SOON' && `Get ready! This amazing offer kicks off very soon.`}
                 {phase === 'DAY_1' && `We just launched our new discount. Shop now while stock lasts!`}
                 {phase === 'MIDDLE_DAY' && `Don't miss out on this active offer. We're halfway through!`}
                 {phase === 'LAST_DAY' && `Time is running out! Grab your favorites before the discount expires tonight.`}
               </p>
-              
-              <div className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 bg-gray-50 py-3 rounded-xl mb-6 border border-gray-100">
-                <Clock className="w-4 h-4 text-blue-500" />
+
+              <div className="flex items-center justify-center gap-2 text-body-sm font-semibold text-text-secondary bg-background-secondary py-3 rounded-control mb-6 border border-border-light">
+                <Clock className="w-4 h-4 text-info" />
                 {timeLeft}
               </div>
-              
-              <button 
+
+              <button
                 onClick={closeModal}
-                className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-transform active:scale-95 shadow-lg shadow-gray-900/20"
+                className="w-full bg-text-primary text-text-inverse font-bold py-4 rounded-control hover:opacity-90 transition-transform active:scale-95 shadow-elevation-3"
               >
                 Got it, Thanks!
               </button>

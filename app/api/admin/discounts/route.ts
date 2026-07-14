@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     
     if (!body.name || !body.type || !body.value || !body.scope) {
       return NextResponse.json(
-        { success: false, error: 'Name, type, value, and scope are required' },
+        { success: false, error: 'Name, type, value and scope are required' },
         { status: 400 }
       );
     }
