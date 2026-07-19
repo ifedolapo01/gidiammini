@@ -1,65 +1,59 @@
 // app/api/admin/dashboard/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin-server';
-import { verifyAdminAuth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { withAdminAuth } from '@/lib/api/with-admin-auth';
 
-export async function GET(request: NextRequest) {
-  if (!(await verifyAdminAuth(request))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+async function getDashboardStats(supabase: SupabaseClient) {
   try {
-    const supabase = createAdminClient();
-    
     // Fetch total products count
     const { count: totalProducts } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true);
-    
+
     // Fetch total orders count
     const { count: totalOrders } = await supabase
       .from('orders')
       .select('*', { count: 'exact', head: true });
-    
+
     // Fetch pending orders count
     const { count: pendingOrders } = await supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending');
-    
+
     // Fetch total revenue from completed/delivered orders
     const { data: revenueOrders } = await supabase
       .from('orders')
       .select('total_amount, status')
       .in('status', ['confirmed', 'shipped', 'delivered']);
-    
+
     const totalRevenue = revenueOrders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
-    
+
     // Fetch recent orders (last 5)
     const { data: recentOrders } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(5);
-    
-    // Fetch low stock products (stock > 0 AND <= 10)
-const { data: lowStockProducts } = await supabase
-  .from('products')
-  .select('*')
-  .eq('is_active', true)
-  .gt('stock', 0)  // Only products with stock > 0
-  .lte('stock', 10)
-  .order('stock', { ascending: true })
-  .limit(5);
 
-// Fetch out of stock products
-const { data: outOfStockProducts } = await supabase
-  .from('products')
-  .select('*')
-  .eq('is_active', true)
-  .lte('stock', 0)  // Products with 0 or negative stock
-  .limit(5);
+    // Fetch low stock products (stock > 0 AND <= 10)
+    const { data: lowStockProducts } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .gt('stock', 0)  // Only products with stock > 0
+      .lte('stock', 10)
+      .order('stock', { ascending: true })
+      .limit(5);
+
+    // Fetch out of stock products
+    const { data: outOfStockProducts } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .lte('stock', 0)  // Products with 0 or negative stock
+      .limit(5);
 
     return NextResponse.json({
       totalProducts: totalProducts || 0,
@@ -70,11 +64,11 @@ const { data: outOfStockProducts } = await supabase
       lowStockProducts: lowStockProducts || [],
       outOfStockProducts: outOfStockProducts || []
     });
-    
+
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch dashboard statistics',
         totalProducts: 0,
         totalOrders: 0,
@@ -88,3 +82,5 @@ const { data: outOfStockProducts } = await supabase
     );
   }
 }
+
+export const GET = withAdminAuth((_request, { supabase }) => getDashboardStats(supabase));

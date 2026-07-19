@@ -1,8 +1,67 @@
 // app/api/orders/[id]/route.ts - UPDATED with better stock management
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { sendOrderStatusUpdate } from '@/lib/notifications';
 import { verifyAdminAuth } from '@/lib/auth';
+import { adjustVariantStockByDelta } from '@/lib/commerce/stock-adjustment';
+
+const VALID_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+
+async function applyStockChangesForOrder(
+  supabase: SupabaseClient,
+  currentOrder: any,
+  willBeConfirmed: boolean
+): Promise<NextResponse | null> {
+  const productIds = (currentOrder.order_items || []).map((item: any) => item.product_id);
+
+  if (productIds.length === 0) return null;
+
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds);
+
+  if (productsError) {
+    return NextResponse.json({ success: false, error: 'Failed to fetch products for stock update.' }, { status: 500 });
+  }
+
+  const productUpdates = [];
+
+  for (const product of products || []) {
+    const itemsForProduct = currentOrder.order_items.filter((item: any) => item.product_id === product.id);
+
+    const { stock: newStock, pricingConfig } = adjustVariantStockByDelta(
+      product.pricing_config,
+      product.stock,
+      itemsForProduct,
+      willBeConfirmed
+    );
+
+    if (willBeConfirmed && newStock < 0) {
+      return NextResponse.json(
+        { success: false, error: `Insufficient stock to confirm order for product: ${product.name}` },
+        { status: 400 }
+      );
+    }
+
+    productUpdates.push({
+      id: product.id,
+      stock: newStock,
+      pricing_config: pricingConfig
+    });
+  }
+
+  // Apply all updates
+  for (const update of productUpdates) {
+    await supabase.from('products').update({
+      stock: update.stock,
+      pricing_config: update.pricing_config
+    }).eq('id', update.id);
+  }
+
+  return null;
+}
 
 export async function PUT(
   request: NextRequest,
@@ -15,15 +74,15 @@ export async function PUT(
   try {
     const { id } = await params;
     const orderId = id;
-    
+
     const body = await request.json();
-    const { 
-      status, 
-      sendNotification: shouldSendNotification = true, 
+    const {
+      status,
+      sendNotification: shouldSendNotification = true,
       notificationMessage,
-      payment_verified 
+      payment_verified
     } = body;
-    
+
     if (!status) {
       return NextResponse.json(
         { success: false, error: 'Status is required' },
@@ -31,16 +90,15 @@ export async function PUT(
       );
     }
 
-    const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-    if (!validStatuses.includes(status)) {
+    if (!VALID_STATUSES.includes(status)) {
       return NextResponse.json(
-        { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { success: false, error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
         { status: 400 }
       );
     }
 
     const supabase = createAdminClient();
-    
+
     // First, get the current order with items
     const { data: currentOrder, error: fetchError } = await supabase
       .from('orders')
@@ -62,76 +120,11 @@ export async function PUT(
     const wasConfirmed = currentOrder.status === 'confirmed';
     const willBeConfirmed = status === 'confirmed';
     const willBeCancelled = status === 'cancelled';
-    
+
     // Update stock based on status changes
     if ((willBeConfirmed && !wasConfirmed) || (willBeCancelled && wasConfirmed)) {
-      const productIds = (currentOrder.order_items || []).map((item: any) => item.product_id);
-      
-      if (productIds.length > 0) {
-        const { data: products, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .in('id', productIds);
-          
-        if (productsError) {
-          return NextResponse.json({ success: false, error: 'Failed to fetch products for stock update.' }, { status: 500 });
-        }
-        
-        const productUpdates = [];
-        
-        for (const product of products || []) {
-          let newStock = product.stock;
-          let pricingConfig = product.pricing_config ? { ...product.pricing_config } : null;
-          
-          const itemsForProduct = currentOrder.order_items.filter((item: any) => item.product_id === product.id);
-          
-          for (const item of itemsForProduct) {
-            const qty = willBeConfirmed ? -item.quantity : item.quantity; // Decrement if confirming, increment if cancelling
-            
-            if (pricingConfig) {
-              if (pricingConfig.mode === 'single') {
-                if (pricingConfig.singleStock !== undefined) pricingConfig.singleStock += qty;
-                newStock += qty;
-              } else if (pricingConfig.mode === 'size' && item.size) {
-                if (pricingConfig.sizeStock?.[item.size] !== undefined) pricingConfig.sizeStock[item.size] += qty;
-                newStock += qty;
-              } else if (pricingConfig.mode === 'color' && item.color) {
-                if (pricingConfig.colorStock?.[item.color] !== undefined) pricingConfig.colorStock[item.color] += qty;
-                newStock += qty;
-              } else if (pricingConfig.mode === 'combination' && item.size && item.color) {
-                const key = `${item.size}|${item.color}`;
-                if (pricingConfig.combinationStock?.[key] !== undefined) pricingConfig.combinationStock[key] += qty;
-                newStock += qty;
-              } else {
-                newStock += qty; // fallback
-              }
-            } else {
-              newStock += qty;
-            }
-          }
-          
-          if (willBeConfirmed && newStock < 0) {
-            return NextResponse.json(
-              { success: false, error: `Insufficient stock to confirm order for product: ${product.name}` },
-              { status: 400 }
-            );
-          }
-          
-          productUpdates.push({
-            id: product.id,
-            stock: newStock,
-            pricing_config: pricingConfig
-          });
-        }
-        
-        // Apply all updates
-        for (const update of productUpdates) {
-          await supabase.from('products').update({ 
-            stock: update.stock, 
-            pricing_config: update.pricing_config 
-          }).eq('id', update.id);
-        }
-      }
+      const stockError = await applyStockChangesForOrder(supabase, currentOrder, willBeConfirmed);
+      if (stockError) return stockError;
     }
 
     // Update the order status
@@ -139,7 +132,7 @@ export async function PUT(
       status,
       updated_at: new Date().toISOString()
     };
-    
+
     if (payment_verified !== undefined) {
       updateData.payment_verified = payment_verified;
     } else if (status === 'confirmed') {

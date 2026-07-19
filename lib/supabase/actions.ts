@@ -2,7 +2,8 @@
 'use server'
 
 import { createClient } from './server'
-import { Product, OrderData } from '@/types/product'
+import { Product } from '@/types/product'
+import { OrderData } from '@/types/order'
 
 export async function getProducts(category?: string) {
   const supabase = await createClient()

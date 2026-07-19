@@ -42,6 +42,40 @@ export function getVariantPrice(
   return product.price;
 }
 
+export function getVariantStock(
+  product: Product,
+  selectedSize?: string | null,
+  selectedColor?: string | null
+): number {
+  const config = product.pricing_config;
+
+  if (!config) {
+    return product.stock;
+  }
+
+  if (config.mode === 'single') {
+    const singleStock = (config as any).singleStock;
+    return singleStock !== undefined ? singleStock : product.stock;
+  }
+
+  if (config.mode === 'size' && selectedSize) {
+    return config.sizeStock?.[selectedSize] ?? product.stock;
+  }
+
+  if (config.mode === 'color' && selectedColor) {
+    return config.colorStock?.[selectedColor] ?? product.stock;
+  }
+
+  if (config.mode === 'combination' && selectedSize && selectedColor) {
+    const key = `${selectedSize}|${selectedColor}`;
+    return config.combinationStock?.[key] ?? product.stock;
+  }
+
+  // Fallback if combination is requested but only one variant is selected
+  // (e.g. they selected size but color is not selected yet)
+  return product.stock;
+}
+
 export function getProductPriceRange(product: Product): { min: number; max: number } {
   const config = product.pricing_config;
   

@@ -1,4 +1,5 @@
 /** COMMERCE layer — shared discount logic. Used by Storefront and Admin. */
+import { parseVariantTargets } from './discount-target';
 
 export interface Discount {
   id: string;
@@ -42,19 +43,16 @@ export function getBestDiscount(product: any, discounts: Discount[], currentPric
     if (d.scope === 'SUBCATEGORY' && d.target_id === product.sub_category) return true;
     if (d.scope === 'PRODUCT' && d.target_id === product.id) return true;
     if (d.scope === 'VARIANT' && d.target_id) {
-      // target_id format: productId:size:color,productId:size:color
-      const variantTargets = d.target_id.split(',');
-      
-      return variantTargets.some(target => {
-        const [targetProdId, targetSize, targetColor] = target.split(':');
-        
+      const variantTargets = parseVariantTargets(d.target_id);
+
+      return variantTargets.some(({ productId: targetProdId, size: targetSize, color: targetColor }) => {
         if (targetProdId !== product.id) return false;
-        
+
         // Exact matching for specific variants
         // Both size and color must match if they are provided in the target
         const sizeMatches = !targetSize || targetSize === selectedSize;
         const colorMatches = !targetColor || targetColor === selectedColor;
-        
+
         return sizeMatches && colorMatches;
       });
     }

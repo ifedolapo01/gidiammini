@@ -19,17 +19,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('--- LOGIN ATTEMPT ---');
-    console.log('Input Email:', JSON.stringify(email));
-    console.log('Env Email:', JSON.stringify(adminEmail));
-    console.log('Password length:', password.length);
-    console.log('Hash:', JSON.stringify(adminPasswordHash));
-
     // Check credentials (use bcrypt comparison)
     const isPasswordValid = await bcryptjs.compare(password, adminPasswordHash);
-    
-    console.log('Bcrypt matches:', isPasswordValid);
-    console.log('Email matches:', email === adminEmail);
 
     if (email === adminEmail && isPasswordValid) {
       

@@ -1,72 +1,82 @@
 // app/api/orders/route.ts - COMPLETE VERSION
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
-import { OrderData } from '@/types/product';
+import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { verifyAdminAuth } from '@/lib/auth';
+import { OrderData } from '@/types/order';
 
-// GET method - fetch orders (for admin dashboard)
-export async function GET(request: NextRequest) {
-  if (!(await verifyAdminAuth(request))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+/** Atomically checks and decreases stock for order items; returns false if any item is insufficient. */
+async function decreaseStockForItems(
+  supabase: SupabaseClient,
+  items: Array<{ product_id?: string; quantity: number }>
+): Promise<boolean> {
+  if (items.length === 0) return true;
 
-  try {
-    const supabase = createAdminClient();
-    
-    if (!supabase) {
-      return NextResponse.json(
-        { success: false, error: 'Database connection failed', orders: [] },
-        { status: 500 }
-      );
-    }
+  const { data: stockOk, error: stockError } = await supabase.rpc('check_and_decrease_stock_multi', {
+    items
+  });
 
-    // Get status filter from query params
-    const url = new URL(request.url);
-    const status = url.searchParams.get('status');
-    
-    console.log('Fetching orders with status:', status || 'all');
-    
-    let query = supabase
-      .from('orders')
-      .select(`*, order_items (*)`)
-      .order('created_at', { ascending: false });
+  return !stockError && !!stockOk;
+}
 
-    // Apply status filter if provided
-    if (status && status !== 'all') {
-      query = query.eq('status', status);
-    }
-
-    const { data: orders, error } = await query;
-
-    if (error) {
-      console.error('Error fetching orders:', error);
-      return NextResponse.json(
-        { success: false, error: `Failed to fetch orders: ${error.message}`, orders: [] },
-        { status: 500 }
-      );
-    }
-
-    console.log(`✅ Found ${orders?.length || 0} orders`);
-    
-    return NextResponse.json({ 
-      success: true, 
-      orders: orders || [] 
+/** Restores stock for items after a failed order creation, mirroring lib/supabase/orders.ts's rollback. */
+async function restoreStockForItems(
+  supabase: SupabaseClient,
+  items: Array<{ product_id?: string; quantity: number }>
+) {
+  for (const item of items) {
+    if (!item.product_id) continue;
+    await supabase.rpc('increase_product_stock', {
+      product_id: item.product_id,
+      quantity: item.quantity
     });
-    
-  } catch (error: any) {
-    console.error('Error in orders API:', error);
-    return NextResponse.json(
-      { success: false, error: `Internal server error: ${error.message}`, orders: [] },
-      { status: 500 }
-    );
   }
 }
 
-// POST method - create new order (for checkout)
+// GET method - fetch orders (for admin dashboard)
+async function listOrders(supabase: SupabaseClient, request: NextRequest) {
+  // Get status filter from query params
+  const url = new URL(request.url);
+  const status = url.searchParams.get('status');
+
+  console.log('Fetching orders with status:', status || 'all');
+
+  let query = supabase
+    .from('orders')
+    .select(`*, order_items (*)`)
+    .order('created_at', { ascending: false });
+
+  // Apply status filter if provided
+  if (status && status !== 'all') {
+    query = query.eq('status', status);
+  }
+
+  const { data: orders, error } = await query;
+
+  if (error) {
+    console.error('Error fetching orders:', error);
+    return NextResponse.json(
+      { success: false, error: `Failed to fetch orders: ${error.message}`, orders: [] },
+      { status: 500 }
+    );
+  }
+
+  console.log(`✅ Found ${orders?.length || 0} orders`);
+
+  return NextResponse.json({
+    success: true,
+    orders: orders || []
+  });
+}
+
+export const GET = withAdminAuth((request, { supabase }) => listOrders(supabase, request));
+
+// POST method - create new order (for checkout). Public: used directly by checkout flow.
 export async function POST(request: NextRequest) {
   try {
     const supabase = createAdminClient();
-    
+
     if (!supabase) {
       return NextResponse.json(
         { success: false, error: 'Database connection failed' },
@@ -76,9 +86,9 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const orderData: OrderData = await request.json();
-    
+
     console.log('Creating order:', orderData.order_number);
-    
+
     // Validate required fields
     if (!orderData.order_number || !orderData.customer_name || !orderData.customer_email || !orderData.customer_phone) {
       return NextResponse.json(
@@ -89,6 +99,21 @@ export async function POST(request: NextRequest) {
 
     // Extract order items from the data
     const { items, ...orderMainData } = orderData;
+
+    // Atomically check and decrease stock before creating the order, matching the
+    // guard lib/supabase/orders.ts / actions.ts::createOrder already apply for
+    // their call sites - this endpoint previously inserted orders without it.
+    const itemsToDecrement = (items || [])
+      .filter((item) => item.product_id)
+      .map((item) => ({ product_id: item.product_id as string, quantity: item.quantity }));
+
+    const stockOk = await decreaseStockForItems(supabase, itemsToDecrement);
+    if (!stockOk) {
+      return NextResponse.json(
+        { success: false, error: 'Insufficient stock for one or more items. Please verify product inventory.' },
+        { status: 400 }
+      );
+    }
 
     // First, create the main order record
     const { data: order, error: orderError } = await supabase
@@ -103,6 +128,7 @@ export async function POST(request: NextRequest) {
 
     if (orderError) {
       console.error('Error creating order:', orderError);
+      await restoreStockForItems(supabase, itemsToDecrement);
       return NextResponse.json(
         { success: false, error: `Failed to create order: ${orderError.message}` },
         { status: 500 }
@@ -133,14 +159,14 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Order created successfully: ${order.order_number}`);
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: 'Order created successfully',
       order_id: order.id,
       order_number: order.order_number
     }, { status: 201 });
-    
+
   } catch (error: any) {
     console.error('Error in orders POST API:', error);
     return NextResponse.json(
@@ -150,11 +176,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Optional: PUT method for updating orders (for admin to update status)
+// PUT method - updating orders (for admin to update status)
 export async function PUT(request: NextRequest) {
+  if (!(await verifyAdminAuth(request))) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const supabase = createAdminClient();
-    
+
     if (!supabase) {
       return NextResponse.json(
         { success: false, error: 'Database connection failed' },
@@ -163,7 +193,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { order_id, status, payment_verified } = await request.json();
-    
+
     if (!order_id) {
       return NextResponse.json(
         { success: false, error: 'Order ID is required' },
@@ -174,7 +204,7 @@ export async function PUT(request: NextRequest) {
     const updateData: any = {};
     if (status) updateData.status = status;
     if (payment_verified !== undefined) updateData.payment_verified = payment_verified;
-    
+
     const { data, error } = await supabase
       .from('orders')
       .update(updateData)
@@ -190,12 +220,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Order updated successfully',
       order: data
     });
-    
+
   } catch (error: any) {
     console.error('Error in orders PUT API:', error);
     return NextResponse.json(

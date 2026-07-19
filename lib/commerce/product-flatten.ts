@@ -15,139 +15,88 @@ export interface FlattenedProduct {
   colorImages?: Record<string, string>;
 }
 
+function buildVariantEntry(
+  p: any,
+  variantKey: string,
+  variantLabel: string,
+  price: number,
+  stock: number
+): FlattenedProduct {
+  return {
+    id: `${p.id}-${variantKey}`,
+    productId: p.id,
+    name: p.name,
+    variantKey,
+    variantLabel,
+    category: p.category,
+    sub_category: p.sub_category,
+    price,
+    stock,
+    main_image: p.main_image || (p.images && p.images[0]),
+    images: p.images,
+    colorImages: p.pricing_config?.colorImages
+  };
+}
+
+function buildSingleFallback(p: any): FlattenedProduct {
+  const label = [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard';
+  return buildVariantEntry(p, 'single', label, p.price, p.stock);
+}
+
 export function flattenProducts(products: any[]): FlattenedProduct[] {
   const flattened: FlattenedProduct[] = [];
 
   products.forEach(p => {
-    if (!p.pricing_config || p.pricing_config.mode === 'single' || !p.pricing_config.mode) {
-      flattened.push({
-        id: `${p.id}-single`,
-        productId: p.id,
-        name: p.name,
-        variantKey: 'single',
-        variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
-        category: p.category,
-        sub_category: p.sub_category,
-        price: p.price,
-        stock: p.stock,
-        main_image: p.main_image || (p.images && p.images[0]),
-        images: p.images,
-        colorImages: p.pricing_config?.colorImages
-      });
-    } else if (p.pricing_config.mode === 'combination') {
+    const mode = p.pricing_config?.mode;
+
+    if (!p.pricing_config || mode === 'single' || !mode) {
+      flattened.push(buildSingleFallback(p));
+      return;
+    }
+
+    if (mode === 'combination') {
       const prices = p.pricing_config.combinationPrices || {};
       const stocks = p.pricing_config.combinationStock || {};
-      
       const keys = Object.keys(prices);
+
       if (keys.length === 0) {
-        flattened.push({
-          id: `${p.id}-single`,
-          productId: p.id,
-          name: p.name,
-          variantKey: 'single',
-          variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
-          category: p.category,
-          sub_category: p.sub_category,
-          price: p.price,
-          stock: p.stock,
-          main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images,
-          colorImages: p.pricing_config?.colorImages
-        });
+        flattened.push(buildSingleFallback(p));
       }
 
       keys.forEach(key => {
         const [size, color] = key.split('|');
-        flattened.push({
-          id: `${p.id}-${key}`,
-          productId: p.id,
-          name: p.name,
-          variantKey: key,
-          variantLabel: `${size || ''} / ${color || ''}`.replace(/^\s\/\s|\s\/\s$/g, ''),
-          category: p.category,
-          sub_category: p.sub_category,
-          price: prices[key] || 0,
-          stock: stocks[key] || 0,
-          main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images,
-          colorImages: p.pricing_config?.colorImages
-        });
+        const label = `${size || ''} / ${color || ''}`.replace(/^\s\/\s|\s\/\s$/g, '');
+        flattened.push(buildVariantEntry(p, key, label, prices[key] || 0, stocks[key] || 0));
       });
-    } else if (p.pricing_config.mode === 'size') {
+      return;
+    }
+
+    if (mode === 'size') {
       const prices = p.pricing_config.sizePrices || {};
       const stocks = p.pricing_config.sizeStock || {};
-      
       const keys = Object.keys(prices);
+
       if (keys.length === 0) {
-        flattened.push({
-          id: `${p.id}-single`,
-          productId: p.id,
-          name: p.name,
-          variantKey: 'single',
-          variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
-          category: p.category,
-          sub_category: p.sub_category,
-          price: p.price,
-          stock: p.stock,
-          main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images,
-          colorImages: p.pricing_config?.colorImages
-        });
+        flattened.push(buildSingleFallback(p));
       }
 
       keys.forEach(key => {
-        flattened.push({
-          id: `${p.id}-${key}`,
-          productId: p.id,
-          name: p.name,
-          variantKey: key,
-          variantLabel: `${key}`,
-          category: p.category,
-          sub_category: p.sub_category,
-          price: prices[key] || 0,
-          stock: stocks[key] || 0,
-          main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images,
-          colorImages: p.pricing_config?.colorImages
-        });
+        flattened.push(buildVariantEntry(p, key, `${key}`, prices[key] || 0, stocks[key] || 0));
       });
-    } else if (p.pricing_config.mode === 'color') {
+      return;
+    }
+
+    if (mode === 'color') {
       const prices = p.pricing_config.colorPrices || {};
       const stocks = p.pricing_config.colorStock || {};
-      
       const keys = Object.keys(prices);
+
       if (keys.length === 0) {
-        flattened.push({
-          id: `${p.id}-single`,
-          productId: p.id,
-          name: p.name,
-          variantKey: 'single',
-          variantLabel: [p.pricing_config?.singleSize, p.pricing_config?.singleColor].filter(Boolean).join(' / ') || 'Standard',
-          category: p.category,
-          sub_category: p.sub_category,
-          price: p.price,
-          stock: p.stock,
-          main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images,
-          colorImages: p.pricing_config?.colorImages
-        });
+        flattened.push(buildSingleFallback(p));
       }
 
       keys.forEach(key => {
-        flattened.push({
-          id: `${p.id}-${key}`,
-          productId: p.id,
-          name: p.name,
-          variantKey: key,
-          variantLabel: `${key}`,
-          category: p.category,
-          sub_category: p.sub_category,
-          price: prices[key] || 0,
-          stock: stocks[key] || 0,
-          main_image: p.main_image || (p.images && p.images[0]),
-          images: p.images,
-          colorImages: p.pricing_config?.colorImages
-        });
+        flattened.push(buildVariantEntry(p, key, `${key}`, prices[key] || 0, stocks[key] || 0));
       });
     }
   });

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
+import { createAdminClient } from '@/lib/supabase/admin-server';
+import { computeDiscountPhase } from '@/lib/commerce/discount-phase';
 
 export const maxDuration = 300; // Allows up to 5 minutes for sending emails
-
-type DiscountPhase = 'STARTING_SOON' | 'DAY_1' | 'MIDDLE_DAY' | 'LAST_DAY' | 'NONE';
 
 export async function GET(req: NextRequest) {
   // 1. Verify Vercel Cron Secret to ensure only Vercel can trigger this
@@ -17,9 +16,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createAdminClient();
 
     const now = new Date();
 
@@ -77,35 +74,8 @@ export async function GET(req: NextRequest) {
     // 4. Process each discount
     for (const discount of validDiscounts) {
       const notifiedPhases: string[] = discount.notified_phases || [];
-      const start = discount.start_date ? new Date(discount.start_date) : now;
-      const end = discount.end_date ? new Date(discount.end_date) : null;
-      
-      let computedPhase: DiscountPhase = 'NONE';
-      
-      if (now < start) {
-        // Check if starting in less than 24 hours
-        const diffHours = (start.getTime() - now.getTime()) / (1000 * 60 * 60);
-        if (diffHours <= 24) {
-          computedPhase = 'STARTING_SOON';
-        }
-      } else if (!end) {
-        computedPhase = 'DAY_1';
-      } else {
-        const durationMs = end.getTime() - start.getTime();
-        const days = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
-        const currentDay = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        
-        if (currentDay === 1) {
-          computedPhase = 'DAY_1';
-        } else if (currentDay === days && days > 1) {
-          computedPhase = 'LAST_DAY';
-        } else if (days >= 5) {
-          const middleDay = Math.floor(days / 2) + 1;
-          if (currentDay === middleDay) {
-            computedPhase = 'MIDDLE_DAY';
-          }
-        }
-      }
+
+      const computedPhase = computeDiscountPhase(discount, now);
 
       // If we should notify and haven't yet for this phase
       if (computedPhase !== 'NONE' && !notifiedPhases.includes(computedPhase)) {

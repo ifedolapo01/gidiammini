@@ -2,8 +2,9 @@
 // app/admin/orders/components/OrderDetailsModal.tsx
 import { Send, Mail, Phone } from 'lucide-react';
 import { Button, Modal, Textarea } from '@/components/ui';
-import { Order } from '@/types/product';
+import { Order } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { getStatusColor } from '@/lib/commerce/order-status';
 
 interface OrderDetailsModalProps {
   selectedOrder: Order;
@@ -12,7 +13,6 @@ interface OrderDetailsModalProps {
   onClose: () => void;
   onNotificationMessageChange: (message: string) => void;
   onSendNotification: (orderId: string) => void;
-  getStatusColor: (status: Order['status']) => string;
 }
 
 export default function OrderDetailsModal({
@@ -22,7 +22,6 @@ export default function OrderDetailsModal({
   onClose,
   onNotificationMessageChange,
   onSendNotification,
-  getStatusColor,
 }: OrderDetailsModalProps) {
   return (
     <Modal

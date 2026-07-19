@@ -2,8 +2,9 @@
 'use client';
 
 import { Banknote } from 'lucide-react';
-import { CartItem } from '@/types/product';
+import { CartItem } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { isPickupAvailable, getDeliveryLabel } from '@/lib/commerce/checkout';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -25,7 +26,7 @@ export default function OrderSummary({
   selectedState
 }: OrderSummaryProps) {
 
-  const isPickupAvailable = selectedState === 'Abuja';
+  const pickupAvailable = isPickupAvailable(selectedState);
 
   return (
     <div className="bg-surface rounded-surface shadow-elevation-2 border border-border p-4 md:p-6">
@@ -92,12 +93,7 @@ export default function OrderSummary({
           <div className="flex items-center justify-between text-caption-md md:text-body-sm">
             <span className="text-text-primary">Delivery Method:</span>
             <span className="font-medium capitalize text-text-primary">
-              {deliveryOption === 'pickup' && isPickupAvailable
-                ? 'Pickup (Abuja Only)'
-                : selectedState === 'Abuja'
-                ? 'Delivery (Abuja)'
-                : 'Park Drop-off'
-              }
+              {getDeliveryLabel(deliveryOption, pickupAvailable, selectedState)}
             </span>
           </div>
           <div className="flex items-center justify-between text-caption-md md:text-body-sm mt-1 md:mt-2">
