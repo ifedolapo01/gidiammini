@@ -1,9 +1,10 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 "use client";
 
-import { ShoppingBag, Menu, X } from "lucide-react";
+import { ShoppingBag, Heart, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "./CartProvider";
+import { useWishlist } from "./WishlistProvider";
 import { useState, Suspense } from "react";
 import { usePathname, useSearchParams } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui';
@@ -18,6 +19,7 @@ function HeaderContent() {
     return null;
   }
   const { getItemCount } = useCart();
+  const { items: wishlistItems } = useWishlist();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string, category?: string) => {
@@ -79,6 +81,14 @@ function HeaderContent() {
 
           <div className="flex items-center space-x-1 sm:space-x-2">
             <ThemeToggle />
+            <Link href="/wishlist" className="relative p-1 hover:bg-primary/10 rounded-full transition-colors">
+              <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-text-secondary" />
+              {wishlistItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 bg-primary text-primary-foreground text-caption-sm sm:text-caption-md font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-elevation-1">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </Link>
             <Link href="/cart" className="relative p-1 hover:bg-primary/10 rounded-full transition-colors">
               <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-text-secondary" />
               {getItemCount() > 0 && (

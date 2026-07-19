@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { useCart } from '@/components/CartProvider';
+import { useWishlist } from '@/components/WishlistProvider';
 import { getBestDiscount, calculateDiscountedPrice } from '@/lib/commerce/discounts';
 import { getVariantPrice, getVariantStock } from '@/lib/commerce/pricing';
 import { Skeleton } from '@/components/ui';
@@ -29,6 +30,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addToCart } = useCart();
+  const { isInWishlist, addToWishlist, toggleWishlist } = useWishlist();
 
   const { product, discounts, loading } = useProductDetail(params.id as string | undefined);
   const {
@@ -42,7 +44,7 @@ export default function ProductDetailPage() {
   } = useProductVariantSelection(product);
 
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const isWishlisted = product ? isInWishlist(product.id) : false;
 
   const currentBasePrice = product ? getVariantPrice(product, selectedSize, selectedColor) : 0;
   const currentStock = product ? getVariantStock(product, selectedSize, selectedColor) : 0;
@@ -132,7 +134,7 @@ export default function ProductDetailPage() {
         currentStock={currentStock}
         isWishlisted={isWishlisted}
         onBack={() => router.back()}
-        onToggleWishlist={() => setIsWishlisted(!isWishlisted)}
+        onToggleWishlist={() => toggleWishlist(product)}
       />
 
       <div className="container mx-auto px-4 py-4 md:py-8">
@@ -163,7 +165,7 @@ export default function ProductDetailPage() {
               currentBasePrice={currentBasePrice}
               currentStock={currentStock}
               isWishlisted={isWishlisted}
-              onToggleWishlist={() => setIsWishlisted(!isWishlisted)}
+              onToggleWishlist={() => toggleWishlist(product)}
             />
 
             <div className="mb-4 md:mb-6">
@@ -206,7 +208,7 @@ export default function ProductDetailPage() {
             />
 
             {currentStock <= 0 && (
-              <OutOfStockNotice isWishlisted={isWishlisted} onWishlist={() => setIsWishlisted(true)} />
+              <OutOfStockNotice isWishlisted={isWishlisted} onWishlist={() => addToWishlist(product)} />
             )}
 
             <ProductDetailsAccordion details={product.details} />

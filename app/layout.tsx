@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import { CartProvider } from '@/components/CartProvider';
+import { WishlistProvider } from '@/components/WishlistProvider';
 import { Analytics } from "@vercel/analytics/next";
 import StorefrontDiscountManager from '@/components/StorefrontDiscountManager';
 
@@ -37,6 +38,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${inter.className} theme-storefront`} suppressHydrationWarning>
         <CartProvider>
+        <WishlistProvider>
           <StorefrontDiscountManager />
           <Header />
           <main className="min-h-screen overflow-x-hidden">{children}</main>
@@ -86,6 +88,7 @@ export default function RootLayout({
               </div>
             </div>
           </footer>
+        </WishlistProvider>
         </CartProvider>
       </body>
     </html>
