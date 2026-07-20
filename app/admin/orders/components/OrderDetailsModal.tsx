@@ -3,25 +3,33 @@
 import { Send, Mail, Phone } from 'lucide-react';
 import { Button, Modal, Textarea } from '@/components/ui';
 import { Order } from '@/types/order';
+import type { ShippingZone } from '@/types/shipping';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { getStatusColor } from '@/lib/commerce/order-status';
+import ShippingOverrideForm from './ShippingOverrideForm';
 
 interface OrderDetailsModalProps {
   selectedOrder: Order;
   notificationMessage: string;
   sendingNotification: string | null;
+  shippingZones: ShippingZone[];
+  updatingShipping: boolean;
   onClose: () => void;
   onNotificationMessageChange: (message: string) => void;
   onSendNotification: (orderId: string) => void;
+  onUpdateShipping: (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => void;
 }
 
 export default function OrderDetailsModal({
   selectedOrder,
   notificationMessage,
   sendingNotification,
+  shippingZones,
+  updatingShipping,
   onClose,
   onNotificationMessageChange,
   onSendNotification,
+  onUpdateShipping,
 }: OrderDetailsModalProps) {
   return (
     <Modal
@@ -101,6 +109,13 @@ export default function OrderDetailsModal({
           )}
         </div>
       </div>
+
+      <ShippingOverrideForm
+        order={selectedOrder}
+        zones={shippingZones}
+        isUpdating={updatingShipping}
+        onUpdate={onUpdateShipping}
+      />
 
       {/* Send Notification Form */}
       <div className="mt-6 pt-6 border-t border-border">

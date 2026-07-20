@@ -3,20 +3,29 @@
 
 import { Home } from 'lucide-react';
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { getDeliveryFee } from '@/lib/commerce/checkout';
+import { getDeliveryFee, findShippingZone } from '@/lib/commerce/checkout';
+import { formatZoneEta } from '@/lib/commerce/shipping-eta';
+import type { ShippingZone } from '@/types/shipping';
 
 interface DeliveryOptionProps {
   deliveryOption: 'pickup' | 'delivery';
   setDeliveryOption: (option: 'pickup' | 'delivery') => void;
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
 }
 
-export default function DeliveryOption({ deliveryOption, setDeliveryOption, selectedState }: DeliveryOptionProps) {
+export default function DeliveryOption({
+  deliveryOption, setDeliveryOption, selectedState, selectedLga, selectedPlace, zones
+}: DeliveryOptionProps) {
+  const zone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
+
   return (
     <button
       type="button"
       onClick={() => setDeliveryOption('delivery')}
-      className={`flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 border-2 rounded-surface transition-all min-w-[140px] sm:min-w-0 sm:min-h-[140px] md:min-h-[180px] w-full flex-shrink-0 sm:flex-shrink ${
+      className={`flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 border-2 rounded-surface transition-all min-h-[140px] md:min-h-[180px] w-full ${
         deliveryOption === 'delivery'
           ? 'border-primary bg-surface-inverse'
           : 'border-border-strong hover:border-border-strong hover:bg-surface-hover'
@@ -37,24 +46,18 @@ export default function DeliveryOption({ deliveryOption, setDeliveryOption, sele
           ? 'text-on-inverse'
           : 'text-text-primary'
       }`}>
-        {formatCurrency(getDeliveryFee(selectedState))}
+        {formatCurrency(getDeliveryFee(zones, selectedState, selectedLga, selectedPlace))}
       </span>
       <div className="mt-2 sm:mt-3 md:mt-4 text-center">
         <p className={`font-medium text-caption-md ${
           deliveryOption === 'delivery' ? 'text-on-inverse/80' : 'text-text-primary'
         }`}>
-          {selectedState === 'Abuja'
-            ? 'Door-to-door'
-            : 'Park drop-off'
-          }
+          {zone?.delivery_label || 'Delivery'}
         </p>
         <p className={`text-caption-md mt-0.5 ${
           deliveryOption === 'delivery' ? 'text-on-inverse/70' : 'text-text-secondary'
         }`}>
-          {selectedState === 'Abuja'
-            ? '3-5 days'
-            : 'Park pickup'
-          }
+          {zone ? formatZoneEta(zone) : ''}
         </p>
       </div>
       {deliveryOption === 'delivery' && (

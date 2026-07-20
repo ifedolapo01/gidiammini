@@ -27,5 +27,6 @@ export const adminConfig = {
     { href: '/admin/stock', label: 'Stock Management' },
     { href: '/admin/categories', label: 'Categories' },
     { href: '/admin/discounts', label: 'Discounts' },
+    { href: '/admin/shipping', label: 'Shipping' },
   ] satisfies AdminNavItem[],
 };

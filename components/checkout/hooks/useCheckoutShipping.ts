@@ -1,0 +1,46 @@
+/** STOREFRONT layer — bundles checkout's State/LGA/Place + delivery-option
+ * selection and the derived zone/fee/pickup values they resolve to. */
+'use client';
+
+import { useEffect, useState } from 'react';
+import { getDeliveryFee, isPickupAvailable, findShippingZone, getAvailableStates } from '@/lib/commerce/checkout';
+import { useActiveShippingZones } from './useActiveShippingZones';
+
+export function useCheckoutShipping() {
+  const [deliveryOption, setDeliveryOption] = useState<'pickup' | 'delivery'>('pickup');
+  const [selectedState, setSelectedState] = useState<string>('Abuja');
+  const [selectedLga, setSelectedLga] = useState<string>('');
+  const [selectedPlace, setSelectedPlace] = useState<string>('');
+
+  const { zones } = useActiveShippingZones();
+
+  // 'Abuja' is just a starting guess — once zones load, fall back to whatever
+  // state the admin has actually configured if that guess isn't available.
+  useEffect(() => {
+    if (zones.length === 0) return;
+    const available = getAvailableStates(zones);
+    if (available.length > 0 && !available.includes(selectedState)) {
+      setSelectedState(available[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zones]);
+
+  const selectedZone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
+  const pickupAvailable = isPickupAvailable(zones, selectedState, selectedLga, selectedPlace);
+  const shippingCost = deliveryOption === 'pickup'
+    ? 0
+    : getDeliveryFee(zones, selectedState, selectedLga, selectedPlace);
+  const pickupAddress = selectedZone?.pickup_address ?? '';
+
+  return {
+    zones,
+    deliveryOption, setDeliveryOption,
+    selectedState, setSelectedState,
+    selectedLga, setSelectedLga,
+    selectedPlace, setSelectedPlace,
+    selectedZone,
+    pickupAvailable,
+    shippingCost,
+    pickupAddress,
+  };
+}

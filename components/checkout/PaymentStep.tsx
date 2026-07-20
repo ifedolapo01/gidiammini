@@ -4,6 +4,7 @@
 import { ArrowLeft, MessageCircle } from 'lucide-react';
 import { Badge, Spinner } from '@/components/ui';
 import { getDeliveryLabel } from '@/lib/commerce/checkout';
+import type { ShippingZone } from '@/types/shipping';
 import BankDetails from './BankDetails';
 import ReceiptUpload from './ReceiptUpload';
 
@@ -11,7 +12,9 @@ interface PaymentStepProps {
   orderNumber: string;
   deliveryOption: 'pickup' | 'delivery';
   selectedState: string;
-  isPickupAvailable: boolean;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
   total: number;
   uploadedReceipt: string | null;
   setUploadedReceipt: (receipt: string | null) => void;
@@ -25,7 +28,9 @@ export default function PaymentStep({
   orderNumber,
   deliveryOption,
   selectedState,
-  isPickupAvailable,
+  selectedLga,
+  selectedPlace,
+  zones,
   total,
   uploadedReceipt,
   setUploadedReceipt,
@@ -53,7 +58,7 @@ export default function PaymentStep({
               <span className={`px-3 py-1 rounded-full text-caption-md md:text-body-sm font-medium ${
                 deliveryOption === 'pickup' ? 'bg-info-background text-info' : 'bg-surface-inverse text-on-inverse'
               }`}>
-                {getDeliveryLabel(deliveryOption, isPickupAvailable, selectedState)} • {selectedState}
+                {getDeliveryLabel(deliveryOption, zones, selectedState, 'badge', { lga: selectedLga, place: selectedPlace })} • {selectedState}
               </span>
               <Badge tone="warning">Awaiting Payment</Badge>
             </div>
@@ -89,7 +94,7 @@ export default function PaymentStep({
           </button>
 
           {/* Judgment call: not using Button's `loading` prop — this button swaps to
-              different inline status copy ("Sending to Store Owner...") while loading,
+              different inline status copy ("Sending Receipt...") while loading,
               which the primitive's built-in loading state doesn't support. */}
           <button
             onClick={handleSendReceipt}
@@ -99,12 +104,12 @@ export default function PaymentStep({
             {isProcessing ? (
               <>
                 <Spinner size="sm" className="text-text-inverse mr-2" />
-                <span className="text-body-sm md:text-body-md">Sending to Store Owner...</span>
+                <span className="text-body-sm md:text-body-md">Sending Receipt...</span>
               </>
             ) : (
               <>
                 <MessageCircle className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                <span className="text-body-sm md:text-body-md">Send Receipt to Seller</span>
+                <span className="text-body-sm md:text-body-md">Send Receipt to Us</span>
               </>
             )}
           </button>
@@ -117,9 +122,8 @@ export default function PaymentStep({
             <h4 className="font-bold text-success text-body-sm md:text-body-md">Automatic Email Notification:</h4>
           </div>
           <p className="text-caption-md md:text-body-sm text-success mt-2">
-            When you click "Send Receipt to Owner", all your order details and the receipt will be automatically
-            sent to the store owner's email. They will verify your payment and contact you via email/SMS
-            for order confirmation.
+            When you click "Send Receipt to Us", we'll receive all your order details and the receipt right away.
+            We'll verify your payment and contact you via email/SMS for order confirmation.
           </p>
         </div>
       </div>

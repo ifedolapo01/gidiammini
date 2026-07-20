@@ -12,6 +12,7 @@ export function useOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [sendingNotification, setSendingNotification] = useState<string | null>(null);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
+  const [updatingShipping, setUpdatingShipping] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -141,6 +142,34 @@ export function useOrders() {
     }
   };
 
+  const updateOrderShipping = async (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => {
+    try {
+      setUpdatingShipping(true);
+      const response = await fetch(`/api/orders/${orderId}/shipping`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipping_zone_id: shippingZoneId, delivery_option: deliveryOption }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setOrders(prevOrders =>
+          prevOrders.map(order => (order.id === orderId ? { ...order, ...result.order } : order))
+        );
+        setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, ...result.order } : prev));
+        alert('Shipping method updated. Customer has been notified.');
+      } else {
+        alert(`Failed to update shipping method: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('Error updating order shipping:', error);
+      alert(`Error updating shipping method: ${error.message || 'Please check your connection.'}`);
+    } finally {
+      setUpdatingShipping(false);
+    }
+  };
+
   const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);
   };
@@ -162,5 +191,7 @@ export function useOrders() {
     sendCustomNotification,
     notificationMessage,
     setNotificationMessage,
+    updateOrderShipping,
+    updatingShipping,
   };
 }

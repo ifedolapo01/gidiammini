@@ -4,34 +4,39 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { verifyAdminAuth } from '@/lib/auth';
-import { OrderData } from '@/types/order';
+import { adjustVariantStockByDelta } from '@/lib/commerce/stock-adjustment';
+import { OrderData, OrderItem } from '@/types/order';
 
-/** Atomically checks and decreases stock for order items; returns false if any item is insufficient. */
-async function decreaseStockForItems(
-  supabase: SupabaseClient,
-  items: Array<{ product_id?: string; quantity: number }>
-): Promise<boolean> {
-  if (items.length === 0) return true;
+/**
+ * Read-only availability check — does NOT mutate stock. Stock is only ever
+ * actually reserved when an order is confirmed (applyStockChangesForOrder in
+ * app/api/orders/[id]/route.ts). This just rejects a checkout upfront when
+ * pricing_config (the same source of truth the admin Stock page reads) shows
+ * there clearly isn't enough of an item left, using the same variant-aware
+ * math as the confirm step so the two never disagree.
+ */
+async function validateStockAvailability(supabase: SupabaseClient, items: OrderItem[]): Promise<boolean> {
+  const relevantItems = items.filter((item) => item.product_id);
+  if (relevantItems.length === 0) return true;
 
-  const { data: stockOk, error: stockError } = await supabase.rpc('check_and_decrease_stock_multi', {
-    items
-  });
+  const productIds = [...new Set(relevantItems.map((item) => item.product_id as string))];
+  const { data: products, error } = await supabase.from('products').select('*').in('id', productIds);
 
-  return !stockError && !!stockOk;
-}
+  if (error || !products) return false;
 
-/** Restores stock for items after a failed order creation, mirroring lib/supabase/orders.ts's rollback. */
-async function restoreStockForItems(
-  supabase: SupabaseClient,
-  items: Array<{ product_id?: string; quantity: number }>
-) {
-  for (const item of items) {
-    if (!item.product_id) continue;
-    await supabase.rpc('increase_product_stock', {
-      product_id: item.product_id,
-      quantity: item.quantity
-    });
+  for (const product of products) {
+    const itemsForProduct = relevantItems.filter((item) => item.product_id === product.id);
+    const { stock: projectedStock } = adjustVariantStockByDelta(
+      product.pricing_config,
+      product.stock,
+      itemsForProduct,
+      true // decrement direction, computed only — never persisted here
+    );
+
+    if (projectedStock < 0) return false;
   }
+
+  return true;
 }
 
 // GET method - fetch orders (for admin dashboard)
@@ -100,14 +105,7 @@ export async function POST(request: NextRequest) {
     // Extract order items from the data
     const { items, ...orderMainData } = orderData;
 
-    // Atomically check and decrease stock before creating the order, matching the
-    // guard lib/supabase/orders.ts / actions.ts::createOrder already apply for
-    // their call sites - this endpoint previously inserted orders without it.
-    const itemsToDecrement = (items || [])
-      .filter((item) => item.product_id)
-      .map((item) => ({ product_id: item.product_id as string, quantity: item.quantity }));
-
-    const stockOk = await decreaseStockForItems(supabase, itemsToDecrement);
+    const stockOk = await validateStockAvailability(supabase, items || []);
     if (!stockOk) {
       return NextResponse.json(
         { success: false, error: 'Insufficient stock for one or more items. Please verify product inventory.' },
@@ -128,7 +126,6 @@ export async function POST(request: NextRequest) {
 
     if (orderError) {
       console.error('Error creating order:', orderError);
-      await restoreStockForItems(supabase, itemsToDecrement);
       return NextResponse.json(
         { success: false, error: `Failed to create order: ${orderError.message}` },
         { status: 500 }

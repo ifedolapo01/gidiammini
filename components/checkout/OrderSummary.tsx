@@ -4,7 +4,8 @@
 import { Banknote } from 'lucide-react';
 import { CartItem } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { isPickupAvailable, getDeliveryLabel } from '@/lib/commerce/checkout';
+import { getDeliveryLabel } from '@/lib/commerce/checkout';
+import type { ShippingZone } from '@/types/shipping';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -14,6 +15,9 @@ interface OrderSummaryProps {
   total: number;
   deliveryOption: 'pickup' | 'delivery';
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
 }
 
 export default function OrderSummary({
@@ -23,10 +27,11 @@ export default function OrderSummary({
   shippingCost,
   total,
   deliveryOption,
-  selectedState
+  selectedState,
+  selectedLga,
+  selectedPlace,
+  zones
 }: OrderSummaryProps) {
-
-  const pickupAvailable = isPickupAvailable(selectedState);
 
   return (
     <div className="bg-surface rounded-surface shadow-elevation-2 border border-border p-4 md:p-6">
@@ -93,12 +98,14 @@ export default function OrderSummary({
           <div className="flex items-center justify-between text-caption-md md:text-body-sm">
             <span className="text-text-primary">Delivery Method:</span>
             <span className="font-medium capitalize text-text-primary">
-              {getDeliveryLabel(deliveryOption, pickupAvailable, selectedState)}
+              {getDeliveryLabel(deliveryOption, zones, selectedState, 'badge', { lga: selectedLga, place: selectedPlace })}
             </span>
           </div>
           <div className="flex items-center justify-between text-caption-md md:text-body-sm mt-1 md:mt-2">
             <span className="text-text-primary">Location:</span>
-            <span className="font-medium text-text-primary">{selectedState}</span>
+            <span className="font-medium text-text-primary">
+              {selectedLga ? `${selectedLga}, ${selectedState}` : selectedState}
+            </span>
           </div>
         </div>
       </div>

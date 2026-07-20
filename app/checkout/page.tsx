@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { TAX_RATE, PICKUP_ADDRESS, getDeliveryFee, isPickupAvailable as getIsPickupAvailable } from '@/lib/commerce/checkout';
+import { TAX_RATE } from '@/lib/commerce/checkout';
 
 import CheckoutSteps from '@/components/checkout/CheckoutSteps';
 import EmptyCart from '@/components/checkout/EmptyCart';
@@ -18,20 +18,29 @@ import CheckoutFormStep from '@/components/checkout/CheckoutFormStep';
 import { useCheckoutForm } from '@/components/checkout/hooks/useCheckoutForm';
 import { useCheckoutStockValidation } from '@/components/checkout/hooks/useCheckoutStockValidation';
 import { useOrderSubmission } from '@/components/checkout/hooks/useOrderSubmission';
+import { useCheckoutShipping } from '@/components/checkout/hooks/useCheckoutShipping';
+import { useMobileOrderSummaryModal } from '@/components/checkout/hooks/useMobileOrderSummaryModal';
 
 export default function CheckoutPage() {
   const { items, getTotal, clearCart } = useCart();
   const [step, setStep] = useState<'form' | 'payment' | 'confirmation'>('form');
   const [orderNumber, setOrderNumber] = useState<string>('');
-  const [deliveryOption, setDeliveryOption] = useState<'pickup' | 'delivery'>('pickup');
-  const [selectedState, setSelectedState] = useState<string>('Abuja');
   const [orderTotal, setOrderTotal] = useState<number>(0);
 
   const { formData, setFormData } = useCheckoutForm();
   const { validateStock } = useCheckoutStockValidation();
+  const {
+    zones,
+    deliveryOption, setDeliveryOption,
+    selectedState, setSelectedState,
+    selectedLga, setSelectedLga,
+    selectedPlace, setSelectedPlace,
+    selectedZone,
+    pickupAvailable,
+    shippingCost,
+    pickupAddress,
+  } = useCheckoutShipping();
 
-  const pickupAvailable = getIsPickupAvailable(selectedState);
-  const shippingCost = deliveryOption === 'pickup' ? 0 : getDeliveryFee(selectedState);
   const subtotal = getTotal();
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax + shippingCost;
@@ -49,6 +58,9 @@ export default function CheckoutPage() {
     formData,
     deliveryOption,
     selectedState,
+    selectedLga,
+    selectedPlace,
+    shippingZoneId: selectedZone?.id,
     onSuccess: () => {
       clearCart();
       setStep('confirmation');
@@ -58,7 +70,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (deliveryOption === 'delivery' && !formData.address.trim()) {
+    if (deliveryOption === 'delivery' && selectedZone?.is_door_delivery && !formData.address.trim()) {
       alert('Please enter your delivery address');
       return;
     }
@@ -72,19 +84,7 @@ export default function CheckoutPage() {
     setStep('payment');
   };
 
-  const openMobileOrderSummary = () => {
-    const modal = document.getElementById('mobile-order-summary');
-    if (modal) {
-      (modal as any).showModal?.();
-    }
-  };
-
-  const closeMobileOrderSummary = () => {
-    const modal = document.getElementById('mobile-order-summary');
-    if (modal) {
-      (modal as any).close?.();
-    }
-  };
+  const { open: openMobileOrderSummary, close: closeMobileOrderSummary } = useMobileOrderSummaryModal();
 
   if (items.length === 0 && step !== 'confirmation') {
     return <EmptyCart />;
@@ -131,10 +131,15 @@ export default function CheckoutPage() {
           <CheckoutFormStep
             selectedState={selectedState}
             setSelectedState={setSelectedState}
+            selectedLga={selectedLga}
+            setSelectedLga={setSelectedLga}
+            selectedPlace={selectedPlace}
+            setSelectedPlace={setSelectedPlace}
             deliveryOption={deliveryOption}
             setDeliveryOption={setDeliveryOption}
-            pickupAddress={PICKUP_ADDRESS}
+            pickupAddress={pickupAddress}
             pickupAvailable={pickupAvailable}
+            zones={zones}
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSubmit}
@@ -154,7 +159,9 @@ export default function CheckoutPage() {
             orderNumber={orderNumber}
             deliveryOption={deliveryOption}
             selectedState={selectedState}
-            isPickupAvailable={pickupAvailable}
+            selectedLga={selectedLga}
+            selectedPlace={selectedPlace}
+            zones={zones}
             total={total}
             uploadedReceipt={uploadedReceipt}
             setUploadedReceipt={setUploadedReceipt}
@@ -170,10 +177,12 @@ export default function CheckoutPage() {
           <ConfirmationStep
             orderNumber={orderNumber}
             deliveryOption={deliveryOption}
-            isPickupAvailable={pickupAvailable}
             selectedState={selectedState}
+            selectedLga={selectedLga}
+            selectedPlace={selectedPlace}
+            zones={zones}
             formData={formData}
-            pickupAddress={PICKUP_ADDRESS}
+            pickupAddress={pickupAddress}
             total={orderTotal || total}
           />
         )}

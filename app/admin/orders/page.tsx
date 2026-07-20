@@ -10,6 +10,7 @@ import OrderFilters from './components/OrderFilters';
 import OrderStatsSummary from './components/OrderStatsSummary';
 import { useOrders } from './hooks/useOrders';
 import { useOrderFilters } from './hooks/useOrderFilters';
+import { useShippingZoneOptions } from './hooks/useShippingZoneOptions';
 
 export default function AdminOrders() {
   const {
@@ -25,9 +26,12 @@ export default function AdminOrders() {
     sendCustomNotification,
     notificationMessage,
     setNotificationMessage,
+    updateOrderShipping,
+    updatingShipping,
   } = useOrders();
 
   const { filter, setFilter, searchTerm, setSearchTerm, searchedOrders } = useOrderFilters(orders);
+  const { zones: shippingZones } = useShippingZoneOptions();
 
   if (loading) {
     return (
@@ -108,9 +112,12 @@ export default function AdminOrders() {
           selectedOrder={selectedOrder}
           notificationMessage={notificationMessage}
           sendingNotification={sendingNotification}
+          shippingZones={shippingZones}
+          updatingShipping={updatingShipping}
           onClose={closeOrderDetails}
           onNotificationMessageChange={setNotificationMessage}
           onSendNotification={sendCustomNotification}
+          onUpdateShipping={updateOrderShipping}
         />
       )}
     </>

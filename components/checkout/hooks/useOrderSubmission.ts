@@ -11,6 +11,9 @@ interface UseOrderSubmissionParams {
   formData: CheckoutFormData;
   deliveryOption: 'pickup' | 'delivery';
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  shippingZoneId?: string | null;
   /** Called after the order is created successfully (clears cart, advances step). */
   onSuccess: () => void;
 }
@@ -22,6 +25,9 @@ export function useOrderSubmission({
   formData,
   deliveryOption,
   selectedState,
+  selectedLga,
+  selectedPlace,
+  shippingZoneId,
   onSuccess,
 }: UseOrderSubmissionParams) {
   const [uploadedReceipt, setUploadedReceipt] = useState<string | null>(null);
@@ -74,6 +80,9 @@ export function useOrderSubmission({
         total_amount: total,
         delivery_option: deliveryOption,
         selected_state: selectedState,
+        selected_lga: selectedLga || null,
+        selected_place: selectedPlace || null,
+        shipping_zone_id: shippingZoneId ?? null,
         delivery_address: deliveryOption === 'delivery' ? formData.address : undefined,
         city: formData.city,
         note: formData.note,

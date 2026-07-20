@@ -2,16 +2,19 @@
 'use client';
 
 import { Home, Store } from 'lucide-react';
-import { getDeliveryDescription } from '@/lib/commerce/checkout';
+import { getDeliveryDescription, isPickupAvailable } from '@/lib/commerce/checkout';
+import type { ShippingZone } from '@/types/shipping';
 
 interface DeliveryInfoProps {
   deliveryOption: 'pickup' | 'delivery';
-  isPickupAvailable: boolean;
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
 }
 
-export default function DeliveryInfo({ deliveryOption, isPickupAvailable, selectedState }: DeliveryInfoProps) {
-  const isPickup = deliveryOption === 'pickup' && isPickupAvailable;
+export default function DeliveryInfo({ deliveryOption, selectedState, selectedLga, selectedPlace, zones }: DeliveryInfoProps) {
+  const isPickup = deliveryOption === 'pickup' && isPickupAvailable(zones, selectedState, selectedLga, selectedPlace);
 
   return (
     <div className={`mt-4 sm:mt-6 p-3 sm:p-4 rounded-surface ${
@@ -41,7 +44,7 @@ export default function DeliveryInfo({ deliveryOption, isPickupAvailable, select
           ? 'text-primary'
           : 'text-on-inverse/80'
       }`}>
-        {getDeliveryDescription(deliveryOption, isPickupAvailable, { selectedState }, 'infoPanel')}
+        {getDeliveryDescription(deliveryOption, zones, selectedState, { lga: selectedLga, place: selectedPlace }, 'infoPanel')}
       </p>
     </div>
   );

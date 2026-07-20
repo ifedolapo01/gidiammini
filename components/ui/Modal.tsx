@@ -97,7 +97,7 @@ export function Modal({
         'backdrop:bg-overlay backdrop:backdrop-blur-sm',
         'open:animate-modalIn',
         sizes[size],
-        scrollable && 'flex flex-col max-h-[85vh]',
+        scrollable && 'open:flex flex-col max-h-[85vh]',
         className,
       )}
     >

@@ -3,14 +3,17 @@
 
 import { Badge } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { getDeliveryLabel } from '@/lib/commerce/checkout';
+import { getDeliveryLabel, isPickupAvailable, findShippingZone } from '@/lib/commerce/checkout';
+import type { ShippingZone } from '@/types/shipping';
 
 interface OrderDetailsCardProps {
   orderNumber: string;
   formData: { firstName: string; lastName: string; phone: string; email: string; address: string; city: string };
   deliveryOption: 'pickup' | 'delivery';
-  isPickupAvailable: boolean;
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
   pickupAddress: string;
   total: number;
 }
@@ -19,11 +22,17 @@ export default function OrderDetailsCard({
   orderNumber,
   formData,
   deliveryOption,
-  isPickupAvailable,
   selectedState,
+  selectedLga,
+  selectedPlace,
+  zones,
   pickupAddress,
   total
 }: OrderDetailsCardProps) {
+  const isPickup = deliveryOption === 'pickup' && isPickupAvailable(zones, selectedState, selectedLga, selectedPlace);
+  const zone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
+  const isDoorDelivery = !!zone?.is_door_delivery;
+
   return (
     <div className="bg-info-background border border-info-border rounded-surface p-4 md:p-6 mb-6 md:mb-8">
       <h3 className="font-bold text-body-md md:text-body-lg text-text-primary mb-3 md:mb-4">Your Order Details</h3>
@@ -31,10 +40,12 @@ export default function OrderDetailsCard({
         <DetailItem label="Order Number" value={orderNumber} />
         <DetailItem label="Customer Name" value={`${formData.firstName} ${formData.lastName}`} />
         <DetailItem
-          label={getDeliveryLabel(deliveryOption, isPickupAvailable, selectedState, 'detailLabel')}
-          value={deliveryOption === 'pickup' && isPickupAvailable
+          label={getDeliveryLabel(deliveryOption, zones, selectedState, 'detailLabel', { lga: selectedLga, place: selectedPlace })}
+          value={isPickup
             ? pickupAddress
-            : `${formData.address}, ${formData.city}, ${selectedState}`
+            : isDoorDelivery
+              ? `${formData.address}, ${formData.city}, ${selectedState}`
+              : `${selectedLga ? `${selectedLga}, ` : ''}${selectedState}`
           }
         />
         <DetailItem label="Contact" value={formData.phone} subValue={formData.email} />
@@ -51,13 +62,11 @@ export default function OrderDetailsCard({
           <div className="flex flex-col items-start md:items-end gap-2">
             <Badge tone="warning">Awaiting Verification</Badge>
             <span className={`px-3 py-1 md:px-4 md:py-2 rounded-full text-caption-md md:text-body-sm font-medium ${
-              deliveryOption === 'pickup' && isPickupAvailable
+              isPickup
                 ? 'bg-info-background text-info'
-                : selectedState === 'Abuja'
-                ? 'bg-surface-inverse text-on-inverse'
-                : 'bg-background-tertiary text-text-secondary'
+                : 'bg-surface-inverse text-on-inverse'
             }`}>
-              {getDeliveryLabel(deliveryOption, isPickupAvailable, selectedState)} • {selectedState}
+              {getDeliveryLabel(deliveryOption, zones, selectedState, 'badge', { lga: selectedLga, place: selectedPlace })} • {selectedState}
             </span>
           </div>
         </div>

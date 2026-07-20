@@ -2,12 +2,19 @@
 'use client';
 
 import { ChevronLeft, Truck, Shield } from 'lucide-react';
+import { useActiveShippingZones } from '@/components/checkout/hooks/useActiveShippingZones';
+import { formatZoneEta, aggregateEtaRange } from '@/lib/commerce/shipping-eta';
 
 interface ProductDetailsAccordionProps {
   details: string[] | undefined;
 }
 
 export default function ProductDetailsAccordion({ details }: ProductDetailsAccordionProps) {
+  const { zones } = useActiveShippingZones();
+  const primaryZone = zones.find((z) => z.is_primary);
+  const otherZones = zones.filter((z) => !z.is_primary);
+  const otherStatesEta = aggregateEtaRange(otherZones);
+
   return (
     <div className="space-y-4 border-t pt-6 md:pt-8 mt-6 md:mt-0">
       {/* Product Details List */}
@@ -54,8 +61,11 @@ export default function ProductDetailsAccordion({ details }: ProductDetailsAccor
       <div className="p-4 bg-info-background border border-info-border rounded-control">
         <h4 className="font-medium text-info mb-2">Delivery Information</h4>
         <p className="text-body-sm text-info">
-          • Abuja: 1-2 days<br/>
-          • Other states: 3-5 business days to designated parks<br/>
+          {primaryZone
+            ? <>• {primaryZone.state}: {formatZoneEta(primaryZone)}<br/></>
+            : <>• Set your main location in Admin &rarr; Shipping to show it here<br/></>
+          }
+          {otherStatesEta && <>• Other states: {otherStatesEta} to designated parks<br/></>}
           • Contact us for expedited shipping
         </p>
       </div>

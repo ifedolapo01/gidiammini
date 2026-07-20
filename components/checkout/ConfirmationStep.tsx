@@ -3,6 +3,7 @@
 
 import { CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import type { ShippingZone } from '@/types/shipping';
 import NextSteps from './NextSteps';
 import OrderDetailsCard from './OrderDetailsCard';
 import EstimatedTimeline from './EstimatedTimeline';
@@ -10,8 +11,10 @@ import EstimatedTimeline from './EstimatedTimeline';
 interface ConfirmationStepProps {
   orderNumber: string;
   deliveryOption: 'pickup' | 'delivery';
-  isPickupAvailable: boolean;
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
   formData: {
     firstName: string;
     lastName: string;
@@ -28,8 +31,10 @@ interface ConfirmationStepProps {
 export default function ConfirmationStep({
   orderNumber,
   deliveryOption,
-  isPickupAvailable,
   selectedState,
+  selectedLga,
+  selectedPlace,
+  zones,
   formData,
   pickupAddress,
   total = 0
@@ -43,31 +48,36 @@ export default function ConfirmationStep({
 
         <h2 className="text-h5 md:text-h3 font-bold text-text-primary mb-3 md:mb-4">Order Submitted Successfully!</h2>
         <p className="text-text-secondary text-body-md md:text-body-lg mb-6 md:mb-8">
-          Order #{orderNumber} has been sent to store owner
+          We've received your order #{orderNumber}
         </p>
 
         <NextSteps
           deliveryOption={deliveryOption}
-          isPickupAvailable={isPickupAvailable}
           selectedState={selectedState}
+          selectedLga={selectedLga}
+          selectedPlace={selectedPlace}
+          zones={zones}
           formData={formData}
-          pickupAddress={pickupAddress}
         />
 
         <OrderDetailsCard
           orderNumber={orderNumber}
           formData={formData}
           deliveryOption={deliveryOption}
-          isPickupAvailable={isPickupAvailable}
           selectedState={selectedState}
+          selectedLga={selectedLga}
+          selectedPlace={selectedPlace}
+          zones={zones}
           pickupAddress={pickupAddress}
           total={total}
         />
 
         <EstimatedTimeline
           deliveryOption={deliveryOption}
-          isPickupAvailable={isPickupAvailable}
           selectedState={selectedState}
+          selectedLga={selectedLga}
+          selectedPlace={selectedPlace}
+          zones={zones}
         />
 
         <div className="space-y-4">
@@ -79,7 +89,7 @@ export default function ConfirmationStep({
           </Link>
 
           <p className="text-caption-md md:text-body-sm text-text-muted mt-3 md:mt-4">
-            Store owner will contact you via email/SMS for updates.<br />
+            We'll contact you via email/SMS for updates.<br />
             For urgent inquiries, you can call: <strong>0809 653 9067</strong>
           </p>
         </div>

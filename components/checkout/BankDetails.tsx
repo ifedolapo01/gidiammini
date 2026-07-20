@@ -61,10 +61,18 @@ export default function BankDetails({ bankDetails, orderNumber, total }: BankDet
       <div className="mt-4 md:mt-6 p-3 md:p-4 bg-warning-background border border-warning-border rounded-surface">
         <h4 className="font-bold text-warning mb-2 text-body-sm md:text-body-md">IMPORTANT INSTRUCTIONS:</h4>
         <ul className="text-caption-md md:text-body-sm text-warning space-y-1">
-          <li>• Use <strong>Order #{orderNumber}</strong> as payment description/remark</li>
+          <li className="flex items-center flex-wrap gap-2">
+            <span>• Use <strong>Order #{orderNumber}</strong> as payment description/remark</span>
+            <button
+              onClick={() => copyToClipboard(orderNumber)}
+              className="bg-primary/10 text-primary px-2 py-0.5 rounded-control text-caption-md hover:bg-primary/20"
+            >
+              Copy
+            </button>
+          </li>
           <li>• Transfer <strong>exactly {formatCurrency(total)}</strong></li>
-          <li>• Upload the receipt below after payment and click on send receipt to seller</li>
-          <li>• Receipt will be sent to store owner immediately</li>
+          <li>• Upload the receipt below after payment and click send receipt to us</li>
+          <li>• We'll receive it immediately and start verifying your payment</li>
         </ul>
       </div>
     </div>

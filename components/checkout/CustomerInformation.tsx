@@ -3,6 +3,8 @@
 
 import { Checkbox } from '@/components/ui';
 import { CheckoutFormData } from './hooks/useCheckoutForm';
+import { findShippingZone } from '@/lib/commerce/checkout';
+import type { ShippingZone } from '@/types/shipping';
 import FormInput from './FormInput';
 import AddressFields from './AddressFields';
 
@@ -10,6 +12,9 @@ interface CustomerInformationProps {
   deliveryOption: 'pickup' | 'delivery';
   isPickupAvailable: boolean;
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
   formData: CheckoutFormData;
   setFormData: (formData: CheckoutFormData) => void;
 }
@@ -18,9 +23,15 @@ export default function CustomerInformation({
   deliveryOption,
   isPickupAvailable,
   selectedState,
+  selectedLga,
+  selectedPlace,
+  zones,
   formData,
   setFormData
 }: CustomerInformationProps) {
+  const zone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
+  const isDoorDelivery = !!zone?.is_door_delivery;
+
   return (
     <div className="bg-surface p-3 sm:p-4 md:p-6 rounded-surface shadow-elevation-1 border border-border">
       <h2 className="text-body-md sm:text-body-lg md:text-h5 font-bold mb-3 sm:mb-4 md:mb-6 text-text-primary">
@@ -77,9 +88,12 @@ export default function CustomerInformation({
         </div>
       </div>
 
-      {deliveryOption === 'delivery' && (
+      {deliveryOption === 'delivery' && isDoorDelivery && (
         <AddressFields
           selectedState={selectedState}
+          selectedLga={selectedLga}
+          selectedPlace={selectedPlace}
+          zones={zones}
           address={formData.address}
           city={formData.city}
           setAddress={(value: string) => setFormData({ ...formData, address: value })}

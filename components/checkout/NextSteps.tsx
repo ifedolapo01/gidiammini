@@ -2,16 +2,18 @@
 'use client';
 
 import { getDeliveryLabel, getDeliveryDescription } from '@/lib/commerce/checkout';
+import type { ShippingZone } from '@/types/shipping';
 
 interface NextStepsProps {
   deliveryOption: 'pickup' | 'delivery';
-  isPickupAvailable: boolean;
   selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+  zones: ShippingZone[];
   formData: { address: string; city: string };
-  pickupAddress: string;
 }
 
-export default function NextSteps({ deliveryOption, isPickupAvailable, selectedState, formData, pickupAddress }: NextStepsProps) {
+export default function NextSteps({ deliveryOption, selectedState, selectedLga, selectedPlace, zones, formData }: NextStepsProps) {
   return (
     <div className="bg-background-secondary rounded-surface p-4 md:p-6 mb-6 md:mb-8 text-left">
       <h3 className="font-bold text-body-md md:text-body-lg text-text-primary mb-3 md:mb-4">What Happens Next:</h3>
@@ -19,7 +21,7 @@ export default function NextSteps({ deliveryOption, isPickupAvailable, selectedS
         <StepItem number={1} color="blue">
           <p className="font-medium text-text-primary text-body-sm md:text-body-md">Payment Verification</p>
           <p className="text-caption-md md:text-body-sm text-text-secondary">
-            Store owner has received your receipt via email and will verify your bank transfer
+            We've received your receipt and will verify your bank transfer
           </p>
         </StepItem>
 
@@ -32,14 +34,14 @@ export default function NextSteps({ deliveryOption, isPickupAvailable, selectedS
 
         <StepItem number={3} color="green">
           <p className="font-medium text-text-primary text-body-sm md:text-body-md">
-            {getDeliveryLabel(deliveryOption, isPickupAvailable, selectedState, 'arrangementTitle')}
+            {getDeliveryLabel(deliveryOption, zones, selectedState, 'arrangementTitle', { lga: selectedLga, place: selectedPlace })}
           </p>
           <p className="text-caption-md md:text-body-sm text-text-secondary">
-            {getDeliveryDescription(deliveryOption, isPickupAvailable, {
-              selectedState,
-              pickupAddress,
+            {getDeliveryDescription(deliveryOption, zones, selectedState, {
               address: formData.address,
               city: formData.city,
+              lga: selectedLga,
+              place: selectedPlace,
             })}
           </p>
         </StepItem>

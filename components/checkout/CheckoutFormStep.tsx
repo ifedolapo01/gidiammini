@@ -2,6 +2,7 @@
 'use client';
 
 import { CartItem } from '@/types/order';
+import type { ShippingZone } from '@/types/shipping';
 import StateDeliveryForm from './StateDeliveryForm';
 import CustomerInformation from './CustomerInformation';
 import OrderSummary from './OrderSummary';
@@ -10,10 +11,15 @@ import MobileOrderSummary from './MobileOrderSummary';
 interface CheckoutFormStepProps {
   selectedState: string;
   setSelectedState: (state: string) => void;
+  selectedLga: string;
+  setSelectedLga: (lga: string) => void;
+  selectedPlace: string;
+  setSelectedPlace: (place: string) => void;
   deliveryOption: 'pickup' | 'delivery';
   setDeliveryOption: (option: 'pickup' | 'delivery') => void;
   pickupAddress: string;
   pickupAvailable: boolean;
+  zones: ShippingZone[];
   formData: any;
   setFormData: (formData: any) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -29,10 +35,15 @@ interface CheckoutFormStepProps {
 export default function CheckoutFormStep({
   selectedState,
   setSelectedState,
+  selectedLga,
+  setSelectedLga,
+  selectedPlace,
+  setSelectedPlace,
   deliveryOption,
   setDeliveryOption,
   pickupAddress,
   pickupAvailable,
+  zones,
   formData,
   setFormData,
   onSubmit,
@@ -51,16 +62,24 @@ export default function CheckoutFormStep({
         <form onSubmit={onSubmit} id="checkout-form" className="space-y-4 sm:space-y-6 md:space-y-8">
           <StateDeliveryForm
             selectedState={selectedState}
+            selectedLga={selectedLga}
+            selectedPlace={selectedPlace}
             deliveryOption={deliveryOption}
             setSelectedState={setSelectedState}
+            setSelectedLga={setSelectedLga}
+            setSelectedPlace={setSelectedPlace}
             setDeliveryOption={setDeliveryOption}
             pickupAddress={pickupAddress}
+            zones={zones}
           />
 
           <CustomerInformation
             deliveryOption={deliveryOption}
             isPickupAvailable={pickupAvailable}
             selectedState={selectedState}
+            selectedLga={selectedLga}
+            selectedPlace={selectedPlace}
+            zones={zones}
             formData={formData}
             setFormData={setFormData}
           />
@@ -87,6 +106,9 @@ export default function CheckoutFormStep({
             total={total}
             deliveryOption={deliveryOption}
             selectedState={selectedState}
+            selectedLga={selectedLga}
+            selectedPlace={selectedPlace}
+            zones={zones}
           />
         </div>
 
@@ -123,6 +145,9 @@ export default function CheckoutFormStep({
                 total={total}
                 deliveryOption={deliveryOption}
                 selectedState={selectedState}
+                selectedLga={selectedLga}
+                selectedPlace={selectedPlace}
+                zones={zones}
               />
             </div>
           </div>

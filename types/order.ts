@@ -29,6 +29,9 @@ export interface OrderData {
   total_amount: number;
   delivery_option: 'pickup' | 'delivery';
   selected_state: string;
+  selected_lga?: string | null;
+  selected_place?: string | null;
+  shipping_zone_id?: string | null;
   delivery_address?: string;
   city?: string;
   note?: string;
@@ -46,6 +49,9 @@ export interface Order {
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
   delivery_option: 'pickup' | 'delivery';
   selected_state: string;
+  selected_lga?: string | null;
+  selected_place?: string | null;
+  shipping_zone_id?: string | null;
   payment_verified: boolean;
   created_at: string;
   updated_at: string;
