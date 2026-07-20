@@ -5,6 +5,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { onOrdersChanged } from "../lib/orderEvents";
 
 export type AlertTone = "destructive" | "warning" | "info" | "accent";
 
@@ -158,6 +159,10 @@ export function useAdminAlerts() {
       clearInterval(refreshInterval);
     };
   }, [fetchAlerts]);
+
+  // Also refetch immediately whenever an order changes elsewhere in the admin
+  // (e.g. a status update), instead of waiting up to 2 minutes for the count to catch up.
+  useEffect(() => onOrdersChanged(fetchAlerts), [fetchAlerts]);
 
   const dismissAlert = useCallback((id: string) => {
     setAlerts((prev) => prev.filter((alert) => alert.id !== id));

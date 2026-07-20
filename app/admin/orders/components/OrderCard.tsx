@@ -1,11 +1,13 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/components/OrderCard.tsx
+import { useState } from 'react';
 import { Eye, Send } from 'lucide-react';
 import { Badge, Button, Select } from '@/components/ui';
 import { Order, OrderItem } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatDate } from '@/lib/commerce/format-date';
-import { getStatusIcon, getStatusColor, getStatusOptions } from '@/lib/commerce/order-status';
+import { getStatusIcon, getStatusColor, getStatusOptions, formatOrderStatus } from '@/lib/commerce/order-status';
+import { ReceiptPreviewModal } from './ReceiptPreviewModal';
 
 const calculateSubtotal = (items: OrderItem[] = []) => {
   return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -18,6 +20,8 @@ interface OrderCardProps {
 }
 
 export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: OrderCardProps) {
+  const [showReceipt, setShowReceipt] = useState(false);
+
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border overflow-hidden hover:shadow-elevation-2 transition-shadow">
       <div className="p-4 md:p-6">
@@ -27,7 +31,7 @@ export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: Orde
               {getStatusIcon(order.status)}
               <span className="font-bold text-body-lg text-text-primary">{order.order_number}</span>
               <span className={`px-3 py-1 rounded-full text-caption-md font-medium ${getStatusColor(order.status)}`}>
-                {order.status}
+                {formatOrderStatus(order.status)}
               </span>
               <Badge tone={order.payment_verified ? 'success' : 'destructive'}>
                 {order.payment_verified ? 'Paid' : 'Unpaid'}
@@ -51,14 +55,13 @@ export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: Orde
                 {order.delivery_option === 'pickup' ? 'Pickup' : 'Delivery'} • {order.selected_state}
               </Badge>
               {order.receipt_url && (
-                <a
-                  href={order.receipt_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setShowReceipt(true)}
                   className="px-3 py-1 bg-success-background text-success rounded-full text-caption-md hover:bg-success-border transition-colors"
                 >
                   View Receipt
-                </a>
+                </button>
               )}
               {order.note && (
                 <Badge tone="warning">
@@ -133,7 +136,7 @@ export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: Orde
             >
               {getStatusOptions(order.status).map((status) => (
                 <option key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                  {formatOrderStatus(status)}
                 </option>
               ))}
             </Select>
@@ -147,6 +150,10 @@ export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: Orde
           </div>
         </div>
       </div>
+
+      {showReceipt && order.receipt_url && (
+        <ReceiptPreviewModal receiptUrl={order.receipt_url} onClose={() => setShowReceipt(false)} />
+      )}
     </div>
   );
 }

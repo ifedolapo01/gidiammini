@@ -2,6 +2,10 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { ORDER_STATUSES } from '@/lib/commerce/order-status';
+
+/** Every status except 'pending' (not yet confirmed) and 'cancelled' (never fulfilled) counts toward revenue. */
+const REVENUE_STATUSES = ORDER_STATUSES.filter((status) => status !== 'pending' && status !== 'cancelled');
 
 async function getDashboardStats(supabase: SupabaseClient) {
   try {
@@ -26,7 +30,7 @@ async function getDashboardStats(supabase: SupabaseClient) {
     const { data: revenueOrders } = await supabase
       .from('orders')
       .select('total_amount, status')
-      .in('status', ['confirmed', 'shipped', 'delivered']);
+      .in('status', REVENUE_STATUSES);
 
     const totalRevenue = revenueOrders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
 

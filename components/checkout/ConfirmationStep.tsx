@@ -88,6 +88,13 @@ export default function ConfirmationStep({
             Continue Shopping
           </Link>
 
+          <Link
+            href="/track-order"
+            className="inline-block w-full border border-border-strong text-text-primary py-3 md:py-4 rounded-control font-medium hover:bg-surface-hover transition-colors"
+          >
+            Track This Order
+          </Link>
+
           <p className="text-caption-md md:text-body-sm text-text-muted mt-3 md:mt-4">
             We'll contact you via email/SMS for updates.<br />
             For urgent inquiries, you can call: <strong>0809 653 9067</strong>

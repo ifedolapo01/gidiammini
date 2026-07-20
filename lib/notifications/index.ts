@@ -12,6 +12,8 @@ interface OrderStatusUpdateParams {
   oldStatus: string;
   newStatus: string;
   customMessage?: string;
+  /** Real, order-specific delivery/pickup timing text — only meaningful for 'confirmed'. */
+  estimatedDeliveryText?: string;
 }
 
 interface CustomNotificationParams {
@@ -25,7 +27,7 @@ interface CustomNotificationParams {
 }
 
 export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams) {
-  const { orderNumber, customerName, customerEmail, customerPhone, newStatus, customMessage } = params;
+  const { orderNumber, customerName, customerEmail, customerPhone, newStatus, customMessage, estimatedDeliveryText } = params;
 
   const channels: string[] = [];
 
@@ -37,7 +39,8 @@ export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams) {
         customerName,
         customerEmail,
         newStatus,
-        customMessage
+        customMessage,
+        estimatedDeliveryText
       });
 
       if (statusEmail.success) {
@@ -125,6 +128,7 @@ async function sendStatusEmailNotification(params: {
   customerEmail: string;
   newStatus: string;
   customMessage?: string;
+  estimatedDeliveryText?: string;
 }) {
   const { customerEmail, ...templateParams } = params;
 

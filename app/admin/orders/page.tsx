@@ -4,6 +4,7 @@
 
 import { Package, RefreshCw } from 'lucide-react';
 import { Button, Spinner } from '@/components/ui';
+import Toast from '@/components/Toast';
 import OrderDetailsModal from './components/OrderDetailsModal';
 import OrderCard from './components/OrderCard';
 import OrderFilters from './components/OrderFilters';
@@ -28,6 +29,8 @@ export default function AdminOrders() {
     setNotificationMessage,
     updateOrderShipping,
     updatingShipping,
+    toast,
+    clearToast,
   } = useOrders();
 
   const { filter, setFilter, searchTerm, setSearchTerm, searchedOrders } = useOrderFilters(orders);
@@ -119,6 +122,10 @@ export default function AdminOrders() {
           onSendNotification={sendCustomNotification}
           onUpdateShipping={updateOrderShipping}
         />
+      )}
+
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={clearToast} />
       )}
     </>
   );

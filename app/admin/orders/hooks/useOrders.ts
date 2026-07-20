@@ -4,6 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import { Order } from '@/types/order';
+import { formatOrderStatus } from '@/lib/commerce/order-status';
+import { notifyOrdersChanged } from '../../lib/orderEvents';
+import { useToast } from '../../hooks/useToast';
+import { useOrderShippingUpdate } from './useOrderShippingUpdate';
 
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -12,7 +16,8 @@ export function useOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [sendingNotification, setSendingNotification] = useState<string | null>(null);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
-  const [updatingShipping, setUpdatingShipping] = useState(false);
+  const { toast, showToast, clearToast } = useToast();
+  const { updateOrderShipping, updatingShipping } = useOrderShippingUpdate({ setOrders, setSelectedOrder, showToast });
 
   useEffect(() => {
     fetchOrders();
@@ -41,6 +46,22 @@ export function useOrders() {
     fetchOrders();
   };
 
+  /** Reconciles with the server without toggling `loading`/`refreshing` — used
+   * right after a mutation so the list stays fully accurate (payment_verified,
+   * updated_at, etc.) without flashing a loading state over data already
+   * updated optimistically. */
+  const syncOrdersSilently = async () => {
+    try {
+      const response = await fetch('/api/orders');
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data.orders || []);
+      }
+    } catch (error) {
+      console.error('Error syncing orders:', error);
+    }
+  };
+
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     try {
       // Show confirmation for certain status changes
@@ -50,9 +71,6 @@ export function useOrders() {
         }
       }
 
-      console.log(`Updating order ${orderId} to status: ${newStatus}`);
-      console.log(`Calling API: /api/orders/${orderId}`);
-
       const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: {
@@ -61,15 +79,12 @@ export function useOrders() {
         body: JSON.stringify({
           status: newStatus,
           sendNotification: true,
-          notificationMessage: `Your order status has been updated to: ${newStatus.toUpperCase()}`
+          notificationMessage: `Your order status has been updated to: ${formatOrderStatus(newStatus)}`
           // payment_verified will be handled automatically by the API
         }),
       });
 
-      console.log('Response status:', response.status);
-
       const result = await response.json();
-      console.log('Update response:', result);
 
       if (response.ok && result.success) {
         // Update local state immediately for better UX
@@ -86,25 +101,29 @@ export function useOrders() {
           )
         );
 
-        // Show success message
-        const message = result.paymentVerified
-          ? `✅ Order confirmed! Payment marked as verified. Customer has been notified.`
-          : `✅ Order status updated to ${newStatus}. Customer has been notified.`;
+        // Let other admin views (e.g. the pending-orders alert count) know to refetch,
+        // then reconcile this list with the server's authoritative state.
+        notifyOrdersChanged();
+        syncOrdersSilently();
 
-        alert(message);
+        const message = result.paymentVerified
+          ? 'Order confirmed! Payment marked as verified. Customer has been notified.'
+          : `Order status updated to ${formatOrderStatus(newStatus)}. Customer has been notified.`;
+
+        showToast(message, 'success');
       } else {
         console.error('Update failed:', result);
-        alert(`❌ Failed to update order status: ${result.error || 'Unknown error'}`);
+        showToast(`Failed to update order status: ${result.error || 'Unknown error'}`, 'error');
       }
     } catch (error: any) {
       console.error('Error updating order:', error);
-      alert(`❌ Error updating order: ${error.message || 'Please check your connection.'}`);
+      showToast(`Error updating order: ${error.message || 'Please check your connection.'}`, 'error');
     }
   };
 
   const sendCustomNotification = async (orderId: string) => {
     if (!notificationMessage.trim()) {
-      alert('Please enter a message');
+      showToast('Please enter a message', 'error');
       return;
     }
 
@@ -125,48 +144,20 @@ export function useOrders() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          alert('Notification sent successfully!');
+          showToast('Notification sent successfully!', 'success');
           setNotificationMessage('');
           setSelectedOrder(null);
         } else {
-          alert(`Failed to send notification: ${result.error}`);
+          showToast(`Failed to send notification: ${result.error}`, 'error');
         }
       } else {
-        alert('Failed to send notification');
+        showToast('Failed to send notification', 'error');
       }
     } catch (error) {
       console.error('Error sending notification:', error);
-      alert('Error sending notification');
+      showToast('Error sending notification', 'error');
     } finally {
       setSendingNotification(null);
-    }
-  };
-
-  const updateOrderShipping = async (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => {
-    try {
-      setUpdatingShipping(true);
-      const response = await fetch(`/api/orders/${orderId}/shipping`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shipping_zone_id: shippingZoneId, delivery_option: deliveryOption }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setOrders(prevOrders =>
-          prevOrders.map(order => (order.id === orderId ? { ...order, ...result.order } : order))
-        );
-        setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, ...result.order } : prev));
-        alert('Shipping method updated. Customer has been notified.');
-      } else {
-        alert(`Failed to update shipping method: ${result.error || 'Unknown error'}`);
-      }
-    } catch (error: any) {
-      console.error('Error updating order shipping:', error);
-      alert(`Error updating shipping method: ${error.message || 'Please check your connection.'}`);
-    } finally {
-      setUpdatingShipping(false);
     }
   };
 
@@ -193,5 +184,7 @@ export function useOrders() {
     setNotificationMessage,
     updateOrderShipping,
     updatingShipping,
+    toast,
+    clearToast,
   };
 }

@@ -2,8 +2,10 @@
 // app/admin/orders/components/OrderFilters.tsx
 import { Search, Filter } from 'lucide-react';
 import { Input } from '@/components/ui';
-import { getStatusIcon } from '@/lib/commerce/order-status';
+import { getStatusIcon, formatOrderStatus, ORDER_STATUSES } from '@/lib/commerce/order-status';
 import { Order } from '@/types/order';
+
+const FILTER_OPTIONS = ['all', ...ORDER_STATUSES];
 
 interface OrderFiltersProps {
   searchTerm: string;
@@ -37,11 +39,11 @@ export default function OrderFilters({
 
         {/* Status Filter */}
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {['all', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => (
+          {FILTER_OPTIONS.map((status) => (
             <button
               key={status}
               onClick={() => onFilterChange(status)}
-              className={`px-4 py-2 rounded-control capitalize whitespace-nowrap flex items-center gap-2 transition-colors ${
+              className={`px-4 py-2 rounded-control whitespace-nowrap flex items-center gap-2 transition-colors ${
                 filter === status
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-surface border border-border text-text-primary hover:bg-surface-hover'
@@ -55,7 +57,7 @@ export default function OrderFilters({
               ) : (
                 <>
                   {getStatusIcon(status as Order['status'])}
-                  {status}
+                  {formatOrderStatus(status)}
                 </>
               )}
             </button>

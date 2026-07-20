@@ -4,63 +4,24 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { sendOrderStatusUpdate } from '@/lib/notifications';
 import { verifyAdminAuth } from '@/lib/auth';
-import { adjustVariantStockByDelta } from '@/lib/commerce/stock-adjustment';
+import { ORDER_STATUSES, hasStockReserved, formatOrderStatus } from '@/lib/commerce/order-status';
+import { applyOrderStockChange } from '@/lib/commerce/order-stock';
+import { findShippingZone } from '@/lib/commerce/checkout';
+import { formatZoneEta } from '@/lib/commerce/shipping-eta';
+import type { OrderStatus } from '@/types/order';
 
-const VALID_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-
-async function applyStockChangesForOrder(
-  supabase: SupabaseClient,
-  currentOrder: any,
-  willBeConfirmed: boolean
-): Promise<NextResponse | null> {
-  const productIds = (currentOrder.order_items || []).map((item: any) => item.product_id);
-
-  if (productIds.length === 0) return null;
-
-  const { data: products, error: productsError } = await supabase
-    .from('products')
-    .select('*')
-    .in('id', productIds);
-
-  if (productsError) {
-    return NextResponse.json({ success: false, error: 'Failed to fetch products for stock update.' }, { status: 500 });
+/** Resolves the real delivery ETA text for a 'confirmed' notification, using
+ * the order's own stored state/LGA/place so it reflects whatever zone/exception
+ * actually applied at checkout — never a hardcoded guess. */
+async function resolveEstimatedDeliveryText(supabase: SupabaseClient, order: any): Promise<string | undefined> {
+  if (order.delivery_option === 'pickup') {
+    return "We'll contact you when your order is ready for pickup";
   }
 
-  const productUpdates = [];
+  const { data: zones } = await supabase.from('shipping_zones').select('*, shipping_zone_exceptions(*)');
+  const zone = findShippingZone(zones || [], order.selected_state, order.selected_lga, order.selected_place);
 
-  for (const product of products || []) {
-    const itemsForProduct = currentOrder.order_items.filter((item: any) => item.product_id === product.id);
-
-    const { stock: newStock, pricingConfig } = adjustVariantStockByDelta(
-      product.pricing_config,
-      product.stock,
-      itemsForProduct,
-      willBeConfirmed
-    );
-
-    if (willBeConfirmed && newStock < 0) {
-      return NextResponse.json(
-        { success: false, error: `Insufficient stock to confirm order for product: ${product.name}` },
-        { status: 400 }
-      );
-    }
-
-    productUpdates.push({
-      id: product.id,
-      stock: newStock,
-      pricing_config: pricingConfig
-    });
-  }
-
-  // Apply all updates
-  for (const update of productUpdates) {
-    await supabase.from('products').update({
-      stock: update.stock,
-      pricing_config: update.pricing_config
-    }).eq('id', update.id);
-  }
-
-  return null;
+  return zone ? `Estimated delivery: ${formatZoneEta(zone)}` : undefined;
 }
 
 export async function PUT(
@@ -90,9 +51,9 @@ export async function PUT(
       );
     }
 
-    if (!VALID_STATUSES.includes(status)) {
+    if (!ORDER_STATUSES.includes(status)) {
       return NextResponse.json(
-        { success: false, error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
+        { success: false, error: `Invalid status. Must be one of: ${ORDER_STATUSES.join(', ')}` },
         { status: 400 }
       );
     }
@@ -116,15 +77,17 @@ export async function PUT(
       );
     }
 
-    // Check if we're changing from confirmed to cancelled or vice versa
-    const wasConfirmed = currentOrder.status === 'confirmed';
-    const willBeConfirmed = status === 'confirmed';
-    const willBeCancelled = status === 'cancelled';
+    // Stock is reserved the first time an order moves past 'pending', and
+    // restored if a reserved order is cancelled — regardless of which
+    // intermediate status (confirmed/rescheduled/shipped/etc.) it was in.
+    const hadStockReserved = hasStockReserved(currentOrder.status as OrderStatus);
+    const willHaveStockReserved = hasStockReserved(status as OrderStatus);
 
-    // Update stock based on status changes
-    if ((willBeConfirmed && !wasConfirmed) || (willBeCancelled && wasConfirmed)) {
-      const stockError = await applyStockChangesForOrder(supabase, currentOrder, willBeConfirmed);
-      if (stockError) return stockError;
+    if (willHaveStockReserved !== hadStockReserved) {
+      const { error: stockErrorMessage } = await applyOrderStockChange(supabase, currentOrder, willHaveStockReserved && !hadStockReserved);
+      if (stockErrorMessage) {
+        return NextResponse.json({ success: false, error: stockErrorMessage }, { status: 400 });
+      }
     }
 
     // Update the order status
@@ -157,6 +120,10 @@ export async function PUT(
     // Send notification
     if (shouldSendNotification) {
       try {
+        const estimatedDeliveryText = status === 'confirmed'
+          ? await resolveEstimatedDeliveryText(supabase, currentOrder)
+          : undefined;
+
         await sendOrderStatusUpdate({
           orderNumber: currentOrder.order_number,
           customerName: currentOrder.customer_name,
@@ -164,7 +131,8 @@ export async function PUT(
           customerPhone: currentOrder.customer_phone,
           oldStatus: currentOrder.status,
           newStatus: status,
-          customMessage: notificationMessage || `Your order status has been updated to: ${status.toUpperCase()}`
+          customMessage: notificationMessage || `Your order status has been updated to: ${formatOrderStatus(status)}`,
+          estimatedDeliveryText
         });
       } catch (notificationError) {
         console.error('Notification error:', notificationError);
@@ -174,8 +142,8 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       order: updatedOrder,
-      message: `Order status updated to ${status}`,
-      stockUpdated: willBeConfirmed || willBeCancelled
+      message: `Order status updated to ${formatOrderStatus(status)}`,
+      stockUpdated: willHaveStockReserved !== hadStockReserved
     });
 
   } catch (error: any) {

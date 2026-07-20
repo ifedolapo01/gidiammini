@@ -5,7 +5,7 @@ import { Button, Modal, Textarea } from '@/components/ui';
 import { Order } from '@/types/order';
 import type { ShippingZone } from '@/types/shipping';
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { getStatusColor } from '@/lib/commerce/order-status';
+import { getStatusColor, formatOrderStatus } from '@/lib/commerce/order-status';
 import ShippingOverrideForm from './ShippingOverrideForm';
 
 interface OrderDetailsModalProps {
@@ -58,7 +58,7 @@ export default function OrderDetailsModal({
           <div>
             <p className="text-body-sm text-text-secondary">Status</p>
             <span className={`px-2 py-1 rounded-control text-caption-md font-medium ${getStatusColor(selectedOrder.status)}`}>
-              {selectedOrder.status}
+              {formatOrderStatus(selectedOrder.status)}
             </span>
           </div>
         </div>

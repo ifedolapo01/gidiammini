@@ -1,5 +1,18 @@
 // types/order.ts
 
+/** Single source of truth for every valid order status — see
+ * lib/commerce/order-status.ts for the ordered list, display formatting,
+ * icons/colors, and status-transition helpers built on this type. */
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'rescheduled'
+  | 'shipped'
+  | 'ready_for_pickup'
+  | 'picked_up'
+  | 'delivered'
+  | 'cancelled';
+
 export interface CartItem {
   productId: string;
   name: string;
@@ -46,7 +59,7 @@ export interface Order {
   customer_email: string;
   customer_phone: string;
   total_amount: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  status: OrderStatus;
   delivery_option: 'pickup' | 'delivery';
   selected_state: string;
   selected_lga?: string | null;
