@@ -4,12 +4,9 @@
 // view someone else's name, address, and items.
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
+import { verifyOrderContact } from '@/lib/commerce/order-lookup';
 
 const NOT_FOUND_MESSAGE = "We couldn't find an order matching that order number and email/phone.";
-
-function normalizePhone(value: string): string {
-  return value.replace(/[\s-]/g, '');
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,19 +23,11 @@ export async function POST(request: NextRequest) {
 
     const { data: order, error } = await supabase
       .from('orders')
-      .select(`*, order_items (*)`)
+      .select(`*, order_items (*), order_change_requests (*)`)
       .eq('order_number', orderNumber.trim())
       .single();
 
-    if (error || !order) {
-      return NextResponse.json({ success: false, error: NOT_FOUND_MESSAGE }, { status: 404 });
-    }
-
-    const contactInput = contact.trim().toLowerCase();
-    const emailMatches = order.customer_email?.toLowerCase() === contactInput;
-    const phoneMatches = order.customer_phone && normalizePhone(order.customer_phone).toLowerCase() === normalizePhone(contactInput);
-
-    if (!emailMatches && !phoneMatches) {
+    if (error || !order || !verifyOrderContact(order, contact)) {
       return NextResponse.json({ success: false, error: NOT_FOUND_MESSAGE }, { status: 404 });
     }
 

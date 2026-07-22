@@ -6,12 +6,16 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { getStatusColor, formatOrderStatus } from '@/lib/commerce/order-status';
 import type { Order } from '@/types/order';
 import OrderStatusTimeline from './OrderStatusTimeline';
+import RequestChangeActions from './RequestChangeActions';
 
 interface TrackedOrderSummaryProps {
   order: Order;
+  orderNumber: string;
+  contact: string;
+  onOrderUpdate: () => void;
 }
 
-export default function TrackedOrderSummary({ order }: TrackedOrderSummaryProps) {
+export default function TrackedOrderSummary({ order, orderNumber, contact, onOrderUpdate }: TrackedOrderSummaryProps) {
   const isPickup = order.delivery_option === 'pickup';
 
   return (
@@ -29,6 +33,13 @@ export default function TrackedOrderSummary({ order }: TrackedOrderSummaryProps)
 
         <OrderStatusTimeline status={order.status} deliveryOption={order.delivery_option} />
       </div>
+
+      <RequestChangeActions
+        order={order}
+        orderNumber={orderNumber}
+        contact={contact}
+        onOrderUpdate={onOrderUpdate}
+      />
 
       <div className="bg-surface p-4 md:p-6 rounded-surface shadow-elevation-1 border border-border">
         <h3 className="font-bold text-body-md md:text-body-lg text-text-primary mb-3 md:mb-4">

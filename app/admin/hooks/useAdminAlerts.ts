@@ -11,7 +11,7 @@ export type AlertTone = "destructive" | "warning" | "info" | "accent";
 
 export interface AlertItem {
   id: string;
-  type: "stock" | "out-of-stock" | "pending-orders" | "system" | "low-stock";
+  type: "stock" | "out-of-stock" | "pending-orders" | "pending-change-requests" | "system" | "low-stock";
   message: string;
   link: string;
   tone: AlertTone;
@@ -86,6 +86,26 @@ export function useAdminAlerts() {
         }
       }
 
+      // 3. Fetch pending order change requests (reschedule / delivery-method-change)
+      const changeRequestsResponse = await fetch("/api/admin/alerts/pending-change-requests");
+      if (changeRequestsResponse.ok) {
+        const changeRequestsData = await changeRequestsResponse.json();
+
+        if (changeRequestsData.pendingCount > 0) {
+          newAlerts.push({
+            id: `pending-change-requests-${Date.now()}`,
+            type: "pending-change-requests",
+            message: `🔄 ${changeRequestsData.pendingCount} order change request${
+              changeRequestsData.pendingCount > 1 ? "s are" : " is"
+            } awaiting review`,
+            link: "/admin/orders",
+            tone: "warning",
+            count: changeRequestsData.pendingCount,
+            priority: 4,
+          });
+        }
+      }
+
       // Add this inside fetchAlerts function, after fetching other alerts
       const statsResponse = await fetch("/api/admin/alerts/dashboard-stats");
       if (statsResponse.ok) {
@@ -105,7 +125,7 @@ export function useAdminAlerts() {
               link: "/admin/orders",
               tone: "accent",
               count: stats.todayOrders,
-              priority: 4,
+              priority: 5,
             });
           }
 
@@ -119,7 +139,7 @@ export function useAdminAlerts() {
               link: "/admin/products",
               tone: "info",
               count: stats.totalProducts,
-              priority: 5,
+              priority: 6,
             });
           }
         }

@@ -9,6 +9,7 @@ import { faNairaSign } from '@fortawesome/free-solid-svg-icons';
 import { Button, Spinner } from '@/components/ui';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { StatCard } from './components/StatCard';
+import { AnalyticsSection } from './components/AnalyticsSection';
 import { RecentOrdersPanel } from './components/RecentOrdersPanel';
 import { LowStockPanel } from './components/LowStockPanel';
 import { QuickActionsGrid } from './components/QuickActionsGrid';
@@ -97,6 +98,9 @@ export default function AdminDashboard() {
           subtext="Need attention"
         />
       </div>
+
+      {/* Analytics */}
+      <AnalyticsSection />
 
       {/* Recent Orders & Low Stock */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

@@ -49,7 +49,7 @@ async function listOrders(supabase: SupabaseClient, request: NextRequest) {
 
   let query = supabase
     .from('orders')
-    .select(`*, order_items (*)`)
+    .select(`*, order_items (*), order_change_requests (*)`)
     .order('created_at', { ascending: false });
 
   // Apply status filter if provided

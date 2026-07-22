@@ -21,6 +21,7 @@ interface OrderCardProps {
 
 export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: OrderCardProps) {
   const [showReceipt, setShowReceipt] = useState(false);
+  const hasPendingChangeRequest = order.order_change_requests?.some((r) => r.status === 'pending');
 
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border overflow-hidden hover:shadow-elevation-2 transition-shadow">
@@ -36,6 +37,9 @@ export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: Orde
               <Badge tone={order.payment_verified ? 'success' : 'destructive'}>
                 {order.payment_verified ? 'Paid' : 'Unpaid'}
               </Badge>
+              {hasPendingChangeRequest && (
+                <Badge tone="warning">Pending Request</Badge>
+              )}
             </div>
 
             <div className="space-y-1">

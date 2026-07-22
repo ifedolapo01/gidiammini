@@ -2,10 +2,7 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
-import { ORDER_STATUSES } from '@/lib/commerce/order-status';
-
-/** Every status except 'pending' (not yet confirmed) and 'cancelled' (never fulfilled) counts toward revenue. */
-const REVENUE_STATUSES = ORDER_STATUSES.filter((status) => status !== 'pending' && status !== 'cancelled');
+import { REVENUE_STATUSES } from '@/lib/commerce/order-status';
 
 async function getDashboardStats(supabase: SupabaseClient) {
   try {

@@ -29,6 +29,8 @@ export default function AdminOrders() {
     setNotificationMessage,
     updateOrderShipping,
     updatingShipping,
+    resolveChangeRequest,
+    resolvingRequestId,
     toast,
     clearToast,
   } = useOrders();
@@ -117,10 +119,12 @@ export default function AdminOrders() {
           sendingNotification={sendingNotification}
           shippingZones={shippingZones}
           updatingShipping={updatingShipping}
+          resolvingRequestId={resolvingRequestId}
           onClose={closeOrderDetails}
           onNotificationMessageChange={setNotificationMessage}
           onSendNotification={sendCustomNotification}
           onUpdateShipping={updateOrderShipping}
+          onResolveChangeRequest={resolveChangeRequest}
         />
       )}
 

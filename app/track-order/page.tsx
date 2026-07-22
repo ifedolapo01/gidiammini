@@ -12,7 +12,7 @@ export default function TrackOrderPage() {
     orderNumber, setOrderNumber,
     contact, setContact,
     order, loading, error,
-    trackOrder, reset,
+    trackOrder, refreshOrder, reset,
   } = useTrackOrder();
 
   return (
@@ -43,7 +43,12 @@ export default function TrackOrderPage() {
             >
               ← Track a different order
             </button>
-            <TrackedOrderSummary order={order} />
+            <TrackedOrderSummary
+              order={order}
+              orderNumber={orderNumber}
+              contact={contact}
+              onOrderUpdate={refreshOrder}
+            />
           </div>
         ) : (
           <TrackOrderForm

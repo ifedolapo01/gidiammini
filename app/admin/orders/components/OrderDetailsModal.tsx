@@ -7,6 +7,7 @@ import type { ShippingZone } from '@/types/shipping';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { getStatusColor, formatOrderStatus } from '@/lib/commerce/order-status';
 import ShippingOverrideForm from './ShippingOverrideForm';
+import ChangeRequestReviewCard from './ChangeRequestReviewCard';
 
 interface OrderDetailsModalProps {
   selectedOrder: Order;
@@ -14,10 +15,12 @@ interface OrderDetailsModalProps {
   sendingNotification: string | null;
   shippingZones: ShippingZone[];
   updatingShipping: boolean;
+  resolvingRequestId: string | null;
   onClose: () => void;
   onNotificationMessageChange: (message: string) => void;
   onSendNotification: (orderId: string) => void;
   onUpdateShipping: (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => void;
+  onResolveChangeRequest: (requestId: string, decision: 'approved' | 'rejected', adminResponse?: string) => void;
 }
 
 export default function OrderDetailsModal({
@@ -26,11 +29,14 @@ export default function OrderDetailsModal({
   sendingNotification,
   shippingZones,
   updatingShipping,
+  resolvingRequestId,
   onClose,
   onNotificationMessageChange,
   onSendNotification,
   onUpdateShipping,
+  onResolveChangeRequest,
 }: OrderDetailsModalProps) {
+  const pendingChangeRequest = selectedOrder.order_change_requests?.find((r) => r.status === 'pending');
   return (
     <Modal
       open
@@ -116,6 +122,15 @@ export default function OrderDetailsModal({
         isUpdating={updatingShipping}
         onUpdate={onUpdateShipping}
       />
+
+      {pendingChangeRequest && (
+        <ChangeRequestReviewCard
+          changeRequest={pendingChangeRequest}
+          isResolving={resolvingRequestId === pendingChangeRequest.id}
+          onApprove={(adminResponse) => onResolveChangeRequest(pendingChangeRequest.id, 'approved', adminResponse)}
+          onReject={(adminResponse) => onResolveChangeRequest(pendingChangeRequest.id, 'rejected', adminResponse)}
+        />
+      )}
 
       {/* Send Notification Form */}
       <div className="mt-6 pt-6 border-t border-border">

@@ -1,5 +1,7 @@
 // types/order.ts
 
+import type { OrderChangeRequest } from './orderChangeRequest';
+
 /** Single source of truth for every valid order status — see
  * lib/commerce/order-status.ts for the ordered list, display formatting,
  * icons/colors, and status-transition helpers built on this type. */
@@ -73,4 +75,6 @@ export interface Order {
   city?: string | null;
   note?: string | null;
   order_items?: OrderItem[];
+  /** Embedded via the orders -> order_change_requests relation. */
+  order_change_requests?: OrderChangeRequest[];
 }

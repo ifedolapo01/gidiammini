@@ -8,6 +8,7 @@ import { formatOrderStatus } from '@/lib/commerce/order-status';
 import { notifyOrdersChanged } from '../../lib/orderEvents';
 import { useToast } from '../../hooks/useToast';
 import { useOrderShippingUpdate } from './useOrderShippingUpdate';
+import { useOrderChangeRequests } from './useOrderChangeRequests';
 
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -55,12 +56,16 @@ export function useOrders() {
       const response = await fetch('/api/orders');
       if (response.ok) {
         const data = await response.json();
-        setOrders(data.orders || []);
+        const freshOrders: Order[] = data.orders || [];
+        setOrders(freshOrders);
+        setSelectedOrder((prev) => (prev ? freshOrders.find((o) => o.id === prev.id) || prev : prev));
       }
     } catch (error) {
       console.error('Error syncing orders:', error);
     }
   };
+
+  const { resolveChangeRequest, resolvingRequestId } = useOrderChangeRequests({ syncOrdersSilently, showToast });
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     try {
@@ -184,6 +189,8 @@ export function useOrders() {
     setNotificationMessage,
     updateOrderShipping,
     updatingShipping,
+    resolveChangeRequest,
+    resolvingRequestId,
     toast,
     clearToast,
   };

@@ -20,6 +20,11 @@ export const ORDER_STATUSES: OrderStatus[] = [
 
 export const INITIAL_ORDER_STATUS: OrderStatus = 'pending';
 
+/** Every status except 'pending' (not yet confirmed) and 'cancelled' (never fulfilled) counts toward revenue. */
+export const REVENUE_STATUSES: OrderStatus[] = ORDER_STATUSES.filter(
+  (status) => status !== 'pending' && status !== 'cancelled'
+);
+
 /** Generic "snake_case or lowercase" -> "Title Case" formatter — reusable for
  * any status string, so adding a new status never requires a new label entry. */
 export function formatOrderStatus(status: string): string {
@@ -59,6 +64,28 @@ export function getStatusColor(status: OrderStatus): string {
   }
 }
 
+export type StatusColorToken = 'warning' | 'info' | 'accent' | 'success' | 'destructive';
+
+/** Raw semantic-token name behind each status's hue, for contexts (e.g. chart fills) that
+ * need a CSS custom-property lookup rather than a Tailwind class string like getStatusColor. */
+export function getStatusColorToken(status: OrderStatus): StatusColorToken {
+  switch (status) {
+    case 'pending':
+    case 'rescheduled':
+      return 'warning';
+    case 'confirmed':
+      return 'info';
+    case 'shipped':
+    case 'ready_for_pickup':
+      return 'accent';
+    case 'picked_up':
+    case 'delivered':
+      return 'success';
+    case 'cancelled':
+      return 'destructive';
+  }
+}
+
 /** Statuses selectable from the current one; terminal statuses (delivered/cancelled) cannot be changed. */
 export function getStatusOptions(currentStatus: OrderStatus): OrderStatus[] {
   if (currentStatus === 'delivered' || currentStatus === 'cancelled') {
@@ -72,4 +99,13 @@ export function getStatusOptions(currentStatus: OrderStatus): OrderStatus[] {
  * first time this becomes true, and restored if such an order is cancelled). */
 export function hasStockReserved(status: OrderStatus): boolean {
   return status !== 'pending' && status !== 'cancelled';
+}
+
+const TERMINAL_FOR_CHANGE_REQUESTS: OrderStatus[] = ['delivered', 'picked_up', 'cancelled'];
+
+/** Whether a customer can request a reschedule/delivery-method change from
+ * this status. Deliberately permissive otherwise — the seller's approve/
+ * reject decision is the real "is it too late" judgment call, not this check. */
+export function canRequestOrderChange(status: OrderStatus): boolean {
+  return !TERMINAL_FOR_CHANGE_REQUESTS.includes(status);
 }

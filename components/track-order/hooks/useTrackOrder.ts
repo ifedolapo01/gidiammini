@@ -11,12 +11,7 @@ export function useTrackOrder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const trackOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setOrder(null);
-
+  const fetchOrder = async () => {
     try {
       const res = await fetch('/api/orders/track', {
         method: 'POST',
@@ -32,9 +27,23 @@ export function useTrackOrder() {
       }
     } catch (err) {
       setError('Something went wrong. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const trackOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setOrder(null);
+    await fetchOrder();
+    setLoading(false);
+  };
+
+  /** Re-fetches the same order in place — used after a change-request
+   * submission/resolution so the tracked order reflects the latest state
+   * without making the customer re-enter their order number/contact. */
+  const refreshOrder = async () => {
+    await fetchOrder();
   };
 
   const reset = () => {
@@ -46,6 +55,6 @@ export function useTrackOrder() {
     orderNumber, setOrderNumber,
     contact, setContact,
     order, loading, error,
-    trackOrder, reset,
+    trackOrder, refreshOrder, reset,
   };
 }

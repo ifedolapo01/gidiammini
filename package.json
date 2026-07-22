@@ -25,6 +25,7 @@
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "react-hook-form": "^7.77.0",
+    "recharts": "^3.10.0",
     "resend": "^6.6.0",
     "sharp": "^0.34.5",
     "zod": "^4.4.3"
