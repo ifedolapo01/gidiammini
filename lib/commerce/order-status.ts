@@ -146,3 +146,14 @@ const TERMINAL_FOR_CHANGE_REQUESTS: OrderStatus[] = [
 export function canRequestOrderChange(status: OrderStatus): boolean {
   return !TERMINAL_FOR_CHANGE_REQUESTS.includes(status);
 }
+
+// Deliberately more permissive than TERMINAL_FOR_CHANGE_REQUESTS: a pickup
+// order sitting at 'ready_for_pickup' hasn't physically left yet, so a
+// customer can still back out — only once it's actually shipped or already
+// picked up (or already delivered/cancelled) is it too late.
+const CANCEL_BLOCKED_STATUSES: OrderStatus[] = ['shipped', 'picked_up', 'delivered', 'cancelled'];
+
+/** Whether a customer can request to cancel this order themselves. */
+export function canCancelOrder(status: OrderStatus): boolean {
+  return !CANCEL_BLOCKED_STATUSES.includes(status);
+}

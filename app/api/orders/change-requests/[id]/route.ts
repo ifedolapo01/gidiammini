@@ -20,6 +20,13 @@ async function applyApprovedChange(supabase: any, order: any, changeRequest: any
     return { success: result.success, error: result.error, status: result.status };
   }
 
+  if (changeRequest.request_type === 'cancel') {
+    const result = await applyOrderStatusTransition(supabase, order.id, 'cancelled', {
+      notificationMessage: 'Your cancellation request has been approved — your order has been cancelled.',
+    });
+    return { success: result.success, error: result.error, status: result.status };
+  }
+
   const { newDeliveryOption, deliveryAddress, city } = changeRequest.details as DeliveryMethodChangeDetails;
   const zone = await resolveOrderShippingZone(supabase, order);
 
@@ -80,7 +87,11 @@ export async function PUT(
       }
     } else {
       try {
-        const requestLabel = changeRequest.request_type === 'reschedule' ? 'reschedule' : 'delivery method change';
+        const requestLabel = changeRequest.request_type === 'reschedule'
+          ? 'reschedule'
+          : changeRequest.request_type === 'cancel'
+          ? 'cancellation'
+          : 'delivery method change';
         await sendCustomNotification({
           orderNumber: order.order_number,
           customerName: order.customer_name,

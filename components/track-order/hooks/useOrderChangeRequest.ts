@@ -3,13 +3,13 @@
 'use client';
 
 import { useState } from 'react';
-import type { OrderChangeRequestType, RescheduleDetails, DeliveryMethodChangeDetails } from '@/types/orderChangeRequest';
+import type { OrderChangeRequestType, RescheduleDetails, DeliveryMethodChangeDetails, CancelDetails } from '@/types/orderChangeRequest';
 
 interface SubmitChangeRequestParams {
   orderNumber: string;
   contact: string;
   requestType: OrderChangeRequestType;
-  details: RescheduleDetails | DeliveryMethodChangeDetails;
+  details: RescheduleDetails | DeliveryMethodChangeDetails | CancelDetails;
   customerNote?: string;
 }
 

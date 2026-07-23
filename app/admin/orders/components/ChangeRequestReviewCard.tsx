@@ -1,7 +1,7 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/components/ChangeRequestReviewCard.tsx
 import { useState } from 'react';
-import { CalendarClock, Truck } from 'lucide-react';
+import { CalendarClock, Truck, XCircle } from 'lucide-react';
 import { Badge, Button, Textarea } from '@/components/ui';
 import type { OrderChangeRequest, DeliveryMethodChangeDetails, RescheduleDetails } from '@/types/orderChangeRequest';
 import { formatDate } from '@/lib/commerce/format-date';
@@ -13,6 +13,12 @@ interface ChangeRequestReviewCardProps {
   onReject: (adminResponse?: string) => void;
 }
 
+const REQUEST_TYPE_LABELS: Record<OrderChangeRequest['request_type'], string> = {
+  reschedule: 'Reschedule Request',
+  delivery_method_change: 'Delivery Method Change Request',
+  cancel: 'Cancellation Request',
+};
+
 function RequestSummary({ changeRequest }: { changeRequest: OrderChangeRequest }) {
   if (changeRequest.request_type === 'reschedule') {
     const { preferredDate } = changeRequest.details as RescheduleDetails;
@@ -21,6 +27,10 @@ function RequestSummary({ changeRequest }: { changeRequest: OrderChangeRequest }
         Requested new date: <span className="font-medium text-text-primary">{preferredDate}</span>
       </p>
     );
+  }
+
+  if (changeRequest.request_type === 'cancel') {
+    return <p className="text-body-sm text-text-secondary">Customer requested to cancel this order.</p>;
   }
 
   const { newDeliveryOption, deliveryAddress, city } = changeRequest.details as DeliveryMethodChangeDetails;
@@ -36,14 +46,18 @@ function RequestSummary({ changeRequest }: { changeRequest: OrderChangeRequest }
 
 export default function ChangeRequestReviewCard({ changeRequest, isResolving, onApprove, onReject }: ChangeRequestReviewCardProps) {
   const [adminResponse, setAdminResponse] = useState('');
-  const Icon = changeRequest.request_type === 'reschedule' ? CalendarClock : Truck;
+  const Icon = changeRequest.request_type === 'reschedule'
+    ? CalendarClock
+    : changeRequest.request_type === 'cancel'
+    ? XCircle
+    : Truck;
 
   return (
     <div className="mt-6 pt-6 border-t border-border">
       <div className="flex items-center gap-2 mb-3">
         <Icon className="w-4 h-4 text-warning" />
         <h3 className="font-semibold text-text-primary">
-          {changeRequest.request_type === 'reschedule' ? 'Reschedule Request' : 'Delivery Method Change Request'}
+          {REQUEST_TYPE_LABELS[changeRequest.request_type]}
         </h3>
         <Badge tone="warning">Pending Review</Badge>
       </div>

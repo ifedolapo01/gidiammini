@@ -5,16 +5,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
-import { canRequestOrderChange } from '@/lib/commerce/order-status';
+import { canRequestOrderChange, canCancelOrder } from '@/lib/commerce/order-status';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
 import { sendOrderEmail } from '@/lib/email';
 import type { OrderChangeRequestType } from '@/types/orderChangeRequest';
 
-const REQUEST_TYPES: OrderChangeRequestType[] = ['reschedule', 'delivery_method_change'];
+const REQUEST_TYPES: OrderChangeRequestType[] = ['reschedule', 'delivery_method_change', 'cancel'];
 
 function validateDetails(requestType: OrderChangeRequestType, details: any): string | null {
   if (requestType === 'reschedule') {
     return details?.preferredDate ? null : 'A preferred date is required';
+  }
+
+  if (requestType === 'cancel') {
+    return null;
   }
 
   if (!['pickup', 'delivery'].includes(details?.newDeliveryOption)) {
@@ -29,6 +33,8 @@ function validateDetails(requestType: OrderChangeRequestType, details: any): str
 async function notifyOwner(order: any, requestType: OrderChangeRequestType, details: any, customerNote?: string) {
   const summary = requestType === 'reschedule'
     ? `reschedule to ${details.preferredDate}`
+    : requestType === 'cancel'
+    ? 'cancel their order'
     : `switch to ${details.newDeliveryOption}`;
 
   await sendOrderEmail(
@@ -71,8 +77,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!canRequestOrderChange(order.status)) {
-      return NextResponse.json({ success: false, error: 'This order can no longer be changed.' }, { status: 400 });
+    const isEligible = requestType === 'cancel' ? canCancelOrder(order.status) : canRequestOrderChange(order.status);
+    if (!isEligible) {
+      const error = requestType === 'cancel' ? 'This order can no longer be cancelled.' : 'This order can no longer be changed.';
+      return NextResponse.json({ success: false, error }, { status: 400 });
     }
 
     if (order.order_change_requests?.some((r: any) => r.status === 'pending')) {

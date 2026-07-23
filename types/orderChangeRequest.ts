@@ -1,6 +1,6 @@
 // types/orderChangeRequest.ts
 
-export type OrderChangeRequestType = 'reschedule' | 'delivery_method_change';
+export type OrderChangeRequestType = 'reschedule' | 'delivery_method_change' | 'cancel';
 export type OrderChangeRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export interface RescheduleDetails {
@@ -13,12 +13,15 @@ export interface DeliveryMethodChangeDetails {
   city?: string;
 }
 
+/** No fields needed — the customer's reason (if any) goes in customer_note. */
+export type CancelDetails = Record<string, never>;
+
 export interface OrderChangeRequest {
   id: string;
   order_id: string;
   request_type: OrderChangeRequestType;
   status: OrderChangeRequestStatus;
-  details: RescheduleDetails | DeliveryMethodChangeDetails;
+  details: RescheduleDetails | DeliveryMethodChangeDetails | CancelDetails;
   customer_note: string | null;
   admin_response: string | null;
   created_at: string;
