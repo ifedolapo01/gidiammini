@@ -7,13 +7,13 @@ import { Order } from '@/types/order';
 import { formatOrderStatus } from '@/lib/commerce/order-status';
 import { notifyOrdersChanged } from '../../lib/orderEvents';
 import { useToast } from '../../hooks/useToast';
+import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import { useOrderShippingUpdate } from './useOrderShippingUpdate';
 import { useOrderChangeRequests } from './useOrderChangeRequests';
 
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [sendingNotification, setSendingNotification] = useState<string | null>(null);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
@@ -38,19 +38,13 @@ export function useOrders() {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const refreshOrders = () => {
-    setRefreshing(true);
-    fetchOrders();
-  };
-
-  /** Reconciles with the server without toggling `loading`/`refreshing` — used
-   * right after a mutation so the list stays fully accurate (payment_verified,
-   * updated_at, etc.) without flashing a loading state over data already
-   * updated optimistically. */
+  /** Reconciles with the server without toggling `loading` — used right after
+   * a mutation, and on a background poll, so the list stays fully accurate
+   * (payment_verified, updated_at, new orders placed elsewhere, etc.) without
+   * flashing a loading state over data already showing on screen. */
   const syncOrdersSilently = async () => {
     try {
       const response = await fetch('/api/orders');
@@ -69,7 +63,7 @@ export function useOrders() {
   // with nothing to notify this tab — so poll periodically instead of only
   // relying on notifyOrdersChanged(), which only fires for actions taken here.
   useEffect(() => {
-    const interval = setInterval(syncOrdersSilently, 120000);
+    const interval = setInterval(syncOrdersSilently, ADMIN_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -186,8 +180,6 @@ export function useOrders() {
   return {
     orders,
     loading,
-    refreshing,
-    refreshOrders,
     updateOrderStatus,
     selectedOrder,
     openOrderDetails,

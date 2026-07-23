@@ -4,7 +4,6 @@
  */
 "use client";
 
-import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAdminAlerts, type AlertItem } from "@/app/admin/hooks/useAdminAlerts";
 import { useAlertCycle } from "@/app/admin/hooks/useAlertCycle";
@@ -15,19 +14,9 @@ import { cn } from "@/lib/utils";
 const TRANSITION_MS = 300;
 
 export function MarqueeAlertBar() {
-  const { alerts, loading, dismissAlert, refetch } = useAdminAlerts();
+  const { alerts, loading, dismissAlert } = useAdminAlerts();
   const [isPaused, setIsPaused] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -113,7 +102,7 @@ export function MarqueeAlertBar() {
 
       {/* Current alert, one at a time - the next one rises up from below as the
           previous one slides up and out, like a vertical carousel. */}
-      <div className="absolute inset-0 overflow-hidden px-28">
+      <div className="absolute inset-0 overflow-hidden pl-32 pr-6">
         {previous && (
           <div
             key={`prev-${previous.id}`}
@@ -128,19 +117,6 @@ export function MarqueeAlertBar() {
         >
           <AlertPill alert={current} onDismiss={dismissAlert} />
         </div>
-      </div>
-
-      {/* Refresh button */}
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20">
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="text-caption-md bg-surface hover:bg-surface-hover border border-border text-text-secondary px-2.5 py-1.5 rounded-full shadow-elevation-1 transition-colors flex items-center gap-1 font-medium disabled:opacity-60 disabled:pointer-events-none"
-          title="Refresh alerts"
-        >
-          <RefreshCw className={cn("size-3", isRefreshing && "animate-spin")} aria-hidden="true" />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { slugify } from '@/lib/commerce/format-text';
 import type { Category } from '@/types/product';
+import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -29,22 +30,30 @@ export function useCategories() {
     fetchCategories();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (opts: { silent?: boolean } = {}) => {
     try {
-      setLoading(true);
+      if (!opts.silent) setLoading(true);
       const res = await fetch('/api/admin/categories');
       const data = await res.json();
       if (data.success) {
         setCategories(data.categories || []);
-      } else {
+      } else if (!opts.silent) {
         setError(data.error || 'Failed to load categories');
       }
     } catch (err) {
-      setError('Network error loading categories');
+      if (opts.silent) console.error('Error syncing categories:', err);
+      else setError('Network error loading categories');
     } finally {
-      setLoading(false);
+      if (!opts.silent) setLoading(false);
     }
   };
+
+  // Background poll — keeps the list fresh without a manual Refresh button.
+  useEffect(() => {
+    const interval = setInterval(() => fetchCategories({ silent: true }), ADMIN_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-generate slug from name
   const handleCatNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {

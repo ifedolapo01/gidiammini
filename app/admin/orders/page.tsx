@@ -3,8 +3,8 @@
 'use client';
 
 import { Suspense } from 'react';
-import { Package, RefreshCw } from 'lucide-react';
-import { Button, Spinner } from '@/components/ui';
+import { Package } from 'lucide-react';
+import { Spinner } from '@/components/ui';
 import OrderDetailsModal from './components/OrderDetailsModal';
 import OrderCard from './components/OrderCard';
 import OrderFilters from './components/OrderFilters';
@@ -18,8 +18,6 @@ function AdminOrdersContent() {
   const {
     orders,
     loading,
-    refreshing,
-    refreshOrders,
     updateOrderStatus,
     selectedOrder,
     openOrderDetails,
@@ -60,17 +58,6 @@ function AdminOrdersContent() {
             <p className="text-text-secondary mt-1">
               {searchedOrders.length} order{searchedOrders.length !== 1 ? 's' : ''} found
             </p>
-          </div>
-
-          <div className="flex items-center gap-3 mt-4 md:mt-0">
-            <Button
-              variant="outline"
-              onClick={refreshOrders}
-              loading={refreshing}
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </Button>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { ShippingZone } from '@/types/shipping';
 import type { ZoneExceptionFormRow } from './useZoneExceptions';
 import { type ShippingZoneFormData, emptyFormData } from './useShippingZones.types';
+import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 
 export type { ShippingZoneFormData };
 
@@ -25,18 +26,26 @@ export function useShippingZones() {
     fetchZones();
   }, []);
 
-  const fetchZones = async () => {
-    setLoading(true);
+  const fetchZones = async (opts: { silent?: boolean } = {}) => {
+    if (!opts.silent) setLoading(true);
     try {
       const res = await fetch('/api/admin/shipping-zones');
       const data = await res.json();
       if (data.success) setZones(data.zones);
     } catch (err) {
-      setError('Failed to load shipping zones');
+      if (opts.silent) console.error('Error syncing shipping zones:', err);
+      else setError('Failed to load shipping zones');
     } finally {
-      setLoading(false);
+      if (!opts.silent) setLoading(false);
     }
   };
+
+  // Background poll — keeps the list fresh without a manual Refresh button.
+  useEffect(() => {
+    const interval = setInterval(() => fetchZones({ silent: true }), ADMIN_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openModal = (zone?: ShippingZone) => {
     if (zone) {

@@ -3,7 +3,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, ShoppingBag, RefreshCw } from 'lucide-react';
+import { Package, ShoppingBag } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faNairaSign } from '@fortawesome/free-solid-svg-icons';
 import { Button, Spinner } from '@/components/ui';
@@ -16,7 +16,7 @@ import { QuickActionsGrid } from './components/QuickActionsGrid';
 import { formatCurrency } from './format-currency';
 
 export default function AdminDashboard() {
-  const { stats, loading, error, refreshing, fetchDashboardStats, refreshData } = useDashboardStats();
+  const { stats, loading, error, fetchDashboardStats } = useDashboardStats();
 
   if (loading) {
     return (
@@ -50,10 +50,6 @@ export default function AdminDashboard() {
           <p className="text-text-secondary mt-1">Welcome back! Here's what's happening with your store.</p>
         </div>
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" onClick={refreshData} loading={refreshing}>
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </Button>
           <Link
             href="/admin/products/new"
             className="px-4 py-2 bg-primary text-primary-foreground rounded-control hover:bg-primary-hover transition-colors"

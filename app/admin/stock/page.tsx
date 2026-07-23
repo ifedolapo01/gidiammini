@@ -2,8 +2,7 @@
 // app/admin/stock/page.tsx
 'use client';
 
-import { RefreshCw } from 'lucide-react';
-import { Button, Input, Spinner } from '@/components/ui';
+import { Input, Spinner } from '@/components/ui';
 import { useStock } from './hooks/useStock';
 import { useStockEditing } from './hooks/useStockEditing';
 import { StockSummaryCards } from './components/StockSummaryCards';
@@ -14,9 +13,7 @@ export default function StockManagementPage() {
   const {
     products,
     loading,
-    refreshing,
-    loadStock,
-    refreshStock,
+    loadStockSilently,
     lowStockThreshold,
     setLowStockThreshold,
     lowStockProducts,
@@ -32,7 +29,7 @@ export default function StockManagementPage() {
     saveChanges,
     cancelEditing,
     isSaving,
-  } = useStockEditing(loadStock);
+  } = useStockEditing(loadStockSilently);
 
   if (loading) {
     return (
@@ -71,14 +68,6 @@ export default function StockManagementPage() {
               min="1"
             />
           </div>
-          <Button
-            variant="outline"
-            onClick={refreshStock}
-            loading={refreshing}
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </Button>
         </div>
       </div>
 

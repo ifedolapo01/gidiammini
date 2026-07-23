@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Discount } from '@/lib/commerce/discounts';
 import type { Category, Product } from '@/types/product';
+import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 
 export interface DiscountFormData {
   name: string;
@@ -48,8 +49,8 @@ export function useDiscounts() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (opts: { silent?: boolean } = {}) => {
+    if (!opts.silent) setLoading(true);
     try {
       // Fetch discounts
       const discRes = await fetch('/api/admin/discounts');
@@ -67,11 +68,19 @@ export function useDiscounts() {
       if (prodData.success) setProducts(prodData.products);
 
     } catch (err) {
-      setError('Failed to load data');
+      if (opts.silent) console.error('Error syncing discounts:', err);
+      else setError('Failed to load data');
     } finally {
-      setLoading(false);
+      if (!opts.silent) setLoading(false);
     }
   };
+
+  // Background poll — keeps the list fresh without a manual Refresh button.
+  useEffect(() => {
+    const interval = setInterval(() => fetchData({ silent: true }), ADMIN_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openModal = (discount?: Discount, isReuse: boolean = false) => {
     if (discount) {

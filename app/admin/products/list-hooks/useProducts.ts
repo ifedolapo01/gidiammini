@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { Product } from '@/types/product';
+import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -14,9 +15,11 @@ export function useProducts() {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    setIsLoading(true);
-    setError('');
+  const fetchProducts = async (opts: { silent?: boolean } = {}) => {
+    if (!opts.silent) {
+      setIsLoading(true);
+      setError('');
+    }
 
     try {
       const response = await fetch('/api/admin/products', {
@@ -37,11 +40,18 @@ export function useProducts() {
       setProducts(result.products || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
-      setError(error.message || 'Failed to load products. Please check your connection.');
+      if (!opts.silent) setError(error.message || 'Failed to load products. Please check your connection.');
     } finally {
-      setIsLoading(false);
+      if (!opts.silent) setIsLoading(false);
     }
   };
+
+  // Background poll — keeps the list fresh without a manual Refresh button.
+  useEffect(() => {
+    const interval = setInterval(() => fetchProducts({ silent: true }), ADMIN_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const executeDelete = async (id: string) => {
     setIsDeleting(true);
