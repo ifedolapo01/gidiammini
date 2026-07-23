@@ -1,5 +1,6 @@
 /** ADMIN layer — data loading + delete flow for the products list page. */
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import type { Product } from '@/types/product';
 
 export function useProducts() {
@@ -64,7 +65,7 @@ export function useProducts() {
       window.location.reload();
     } catch (error: any) {
       console.error('Delete error:', error);
-      alert('Error deleting product: ' + error.message);
+      toast.error('Error deleting product: ' + error.message);
       setIsDeleting(false);
       setDeletingProduct(null);
     }

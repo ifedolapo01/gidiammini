@@ -2,15 +2,17 @@
 'use client';
 
 import { Trash2 } from 'lucide-react';
+import { Spinner } from '@/components/ui';
 import type { Category } from '@/types/product';
 
 interface CategoryListProps {
   categories: Category[];
+  pendingDeleteId: string | null;
   onDeleteCategory: (id: string) => void;
   onDeleteSubcategory: (id: string) => void;
 }
 
-export function CategoryList({ categories, onDeleteCategory, onDeleteSubcategory }: CategoryListProps) {
+export function CategoryList({ categories, pendingDeleteId, onDeleteCategory, onDeleteSubcategory }: CategoryListProps) {
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border-light overflow-hidden">
       <div className="p-6 border-b border-border-light bg-background-secondary flex justify-between items-center">
@@ -38,10 +40,11 @@ export function CategoryList({ categories, onDeleteCategory, onDeleteSubcategory
                 </div>
                 <button
                   onClick={() => onDeleteCategory(category.id)}
-                  className="text-text-muted hover:text-destructive p-2 rounded-control hover:bg-destructive-background transition-colors"
+                  disabled={pendingDeleteId === category.id}
+                  className="text-text-muted hover:text-destructive p-2 rounded-control hover:bg-destructive-background transition-colors disabled:opacity-60 disabled:pointer-events-none"
                   title="Delete Category"
                 >
-                  <Trash2 size={18} />
+                  {pendingDeleteId === category.id ? <Spinner size="xs" /> : <Trash2 size={18} />}
                 </button>
               </div>
 
@@ -57,9 +60,10 @@ export function CategoryList({ categories, onDeleteCategory, onDeleteSubcategory
                         </div>
                         <button
                           onClick={() => onDeleteSubcategory(sub.id)}
-                          className="text-text-muted hover:text-destructive p-1"
+                          disabled={pendingDeleteId === sub.id}
+                          className="text-text-muted hover:text-destructive p-1 disabled:opacity-60 disabled:pointer-events-none"
                         >
-                          <Trash2 size={16} />
+                          {pendingDeleteId === sub.id ? <Spinner size="xs" /> : <Trash2 size={16} />}
                         </button>
                       </li>
                     ))}

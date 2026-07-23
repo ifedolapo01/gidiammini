@@ -1,5 +1,6 @@
 /** STOREFRONT layer — checkout receipt upload + order/newsletter submission. */
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { CartItem, OrderData } from '@/types/order';
 import { CheckoutFormData } from './useCheckoutForm';
@@ -46,7 +47,7 @@ export function useOrderSubmission({
 
   const handleSendReceipt = async () => {
     if (!uploadedReceipt) {
-      alert('Please upload your payment receipt first.');
+      toast.error('Please upload your payment receipt first.');
       return;
     }
 
@@ -143,7 +144,7 @@ export function useOrderSubmission({
 
     } catch (error: any) {
       console.error('Order submission error:', error);
-      alert('Failed to submit order. Please try again or contact support.');
+      toast.error('Failed to submit order. Please try again or contact support.');
     } finally {
       setIsProcessing(false);
     }

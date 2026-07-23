@@ -2,9 +2,9 @@
 // app/admin/orders/page.tsx - UPDATED
 'use client';
 
+import { Suspense } from 'react';
 import { Package, RefreshCw } from 'lucide-react';
 import { Button, Spinner } from '@/components/ui';
-import Toast from '@/components/Toast';
 import OrderDetailsModal from './components/OrderDetailsModal';
 import OrderCard from './components/OrderCard';
 import OrderFilters from './components/OrderFilters';
@@ -12,8 +12,9 @@ import OrderStatsSummary from './components/OrderStatsSummary';
 import { useOrders } from './hooks/useOrders';
 import { useOrderFilters } from './hooks/useOrderFilters';
 import { useShippingZoneOptions } from './hooks/useShippingZoneOptions';
+import { getShippingOverdueInfo } from '@/lib/commerce/shipping-overdue';
 
-export default function AdminOrders() {
+function AdminOrdersContent() {
   const {
     orders,
     loading,
@@ -31,12 +32,11 @@ export default function AdminOrders() {
     updatingShipping,
     resolveChangeRequest,
     resolvingRequestId,
-    toast,
-    clearToast,
   } = useOrders();
 
-  const { filter, setFilter, searchTerm, setSearchTerm, searchedOrders } = useOrderFilters(orders);
   const { zones: shippingZones } = useShippingZoneOptions();
+  const { filter, setFilter, searchTerm, setSearchTerm, searchedOrders } = useOrderFilters(orders, shippingZones);
+  const overdueCount = orders.filter((order) => getShippingOverdueInfo(order, shippingZones) !== null).length;
 
   if (loading) {
     return (
@@ -66,9 +66,9 @@ export default function AdminOrders() {
             <Button
               variant="outline"
               onClick={refreshOrders}
-              disabled={refreshing}
+              loading={refreshing}
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className="w-4 h-4" />
               Refresh
             </Button>
           </div>
@@ -79,6 +79,7 @@ export default function AdminOrders() {
           onSearchTermChange={setSearchTerm}
           filter={filter}
           onFilterChange={setFilter}
+          overdueCount={overdueCount}
         />
 
         {/* Orders List */}
@@ -101,6 +102,7 @@ export default function AdminOrders() {
               <OrderCard
                 key={order.id}
                 order={order}
+                shippingZones={shippingZones}
                 onOpenDetails={openOrderDetails}
                 onUpdateStatus={updateOrderStatus}
               />
@@ -127,10 +129,18 @@ export default function AdminOrders() {
           onResolveChangeRequest={resolveChangeRequest}
         />
       )}
-
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={clearToast} />
-      )}
     </>
+  );
+}
+
+export default function AdminOrders() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 flex items-center justify-center h-64">
+        <Spinner size="xl" className="text-primary" />
+      </div>
+    }>
+      <AdminOrdersContent />
+    </Suspense>
   );
 }

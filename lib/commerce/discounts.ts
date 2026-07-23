@@ -92,5 +92,8 @@ export function calculateSavings(price: number, discount: Discount | null): numb
 
 export function calculateDiscountedPrice(price: number, discount: Discount | null): number {
   if (!discount) return price;
-  return Math.max(0, price - calculateSavings(price, discount));
+  // Rounded to the nearest whole Naira — order_items.price/orders.total_amount
+  // are integer columns, and a PERCENTAGE discount on an odd price (e.g. 15%
+  // off ₦12,999) would otherwise produce a fractional amount that fails the insert.
+  return Math.round(Math.max(0, price - calculateSavings(price, discount)));
 }

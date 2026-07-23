@@ -11,7 +11,7 @@ export type AlertTone = "destructive" | "warning" | "info" | "accent";
 
 export interface AlertItem {
   id: string;
-  type: "stock" | "out-of-stock" | "pending-orders" | "pending-change-requests" | "system" | "low-stock";
+  type: "stock" | "out-of-stock" | "overdue-shipping" | "pending-orders" | "pending-change-requests" | "system" | "low-stock";
   message: string;
   link: string;
   tone: AlertTone;
@@ -66,7 +66,27 @@ export function useAdminAlerts() {
         }
       }
 
-      // 2. Fetch pending orders
+      // 2. Fetch orders overdue for shipping (confirmed past their zone's ETA window)
+      const overdueResponse = await fetch("/api/admin/alerts/overdue-shipments");
+      if (overdueResponse.ok) {
+        const overdueData = await overdueResponse.json();
+
+        if (overdueData.overdueCount > 0) {
+          newAlerts.push({
+            id: `overdue-shipping-${Date.now()}`,
+            type: "overdue-shipping",
+            message: `🚚 ${overdueData.overdueCount} confirmed order${
+              overdueData.overdueCount > 1 ? "s are" : " is"
+            } PAST their shipping window - update status`,
+            link: "/admin/orders?filter=overdue",
+            tone: "destructive",
+            count: overdueData.overdueCount,
+            priority: 2,
+          });
+        }
+      }
+
+      // 3. Fetch pending orders
       const ordersResponse = await fetch("/api/admin/alerts/pending-orders");
       if (ordersResponse.ok) {
         const ordersData = await ordersResponse.json();
@@ -81,12 +101,12 @@ export function useAdminAlerts() {
             link: "/admin/orders",
             tone: "warning",
             count: ordersData.pendingCount,
-            priority: 3,
+            priority: 4,
           });
         }
       }
 
-      // 3. Fetch pending order change requests (reschedule / delivery-method-change)
+      // 4. Fetch pending order change requests (reschedule / delivery-method-change)
       const changeRequestsResponse = await fetch("/api/admin/alerts/pending-change-requests");
       if (changeRequestsResponse.ok) {
         const changeRequestsData = await changeRequestsResponse.json();
@@ -101,7 +121,7 @@ export function useAdminAlerts() {
             link: "/admin/orders",
             tone: "warning",
             count: changeRequestsData.pendingCount,
-            priority: 4,
+            priority: 5,
           });
         }
       }
@@ -125,7 +145,7 @@ export function useAdminAlerts() {
               link: "/admin/orders",
               tone: "accent",
               count: stats.todayOrders,
-              priority: 5,
+              priority: 6,
             });
           }
 
@@ -139,7 +159,7 @@ export function useAdminAlerts() {
               link: "/admin/products",
               tone: "info",
               count: stats.totalProducts,
-              priority: 6,
+              priority: 7,
             });
           }
         }

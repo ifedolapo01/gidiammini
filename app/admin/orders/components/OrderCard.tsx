@@ -1,27 +1,38 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/components/OrderCard.tsx
 import { useState } from 'react';
-import { Eye, Send } from 'lucide-react';
+import { Eye, Send, Truck } from 'lucide-react';
 import { Badge, Button, Select } from '@/components/ui';
 import { Order, OrderItem } from '@/types/order';
+import type { ShippingZone } from '@/types/shipping';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatDate } from '@/lib/commerce/format-date';
 import { getStatusIcon, getStatusColor, getStatusOptions, formatOrderStatus } from '@/lib/commerce/order-status';
+import { getShippingOverdueInfo } from '@/lib/commerce/shipping-overdue';
 import { ReceiptPreviewModal } from './ReceiptPreviewModal';
 
 const calculateSubtotal = (items: OrderItem[] = []) => {
   return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 };
 
+/** e.g. 30 -> "1d 6h overdue"; 5 -> "5h overdue". */
+function formatOverdue(hoursOverdue: number): string {
+  const days = Math.floor(hoursOverdue / 24);
+  const hours = hoursOverdue % 24;
+  return days > 0 ? `${days}d ${hours}h overdue` : `${hours}h overdue`;
+}
+
 interface OrderCardProps {
   order: Order;
+  shippingZones?: ShippingZone[];
   onOpenDetails: (order: Order) => void;
   onUpdateStatus: (orderId: string, newStatus: Order['status']) => void;
 }
 
-export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: OrderCardProps) {
+export default function OrderCard({ order, shippingZones = [], onOpenDetails, onUpdateStatus }: OrderCardProps) {
   const [showReceipt, setShowReceipt] = useState(false);
   const hasPendingChangeRequest = order.order_change_requests?.some((r) => r.status === 'pending');
+  const overdueInfo = getShippingOverdueInfo(order, shippingZones);
 
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border overflow-hidden hover:shadow-elevation-2 transition-shadow">
@@ -39,6 +50,12 @@ export default function OrderCard({ order, onOpenDetails, onUpdateStatus }: Orde
               </Badge>
               {hasPendingChangeRequest && (
                 <Badge tone="warning">Pending Request</Badge>
+              )}
+              {overdueInfo && (
+                <Badge tone="destructive">
+                  <Truck className="w-3 h-3" />
+                  {formatOverdue(overdueInfo.hoursOverdue)}
+                </Badge>
               )}
             </div>
 

@@ -13,6 +13,13 @@ export { findShippingZone, getDistrictOptions, getAvailableStates };
 
 export const TAX_RATE = 0.075;
 
+/** Rounded to the nearest whole Naira — orders.total_amount and order_items.price
+ * are integer columns, and an unrounded rate (e.g. 7.5% of ₦236,500 = ₦17,737.5)
+ * would fail the insert. */
+export function calculateTax(subtotal: number): number {
+  return Math.round(subtotal * TAX_RATE);
+}
+
 export type DeliveryOption = 'pickup' | 'delivery';
 
 /** Delivery fee for the matched zone; 0 if nothing matches yet. */

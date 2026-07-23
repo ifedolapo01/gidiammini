@@ -8,6 +8,7 @@ import { CartProvider } from '@/components/CartProvider';
 import { WishlistProvider } from '@/components/WishlistProvider';
 import { Analytics } from "@vercel/analytics/next";
 import StorefrontDiscountManager from '@/components/StorefrontDiscountManager';
+import { Toaster } from '@/components/ui';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -47,6 +48,7 @@ export default function RootLayout({
           <Footer />
         </WishlistProvider>
         </CartProvider>
+        <Toaster />
       </body>
     </html>
   );

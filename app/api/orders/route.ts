@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin-server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { verifyAdminAuth } from '@/lib/auth';
 import { adjustVariantStockByDelta } from '@/lib/commerce/stock-adjustment';
+import { sendOrderReceivedEmail } from '@/lib/notifications';
 import { OrderData, OrderItem } from '@/types/order';
 
 /**
@@ -156,6 +157,18 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Order created successfully: ${order.order_number}`);
+
+    try {
+      await sendOrderReceivedEmail({
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
+      });
+    } catch (notificationError) {
+      // Never fail order creation over a notification hiccup — the order
+      // already exists and the customer sees their order number on-screen either way.
+      console.error('Order-received email error:', notificationError);
+    }
 
     return NextResponse.json({
       success: true,

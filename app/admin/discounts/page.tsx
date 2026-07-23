@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, Spinner } from '@/components/ui';
 import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
 import { parseVariantTargets } from '@/lib/commerce/discount-target';
@@ -16,7 +17,7 @@ export default function DiscountsPage() {
   const {
     discounts, categories, products,
     loading, error,
-    isModalOpen, editingId, isSubmitting,
+    isModalOpen, editingId, isSubmitting, pendingId,
     formData, setFormData,
     openModal: openDiscountModal, closeModal,
     handleSubmit, handleDelete, toggleStatus,
@@ -60,13 +61,13 @@ export default function DiscountsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message);
+        toast.success(data.message);
         setNotifyModalDiscount(null);
       } else {
-        alert('Failed to send notification: ' + data.error);
+        toast.error('Failed to send notification: ' + data.error);
       }
     } catch (err) {
-      alert('Error sending notification');
+      toast.error('Error sending notification');
     } finally {
       setIsNotifying(false);
     }
@@ -102,6 +103,7 @@ export default function DiscountsPage() {
         isHistory={false}
         categories={categories}
         products={products}
+        pendingId={pendingId}
         onToggleStatus={toggleStatus}
         onReuse={(discount) => openModal(discount, true)}
         onEdit={(discount) => openModal(discount)}
@@ -113,6 +115,7 @@ export default function DiscountsPage() {
         isHistory={true}
         categories={categories}
         products={products}
+        pendingId={pendingId}
         onToggleStatus={toggleStatus}
         onReuse={(discount) => openModal(discount, true)}
         onEdit={(discount) => openModal(discount)}

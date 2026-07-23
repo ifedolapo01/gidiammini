@@ -17,6 +17,7 @@ import { adminConfig } from './config';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -39,8 +40,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname]);
 
   const handleLogout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    router.push('/admin/login');
+    setLoggingOut(true);
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      router.push('/admin/login');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   if (loading) {
@@ -104,9 +110,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <ThemeToggle />
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 bg-destructive-background text-destructive border border-destructive-border rounded-control hover:bg-destructive-border transition-colors text-body-sm whitespace-nowrap"
+                  disabled={loggingOut}
+                  className="px-4 py-2 flex items-center gap-2 bg-destructive-background text-destructive border border-destructive-border rounded-control hover:bg-destructive-border transition-colors text-body-sm whitespace-nowrap disabled:opacity-60 disabled:pointer-events-none"
                 >
-                  Logout
+                  {loggingOut && <Spinner size="xs" />}
+                  {loggingOut ? 'Logging out…' : 'Logout'}
                 </button>
               </div>
             </div>

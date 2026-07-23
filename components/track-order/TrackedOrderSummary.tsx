@@ -3,7 +3,7 @@
 
 import { MapPin, Store } from 'lucide-react';
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { getStatusColor, formatOrderStatus } from '@/lib/commerce/order-status';
+import { getStatusColor, formatCustomerStatusLabel } from '@/lib/commerce/order-status';
 import type { Order } from '@/types/order';
 import OrderStatusTimeline from './OrderStatusTimeline';
 import RequestChangeActions from './RequestChangeActions';
@@ -27,7 +27,7 @@ export default function TrackedOrderSummary({ order, orderNumber, contact, onOrd
             <p className="font-bold text-body-lg md:text-h5 text-text-primary">#{order.order_number}</p>
           </div>
           <span className={`px-3 py-1 rounded-full text-caption-md md:text-body-sm font-medium uppercase ${getStatusColor(order.status)}`}>
-            {formatOrderStatus(order.status)}
+            {formatCustomerStatusLabel(order.status)}
           </span>
         </div>
 

@@ -10,9 +10,10 @@ interface StockEditModalProps {
   onStockChange: (value: number) => void;
   onCancel: () => void;
   onSave: () => void;
+  isSaving: boolean;
 }
 
-export function StockEditModal({ editingProduct, stockValue, onStockChange, onCancel, onSave }: StockEditModalProps) {
+export function StockEditModal({ editingProduct, stockValue, onStockChange, onCancel, onSave, isSaving }: StockEditModalProps) {
   return (
     <Modal open onClose={onCancel} title="Update Stock" size="md" padded={false}>
       <div className="p-6">
@@ -63,10 +64,10 @@ export function StockEditModal({ editingProduct, stockValue, onStockChange, onCa
       </div>
 
       <div className="p-6 border-t border-border bg-background-secondary flex justify-end gap-3 rounded-b-overlay">
-        <Button variant="outline" onClick={onCancel}>
+        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
-        <Button onClick={onSave}>
+        <Button onClick={onSave} loading={isSaving}>
           <Save className="w-4 h-4" />
           Save Stock
         </Button>

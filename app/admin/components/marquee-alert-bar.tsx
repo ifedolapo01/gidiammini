@@ -5,19 +5,63 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
-import { useState } from "react";
-import { useAdminAlerts } from "@/app/admin/hooks/useAdminAlerts";
-import { useMarqueeScroll } from "@/app/admin/hooks/useMarqueeScroll";
+import { useEffect, useState } from "react";
+import { useAdminAlerts, type AlertItem } from "@/app/admin/hooks/useAdminAlerts";
+import { useAlertCycle } from "@/app/admin/hooks/useAlertCycle";
 import { AlertPill } from "@/app/admin/components/AlertPill";
+import { cn } from "@/lib/utils";
+
+/** Transition duration, in ms — kept in sync with --duration-slow in globals.css. */
+const TRANSITION_MS = 300;
 
 export function MarqueeAlertBar() {
   const { alerts, loading, dismissAlert, refetch } = useAdminAlerts();
   const [isPaused, setIsPaused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { containerRef, trackRef } = useMarqueeScroll({
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(query.matches);
+  }, []);
+
+  const { index } = useAlertCycle({
     itemCount: alerts.length,
     paused: isPaused,
   });
+
+  const activeAlert = alerts[index] ?? alerts[0] ?? null;
+  const [current, setCurrent] = useState<AlertItem | null>(activeAlert);
+  const [previous, setPrevious] = useState<AlertItem | null>(null);
+
+  // Snapshots the outgoing alert as `previous` (so it can animate off-screen)
+  // whenever the active one changes, instead of just swapping instantly.
+  useEffect(() => {
+    if (!activeAlert || current?.id === activeAlert.id) {
+      if (activeAlert && activeAlert !== current) setCurrent(activeAlert);
+      return;
+    }
+
+    if (reduceMotion) {
+      setCurrent(activeAlert);
+      return;
+    }
+
+    setPrevious(current);
+    setCurrent(activeAlert);
+    const timer = setTimeout(() => setPrevious(null), TRANSITION_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeAlert]);
 
   if (loading) {
     return (
@@ -45,6 +89,8 @@ export function MarqueeAlertBar() {
     );
   }
 
+  if (!current) return null;
+
   return (
     <div
       className="relative z-50 h-10 overflow-hidden bg-surface border-b border-border shadow-elevation-1"
@@ -65,37 +111,34 @@ export function MarqueeAlertBar() {
         </div>
       </div>
 
-      {/* Marquee container */}
-      <div ref={containerRef} className="absolute inset-0 flex items-center">
+      {/* Current alert, one at a time - the next one rises up from below as the
+          previous one slides up and out, like a vertical carousel. */}
+      <div className="absolute inset-0 overflow-hidden px-28">
+        {previous && (
+          <div
+            key={`prev-${previous.id}`}
+            className="absolute inset-0 flex items-center justify-center animate-tickerPushOut"
+          >
+            <AlertPill alert={previous} onDismiss={dismissAlert} />
+          </div>
+        )}
         <div
-          ref={trackRef}
-          className="flex items-center whitespace-nowrap"
-          style={{ willChange: "transform" }}
+          key={`current-${current.id}`}
+          className={cn("absolute inset-0 flex items-center justify-center", !reduceMotion && "animate-tickerPushUp")}
         >
-          {/* Original alerts */}
-          {alerts.map((alert) => (
-            <AlertPill key={alert.id} alert={alert} onDismiss={dismissAlert} />
-          ))}
-
-          {/* Duplicate alerts for seamless loop */}
-          {alerts.map((alert) => (
-            <AlertPill key={`${alert.id}-dup`} alert={alert} onDismiss={dismissAlert} />
-          ))}
+          <AlertPill alert={current} onDismiss={dismissAlert} />
         </div>
       </div>
-
-      {/* Gradient fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-surface via-surface/80 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-surface via-surface/80 to-transparent z-10 pointer-events-none" />
 
       {/* Refresh button */}
       <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20">
         <button
-          onClick={refetch}
-          className="text-caption-md bg-surface hover:bg-surface-hover border border-border text-text-secondary px-2.5 py-1.5 rounded-full shadow-elevation-1 transition-colors flex items-center gap-1 font-medium"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="text-caption-md bg-surface hover:bg-surface-hover border border-border text-text-secondary px-2.5 py-1.5 rounded-full shadow-elevation-1 transition-colors flex items-center gap-1 font-medium disabled:opacity-60 disabled:pointer-events-none"
           title="Refresh alerts"
         >
-          <RefreshCw className="size-3" aria-hidden="true" />
+          <RefreshCw className={cn("size-3", isRefreshing && "animate-spin")} aria-hidden="true" />
           <span className="hidden sm:inline">Refresh</span>
         </button>
       </div>

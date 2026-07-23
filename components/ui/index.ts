@@ -12,3 +12,4 @@ export { Modal, type ModalSize } from './Modal';
 export { Select, type SelectProps, type SelectSize } from './Select';
 export { Checkbox, type CheckboxProps } from './Checkbox';
 export { ThemeToggle } from './ThemeToggle';
+export { Toaster } from './Toaster';

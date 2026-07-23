@@ -1,4 +1,6 @@
 /** STOREFRONT layer — checkout stock-validation before moving to payment. */
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { getVariantStock } from '@/lib/commerce/pricing';
 import { Product } from '@/types/product';
@@ -11,7 +13,10 @@ import { CartItem } from '@/types/order';
  * original inline behavior in app/checkout/page.tsx).
  */
 export function useCheckoutStockValidation() {
+  const [isValidating, setIsValidating] = useState(false);
+
   const validateStock = async (items: CartItem[]): Promise<boolean> => {
+    setIsValidating(true);
     try {
       const supabase = createClient();
       const productIds = items.map((i: CartItem) => i.productId);
@@ -26,7 +31,7 @@ export function useCheckoutStockValidation() {
       for (const item of items) {
         const product = products?.find(p => p.id === item.productId);
         if (!product) {
-          alert(`Product ${item.name} is no longer available.`);
+          toast.error(`Product ${item.name} is no longer available.`);
           return false;
         }
 
@@ -37,7 +42,7 @@ export function useCheckoutStockValidation() {
         );
 
         if (currentStock < item.quantity) {
-          alert(`Insufficient stock for ${item.name} ${item.size ? `(${item.size})` : ''} ${item.color ? `(${item.color})` : ''}. Only ${currentStock} available.`);
+          toast.error(`Insufficient stock for ${item.name} ${item.size ? `(${item.size})` : ''} ${item.color ? `(${item.color})` : ''}. Only ${currentStock} available.`);
           return false;
         }
       }
@@ -45,10 +50,12 @@ export function useCheckoutStockValidation() {
       return true;
     } catch (err) {
       console.error('Error validating stock:', err);
-      alert('Failed to validate stock. Please try again.');
+      toast.error('Failed to validate stock. Please try again.');
       return false;
+    } finally {
+      setIsValidating(false);
     }
   };
 
-  return { validateStock };
+  return { validateStock, isValidating };
 }

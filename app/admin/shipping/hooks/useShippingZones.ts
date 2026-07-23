@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import type { ShippingZone } from '@/types/shipping';
 import type { ZoneExceptionFormRow } from './useZoneExceptions';
 import { type ShippingZoneFormData, emptyFormData } from './useShippingZones.types';
@@ -16,6 +17,7 @@ export function useShippingZones() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<ShippingZoneFormData>(emptyFormData);
 
@@ -121,6 +123,7 @@ export function useShippingZones() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this shipping zone?')) return;
 
+    setPendingId(id);
     try {
       const res = await fetch('/api/admin/shipping-zones', {
         method: 'DELETE',
@@ -132,14 +135,17 @@ export function useShippingZones() {
       if (data.success) {
         fetchZones();
       } else {
-        alert(data.error || 'Failed to delete shipping zone');
+        toast.error(data.error || 'Failed to delete shipping zone');
       }
     } catch (err) {
-      alert('Network error');
+      toast.error('Network error');
+    } finally {
+      setPendingId(null);
     }
   };
 
   const toggleStatus = async (zone: ShippingZone) => {
+    setPendingId(zone.id);
     try {
       const res = await fetch('/api/admin/shipping-zones', {
         method: 'PUT',
@@ -149,13 +155,15 @@ export function useShippingZones() {
       const data = await res.json();
       if (data.success) fetchZones();
     } catch (err) {
-      alert('Failed to toggle status');
+      toast.error('Failed to toggle status');
+    } finally {
+      setPendingId(null);
     }
   };
 
   return {
     zones, loading, error,
-    isModalOpen, editingId, isSubmitting,
+    isModalOpen, editingId, isSubmitting, pendingId,
     formData, setFormData,
     openModal, closeModal,
     handleSubmit, handleDelete, toggleStatus,

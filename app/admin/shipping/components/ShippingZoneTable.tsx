@@ -6,7 +6,7 @@
 
 import { Fragment } from 'react';
 import { MapPin, Store, Phone, Edit2, Trash2, Star } from 'lucide-react';
-import { Badge } from '@/components/ui';
+import { Badge, Spinner } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatZoneEta, formatEtaRange } from '@/lib/commerce/shipping-eta';
 import { formatZoneLocation } from '@/lib/commerce/shipping-match';
@@ -14,6 +14,7 @@ import type { ShippingZone, ShippingZoneException } from '@/types/shipping';
 
 interface ShippingZoneTableProps {
   zones: ShippingZone[];
+  pendingId: string | null;
   onToggleStatus: (zone: ShippingZone) => void;
   onEdit: (zone: ShippingZone) => void;
   onDelete: (id: string) => void;
@@ -48,7 +49,7 @@ function ExceptionRow({ zone, exception }: { zone: ShippingZone; exception: Ship
   );
 }
 
-export function ShippingZoneTable({ zones, onToggleStatus, onEdit, onDelete }: ShippingZoneTableProps) {
+export function ShippingZoneTable({ zones, pendingId, onToggleStatus, onEdit, onDelete }: ShippingZoneTableProps) {
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border-light overflow-hidden mb-8">
       <div className="p-4 border-b border-border-light bg-background-secondary flex items-center justify-between">
@@ -125,9 +126,14 @@ export function ShippingZoneTable({ zones, onToggleStatus, onEdit, onDelete }: S
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onToggleStatus(zone)}
-                          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${zone.is_active ? 'bg-success' : 'bg-disabled'}`}
+                          disabled={pendingId === zone.id}
+                          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 disabled:pointer-events-none ${zone.is_active ? 'bg-success' : 'bg-disabled'}`}
                         >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-surface transition-transform ${zone.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                          {pendingId === zone.id ? (
+                            <Spinner size="xs" className="mx-auto text-text-inverse" />
+                          ) : (
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-surface transition-transform ${zone.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                          )}
                         </button>
                         {!zone.is_active && (
                           <Badge tone="destructive" variant="solid" className="font-semibold uppercase tracking-wider">
@@ -141,8 +147,13 @@ export function ShippingZoneTable({ zones, onToggleStatus, onEdit, onDelete }: S
                         <button onClick={() => onEdit(zone)} className="text-text-muted hover:text-primary p-2 transition-colors" title="Edit Zone">
                           <Edit2 size={18} />
                         </button>
-                        <button onClick={() => onDelete(zone.id)} className="text-text-muted hover:text-destructive p-2 transition-colors" title="Delete Zone">
-                          <Trash2 size={18} />
+                        <button
+                          onClick={() => onDelete(zone.id)}
+                          disabled={pendingId === zone.id}
+                          className="text-text-muted hover:text-destructive p-2 transition-colors disabled:opacity-60 disabled:pointer-events-none"
+                          title="Delete Zone"
+                        >
+                          {pendingId === zone.id ? <Spinner size="xs" /> : <Trash2 size={18} />}
                         </button>
                       </div>
                     </td>

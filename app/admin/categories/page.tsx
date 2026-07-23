@@ -20,6 +20,7 @@ export default function CategoriesPage() {
     newSubName,
     newSubSlug,
     isAddingSub,
+    pendingDeleteId,
     handleCatNameChange,
     handleSubNameChange,
     handleParentCategoryChange,
@@ -81,6 +82,7 @@ export default function CategoriesPage() {
         <div className="lg:col-span-2">
           <CategoryList
             categories={categories}
+            pendingDeleteId={pendingDeleteId}
             onDeleteCategory={handleDeleteCategory}
             onDeleteSubcategory={handleDeleteSubcategory}
           />

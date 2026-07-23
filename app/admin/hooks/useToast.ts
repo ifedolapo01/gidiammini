@@ -1,21 +1,13 @@
-/** ADMIN layer — small reusable toast-state hook, paired with components/Toast.tsx. */
+/** ADMIN layer — small reusable toast-trigger hook, backed by sonner's global Toaster. */
 'use client';
 
-import { useCallback, useState } from 'react';
-
-interface ToastState {
-  message: string;
-  type: 'success' | 'error';
-}
+import { toast } from 'sonner';
 
 export function useToast() {
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    if (type === 'success') toast.success(message);
+    else toast.error(message);
+  };
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-  }, []);
-
-  const clearToast = useCallback(() => setToast(null), []);
-
-  return { toast, showToast, clearToast };
+  return { showToast };
 }

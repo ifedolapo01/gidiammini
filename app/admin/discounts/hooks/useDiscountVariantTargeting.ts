@@ -2,6 +2,7 @@
 'use client';
 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import type { Product } from '@/types/product';
 import { serializeVariantTargets, type VariantTarget } from '@/lib/commerce/discount-target';
 import type { DiscountFormData } from './useDiscounts';
@@ -48,8 +49,8 @@ export function useDiscountVariantTargeting(
     const hasSizes = (selectedProduct?.sizes || []).length > 0;
     const hasColors = (selectedProduct?.colors || []).length > 0;
 
-    if (hasSizes && !variantSize) return alert('Please select a size');
-    if (hasColors && !variantColor) return alert('Please select a color');
+    if (hasSizes && !variantSize) return toast.error('Please select a size');
+    if (hasColors && !variantColor) return toast.error('Please select a color');
 
     // Avoid duplicates
     const isDuplicate = addedVariants.some(v =>
@@ -58,7 +59,7 @@ export function useDiscountVariantTargeting(
       v.color === variantColor
     );
 
-    if (isDuplicate) return alert('This variant has already been added.');
+    if (isDuplicate) return toast.error('This variant has already been added.');
 
     setAddedVariants([...addedVariants, {
       productId: variantProductId,

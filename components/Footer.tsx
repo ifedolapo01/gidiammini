@@ -34,9 +34,9 @@ export default function Footer() {
             <h4 className="font-semibold mb-3 md:mb-4 text-body-md md:text-body-lg">Support</h4>
             <ul className="space-y-2 text-on-inverse/70 text-body-sm md:text-body-md">
               <li><a href="/track-order" className="hover:text-on-inverse">Track Order</a></li>
-              <li><a href="#" className="hover:text-on-inverse">Contact Us</a></li>
-              <li><a href="#" className="hover:text-on-inverse">Shipping</a></li>
-              <li><a href="#" className="hover:text-on-inverse">Returns</a></li>
+              <li><a href="/contact" className="hover:text-on-inverse">Contact Us</a></li>
+              <li><a href="/shipping" className="hover:text-on-inverse">Shipping</a></li>
+              <li><a href="/returns" className="hover:text-on-inverse">Returns</a></li>
             </ul>
           </div>
           <div>

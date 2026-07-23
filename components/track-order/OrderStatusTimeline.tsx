@@ -4,7 +4,7 @@
 'use client';
 
 import { CheckCircle, XCircle, CalendarClock } from 'lucide-react';
-import { formatOrderStatus } from '@/lib/commerce/order-status';
+import { formatCustomerStatusLabel } from '@/lib/commerce/order-status';
 import type { Order } from '@/types/order';
 
 const DELIVERY_STEPS: Order['status'][] = ['pending', 'confirmed', 'shipped', 'delivered'];
@@ -47,7 +47,7 @@ export default function OrderStatusTimeline({ status, deliveryOption }: OrderSta
                 {isComplete ? <CheckCircle className="w-4 h-4 md:w-5 md:h-5" /> : <span className="text-caption-md font-semibold">{index + 1}</span>}
               </div>
               <p className={`mt-2 text-caption-md md:text-body-sm font-medium ${isComplete ? 'text-text-primary' : 'text-text-muted'}`}>
-                {formatOrderStatus(step)}
+                {formatCustomerStatusLabel(step)}
               </p>
             </div>
           );

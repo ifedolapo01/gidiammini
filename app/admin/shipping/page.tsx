@@ -12,7 +12,7 @@ import { ShippingZoneFormModal } from './components/ShippingZoneFormModal';
 export default function ShippingPage() {
   const {
     zones, loading, error,
-    isModalOpen, editingId, isSubmitting,
+    isModalOpen, editingId, isSubmitting, pendingId,
     formData, setFormData,
     openModal: openZoneModal, closeModal,
     handleSubmit: submitZone, handleDelete, toggleStatus,
@@ -50,6 +50,7 @@ export default function ShippingPage() {
 
       <ShippingZoneTable
         zones={zones}
+        pendingId={pendingId}
         onToggleStatus={toggleStatus}
         onEdit={openModal}
         onDelete={handleDelete}

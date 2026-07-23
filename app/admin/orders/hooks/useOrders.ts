@@ -17,7 +17,7 @@ export function useOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [sendingNotification, setSendingNotification] = useState<string | null>(null);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
-  const { toast, showToast, clearToast } = useToast();
+  const { showToast } = useToast();
   const { updateOrderShipping, updatingShipping } = useOrderShippingUpdate({ setOrders, setSelectedOrder, showToast });
 
   useEffect(() => {
@@ -64,6 +64,15 @@ export function useOrders() {
       console.error('Error syncing orders:', error);
     }
   };
+
+  // New orders can arrive from a customer's own browser session at any time,
+  // with nothing to notify this tab — so poll periodically instead of only
+  // relying on notifyOrdersChanged(), which only fires for actions taken here.
+  useEffect(() => {
+    const interval = setInterval(syncOrdersSilently, 120000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { resolveChangeRequest, resolvingRequestId } = useOrderChangeRequests({ syncOrdersSilently, showToast });
 
@@ -191,7 +200,5 @@ export function useOrders() {
     updatingShipping,
     resolveChangeRequest,
     resolvingRequestId,
-    toast,
-    clearToast,
   };
 }

@@ -1,8 +1,9 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
-import { Banknote } from 'lucide-react';
+import { Banknote, Check } from 'lucide-react';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { useCopyToClipboard } from '@/lib/hooks/useCopyToClipboard';
 
 interface BankDetailsProps {
   bankDetails: {
@@ -16,9 +17,8 @@ interface BankDetailsProps {
 }
 
 export default function BankDetails({ bankDetails, orderNumber, total }: BankDetailsProps) {
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
+  const accountCopy = useCopyToClipboard();
+  const orderCopy = useCopyToClipboard();
 
   return (
     <div className="bg-info-background border border-info-border rounded-surface p-4 md:p-6 mb-6 md:mb-8">
@@ -44,10 +44,11 @@ export default function BankDetails({ bankDetails, orderNumber, total }: BankDet
             <div className="flex items-center">
               <p className="font-bold text-body-md md:text-body-lg font-mono text-text-primary">{bankDetails.accountNumber}</p>
               <button
-                onClick={() => copyToClipboard(bankDetails.accountNumber)}
-                className="ml-3 md:ml-4 bg-primary/10 text-primary px-2 py-1 md:px-3 md:py-1 rounded-control text-caption-md md:text-body-sm hover:bg-primary/20"
+                onClick={() => accountCopy.copy(bankDetails.accountNumber)}
+                className="ml-3 md:ml-4 bg-primary/10 text-primary px-2 py-1 md:px-3 md:py-1 rounded-control text-caption-md md:text-body-sm hover:bg-primary/20 flex items-center gap-1"
               >
-                Copy
+                {accountCopy.copied && <Check className="w-3.5 h-3.5" />}
+                {accountCopy.copied ? 'Copied!' : 'Copy'}
               </button>
             </div>
           </div>
@@ -64,10 +65,11 @@ export default function BankDetails({ bankDetails, orderNumber, total }: BankDet
           <li className="flex items-center flex-wrap gap-2">
             <span>• Use <strong>Order #{orderNumber}</strong> as payment description/remark</span>
             <button
-              onClick={() => copyToClipboard(orderNumber)}
-              className="bg-primary/10 text-primary px-2 py-0.5 rounded-control text-caption-md hover:bg-primary/20"
+              onClick={() => orderCopy.copy(orderNumber)}
+              className="bg-primary/10 text-primary px-2 py-0.5 rounded-control text-caption-md hover:bg-primary/20 flex items-center gap-1"
             >
-              Copy
+              {orderCopy.copied && <Check className="w-3.5 h-3.5" />}
+              {orderCopy.copied ? 'Copied!' : 'Copy'}
             </button>
           </li>
           <li>• Transfer <strong>exactly {formatCurrency(total)}</strong></li>

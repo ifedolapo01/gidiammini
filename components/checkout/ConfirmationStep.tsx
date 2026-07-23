@@ -1,9 +1,10 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Check, Copy } from 'lucide-react';
 import Link from 'next/link';
 import type { ShippingZone } from '@/types/shipping';
+import { useCopyToClipboard } from '@/lib/hooks/useCopyToClipboard';
 import NextSteps from './NextSteps';
 import OrderDetailsCard from './OrderDetailsCard';
 import EstimatedTimeline from './EstimatedTimeline';
@@ -39,6 +40,8 @@ export default function ConfirmationStep({
   pickupAddress,
   total = 0
 }: ConfirmationStepProps) {
+  const orderNumberCopy = useCopyToClipboard();
+
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
       <div className="bg-surface rounded-surface shadow-elevation-4 border border-success-border p-4 md:p-8 text-center">
@@ -47,8 +50,16 @@ export default function ConfirmationStep({
         </div>
 
         <h2 className="text-h5 md:text-h3 font-bold text-text-primary mb-3 md:mb-4">Order Submitted Successfully!</h2>
-        <p className="text-text-secondary text-body-md md:text-body-lg mb-6 md:mb-8">
-          We've received your order #{orderNumber}
+        <p className="text-text-secondary text-body-md md:text-body-lg mb-6 md:mb-8 flex items-center justify-center gap-2 flex-wrap">
+          <span>We've received your order #{orderNumber}</span>
+          <button
+            type="button"
+            onClick={() => orderNumberCopy.copy(orderNumber, 'Order number copied!')}
+            className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-control text-caption-md md:text-body-sm hover:bg-primary/20 transition-colors"
+          >
+            {orderNumberCopy.copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {orderNumberCopy.copied ? 'Copied!' : 'Copy'}
+          </button>
         </p>
 
         <NextSteps

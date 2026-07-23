@@ -7,6 +7,12 @@ import type { ShippingEtaUnit, ShippingZone } from '@/types/shipping';
 const UNIT_TO_DAYS: Record<ShippingEtaUnit, number> = { days: 1, weeks: 7, months: 30 };
 const SINGULAR: Record<ShippingEtaUnit, string> = { days: 'day', weeks: 'week', months: 'month' };
 
+/** The latest a zone's ETA allows delivery to still take, in hours — the
+ * threshold an order should have moved past 'confirmed' by before it's overdue. */
+export function etaMaxHours(zone: ShippingZone): number {
+  return zone.delivery_eta_max * UNIT_TO_DAYS[zone.delivery_eta_unit] * 24;
+}
+
 export function formatEtaRange(min: number, max: number, unit: ShippingEtaUnit): string {
   const label = (n: number) => (n === 1 ? SINGULAR[unit] : unit);
   if (min === max) return `${min} ${label(min)}`;

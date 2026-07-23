@@ -50,8 +50,8 @@ export default function AdminDashboard() {
           <p className="text-text-secondary mt-1">Welcome back! Here's what's happening with your store.</p>
         </div>
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" onClick={refreshData} disabled={refreshing}>
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={refreshData} loading={refreshing}>
+            <RefreshCw className="w-4 h-4" />
             Refresh
           </Button>
           <Link

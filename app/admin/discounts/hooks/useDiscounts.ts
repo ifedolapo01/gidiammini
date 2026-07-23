@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { Discount } from '@/lib/commerce/discounts';
 import type { Category, Product } from '@/types/product';
 
@@ -39,6 +40,7 @@ export function useDiscounts() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<DiscountFormData>(emptyFormData);
 
@@ -150,6 +152,7 @@ export function useDiscounts() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this discount?')) return;
 
+    setPendingId(id);
     try {
       const res = await fetch('/api/admin/discounts', {
         method: 'DELETE',
@@ -161,14 +164,17 @@ export function useDiscounts() {
       if (data.success) {
         fetchData();
       } else {
-        alert(data.error || 'Failed to delete discount');
+        toast.error(data.error || 'Failed to delete discount');
       }
     } catch (err) {
-      alert('Network error');
+      toast.error('Network error');
+    } finally {
+      setPendingId(null);
     }
   };
 
   const toggleStatus = async (discount: Discount) => {
+    setPendingId(discount.id);
     try {
       const res = await fetch('/api/admin/discounts', {
         method: 'PUT',
@@ -180,14 +186,16 @@ export function useDiscounts() {
         fetchData();
       }
     } catch (err) {
-      alert('Failed to toggle status');
+      toast.error('Failed to toggle status');
+    } finally {
+      setPendingId(null);
     }
   };
 
   return {
     discounts, categories, products,
     loading, error,
-    isModalOpen, editingId, isSubmitting,
+    isModalOpen, editingId, isSubmitting, pendingId,
     formData, setFormData,
     openModal, closeModal,
     handleSubmit, handleDelete, toggleStatus,

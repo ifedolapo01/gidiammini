@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { slugify } from '@/lib/commerce/format-text';
 import type { Category } from '@/types/product';
 
@@ -20,6 +21,9 @@ export function useCategories() {
   const [newSubName, setNewSubName] = useState('');
   const [newSubSlug, setNewSubSlug] = useState('');
   const [isAddingSub, setIsAddingSub] = useState(false);
+
+  // Which category/subcategory row is currently being deleted
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -84,10 +88,10 @@ export function useCategories() {
         setNewCatSlug('');
         fetchCategories();
       } else {
-        alert(data.error || 'Failed to create category');
+        toast.error(data.error || 'Failed to create category');
       }
     } catch (err) {
-      alert('Network error');
+      toast.error('Network error');
     } finally {
       setIsAddingCat(false);
     }
@@ -96,6 +100,7 @@ export function useCategories() {
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Are you sure you want to delete this category? All its subcategories will also be deleted.')) return;
 
+    setPendingDeleteId(id);
     try {
       const res = await fetch('/api/admin/categories', {
         method: 'DELETE',
@@ -107,10 +112,12 @@ export function useCategories() {
       if (data.success) {
         fetchCategories();
       } else {
-        alert(data.error || 'Failed to delete category');
+        toast.error(data.error || 'Failed to delete category');
       }
     } catch (err) {
-      alert('Network error');
+      toast.error('Network error');
+    } finally {
+      setPendingDeleteId(null);
     }
   };
 
@@ -137,10 +144,10 @@ export function useCategories() {
         setSelectedCategoryForSub('');
         fetchCategories();
       } else {
-        alert(data.error || 'Failed to create subcategory');
+        toast.error(data.error || 'Failed to create subcategory');
       }
     } catch (err) {
-      alert('Network error');
+      toast.error('Network error');
     } finally {
       setIsAddingSub(false);
     }
@@ -149,6 +156,7 @@ export function useCategories() {
   const handleDeleteSubcategory = async (id: string) => {
     if (!confirm('Are you sure you want to delete this subcategory?')) return;
 
+    setPendingDeleteId(id);
     try {
       const res = await fetch('/api/admin/subcategories', {
         method: 'DELETE',
@@ -160,10 +168,12 @@ export function useCategories() {
       if (data.success) {
         fetchCategories();
       } else {
-        alert(data.error || 'Failed to delete subcategory');
+        toast.error(data.error || 'Failed to delete subcategory');
       }
     } catch (err) {
-      alert('Network error');
+      toast.error('Network error');
+    } finally {
+      setPendingDeleteId(null);
     }
   };
 
@@ -179,6 +189,7 @@ export function useCategories() {
     newSubName,
     newSubSlug,
     isAddingSub,
+    pendingDeleteId,
     handleCatNameChange,
     handleSubNameChange,
     handleParentCategoryChange,

@@ -2,8 +2,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2 } from 'lucide-react';
+import { Share2, Check, Copy } from 'lucide-react';
 import { Product } from '@/types/product';
+import { useCopyToClipboard } from '@/lib/hooks/useCopyToClipboard';
 
 interface ProductShareMenuProps {
   product: Product;
@@ -16,6 +17,7 @@ interface ProductShareMenuProps {
 export default function ProductShareMenu({ product, currentBasePrice, currentStock, variant = 'desktop' }: ProductShareMenuProps) {
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const linkCopy = useCopyToClipboard();
 
   const handleShare = async (platform?: string) => {
     setIsSharing(true);
@@ -31,8 +33,7 @@ export default function ProductShareMenu({ product, currentBasePrice, currentSto
       } else if (platform === 'facebook') {
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
       } else if (platform === 'copy') {
-        await navigator.clipboard.writeText(`${title}\n${url}`);
-        alert('Link copied to clipboard!');
+        await linkCopy.copy(`${title}\n${url}`, 'Link copied to clipboard!');
       } else if (navigator.share) {
         // Use Web Share API if available (mobile devices)
         await navigator.share({ title, text, url });
@@ -92,7 +93,12 @@ export default function ProductShareMenu({ product, currentBasePrice, currentSto
               onClick={() => handleShare('copy')}
               className="w-full text-left px-4 py-2 hover:bg-surface-hover rounded-control text-body-sm flex items-center"
             >
-              <span className="mr-2">📋</span> Copy Link
+              {linkCopy.copied ? (
+                <Check className="w-4 h-4 mr-2 text-success" />
+              ) : (
+                <Copy className="w-4 h-4 mr-2" />
+              )}
+              {linkCopy.copied ? 'Copied!' : 'Copy Link'}
             </button>
           </div>
         </div>

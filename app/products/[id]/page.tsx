@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { ChevronLeft } from 'lucide-react';
 import { useCart } from '@/components/CartProvider';
 import { useWishlist } from '@/components/WishlistProvider';
@@ -55,12 +56,12 @@ export default function ProductDetailPage() {
     if (!product) return;
 
     if (!selectedSize || !selectedColor) {
-      alert('Please select both size and color before adding to cart');
+      toast.error('Please select both size and color before adding to cart');
       return;
     }
 
     if (currentStock < quantity) {
-      alert(`Only ${currentStock} items available in stock`);
+      toast.error(`Only ${currentStock} items available in stock`);
       return;
     }
 

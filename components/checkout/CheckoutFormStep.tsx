@@ -3,6 +3,7 @@
 
 import { CartItem } from '@/types/order';
 import type { ShippingZone } from '@/types/shipping';
+import { Spinner } from '@/components/ui';
 import StateDeliveryForm from './StateDeliveryForm';
 import CustomerInformation from './CustomerInformation';
 import OrderSummary from './OrderSummary';
@@ -23,6 +24,7 @@ interface CheckoutFormStepProps {
   formData: any;
   setFormData: (formData: any) => void;
   onSubmit: (e: React.FormEvent) => void;
+  isSubmitting: boolean;
   items: CartItem[];
   subtotal: number;
   tax: number;
@@ -47,6 +49,7 @@ export default function CheckoutFormStep({
   formData,
   setFormData,
   onSubmit,
+  isSubmitting,
   items,
   subtotal,
   tax,
@@ -87,9 +90,11 @@ export default function CheckoutFormStep({
           {/* Submit Button - Desktop */}
           <button
             type="submit"
-            className="hidden md:block w-full bg-primary text-primary-foreground py-3 md:py-4 rounded-control font-semibold text-body-md md:text-body-lg hover:bg-primary-hover transition-all duration-300 shadow-elevation-3 hover:shadow-elevation-4"
+            disabled={isSubmitting}
+            className="hidden md:flex w-full items-center justify-center gap-2 bg-primary text-primary-foreground py-3 md:py-4 rounded-control font-semibold text-body-md md:text-body-lg hover:bg-primary-hover transition-all duration-300 shadow-elevation-3 hover:shadow-elevation-4 disabled:opacity-60 disabled:pointer-events-none"
           >
-            Proceed to Payment
+            {isSubmitting && <Spinner size="sm" />}
+            {isSubmitting ? 'Checking availability…' : 'Proceed to Payment'}
           </button>
         </form>
       </div>
@@ -118,9 +123,11 @@ export default function CheckoutFormStep({
           <button
             type="submit"
             form="checkout-form"
-            className="w-full bg-primary text-primary-foreground py-3 sm:py-4 rounded-control font-semibold text-body-md sm:text-body-lg hover:bg-primary-hover"
+            disabled={isSubmitting}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 sm:py-4 rounded-control font-semibold text-body-md sm:text-body-lg hover:bg-primary-hover disabled:opacity-60 disabled:pointer-events-none"
           >
-            Proceed to Payment
+            {isSubmitting && <Spinner size="sm" />}
+            {isSubmitting ? 'Checking availability…' : 'Proceed to Payment'}
           </button>
         </div>
 

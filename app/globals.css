@@ -415,6 +415,39 @@ img, video, canvas {
   animation: fadeIn var(--duration-slow) ease-out;
 }
 
+/* Ticker item rising up from below, as if pushing the previous item out of view. */
+@keyframes tickerPushUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tickerPushUp {
+  animation: tickerPushUp var(--duration-slow) ease-out;
+}
+
+/* The outgoing ticker item, animating in lockstep with tickerPushUp so it
+   reads as the new item pushing this one up and out, not a plain swap. */
+@keyframes tickerPushOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+.animate-tickerPushOut {
+  animation: tickerPushOut var(--duration-slow) ease-out;
+}
+
 @keyframes modalIn {
   from {
     opacity: 0;

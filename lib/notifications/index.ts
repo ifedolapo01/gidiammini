@@ -2,6 +2,7 @@
 import { sendOrderEmail } from '@/lib/email';
 import { buildStatusEmail } from './templates/status-email';
 import { buildCustomEmail } from './templates/custom-email';
+import { buildOrderReceivedEmail } from './templates/order-received-email';
 import { sendStatusSMS, sendCustomSMS } from './sms';
 
 interface OrderStatusUpdateParams {
@@ -118,6 +119,33 @@ export async function sendCustomNotification(params: CustomNotificationParams) {
       success: false,
       error: 'Failed to send notifications'
     };
+  }
+}
+
+interface OrderReceivedParams {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+}
+
+/** Sent right after checkout, before any admin action — gives the customer
+ * their order number and a tracking link immediately, rather than waiting
+ * until an admin confirms/updates the order. Email-only, matching how
+ * customers reach the tracker without an account. */
+export async function sendOrderReceivedEmail(params: OrderReceivedParams) {
+  const { customerEmail, ...templateParams } = params;
+
+  if (!customerEmail) {
+    return { success: false, error: 'No customer email provided' };
+  }
+
+  try {
+    const { subject, html } = buildOrderReceivedEmail(templateParams);
+    const result = await sendOrderEmail(customerEmail, subject, html);
+    return { success: result.success };
+  } catch (error) {
+    console.error('Order-received email error:', error);
+    return { success: false, error: 'Failed to send email' };
   }
 }
 

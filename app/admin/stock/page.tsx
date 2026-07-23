@@ -31,6 +31,7 @@ export default function StockManagementPage() {
     startEditing,
     saveChanges,
     cancelEditing,
+    isSaving,
   } = useStockEditing(loadStock);
 
   if (loading) {
@@ -73,9 +74,9 @@ export default function StockManagementPage() {
           <Button
             variant="outline"
             onClick={refreshStock}
-            disabled={refreshing}
+            loading={refreshing}
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-4 h-4" />
             Refresh
           </Button>
         </div>
@@ -109,6 +110,7 @@ export default function StockManagementPage() {
           onStockChange={(value) => setStockUpdates({ ...stockUpdates, [editingProduct.id]: value })}
           onCancel={cancelEditing}
           onSave={saveChanges}
+          isSaving={isSaving}
         />
       )}
     </div>

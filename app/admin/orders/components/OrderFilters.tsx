@@ -1,17 +1,18 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/components/OrderFilters.tsx
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Truck } from 'lucide-react';
 import { Input } from '@/components/ui';
 import { getStatusIcon, formatOrderStatus, ORDER_STATUSES } from '@/lib/commerce/order-status';
 import { Order } from '@/types/order';
 
-const FILTER_OPTIONS = ['all', ...ORDER_STATUSES];
+const FILTER_OPTIONS = ['all', 'overdue', ...ORDER_STATUSES];
 
 interface OrderFiltersProps {
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
   filter: string;
   onFilterChange: (value: string) => void;
+  overdueCount: number;
 }
 
 export default function OrderFilters({
@@ -19,6 +20,7 @@ export default function OrderFilters({
   onSearchTermChange,
   filter,
   onFilterChange,
+  overdueCount,
 }: OrderFiltersProps) {
   return (
     <div className="mb-6 md:mb-8">
@@ -39,13 +41,17 @@ export default function OrderFilters({
 
         {/* Status Filter */}
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {FILTER_OPTIONS.map((status) => (
+          {FILTER_OPTIONS.filter((status) => status !== 'overdue' || overdueCount > 0).map((status) => (
             <button
               key={status}
               onClick={() => onFilterChange(status)}
               className={`px-4 py-2 rounded-control whitespace-nowrap flex items-center gap-2 transition-colors ${
                 filter === status
-                  ? 'bg-primary text-primary-foreground'
+                  ? status === 'overdue'
+                    ? 'bg-destructive text-text-inverse'
+                    : 'bg-primary text-primary-foreground'
+                  : status === 'overdue'
+                  ? 'bg-destructive-background border border-destructive-border text-destructive hover:bg-destructive-background/80'
                   : 'bg-surface border border-border text-text-primary hover:bg-surface-hover'
               }`}
             >
@@ -53,6 +59,11 @@ export default function OrderFilters({
                 <>
                   <Filter className="w-4 h-4" />
                   All Orders
+                </>
+              ) : status === 'overdue' ? (
+                <>
+                  <Truck className="w-4 h-4" />
+                  Overdue ({overdueCount})
                 </>
               ) : (
                 <>

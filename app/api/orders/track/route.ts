@@ -21,10 +21,14 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
+    // Customers often paste the order number as shown on the confirmation
+    // page/email, "#UT12345678" — strip a leading '#' so that still matches.
+    const normalizedOrderNumber = orderNumber.trim().replace(/^#/, '');
+
     const { data: order, error } = await supabase
       .from('orders')
       .select(`*, order_items (*), order_change_requests (*)`)
-      .eq('order_number', orderNumber.trim())
+      .eq('order_number', normalizedOrderNumber)
       .single();
 
     if (error || !order || !verifyOrderContact(order, contact)) {

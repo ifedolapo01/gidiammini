@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Package,
   Bell,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,8 @@ function getAlertIcon(type: string) {
   switch (type) {
     case "out-of-stock":
       return <AlertTriangle className="size-4 animate-pulse" />;
+    case "overdue-shipping":
+      return <Truck className="size-4 animate-pulse" />;
     case "low-stock":
       return <Package className="size-4" />;
     case "pending-orders":

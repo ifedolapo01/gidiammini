@@ -35,6 +35,17 @@ export function formatOrderStatus(status: string): string {
     .join(' ');
 }
 
+/** Customer-facing label for a status, where the bare admin term could be
+ * misread. By the time a customer can see an order at all, they've already
+ * uploaded their payment receipt (checkout only creates the order once a
+ * receipt is attached) — so 'pending' means "we're verifying your payment,"
+ * never "you still need to pay." Admin surfaces should keep formatOrderStatus,
+ * since for them 'pending' correctly means "needs your review." */
+export function formatCustomerStatusLabel(status: string): string {
+  if (status === 'pending') return 'Payment Verification Pending';
+  return formatOrderStatus(status);
+}
+
 export function getStatusIcon(status: OrderStatus): ReactElement | undefined {
   switch (status) {
     case 'pending': return createElement(Package, { className: 'text-warning' });

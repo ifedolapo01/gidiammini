@@ -3,12 +3,13 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useCart } from '@/components/CartProvider';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { TAX_RATE } from '@/lib/commerce/checkout';
+import { calculateTax } from '@/lib/commerce/checkout';
 
 import CheckoutSteps from '@/components/checkout/CheckoutSteps';
 import EmptyCart from '@/components/checkout/EmptyCart';
@@ -28,7 +29,7 @@ export default function CheckoutPage() {
   const [orderTotal, setOrderTotal] = useState<number>(0);
 
   const { formData, setFormData } = useCheckoutForm();
-  const { validateStock } = useCheckoutStockValidation();
+  const { validateStock, isValidating } = useCheckoutStockValidation();
   const {
     zones,
     deliveryOption, setDeliveryOption,
@@ -42,7 +43,7 @@ export default function CheckoutPage() {
   } = useCheckoutShipping();
 
   const subtotal = getTotal();
-  const tax = subtotal * TAX_RATE;
+  const tax = calculateTax(subtotal);
   const total = subtotal + tax + shippingCost;
 
   const {
@@ -71,7 +72,7 @@ export default function CheckoutPage() {
     e.preventDefault();
 
     if (deliveryOption === 'delivery' && selectedZone?.is_door_delivery && !formData.address.trim()) {
-      alert('Please enter your delivery address');
+      toast.error('Please enter your delivery address');
       return;
     }
 
@@ -111,20 +112,22 @@ export default function CheckoutPage() {
           <CheckoutSteps step={step} />
         </div>
 
-        {/* Page Title - Mobile responsive */}
-        <div className="mb-3 sm:mb-4 md:mb-6">
-          <h1 className="text-body-lg sm:text-h5 md:text-h4 lg:text-h3 font-bold mb-1 text-text-primary">
-            {step === 'form' && 'Checkout'}
-            {step === 'payment' && 'Make Payment'}
-            {step === 'confirmation' && 'Order Submitted!'}
-          </h1>
+        {/* Page Title - Mobile responsive. Omitted on the confirmation step,
+            since ConfirmationStep already has its own heading — showing both
+            reads as two different "your order was submitted" messages. */}
+        {step !== 'confirmation' && (
+          <div className="mb-3 sm:mb-4 md:mb-6">
+            <h1 className="text-body-lg sm:text-h5 md:text-h4 lg:text-h3 font-bold mb-1 text-text-primary">
+              {step === 'form' && 'Checkout'}
+              {step === 'payment' && 'Make Payment'}
+            </h1>
 
-          <p className="text-caption-md sm:text-body-sm text-text-secondary">
-            {step === 'form' && 'Complete your purchase'}
-            {step === 'payment' && 'Transfer funds and upload receipt'}
-            {step === 'confirmation' && 'Your order has been submitted'}
-          </p>
-        </div>
+            <p className="text-caption-md sm:text-body-sm text-text-secondary">
+              {step === 'form' && 'Complete your purchase'}
+              {step === 'payment' && 'Transfer funds and upload receipt'}
+            </p>
+          </div>
+        )}
 
         {/* STEP 1: Customer Details Form */}
         {step === 'form' && (
@@ -143,6 +146,7 @@ export default function CheckoutPage() {
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSubmit}
+            isSubmitting={isValidating}
             items={items}
             subtotal={subtotal}
             tax={tax}

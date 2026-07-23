@@ -3,7 +3,7 @@
 
 import { Percent, Tag, Calendar, Send, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Badge } from '@/components/ui';
+import { Badge, Spinner } from '@/components/ui';
 import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
 import { formatTarget } from '@/lib/commerce/discount-target';
 import type { Category, Product } from '@/types/product';
@@ -13,6 +13,7 @@ interface DiscountTableProps {
   isHistory: boolean;
   categories: Category[];
   products: Product[];
+  pendingId: string | null;
   onToggleStatus: (discount: Discount) => void;
   onReuse: (discount: Discount) => void;
   onEdit: (discount: Discount) => void;
@@ -25,6 +26,7 @@ export function DiscountTable({
   isHistory,
   categories,
   products,
+  pendingId,
   onToggleStatus,
   onReuse,
   onEdit,
@@ -92,9 +94,14 @@ export function DiscountTable({
                     {!isHistory ? (
                       <button
                         onClick={() => onToggleStatus(discount)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${discount.is_active ? 'bg-success' : 'bg-disabled'}`}
+                        disabled={pendingId === discount.id}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 disabled:pointer-events-none ${discount.is_active ? 'bg-success' : 'bg-disabled'}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-surface transition-transform ${discount.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                        {pendingId === discount.id ? (
+                          <Spinner size="xs" className="mx-auto text-text-inverse" />
+                        ) : (
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-surface transition-transform ${discount.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                        )}
                       </button>
                     ) : (
                       <Badge tone="destructive" variant="solid" className="font-semibold uppercase tracking-wider">
@@ -132,8 +139,13 @@ export function DiscountTable({
                         >
                           <Calendar size={16} /> Reuse
                         </button>
-                        <button onClick={() => onDelete(discount.id)} className="text-text-muted hover:text-destructive p-2 transition-colors" title="Delete Discount">
-                          <Trash2 size={18} />
+                        <button
+                          onClick={() => onDelete(discount.id)}
+                          disabled={pendingId === discount.id}
+                          className="text-text-muted hover:text-destructive p-2 transition-colors disabled:opacity-60 disabled:pointer-events-none"
+                          title="Delete Discount"
+                        >
+                          {pendingId === discount.id ? <Spinner size="xs" /> : <Trash2 size={18} />}
                         </button>
                       </div>
                     ) : (
@@ -148,8 +160,13 @@ export function DiscountTable({
                         <button onClick={() => onEdit(discount)} className="text-text-muted hover:text-primary p-2 transition-colors" title="Edit Discount">
                           <Edit2 size={18} />
                         </button>
-                        <button onClick={() => onDelete(discount.id)} className="text-text-muted hover:text-destructive p-2 transition-colors" title="Delete Discount">
-                          <Trash2 size={18} />
+                        <button
+                          onClick={() => onDelete(discount.id)}
+                          disabled={pendingId === discount.id}
+                          className="text-text-muted hover:text-destructive p-2 transition-colors disabled:opacity-60 disabled:pointer-events-none"
+                          title="Delete Discount"
+                        >
+                          {pendingId === discount.id ? <Spinner size="xs" /> : <Trash2 size={18} />}
                         </button>
                       </div>
                     )}
