@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { computeDiscountPhase } from '@/lib/commerce/discount-phase';
+import { sendBulkEmail } from '@/lib/email';
 
 export const maxDuration = 300; // Allows up to 5 minutes for sending emails
 
@@ -51,17 +51,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, message: `Deactivated ${expiredIds.length} expired discounts. No active discounts remaining.` });
     }
 
-    // 3. Setup Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
     const storeName = 'GidiamMini';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gidiammini.com';
 
@@ -90,12 +79,12 @@ export async function GET(req: NextRequest) {
           subscribers = data || [];
         }
 
-        if (subscribers.length > 0 && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
+        if (subscribers.length > 0) {
           const discountVal = discount.type === 'PERCENTAGE' ? `${discount.value}% OFF` : `₦${discount.value} OFF`;
-          
+
           let title = '';
           let bodyText = '';
-          
+
           if (computedPhase === 'STARTING_SOON') {
             title = 'Coming Soon!';
             bodyText = `Our <strong>${discount.name}</strong> starts very soon! Get ready to enjoy <strong>${discountVal}</strong> your purchases.`;
@@ -109,11 +98,8 @@ export async function GET(req: NextRequest) {
             title = 'Last Chance!';
             bodyText = `Time is running out! Grab your favorites with <strong>${discountVal}</strong> before the ${discount.name} expires tonight.`;
           }
-          
-          const mailOptions: nodemailer.SendMailOptions = {
-            from: `"${storeName}" <${process.env.SMTP_USER}>`,
-            subject: `${title} ${discount.name} - ${discountVal}!`,
-            html: `
+
+          const html = `
               <div style="font-family: Arial, sans-serif; max-w: 600px; margin: 0 auto; padding: 20px;">
                 <h1 style="color: #2563eb; text-align: center;">${storeName}</h1>
                 <h2 style="color: #1f2937;">${title}</h2>
@@ -127,12 +113,12 @@ export async function GET(req: NextRequest) {
                   You received this email because you subscribed to exclusive offers.
                 </p>
               </div>
-            `,
-            bcc: subscribers.map(s => s.email).join(',')
-          };
+            `;
 
-          await transporter.sendMail(mailOptions);
-          emailsSent += subscribers.length;
+          const result = await sendBulkEmail(subscribers.map(s => s.email), `${title} ${discount.name} - ${discountVal}!`, html);
+          if (result.success) {
+            emailsSent += subscribers.length;
+          }
           discountsProcessed++;
 
           // Update notified_phases in DB
@@ -142,7 +128,7 @@ export async function GET(req: NextRequest) {
             .update({ notified_phases: newPhases })
             .eq('id', discount.id);
         } else {
-          // If no SMTP, just mark as notified to avoid constant retries filling logs
+          // No subscribers to notify — still mark as notified so we don't recheck every run.
           const newPhases = [...notifiedPhases, computedPhase];
           await supabase
             .from('discounts')

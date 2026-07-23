@@ -22,9 +22,19 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
     
-    const secret = process.env.JWT_SECRET || 'fallback-secret';
+    const secret = process.env.JWT_SECRET;
+
+    // No fallback secret: a guessable default would let anyone forge a valid
+    // admin token. Missing config must fail closed, same as an invalid token.
+    if (!secret) {
+      console.error('JWT_SECRET environment variable is not defined');
+      const response = NextResponse.redirect(new URL('/admin/login', request.url));
+      response.cookies.delete('admin-token');
+      return response;
+    }
+
     const payload = await verifyJWT(adminToken, secret);
-    
+
     if (!payload || payload.role !== 'admin') {
       const response = NextResponse.redirect(new URL('/admin/login', request.url));
       response.cookies.delete('admin-token');

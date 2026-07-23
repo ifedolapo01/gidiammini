@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { createAdminClient } from '@/lib/supabase/admin-server';
+import { sendOrderEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       .eq('is_active', true)
       .in('scope', ['SITEWIDE', 'CATEGORY']);
 
-    if (discounts && discounts.length > 0 && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
+    if (discounts && discounts.length > 0) {
       // Find the most relevant one
       const sorted = [...discounts].sort((a, b) => {
         const aStart = a.start_date ? new Date(a.start_date).getTime() : 0;
@@ -52,17 +52,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (best) {
-        // Send Welcome Email with Discount Info
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || 'smtp.gmail.com',
-          port: Number(process.env.SMTP_PORT) || 587,
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-          },
-        });
-
         const storeName = 'GidiamMini';
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gidiammini.com';
         const discountVal = best.type === 'PERCENTAGE' ? `${best.value}% OFF` : `₦${best.value} OFF`;
@@ -82,11 +71,7 @@ export async function POST(req: NextRequest) {
           message = `Welcome to our newsletter! We currently have an active offer: <strong>${best.name}</strong>. Enjoy <strong>${discountVal}</strong> your purchases right now!`;
         }
 
-        const mailOptions: nodemailer.SendMailOptions = {
-          from: `"${storeName}" <${process.env.SMTP_USER}>`,
-          to: email,
-          subject: `${title} - ${best.name}`,
-          html: `
+        const html = `
             <div style="font-family: Arial, sans-serif; max-w: 600px; margin: 0 auto; padding: 20px;">
               <h1 style="color: #2563eb; text-align: center;">${storeName}</h1>
               <h2 style="color: #1f2937;">${title}</h2>
@@ -99,13 +84,11 @@ export async function POST(req: NextRequest) {
                 You received this email because you subscribed to exclusive offers at checkout.
               </p>
             </div>
-          `
-        };
+          `;
 
-        try {
-          await transporter.sendMail(mailOptions);
-        } catch (mailErr) {
-          console.error('Welcome email failed:', mailErr);
+        const result = await sendOrderEmail(email, `${title} - ${best.name}`, html);
+        if (!result.success) {
+          console.error('Welcome email failed:', result.error);
         }
       }
     }
