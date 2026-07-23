@@ -128,10 +128,20 @@ export function hasStockReserved(status: OrderStatus): boolean {
   return status !== 'pending' && status !== 'cancelled';
 }
 
-const TERMINAL_FOR_CHANGE_REQUESTS: OrderStatus[] = ['delivered', 'picked_up', 'cancelled'];
+// 'shipped'/'ready_for_pickup' are included alongside the fully-terminal
+// statuses: once an order has left for delivery or is staged for pickup,
+// it's too late for a customer-initiated reschedule or method switch —
+// same reasoning, different milestone per delivery option.
+const TERMINAL_FOR_CHANGE_REQUESTS: OrderStatus[] = [
+  'shipped',
+  'ready_for_pickup',
+  'picked_up',
+  'delivered',
+  'cancelled',
+];
 
 /** Whether a customer can request a reschedule/delivery-method change from
- * this status. Deliberately permissive otherwise — the seller's approve/
+ * this status. Deliberately permissive before that — the seller's approve/
  * reject decision is the real "is it too late" judgment call, not this check. */
 export function canRequestOrderChange(status: OrderStatus): boolean {
   return !TERMINAL_FOR_CHANGE_REQUESTS.includes(status);
