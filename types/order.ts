@@ -54,6 +54,14 @@ export interface OrderData {
   items: OrderItem[];
 }
 
+/** One row per status transition — see lib/commerce/order-status-transition.ts. */
+export interface OrderStatusHistoryEntry {
+  id: string;
+  order_id: string;
+  status: OrderStatus;
+  changed_at: string;
+}
+
 export interface Order {
   id: string;
   order_number: string;
@@ -77,4 +85,6 @@ export interface Order {
   order_items?: OrderItem[];
   /** Embedded via the orders -> order_change_requests relation. */
   order_change_requests?: OrderChangeRequest[];
+  /** Embedded via the orders -> order_status_history relation. */
+  order_status_history?: OrderStatusHistoryEntry[];
 }

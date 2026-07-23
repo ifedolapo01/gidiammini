@@ -5,6 +5,7 @@
 // nodemailer transporter (gmail service via EMAIL_USER/EMAIL_PASS) rather than
 // going through lib/email.ts's configurable host/port transporter, since the
 // two setups are not guaranteed equivalent (see route file for details).
+import { buildTrackOrderButton } from './track-order-cta';
 
 export interface OrderEmailItem {
   name: string;
@@ -125,6 +126,8 @@ export function buildCustomerOrderEmailHtml(body: OrderEmailData): string {
 
               <p>We've received your payment receipt and will verify it within 24 hours.</p>
               <p>You'll be contacted via phone/email for next steps.</p>
+
+              ${buildTrackOrderButton('#2563eb')}
 
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
                 <p style="color: #6b7280;">For any questions:</p>

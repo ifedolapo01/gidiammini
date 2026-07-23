@@ -6,6 +6,7 @@
 // status LIST/labels still come from lib/commerce/order-status.ts so the two
 // never drift out of sync on which statuses exist.
 import { formatOrderStatus } from '@/lib/commerce/order-status';
+import { buildTrackOrderButton } from './track-order-cta';
 
 export interface StatusEmailParams {
   orderNumber: string;
@@ -159,6 +160,8 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
         <ul>
           ${getNextSteps(newStatus, estimatedDeliveryText)}
         </ul>
+
+        ${buildTrackOrderButton(getStatusColor(newStatus))}
 
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Need Help?</strong></p>

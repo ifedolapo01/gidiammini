@@ -50,7 +50,7 @@ async function listOrders(supabase: SupabaseClient, request: NextRequest) {
 
   let query = supabase
     .from('orders')
-    .select(`*, order_items (*), order_change_requests (*)`)
+    .select(`*, order_items (*), order_change_requests (*), order_status_history (*)`)
     .order('created_at', { ascending: false });
 
   // Apply status filter if provided
@@ -157,6 +157,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Order created successfully: ${order.order_number}`);
+
+    const { error: historyError } = await supabase
+      .from('order_status_history')
+      .insert({ order_id: order.id, status: 'pending', changed_at: order.created_at });
+    if (historyError) {
+      console.error('Error recording initial status history:', historyError);
+    }
 
     try {
       await sendOrderReceivedEmail({

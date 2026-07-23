@@ -5,6 +5,7 @@
 // the order is created) — so this must never imply they haven't paid; it's
 // reassurance that verification is still in progress on our end.
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { buildTrackOrderButton } from './track-order-cta';
 
 export interface PaymentReminderEmailParams {
   orderNumber: string;
@@ -48,6 +49,8 @@ export function buildPaymentReminderEmail(params: PaymentReminderEmailParams): P
           <p>We received your payment receipt for order #${orderNumber} (<strong>${formatCurrency(totalAmount)}</strong>), and it's taking us a little longer than usual to verify it against our bank records.</p>
           <p>There's nothing further you need to do — we'll email/SMS you the moment it's confirmed. If you'd like an update in the meantime, feel free to reach out.</p>
         </div>
+
+        ${buildTrackOrderButton('#b45309')}
 
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Questions about your order?</strong></p>

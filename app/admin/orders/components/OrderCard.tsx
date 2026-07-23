@@ -33,6 +33,7 @@ export default function OrderCard({ order, shippingZones = [], onOpenDetails, on
   const [showReceipt, setShowReceipt] = useState(false);
   const hasPendingChangeRequest = order.order_change_requests?.some((r) => r.status === 'pending');
   const overdueInfo = getShippingOverdueInfo(order, shippingZones);
+  const nextStatuses = getStatusOptions(order.status, order.delivery_option);
 
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border overflow-hidden hover:shadow-elevation-2 transition-shadow">
@@ -153,9 +154,13 @@ export default function OrderCard({ order, shippingZones = [], onOpenDetails, on
             <Select
               value={order.status}
               onChange={(e) => onUpdateStatus(order.id, e.target.value as Order['status'])}
+              disabled={nextStatuses.length === 0}
               className="w-auto"
             >
-              {getStatusOptions(order.status).map((status) => (
+              <option value={order.status} disabled>
+                {nextStatuses.length > 0 ? 'Change status…' : formatOrderStatus(order.status)}
+              </option>
+              {nextStatuses.map((status) => (
                 <option key={status} value={status}>
                   {formatOrderStatus(status)}
                 </option>

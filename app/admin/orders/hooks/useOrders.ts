@@ -110,9 +110,11 @@ export function useOrders() {
         );
 
         // Let other admin views (e.g. the pending-orders alert count) know to refetch,
-        // then reconcile this list with the server's authoritative state.
+        // then reconcile this list with the server's authoritative state — awaited so
+        // server-only fields the optimistic patch above can't know (e.g. the new
+        // status-history row) are in place before the success toast implies "done".
         notifyOrdersChanged();
-        syncOrdersSilently();
+        await syncOrdersSilently();
 
         const message = result.paymentVerified
           ? 'Order confirmed! Payment marked as verified. Customer has been notified.'

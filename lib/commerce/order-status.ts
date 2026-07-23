@@ -97,13 +97,29 @@ export function getStatusColorToken(status: OrderStatus): StatusColorToken {
   }
 }
 
-/** Statuses selectable from the current one; terminal statuses (delivered/cancelled) cannot be changed. */
-export function getStatusOptions(currentStatus: OrderStatus): OrderStatus[] {
+const DELIVERY_ONLY_STATUSES: OrderStatus[] = ['shipped', 'delivered'];
+const PICKUP_ONLY_STATUSES: OrderStatus[] = ['ready_for_pickup', 'picked_up'];
+
+/** Statuses an order can be MOVED TO from its current one, for a given
+ * delivery option — forward-only: a status already passed (e.g. 'confirmed'
+ * once an order has reached 'shipped') never comes back as an option, only
+ * whatever is later in ORDER_STATUSES' canonical order. 'cancelled' sits last
+ * in that order, so it stays available from anywhere non-terminal. Terminal
+ * statuses (delivered/cancelled) have no next steps, so this returns an empty
+ * list for them. Statuses that belong to the other fulfillment method (e.g.
+ * 'shipped' for a pickup order) are never offered, so admins can't accidentally
+ * pick a mismatched status. 'pending' is never offered either — every order
+ * starts there automatically, so it's never a status an admin needs to move into. */
+export function getStatusOptions(currentStatus: OrderStatus, deliveryOption: 'pickup' | 'delivery'): OrderStatus[] {
   if (currentStatus === 'delivered' || currentStatus === 'cancelled') {
-    return [currentStatus];
+    return [];
   }
 
-  return ORDER_STATUSES;
+  const excludedByMethod = deliveryOption === 'pickup' ? DELIVERY_ONLY_STATUSES : PICKUP_ONLY_STATUSES;
+  const relevantStatuses = ORDER_STATUSES.filter((status) => status !== 'pending' && !excludedByMethod.includes(status));
+  const currentIndex = relevantStatuses.indexOf(currentStatus);
+
+  return relevantStatuses.filter((status, index) => index !== currentIndex && (currentIndex === -1 || index > currentIndex));
 }
 
 /** True once an order has ever moved past 'pending' (stock is decremented the

@@ -2,7 +2,8 @@
 'use client';
 
 import { Clock, Truck, ArrowRight } from 'lucide-react';
-import { getDeliveryLabel } from '@/lib/commerce/checkout';
+import { getDeliveryLabel, findShippingZone } from '@/lib/commerce/checkout';
+import { formatZoneEta } from '@/lib/commerce/shipping-eta';
 import type { ShippingZone } from '@/types/shipping';
 
 interface EstimatedTimelineProps {
@@ -15,6 +16,9 @@ interface EstimatedTimelineProps {
 
 export default function EstimatedTimeline({ deliveryOption, selectedState, selectedLga, selectedPlace, zones }: EstimatedTimelineProps) {
   const arrangementLabel = getDeliveryLabel(deliveryOption, zones, selectedState, 'arrangementLower', { lga: selectedLga, place: selectedPlace });
+  const zone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
+  const isPickup = deliveryOption === 'pickup' && zone?.pickup_available;
+  const arrangementDuration = isPickup ? "We'll notify you" : zone ? formatZoneEta(zone) : 'Varies by location';
 
   return (
     <div className="bg-background-secondary rounded-surface p-4 md:p-6 mb-6 md:mb-8">
@@ -24,7 +28,7 @@ export default function EstimatedTimeline({ deliveryOption, selectedState, selec
         <div className="flex items-center shrink-0">
           <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-text-muted" />
         </div>
-        <TimelineStep icon={<Truck className="w-5 h-5 md:w-6 md:h-6" />} label={arrangementLabel} duration="1-2 days after" />
+        <TimelineStep icon={<Truck className="w-5 h-5 md:w-6 md:h-6" />} label={arrangementLabel} duration={arrangementDuration} />
       </div>
     </div>
   );

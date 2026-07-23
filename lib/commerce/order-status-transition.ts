@@ -91,6 +91,14 @@ export async function applyOrderStatusTransition(
     return { success: false, error: `Database error: ${updateError.message}`, status: 500 };
   }
 
+  // Best-effort: a missed history row never blocks the actual status change.
+  const { error: historyError } = await supabase
+    .from('order_status_history')
+    .insert({ order_id: orderId, status: newStatus, changed_at: updateData.updated_at });
+  if (historyError) {
+    console.error('Error recording status history:', historyError);
+  }
+
   if (sendNotification) {
     try {
       const estimatedDeliveryText = newStatus === 'confirmed'
