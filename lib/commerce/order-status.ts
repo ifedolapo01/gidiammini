@@ -122,10 +122,21 @@ export function getStatusOptions(currentStatus: OrderStatus, deliveryOption: 'pi
   return relevantStatuses.filter((status, index) => index !== currentIndex && (currentIndex === -1 || index > currentIndex));
 }
 
-/** True once an order has ever moved past 'pending' (stock is decremented the
- * first time this becomes true, and restored if such an order is cancelled). */
+/** Whether an order in this status should be holding inventory.
+ *
+ * 'pending' counts: stock is claimed atomically at order creation (see
+ * lib/commerce/create-order.ts), not when an admin first moves the order off
+ * 'pending'. Previously the two were the same moment, and the hours or days in
+ * between were a window in which the same unit could be sold repeatedly.
+ *
+ * 'cancelled' is the only status that releases stock, which is what makes this
+ * the inverse test used by applyOrderStatusTransition.
+ *
+ * This answers "should stock be held in status X", NOT "is stock currently
+ * held" — that is recorded explicitly on orders.stock_reserved, because a
+ * physical fact about inventory must not be inferred from a workflow state. */
 export function hasStockReserved(status: OrderStatus): boolean {
-  return status !== 'pending' && status !== 'cancelled';
+  return status !== 'cancelled';
 }
 
 // 'shipped'/'ready_for_pickup' are included alongside the fully-terminal

@@ -1,10 +1,19 @@
-// app/actions/upload.ts - UPDATE FOR MOBILE
+// app/actions/upload.ts - product image upload for the admin product form.
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { isAdminRequest } from '@/lib/api/require-admin';
+import { magicBytesMatch } from '@/lib/commerce/receipt-file';
 
 export async function uploadProductImage(formData: FormData) {
   try {
+    // A Server Action is a POST endpoint reachable by anyone who can load the
+    // page it's imported into. Without this check, the service-role key below
+    // let any visitor write arbitrary files into the project's storage.
+    if (!(await isAdminRequest())) {
+      return { error: 'Not authorised. Please log in again.' };
+    }
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -36,8 +45,15 @@ export async function uploadProductImage(formData: FormData) {
       return { error: `Invalid file type: ${file.type}. Use JPEG, PNG, or WebP.` };
     }
 
-    const fileName = `mobile_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${file.type.split('/')[1]}`;
     const fileBuffer = await file.arrayBuffer();
+
+    // The declared type is just a header value, so corroborate it against the
+    // file's magic bytes before trusting it.
+    if (!magicBytesMatch(new Uint8Array(fileBuffer), file.type)) {
+      return { error: `That file doesn't look like a real ${file.type.replace('image/', '').toUpperCase()} image.` };
+    }
+
+    const fileName = `mobile_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${file.type.split('/')[1]}`;
 
     // Upload with timeout for mobile networks
     const uploadPromise = supabaseAdmin.storage

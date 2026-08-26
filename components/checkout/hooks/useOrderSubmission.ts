@@ -1,12 +1,15 @@
 /** STOREFRONT layer — checkout receipt upload + order/newsletter submission. */
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
-import { CartItem, OrderData } from '@/types/order';
+import { CartItem } from '@/types/order';
+import { formatCurrency } from '@/lib/commerce/pricing';
 import { CheckoutFormData } from './useCheckoutForm';
 
 interface UseOrderSubmissionParams {
   orderNumber: string;
+  /** The total the customer was shown and asked to transfer. Sent for the
+   * server to verify against its own pricing — never used as the order's
+   * amount, which the server computes itself. */
   total: number;
   items: CartItem[];
   formData: CheckoutFormData;
@@ -14,11 +17,13 @@ interface UseOrderSubmissionParams {
   selectedState: string;
   selectedLga: string;
   selectedPlace: string;
-  shippingZoneId?: string | null;
   /** Called after the order is created successfully (clears cart, advances step). */
   onSuccess: () => void;
 }
 
+// NOTE: no shippingZoneId is passed any more. The zone is resolved server-side
+// from state/LGA/place by priceOrder(), so the fee stored on the order can't
+// come from a zone the client picked.
 export function useOrderSubmission({
   orderNumber,
   total,
@@ -28,25 +33,35 @@ export function useOrderSubmission({
   selectedState,
   selectedLga,
   selectedPlace,
-  shippingZoneId,
   onSuccess,
 }: UseOrderSubmissionParams) {
+  /** Data URL, used only for the on-screen thumbnail. */
   const [uploadedReceipt, setUploadedReceipt] = useState<string | null>(null);
+  /** The actual file, which is what gets uploaded. */
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedReceipt(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    setReceiptFile(file);
+
+    // Preview only. The file itself is posted as multipart form data — reading
+    // it into a base64 data URL just to upload it would inflate the payload by
+    // a third for no benefit.
+    const reader = new FileReader();
+    reader.onloadend = () => setUploadedReceipt(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const clearReceipt = (value: string | null) => {
+    setUploadedReceipt(value);
+    if (value === null) setReceiptFile(null);
   };
 
   const handleSendReceipt = async () => {
-    if (!uploadedReceipt) {
+    if (!receiptFile) {
       toast.error('Please upload your payment receipt first.');
       return;
     }
@@ -54,70 +69,74 @@ export function useOrderSubmission({
     setIsProcessing(true);
 
     try {
-      // Upload receipt to Supabase Storage
-      const supabase = createClient();
-      const fileName = `${orderNumber}-${Date.now()}.jpg`;
+      // Upload through the server, which validates the file's type, size and
+      // magic bytes and stores it on a random path in a private bucket. The
+      // browser never touches storage directly and never learns a URL.
+      const receiptForm = new FormData();
+      receiptForm.append('receipt', receiptFile);
 
-      // Convert base64 to blob
-      const base64Response = await fetch(uploadedReceipt);
-      const blob = await base64Response.blob();
+      const uploadResponse = await fetch('/api/checkout/receipt', { method: 'POST', body: receiptForm });
+      const uploadResult = await uploadResponse.json().catch(() => null);
 
-      const { error: uploadError } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, blob);
+      if (!uploadResponse.ok || !uploadResult?.success) {
+        throw new Error(uploadResult?.error || 'We could not upload your receipt. Please try again.');
+      }
 
-      if (uploadError) throw uploadError;
+      const receiptPath: string = uploadResult.path;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(fileName);
-
-      // Create order in database
-      const orderData: OrderData = {
+      // Describes only *what* is being bought and *where* it's going. Every
+      // amount on the resulting order is computed server-side from the
+      // catalogue — see lib/commerce/price-order.ts. `expected_total` is the
+      // figure the customer was shown, sent purely so the server can refuse
+      // the order if its own pricing disagrees.
+      const orderPayload = {
         order_number: orderNumber,
-        customer_name: `${formData.firstName} ${formData.lastName}`,
+        customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
         customer_email: formData.email,
         customer_phone: formData.phone,
-        total_amount: total,
+        expected_total: total,
         delivery_option: deliveryOption,
         selected_state: selectedState,
         selected_lga: selectedLga || null,
         selected_place: selectedPlace || null,
-        shipping_zone_id: shippingZoneId ?? null,
         delivery_address: deliveryOption === 'delivery' ? formData.address : undefined,
         city: formData.city,
         note: formData.note,
-        receipt_url: publicUrl,
+        receipt_path: receiptPath,
         items: items.map((item: CartItem) => ({
           product_id: item.productId,
-          product_name: item.name,
-          price: item.price,
-          quantity: item.quantity,
           size: item.size || null,
           color: item.color || null,
+          quantity: item.quantity,
         }))
       };
 
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(orderPayload),
       });
 
-      // Check if response is OK
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      const result = await response.json().catch(() => null);
+
+      // The server priced this order differently from what the customer was
+      // shown. They have already transferred the old amount, so this needs a
+      // person: tell them the real total and point them at support rather than
+      // quietly recording a different figure.
+      if (response.status === 409 && result?.code === 'price_mismatch') {
+        const correctedTotal = result.quote?.total;
+        toast.error(
+          correctedTotal
+            ? `The total for this order is now ${formatCurrency(correctedTotal)}, not ${formatCurrency(total)}. Please contact us before paying so we can sort this out.`
+            : result.error,
+          { duration: 12000 }
+        );
+        return;
       }
 
-      // Parse the response
-      let result;
-      try {
-        result = await response.json();
-      } catch (jsonError) {
-        console.error('JSON parse error:', jsonError);
-        throw new Error('Invalid response from server');
+      if (!response.ok || !result) {
+        console.error('Order API error:', response.status, result);
+        throw new Error(result?.error || `API Error: ${response.status} ${response.statusText}`);
       }
 
       if (result.success) {
@@ -144,7 +163,9 @@ export function useOrderSubmission({
 
     } catch (error: any) {
       console.error('Order submission error:', error);
-      toast.error('Failed to submit order. Please try again or contact support.');
+      // Surface the server's own message where there is one — "Only 2 left of
+      // Cotton Sleepsuit (0-3m)" is actionable in a way "failed to submit" isn't.
+      toast.error(error?.message || 'Failed to submit order. Please try again or contact support.');
     } finally {
       setIsProcessing(false);
     }
@@ -152,7 +173,7 @@ export function useOrderSubmission({
 
   return {
     uploadedReceipt,
-    setUploadedReceipt,
+    setUploadedReceipt: clearReceipt,
     isProcessing,
     handleReceiptUpload,
     handleSendReceipt,

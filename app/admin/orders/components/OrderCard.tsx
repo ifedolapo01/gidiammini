@@ -76,7 +76,7 @@ export default function OrderCard({ order, shippingZones = [], onOpenDetails, on
               <Badge tone={order.delivery_option === 'pickup' ? 'info' : 'neutral'}>
                 {order.delivery_option === 'pickup' ? 'Pickup' : 'Delivery'} • {order.selected_state}
               </Badge>
-              {order.receipt_url && (
+              {order.receipt_path && (
                 <button
                   type="button"
                   onClick={() => setShowReceipt(true)}
@@ -177,8 +177,8 @@ export default function OrderCard({ order, shippingZones = [], onOpenDetails, on
         </div>
       </div>
 
-      {showReceipt && order.receipt_url && (
-        <ReceiptPreviewModal receiptUrl={order.receipt_url} onClose={() => setShowReceipt(false)} />
+      {showReceipt && order.receipt_path && (
+        <ReceiptPreviewModal orderId={order.id} onClose={() => setShowReceipt(false)} />
       )}
     </div>
   );

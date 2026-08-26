@@ -23,7 +23,7 @@ export default function ReceiptUpload({ uploadedReceipt, setUploadedReceipt, han
           <input
             type="file"
             id="receipt-upload"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={handleReceiptUpload}
             className="hidden"
           />
@@ -34,7 +34,7 @@ export default function ReceiptUpload({ uploadedReceipt, setUploadedReceipt, han
             Choose File
           </label>
           <p className="text-caption-md md:text-body-sm text-text-muted mt-3 md:mt-4">
-            Accepted: JPG, PNG, PDF (max 5MB)
+            Accepted: JPG, PNG or WebP (max 5MB)
           </p>
         </>
       ) : (

@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:link": "supabase link --project-ref",
+    "db:status": "supabase migration list",
+    "db:new": "supabase migration new",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --linked --schema public > types/database.ts"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
@@ -41,6 +46,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.10.43",
+    "supabase": "^2.116.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

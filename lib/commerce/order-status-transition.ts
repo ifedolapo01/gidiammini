@@ -55,23 +55,33 @@ export async function applyOrderStatusTransition(
     return { success: false, error: 'Order not found', status: 404 };
   }
 
-  // Stock is reserved the first time an order moves past 'pending', and
-  // restored if a reserved order is cancelled — regardless of which
-  // intermediate status (confirmed/rescheduled/shipped/etc.) it was in.
-  const hadStockReserved = hasStockReserved(currentOrder.status as OrderStatus);
+  // Whether stock is *currently* held comes from the order's own
+  // stock_reserved column, never inferred from its status. Orders created
+  // after the reservation migration claim stock at checkout, while pre-existing
+  // 'pending' rows never did — only an explicit flag can tell those apart, and
+  // guessing either way would double-decrement or release stock never taken.
+  const hadStockReserved = currentOrder.stock_reserved === true;
   const willHaveStockReserved = hasStockReserved(newStatus);
-
-  if (willHaveStockReserved !== hadStockReserved) {
-    const { error: stockErrorMessage } = await applyOrderStockChange(supabase, currentOrder, willHaveStockReserved && !hadStockReserved);
-    if (stockErrorMessage) {
-      return { success: false, error: stockErrorMessage, status: 400 };
-    }
-  }
 
   const updateData: any = {
     status: newStatus,
     updated_at: new Date().toISOString()
   };
+
+  if (willHaveStockReserved !== hadStockReserved) {
+    const { error: stockErrorMessage } = await applyOrderStockChange(supabase, currentOrder, willHaveStockReserved);
+    if (stockErrorMessage) {
+      return { success: false, error: stockErrorMessage, status: 400 };
+    }
+    updateData.stock_reserved = willHaveStockReserved;
+  }
+
+  // Only 'pending' orders are ever swept for an expired reservation, so once an
+  // order leaves that status the deadline is meaningless — clear it rather than
+  // leave a stale timestamp on the row.
+  if (newStatus !== 'pending' && currentOrder.reserved_until) {
+    updateData.reserved_until = null;
+  }
 
   if (paymentVerified !== undefined) {
     updateData.payment_verified = paymentVerified;

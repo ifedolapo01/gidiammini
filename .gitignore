@@ -45,8 +45,9 @@ next-env.d.ts
 # Code review results
 CODE_REVIEW.md
 
-# Database files
-*.sql
+# Local database binaries only. NEVER ignore *.sql — the schema is the most
+# important artefact in the repo and migrations must be version-controlled
+# (see supabase/migrations/README.md).
 *.sqlite
 *.sqlite3
 *.db
@@ -58,3 +59,7 @@ scripts/*.js
 scripts/*.ts
 scripts/*.py
 test-*.js
+
+# Supabase CLI local state (never the migrations themselves)
+supabase/.temp/
+supabase/.branches/

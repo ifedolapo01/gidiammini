@@ -3,12 +3,10 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { useCart } from '@/components/CartProvider';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-import { formatCurrency } from '@/lib/commerce/pricing';
 import { calculateTax } from '@/lib/commerce/checkout';
 
 import CheckoutSteps from '@/components/checkout/CheckoutSteps';
@@ -17,7 +15,7 @@ import PaymentStep from '@/components/checkout/PaymentStep';
 import ConfirmationStep from '@/components/checkout/ConfirmationStep';
 import CheckoutFormStep from '@/components/checkout/CheckoutFormStep';
 import { useCheckoutForm } from '@/components/checkout/hooks/useCheckoutForm';
-import { useCheckoutStockValidation } from '@/components/checkout/hooks/useCheckoutStockValidation';
+import { useCheckoutFormSubmit } from '@/components/checkout/hooks/useCheckoutFormSubmit';
 import { useOrderSubmission } from '@/components/checkout/hooks/useOrderSubmission';
 import { useCheckoutShipping } from '@/components/checkout/hooks/useCheckoutShipping';
 import { useMobileOrderSummaryModal } from '@/components/checkout/hooks/useMobileOrderSummaryModal';
@@ -29,7 +27,6 @@ export default function CheckoutPage() {
   const [orderTotal, setOrderTotal] = useState<number>(0);
 
   const { formData, setFormData } = useCheckoutForm();
-  const { validateStock, isValidating } = useCheckoutStockValidation();
   const {
     zones,
     deliveryOption, setDeliveryOption,
@@ -53,37 +50,36 @@ export default function CheckoutPage() {
     handleReceiptUpload,
     handleSendReceipt
   } = useOrderSubmission({
+    // From the payment step onwards this is the server-confirmed total the
+    // customer was actually asked to transfer, not the locally-derived preview.
+    total: orderTotal || total,
     orderNumber,
-    total,
     items,
     formData,
     deliveryOption,
     selectedState,
     selectedLga,
     selectedPlace,
-    shippingZoneId: selectedZone?.id,
     onSuccess: () => {
       clearCart();
       setStep('confirmation');
     }
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (deliveryOption === 'delivery' && selectedZone?.is_door_delivery && !formData.address.trim()) {
-      toast.error('Please enter your delivery address');
-      return;
-    }
-
-    const isValid = await validateStock(items);
-    if (!isValid) return;
-
-    const newOrderNumber = `UT${Date.now().toString().slice(-8)}`;
-    setOrderNumber(newOrderNumber);
-    setOrderTotal(total);
-    setStep('payment');
-  };
+  const { handleSubmit, isSubmitting } = useCheckoutFormSubmit({
+    items,
+    deliveryOption,
+    selectedState,
+    selectedLga,
+    selectedPlace,
+    selectedZone,
+    address: formData.address,
+    onReady: (confirmedTotal) => {
+      setOrderNumber(`UT${Date.now().toString().slice(-8)}`);
+      setOrderTotal(confirmedTotal);
+      setStep('payment');
+    },
+  });
 
   const { open: openMobileOrderSummary, close: closeMobileOrderSummary } = useMobileOrderSummaryModal();
 
@@ -146,7 +142,7 @@ export default function CheckoutPage() {
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSubmit}
-            isSubmitting={isValidating}
+            isSubmitting={isSubmitting}
             items={items}
             subtotal={subtotal}
             tax={tax}
@@ -157,7 +153,10 @@ export default function CheckoutPage() {
           />
         )}
 
-        {/* STEP 2: Payment Instructions */}
+        {/* STEP 2: Payment Instructions. `orderTotal` is the server-confirmed
+            total from the checkout quote — this screen shows the customer the
+            amount to transfer, so it must be the figure the server will charge,
+            never the locally-derived preview. */}
         {step === 'payment' && (
           <PaymentStep
             orderNumber={orderNumber}
@@ -166,7 +165,7 @@ export default function CheckoutPage() {
             selectedLga={selectedLga}
             selectedPlace={selectedPlace}
             zones={zones}
-            total={total}
+            total={orderTotal || total}
             uploadedReceipt={uploadedReceipt}
             setUploadedReceipt={setUploadedReceipt}
             handleReceiptUpload={handleReceiptUpload}

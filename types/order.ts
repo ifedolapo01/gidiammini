@@ -50,7 +50,8 @@ export interface OrderData {
   delivery_address?: string;
   city?: string;
   note?: string;
-  receipt_url?: string;
+  /** Object path inside the private 'receipts' bucket. Never a URL. */
+  receipt_path?: string;
   items: OrderItem[];
 }
 
@@ -78,7 +79,10 @@ export interface Order {
   payment_verified: boolean;
   created_at: string;
   updated_at: string;
-  receipt_url?: string | null;
+  /** Object path inside the private 'receipts' bucket — read it via the
+   * admin receipt endpoint, which returns a short-lived signed URL. Never
+   * render this directly as an image src. */
+  receipt_path?: string | null;
   delivery_address?: string | null;
   city?: string | null;
   note?: string | null;

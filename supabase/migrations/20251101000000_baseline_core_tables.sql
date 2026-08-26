@@ -1,0 +1,48 @@
+-- ============================================================================
+-- BASELINE — products, orders, order_items
+-- ============================================================================
+-- ⚠️  THIS FILE IS INCOMPLETE AND MUST BE FILLED FROM A PRODUCTION DUMP.
+--
+-- These three tables were created by hand in the Supabase dashboard, so no DDL
+-- for them exists anywhere in this repository. Every other migration either
+-- ALTERs them or REFERENCES them:
+--
+--   20251101000100  ALTER TABLE public.products  ADD sub_category, pricing_config
+--   20251101000200  ALTER TABLE public.products  ADD sizing_type
+--   20251101000600  ALTER TABLE public.orders    ADD shipping_zone_id
+--   20251101001000  REFERENCES public.orders(id)
+--   20251101001200  REFERENCES public.orders(id)
+--   20251101001300  ALTER TABLE public.orders    ADD payment_reminder_sent_at
+--   20251101001500  ALTER TABLE public.orders    ADD stock_reserved, reserved_until
+--   20251101001800  ALTER TABLE public.orders    ADD receipt_path
+--
+-- So until this file holds the real definitions, the migration set cannot be
+-- replayed from empty: `supabase db reset` and any fresh/staging database will
+-- fail on the first ALTER. Production is unaffected — it already has them.
+--
+-- ----------------------------------------------------------------------------
+-- HOW TO COMPLETE IT
+-- ----------------------------------------------------------------------------
+-- With the project's Postgres connection string (Supabase dashboard →
+-- Project Settings → Database → Connection string → URI):
+--
+--   pg_dump "<CONNECTION_STRING>" \
+--     --schema-only --no-owner --no-privileges --no-comments \
+--     --table=public.products --table=public.orders --table=public.order_items \
+--     > supabase/migrations/20251101000000_baseline_core_tables.sql
+--
+-- Then re-add this header above the dumped DDL, and check the result for:
+--   * the `stock`, `pricing_config` and `sizing_type` columns being present
+--     here AND added again by later migrations — delete the later duplicates
+--     or make this baseline the only place they are defined
+--   * the prevent_negative_stock trigger on products (see 20251101001600)
+--   * any columns the dump reveals that the TypeScript types don't model
+--
+-- Verify with `supabase db reset` against a local/staging database: the whole
+-- set should apply cleanly from empty.
+-- ============================================================================
+
+-- Intentionally empty. Filling this in is tracked as the completion step for
+-- "schema not in version control". Leaving a wrong hand-written guess here
+-- would be worse than leaving it blank: it would silently diverge from
+-- production and every environment built from it would be subtly incorrect.

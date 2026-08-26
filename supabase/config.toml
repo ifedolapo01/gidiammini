@@ -1,0 +1,9 @@
+# Supabase CLI configuration.
+# `project_id` is only a local label; linking to the hosted project is done with
+# `npx supabase link --project-ref <ref>` (see migrations/README.md).
+project_id = "gidiammini"
+
+[db]
+# Match the hosted Postgres major version so a local `supabase start` behaves
+# the same way. Check yours: Supabase dashboard -> Project Settings -> Database.
+major_version = 15

@@ -6,6 +6,9 @@
 // lib/supabase/orders.ts (order operations); re-exported here for backward
 // compatibility with existing imports of '@/lib/supabase/db'.
 //
+// createOrder is no longer re-exported: both copies of it called the dropped
+// stock RPCs and had no callers. Use lib/commerce/create-order.ts.
+//
 // NOTE: verifyAdmin (a stubbed email/password check against
 // ADMIN_EMAIL/ADMIN_PASSWORD env vars) previously lived in this file. It had
 // zero call sites anywhere in the repo - the real admin-auth path is
@@ -15,4 +18,4 @@ export type { Product } from '@/types/product'
 export type { Order, OrderItem } from '@/types/order'
 
 export { createProduct, updateProduct, deleteProduct } from './products'
-export { createOrder, getOrders, updateOrderStatus } from './orders'
+export { getOrders, updateOrderStatus } from './orders'

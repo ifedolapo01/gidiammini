@@ -4,6 +4,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CartItem } from '@/types/order';
 
+/** A server-priced line, as returned by /api/checkout/quote. Only the fields
+ * needed to match it back to a cart line and correct its price. */
+export interface PricedCartLine {
+  product_id: string;
+  size: string | null;
+  color: string | null;
+  price: number;
+}
+
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
@@ -12,6 +21,9 @@ interface CartContextType {
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
+  /** Adopts server-authoritative prices, so what the cart displays matches
+   * what the server will actually charge. Returns true if anything changed. */
+  syncPrices: (lines: PricedCartLine[]) => boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -80,6 +92,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   };
 
+  /** The cart's prices are only ever a display copy of what the catalogue said
+   * when an item was added; the server prices the order at checkout. When the
+   * two disagree (a discount expired, an admin changed a price), the server
+   * wins and the cart is corrected so the customer sees the real amount. */
+  const syncPrices = (lines: PricedCartLine[]) => {
+    const priceFor = new Map(
+      lines.map((line) => [`${line.product_id}|${line.size ?? ''}|${line.color ?? ''}`, line.price])
+    );
+
+    const keyOf = (item: CartItem) => `${item.productId}|${item.size ?? ''}|${item.color ?? ''}`;
+    const corrected = (item: CartItem) => priceFor.get(keyOf(item)) ?? item.price;
+
+    // Computed against the rendered items rather than inside the updater, so
+    // the caller gets a reliable answer it can act on in the same tick.
+    const changed = items.some(item => corrected(item) !== item.price);
+
+    if (changed) {
+      setItems(current => current.map(item => ({ ...item, price: corrected(item) })));
+    }
+
+    return changed;
+  };
+
   const getTotal = () => {
     return items.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
@@ -96,7 +131,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       updateQuantity,
       clearCart,
       getTotal,
-      getItemCount
+      getItemCount,
+      syncPrices
     }}>
       {children}
     </CartContext.Provider>
