@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
 import { canRequestOrderChange, canCancelOrder } from '@/lib/commerce/order-status';
+import { asOrderStatus } from '@/lib/commerce/db-narrowing';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
 import { sendOrderEmail } from '@/lib/email';
 import type { OrderChangeRequestType } from '@/types/orderChangeRequest';
@@ -77,7 +78,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isEligible = requestType === 'cancel' ? canCancelOrder(order.status) : canRequestOrderChange(order.status);
+    const orderStatus = asOrderStatus(order.status);
+    const isEligible = requestType === 'cancel' ? canCancelOrder(orderStatus) : canRequestOrderChange(orderStatus);
     if (!isEligible) {
       const error = requestType === 'cancel' ? 'This order can no longer be cancelled.' : 'This order can no longer be changed.';
       return NextResponse.json({ success: false, error }, { status: 400 });

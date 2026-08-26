@@ -22,8 +22,22 @@ ALTER TABLE public.order_status_history ENABLE ROW LEVEL SECURITY;
 -- entry at creation time, plus a second entry for the current status (if it's
 -- moved past pending) at the order's last-updated time — an approximation,
 -- since intermediate statuses before this table existed were never recorded.
+-- Guarded so re-running cannot duplicate history. Without the NOT EXISTS
+-- clauses, replaying this migration adds a second copy of every row, and the
+-- admin order timeline then shows each status change twice.
 INSERT INTO public.order_status_history (order_id, status, changed_at)
-SELECT id, 'pending', created_at FROM public.orders;
+SELECT o.id, 'pending', o.created_at
+  FROM public.orders o
+ WHERE NOT EXISTS (
+         SELECT 1 FROM public.order_status_history h
+          WHERE h.order_id = o.id AND h.status = 'pending'
+       );
 
 INSERT INTO public.order_status_history (order_id, status, changed_at)
-SELECT id, status, updated_at FROM public.orders WHERE status <> 'pending';
+SELECT o.id, o.status, o.updated_at
+  FROM public.orders o
+ WHERE o.status <> 'pending'
+   AND NOT EXISTS (
+         SELECT 1 FROM public.order_status_history h
+          WHERE h.order_id = o.id AND h.status = o.status
+       );

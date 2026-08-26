@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyAdminAuth } from '@/lib/auth';
 import { getShippingOverdueInfo } from '@/lib/commerce/shipping-overdue';
+import { narrowOrderFields, narrowShippingZones } from '@/lib/commerce/db-narrowing';
 
 export async function GET(request: NextRequest) {
   if (!(await verifyAdminAuth(request))) {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     const overdueOrders = (orders || []).flatMap((order) => {
-      const info = getShippingOverdueInfo(order, zones || []);
+      const info = getShippingOverdueInfo(narrowOrderFields(order), narrowShippingZones(zones));
       if (!info) return [];
 
       return [{

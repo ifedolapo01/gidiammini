@@ -1,3 +1,9 @@
+-- ⚠️  MUST NOT BE REPLAYED on a live database. Step 4's UPDATEs reset every
+-- zone's ETA to the original hardcoded defaults (Abuja 1-2, everywhere else
+-- 3-5) and force is_primary on Abuja — silently discarding whatever the admin
+-- has since configured in /admin/shipping. Safe in sequence on a fresh
+-- database only.
+--
 -- Shipping Zones v2: State/LGA/Places geography, a single "primary" zone flag,
 -- and a structured (min, max, unit) delivery ETA replacing the old free-text field.
 -- Run this after create-shipping-zones-table.sql has already been applied.

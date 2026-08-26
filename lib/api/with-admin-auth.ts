@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 
 type AdminRouteHandler = (
   request: NextRequest,
-  ctx: { supabase: SupabaseClient; params: any }
+  ctx: { supabase: SupabaseClient<Database>; params: any }
 ) => Promise<NextResponse>;
 
 /**

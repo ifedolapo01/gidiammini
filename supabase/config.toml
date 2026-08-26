@@ -4,6 +4,7 @@
 project_id = "gidiammini"
 
 [db]
-# Match the hosted Postgres major version so a local `supabase start` behaves
-# the same way. Check yours: Supabase dashboard -> Project Settings -> Database.
-major_version = 15
+# Matches the hosted project (confirmed via `supabase projects list`:
+# gidiammini runs postgres_engine 17), so a local `supabase start` or
+# `db reset` behaves the same way as production.
+major_version = 17

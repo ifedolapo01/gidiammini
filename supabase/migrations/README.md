@@ -19,58 +19,104 @@ mirrors, and `20251101001000_order_change_requests` has a foreign key to
 
 From here on, use real timestamps: `supabase migration new <name>`.
 
-## ⚠️ The set is not yet replayable from empty
+## Verified: the set rebuilds the database from empty
 
-`20251101000000_baseline_core_tables.sql` is **a placeholder**. The `products`,
-`orders` and `order_items` tables were created through the Supabase dashboard,
-so their DDL was never written down anywhere in this repo. Until that file holds
-a real dump:
+`20251101000000_baseline_core_tables.sql` holds the real definitions of
+`products`, `orders` and `order_items`, read out of the live database (those
+three were originally created by hand in the dashboard, which is why no file
+defined them).
 
-- ✅ Production is fine — it already has those tables.
-- ❌ `supabase db reset`, a fresh local database, and any staging environment
-  will fail on the first `ALTER TABLE public.products`.
+All 20 migrations have been replayed, in filename order, onto an empty
+PostgreSQL 17 database given nothing but the schemas hosted Supabase provides
+(`auth`, `storage`, and the anon/authenticated/service_role roles). Result:
 
-Instructions for completing it are in the file's own header.
+- all 20 applied cleanly
+- **49 columns across the three core tables — identical to production, with
+  nothing missing and nothing extra**
+- 11 tables, the `prevent_negative_stock` trigger present, `adjust_order_stock`
+  and `check_stock_trigger` present, the deleted stock functions absent
+- `anon` has no grants on `orders`, and the receipts bucket is private
+- `orders_reservation_sweep_idx` exists exactly once (created by `…001500`, not
+  duplicated in the baseline)
 
-## Adopting the CLI against the existing production database
+Two dependencies a bare PostgreSQL doesn't have, which a real Supabase database
+does:
 
-All 18 real migrations here have **already been applied to production** by hand.
-Do not run `supabase db push` before telling the CLI that — it would try to
-re-apply everything.
+- `…000500_subscribers.sql` uses `auth.role()`, so it needs the `auth` schema.
+  (That policy is dropped again by `…001700` anyway.)
+- `…001800_private_receipts.sql` reads and writes `storage.buckets` /
+  `storage.objects`.
 
-```bash
-# 1. Link the repo to the project (asks for the database password)
-npx supabase link --project-ref <your-project-ref>
+The baseline's `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"` is a no-op on
+Supabase, which pre-installs it in the `extensions` schema; on a plain
+PostgreSQL it installs into `public`. Either way the unqualified
+`uuid_generate_v4()` in the column defaults resolves.
 
-# 2. See what the CLI thinks has been applied (expect: all remote-only or none)
-npx supabase migration list
+## Never run `db push` before the ledger is in sync
 
-# 3. Mark every already-applied migration as applied, WITHOUT running it
-npx supabase migration repair --status applied 20251101000100
-npx supabase migration repair --status applied 20251101000200
-# … repeat for each version below, in order …
-npx supabase migration repair --status applied 20251101001800
+This already bit once. The repair step had not been done, so `db push` offered
+to apply all 22 migrations and replayed history against a database years past
+it. It failed at `20251101000600`, whose seed INSERT names the `delivery_eta`
+column that `000700` later drops:
 
-# 4. Confirm local and remote now agree
-npx supabase migration list
+```
+ERROR: column "delivery_eta" of relation "shipping_zones" does not exist
 ```
 
-Leave `20251101000000` (the baseline) unrepaired until it contains real DDL.
+No data was lost, but two things came close:
 
-After that, the normal loop is:
+- `000500` recreated the public-insert policy on `subscribers`. It stayed
+  inaccessible only because `001700` also does `REVOKE ALL` — with the grant
+  gone, the policy is unreachable. Defence in depth is the only reason that
+  wasn't a regression.
+- `001200`'s backfill was not idempotent and would have duplicated every
+  order's status history. It survived purely because the push died first. It is
+  now guarded with `NOT EXISTS`.
+
+**The ledger is now in sync** (all 22 applied), so `db push` is safe from here.
+It applies only genuinely-pending migrations. The adoption dance below is kept
+as a record of what was done, in case it is ever needed for another
+environment.
+
+<details>
+<summary>One-time adoption for an existing database (already done here)</summary>
 
 ```bash
-npx supabase migration new add_something   # creates a timestamped file
-# …edit it…
-npx supabase db push                       # applies only what's pending
-npm run db:types                           # regenerate TypeScript types
+npx supabase login
+npm run db:link -- <project-ref>
+npm run db:status                    # see what the remote has recorded
+
+# Mark each already-applied migration WITHOUT running it, oldest first:
+npx --yes supabase migration repair --status applied <version>
+# ...one line per version...
+
+npm run db:status                    # confirm both sides agree
+npm run db:push                      # applies only what is genuinely pending
+npm run db:types                     # regenerate types/database.ts
 ```
+
+Run `link` on its own line. Its password prompt will otherwise swallow the
+next line of a pasted block, which is how the link silently failed here.
+
+</details>
+
+## Migrations that must never be replayed out of order
+
+Marked with a warning in their own headers too:
+
+| Version | Why |
+|---|---|
+| `20251101000600` | Seeds the free-text `delivery_eta` column that `000700` drops — replaying it errors. |
+| `20251101000700` | Its UPDATEs reset every zone's ETA to the original hardcoded defaults and force `is_primary` on Abuja, discarding whatever the admin has configured since. |
+
+Both are correct in sequence on a fresh database. Being marked applied is what
+keeps them from running again.
 
 ## What is applied where
 
 | Version | What it does | Applied to production |
 |---|---|---|
-| `20251101000000` | **baseline: products, orders, order_items** | pre-existing (created by hand) — **file still empty** |
+| `20251101000000` | baseline: products, orders, order_items | pre-existing (created by hand) |
 | `20251101000100` | categories, subcategories, discounts; products.sub_category + pricing_config | yes |
 | `20251101000200` | products.sizing_type | yes |
 | `20251101000300` | discounts.notified_phases | yes |
@@ -89,21 +135,9 @@ npm run db:types                           # regenerate TypeScript types
 | `20251101001600` | drops the duplicate stock trigger, makes negative stock raise, repairs drift | yes |
 | `20251101001700` | RLS lock-down: anon loses read access to the order tables | yes |
 | `20251101001800` | receipts bucket private; orders.receipt_url → receipt_path | yes |
-
-## Verified replay order
-
-The 18 real migrations have been replayed onto an empty PostgreSQL 17 database,
-in filename order, and all 18 applied cleanly — producing exactly the schema the
-application expects (all 7 added `orders` columns, all 3 added `products`
-columns, 11 tables, and only the two stock functions that should still exist).
-
-Two dependencies a bare Postgres doesn't have, which a real Supabase database
-does:
-
-- `20251101000500_subscribers.sql` uses `auth.role()`, so it needs the `auth`
-  schema. (That policy is dropped again by `…001700` anyway.)
-- `20251101001800_private_receipts.sql` reads and writes `storage.buckets` /
-  `storage.objects`.
+| `20251101001900` | recreates the `prevent_negative_stock` trigger, which was in no migration | pre-existing (created by hand) |
+| `20251101002000` | NOT NULL on orders.status/payment_verified, products.stock/is_active | yes |
+| `20251101002100` | locks down the orphaned `public.users` table (anon could read `password_hash`) | **not yet — push this** |
 
 ## Conventions
 

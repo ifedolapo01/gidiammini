@@ -1,5 +1,6 @@
 // lib/supabase/admin-server.ts - UPDATED
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 
 // This uses the service role key - ONLY use on server
 export function createAdminClient() {
@@ -18,7 +19,7 @@ export function createAdminClient() {
   }
   
 
-  return createClient(
+  return createClient<Database>(
     supabaseUrl,
     supabaseServiceKey,
     {

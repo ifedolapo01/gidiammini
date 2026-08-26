@@ -1,4 +1,12 @@
 -- SQL Setup Script for Shipping Zones
+--
+-- ⚠️  MUST NOT BE REPLAYED against a database that has already applied
+-- 20251101000700. Step 5's seed INSERT names the free-text `delivery_eta`
+-- column, which 000700 replaces with delivery_eta_min/max/unit and then DROPs —
+-- so replaying this out of order fails with
+-- `column "delivery_eta" of relation "shipping_zones" does not exist`.
+-- Correct in sequence on a fresh database; guaranteed safe on production only
+-- once the migration is marked applied (see migrations/README.md).
 -- Run this in the Supabase SQL editor. Replaces the hardcoded state/pickup
 -- logic in lib/commerce/checkout.ts with an admin-editable table.
 

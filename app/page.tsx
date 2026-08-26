@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ProductCardProduct } from '@/types/product';
 import HeroCarousel from '@/components/HeroCarousel';
+import { asDiscount } from '@/lib/commerce/db-narrowing';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -37,7 +38,7 @@ export default async function HomePage() {
     .select('*')
     .eq('is_active', true);
 
-  const discounts = discountsData || [];
+  const discounts = (discountsData || []).map(asDiscount);
 
   return (
     <div className="bg-primary/5">

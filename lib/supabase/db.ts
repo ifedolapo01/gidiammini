@@ -9,6 +9,9 @@
 // createOrder is no longer re-exported: both copies of it called the dropped
 // stock RPCs and had no callers. Use lib/commerce/create-order.ts.
 //
+// The product CRUD helpers are gone too (lib/supabase/products.ts deleted):
+// they had no callers, and app/api/admin/products/route.ts is the real path.
+//
 // NOTE: verifyAdmin (a stubbed email/password check against
 // ADMIN_EMAIL/ADMIN_PASSWORD env vars) previously lived in this file. It had
 // zero call sites anywhere in the repo - the real admin-auth path is
@@ -17,5 +20,4 @@
 export type { Product } from '@/types/product'
 export type { Order, OrderItem } from '@/types/order'
 
-export { createProduct, updateProduct, deleteProduct } from './products'
 export { getOrders, updateOrderStatus } from './orders'

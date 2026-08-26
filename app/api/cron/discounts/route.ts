@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { computeDiscountPhase } from '@/lib/commerce/discount-phase';
+import { asNotifiedPhases } from '@/lib/commerce/db-narrowing';
 import { sendBulkEmail } from '@/lib/email';
 
 export const maxDuration = 300; // Allows up to 5 minutes for sending emails
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     // 4. Process each discount
     for (const discount of validDiscounts) {
-      const notifiedPhases: string[] = discount.notified_phases || [];
+      const notifiedPhases = asNotifiedPhases(discount.notified_phases);
 
       const computedPhase = computeDiscountPhase(discount, now);
 
