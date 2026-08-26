@@ -12,6 +12,7 @@ import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Spinner, ThemeToggle } from '@/components/ui';
 import { MarqueeAlertBar } from './components/marquee-alert-bar';
+import { useAdminSessionGuard } from './hooks/useAdminSessionGuard';
 import { adminConfig } from './config';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useAdminSessionGuard();
 
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(`${path}/`);
