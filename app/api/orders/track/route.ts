@@ -5,10 +5,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
+import { withRateLimit } from '@/lib/api/rate-limit';
+import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 
 const NOT_FOUND_MESSAGE = "We couldn't find an order matching that order number and email/phone.";
 
-export async function POST(request: NextRequest) {
+async function trackOrder(request: NextRequest) {
   try {
     const { orderNumber, contact } = await request.json();
 
@@ -44,3 +46,9 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(
+  RATE_LIMITS.orderTrack,
+  trackOrder,
+  "Too many lookups. Please wait a few minutes and try again."
+);

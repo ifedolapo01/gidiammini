@@ -350,6 +350,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          hits: number
+          key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          hits?: number
+          key: string
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          hits?: number
+          key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       shipping_zone_exceptions: {
         Row: {
           created_at: string | null
@@ -558,6 +579,20 @@ export type Database = {
         Args: { p_items: Json; p_reserve: boolean }
         Returns: Json
       }
+      check_rate_limit: {
+        Args: {
+          p_count?: boolean
+          p_key: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: Json
+      }
+      prune_rate_limits: {
+        Args: { p_older_than_hours?: number }
+        Returns: number
+      }
+      reset_rate_limit: { Args: { p_key: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

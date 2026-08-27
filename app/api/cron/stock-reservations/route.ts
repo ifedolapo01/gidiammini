@@ -44,6 +44,14 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = createAdminClient();
 
+    // Housekeeping while we're here: rate-limit rows are keyed and upserted, so
+    // the table is bounded by distinct (bucket, IP) pairs rather than by request
+    // volume — but old entries still have no reason to stay.
+    const { data: pruned } = await supabase.rpc('prune_rate_limits', { p_older_than_hours: 24 });
+    if (typeof pruned === 'number' && pruned > 0) {
+      console.log(`Pruned ${pruned} stale rate-limit rows.`);
+    }
+
     const { data: expired, error } = await supabase
       .from('orders')
       .select('id, order_number')

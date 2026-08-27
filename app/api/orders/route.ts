@@ -4,6 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { createCustomerOrder } from '@/lib/commerce/create-order';
+import { withRateLimit } from '@/lib/api/rate-limit';
+import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 
 // GET method - fetch orders (for admin dashboard)
 async function listOrders(supabase: SupabaseClient, request: NextRequest) {
@@ -51,7 +53,7 @@ export const GET = withAdminAuth((request, { supabase }) => listOrders(supabase,
  * amount from the request body is ever persisted — see
  * lib/commerce/price-order.ts.
  */
-export async function POST(request: NextRequest) {
+async function createOrder(request: NextRequest) {
   try {
     const supabase = createAdminClient();
     const result = await createCustomerOrder(supabase, await request.json());
@@ -80,6 +82,12 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(
+  RATE_LIMITS.createOrder,
+  createOrder,
+  'Too many orders from this connection. Please wait a while, or contact us if this is a mistake.'
+);
 
 // NOTE: a collection-level `PUT /api/orders` used to live here, writing
 // `status`/`payment_verified` straight onto an order row. It had no call sites

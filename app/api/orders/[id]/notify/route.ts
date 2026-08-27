@@ -1,14 +1,21 @@
-// app/api/orders/[id]/notify/route.ts - NEW FILE
+// app/api/orders/[id]/notify/route.ts - sends an ad-hoc message about one
+// order to its customer. Called only from the admin orders view.
+//
+// SECURITY: this route used to be completely unauthenticated. Anyone holding an
+// order's UUID could send arbitrary text to that customer's email and phone,
+// from the store's own address — and /api/orders/track returns the id to
+// whoever can look an order up. It is admin-only now.
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin-server';
+import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { sendCustomNotification } from '@/lib/notifications';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export async function POST(
+async function notifyOrderCustomer(
+  supabase: SupabaseClient,
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  orderId: string
 ) {
   try {
-    const { id: orderId } = await params;
     
     const body = await request.json();
     const { message, viaEmail = true, viaSMS = true } = body;
@@ -19,8 +26,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const supabase = createAdminClient();
 
     const { data: order, error: fetchError } = await supabase
       .from('orders')
@@ -66,3 +71,8 @@ export async function POST(
     );
   }
 }
+
+export const POST = withAdminAuth(async (request, { supabase, params }) => {
+  const { id } = await params;
+  return notifyOrderCustomer(supabase, request, id);
+});

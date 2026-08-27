@@ -13,6 +13,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { validateReceipt, buildReceiptPath, MAX_RECEIPT_BYTES, RECEIPTS_BUCKET } from '@/lib/commerce/receipt-file';
+import { withRateLimit } from '@/lib/api/rate-limit';
+import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 
 /** Cheap guard before the body is read, so an oversized upload is rejected
  * without buffering it. The real check still runs on the actual bytes. */
@@ -22,7 +24,7 @@ function declaredTooLarge(request: NextRequest): boolean {
   return Number.isFinite(length) && length > MAX_RECEIPT_BYTES + 1024 * 1024;
 }
 
-export async function POST(request: NextRequest) {
+async function uploadReceipt(request: NextRequest) {
   try {
     if (declaredTooLarge(request)) {
       return NextResponse.json(
@@ -74,3 +76,9 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(
+  RATE_LIMITS.receiptUpload,
+  uploadReceipt,
+  'Too many uploads. Please wait a while before trying again.'
+);

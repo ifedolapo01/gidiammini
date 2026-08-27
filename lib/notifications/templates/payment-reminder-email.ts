@@ -6,6 +6,7 @@
 // reassurance that verification is still in progress on our end.
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { buildTrackOrderButton } from './track-order-cta';
+import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 export interface PaymentReminderEmailParams {
   orderNumber: string;
@@ -21,7 +22,7 @@ export interface PaymentReminderEmailContent {
 export function buildPaymentReminderEmail(params: PaymentReminderEmailParams): PaymentReminderEmailContent {
   const { orderNumber, customerName, totalAmount } = params;
 
-  const subject = `Still verifying your payment for order #${orderNumber}`;
+  const subject = sanitizeHeader(`Still verifying your payment for order #${orderNumber}`);
 
   const html = `
     <!DOCTYPE html>
@@ -38,15 +39,15 @@ export function buildPaymentReminderEmail(params: PaymentReminderEmailParams): P
     <body>
       <div class="header">
         <h1>⏳ Still Verifying Your Payment</h1>
-        <p>Hello ${customerName},</p>
+        <p>Hello ${escapeHtml(customerName)},</p>
       </div>
       <div class="content">
         <div style="text-align: center;">
-          <h2>Order #${orderNumber}</h2>
+          <h2>Order #${escapeHtml(orderNumber)}</h2>
         </div>
 
         <div class="message-box">
-          <p>We received your payment receipt for order #${orderNumber} (<strong>${formatCurrency(totalAmount)}</strong>), and it's taking us a little longer than usual to verify it against our bank records.</p>
+          <p>We received your payment receipt for order #${escapeHtml(orderNumber)} (<strong>${formatCurrency(totalAmount)}</strong>), and it's taking us a little longer than usual to verify it against our bank records.</p>
           <p>There's nothing further you need to do — we'll email/SMS you the moment it's confirmed. If you'd like an update in the meantime, feel free to reach out.</p>
         </div>
 

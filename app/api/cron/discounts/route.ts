@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin-server';
 import { computeDiscountPhase } from '@/lib/commerce/discount-phase';
 import { asNotifiedPhases } from '@/lib/commerce/db-narrowing';
 import { sendBulkEmail } from '@/lib/email';
+import { escapeHtml, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 export const maxDuration = 300; // Allows up to 5 minutes for sending emails
 
@@ -88,16 +89,16 @@ export async function GET(req: NextRequest) {
 
           if (computedPhase === 'STARTING_SOON') {
             title = 'Coming Soon!';
-            bodyText = `Our <strong>${discount.name}</strong> starts very soon! Get ready to enjoy <strong>${discountVal}</strong> your purchases.`;
+            bodyText = `Our <strong>${escapeHtml(discount.name)}</strong> starts very soon! Get ready to enjoy <strong>${discountVal}</strong> your purchases.`;
           } else if (computedPhase === 'DAY_1') {
             title = 'Sale is Live!';
-            bodyText = `We just launched our <strong>${discount.name}</strong>. Enjoy <strong>${discountVal}</strong> your purchases while stock lasts!`;
+            bodyText = `We just launched our <strong>${escapeHtml(discount.name)}</strong>. Enjoy <strong>${discountVal}</strong> your purchases while stock lasts!`;
           } else if (computedPhase === 'MIDDLE_DAY') {
             title = 'Still Going Strong!';
-            bodyText = `Don't miss out on our active <strong>${discount.name}</strong>. We're halfway through, get <strong>${discountVal}</strong> now!`;
+            bodyText = `Don't miss out on our active <strong>${escapeHtml(discount.name)}</strong>. We're halfway through, get <strong>${discountVal}</strong> now!`;
           } else if (computedPhase === 'LAST_DAY') {
             title = 'Last Chance!';
-            bodyText = `Time is running out! Grab your favorites with <strong>${discountVal}</strong> before the ${discount.name} expires tonight.`;
+            bodyText = `Time is running out! Grab your favorites with <strong>${discountVal}</strong> before the ${escapeHtml(discount.name)} expires tonight.`;
           }
 
           const html = `
@@ -116,7 +117,7 @@ export async function GET(req: NextRequest) {
               </div>
             `;
 
-          const result = await sendBulkEmail(subscribers.map(s => s.email), `${title} ${discount.name} - ${discountVal}!`, html);
+          const result = await sendBulkEmail(subscribers.map(s => s.email), sanitizeHeader(`${title} ${discount.name} - ${discountVal}!`), html);
           if (result.success) {
             emailsSent += subscribers.length;
           }

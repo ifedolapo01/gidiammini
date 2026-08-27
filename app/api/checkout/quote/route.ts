@@ -11,8 +11,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { priceOrder, findStockShortage } from '@/lib/commerce/price-order';
+import { withRateLimit } from '@/lib/api/rate-limit';
+import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 
-export async function POST(request: NextRequest) {
+async function quoteCheckout(request: NextRequest) {
   try {
     const body = await request.json();
     const supabase = createAdminClient();
@@ -43,3 +45,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(RATE_LIMITS.checkoutQuote, quoteCheckout);

@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { sendOrderEmail } from '@/lib/email';
+import { escapeHtml, sanitizeHeader } from '@/lib/notifications/escape-html';
+import { withRateLimit } from '@/lib/api/rate-limit';
+import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 
-export async function POST(req: NextRequest) {
+/** Hidden form field. A human never sees it, so anything in it came from a bot
+ * filling every input on the page. Answered with a success response rather than
+ * an error, so a scripted submitter gets no signal that it was detected. */
+function isBotSubmission(body: Record<string, unknown>): boolean {
+  const trap = body.website ?? body.company_url;
+  return typeof trap === 'string' && trap.trim().length > 0;
+}
+
+
+async function subscribeToNewsletter(req: NextRequest) {
   try {
-    const { email, name } = await req.json();
+    const body = await req.json();
+    const { email, name } = body;
+
+    if (isBotSubmission(body)) {
+      console.warn('Newsletter honeypot triggered — discarding silently.');
+      return NextResponse.json({ success: true });
+    }
 
     if (!email || !name) {
       return NextResponse.json(
@@ -65,17 +83,17 @@ export async function POST(req: NextRequest) {
           title = 'Get Ready for Savings!';
           const dateStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const timeStr = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-          message = `Welcome to our newsletter! Get ready for our upcoming <strong>${best.name}</strong>. Enjoy <strong>${discountVal}</strong> starting on <strong>${dateStr} at ${timeStr}</strong>!`;
+          message = `Welcome to our newsletter! Get ready for our upcoming <strong>${escapeHtml(best.name)}</strong>. Enjoy <strong>${discountVal}</strong> starting on <strong>${dateStr} at ${timeStr}</strong>!`;
         } else {
           title = 'Welcome! Enjoy Your Discount';
-          message = `Welcome to our newsletter! We currently have an active offer: <strong>${best.name}</strong>. Enjoy <strong>${discountVal}</strong> your purchases right now!`;
+          message = `Welcome to our newsletter! We currently have an active offer: <strong>${escapeHtml(best.name)}</strong>. Enjoy <strong>${discountVal}</strong> your purchases right now!`;
         }
 
         const html = `
             <div style="font-family: Arial, sans-serif; max-w: 600px; margin: 0 auto; padding: 20px;">
               <h1 style="color: #2563eb; text-align: center;">${storeName}</h1>
               <h2 style="color: #1f2937;">${title}</h2>
-              <p>Hi ${name},</p>
+              <p>Hi ${escapeHtml(name)},</p>
               <p>${message}</p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${siteUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Shop Now</a>
@@ -86,7 +104,7 @@ export async function POST(req: NextRequest) {
             </div>
           `;
 
-        const result = await sendOrderEmail(email, `${title} - ${best.name}`, html);
+        const result = await sendOrderEmail(email, sanitizeHeader(`${title} - ${best.name}`), html);
         if (!result.success) {
           console.error('Welcome email failed:', result.error);
         }
@@ -102,3 +120,9 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(
+  RATE_LIMITS.subscribe,
+  subscribeToNewsletter,
+  'Too many signup attempts. Please try again later.'
+);

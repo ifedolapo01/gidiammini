@@ -11,6 +11,8 @@ export default function ContactForm() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
+  /** Honeypot — must stay empty for a real submission. */
+  const [website, setWebsite] = useState('');
   const { submitContactForm, submitting, error, submitted } = useContactForm();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,12 +22,14 @@ export default function ContactForm() {
       email: email.trim(),
       phone: phone.trim() || undefined,
       message: message.trim(),
+      website,
     });
     if (ok) {
       setName('');
       setEmail('');
       setPhone('');
       setMessage('');
+      setWebsite('');
     }
   };
 
@@ -43,6 +47,21 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-surface p-4 md:p-6 space-y-4">
+      {/* Honeypot. Hidden from sight AND from assistive tech, and taken out of
+          the tab order, so no real person can reach it — anything submitted in
+          it came from a bot filling every input on the page. See
+          isBotSubmission in app/api/contact/route.ts. */}
+      <input
+        type="text"
+        name="website"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="absolute h-0 w-0 overflow-hidden opacity-0"
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-body-sm font-medium text-text-primary mb-1.5">Name</label>

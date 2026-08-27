@@ -6,6 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --reporter=verbose",
     "db:link": "npx --yes supabase link --project-ref",
     "db:status": "npx --yes supabase migration list",
     "db:new": "npx --yes supabase migration new",
@@ -48,6 +51,7 @@
     "baseline-browser-mapping": "^2.10.43",
     "supabase": "^2.116.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

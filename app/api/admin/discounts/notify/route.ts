@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { sendBulkEmail } from '@/lib/email';
+import { escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 export const maxDuration = 300;
 
@@ -49,7 +50,7 @@ async function notifySubscribers(supabase: SupabaseClient, req: NextRequest) {
           <h1 style="color: #2563eb; text-align: center;">${storeName}</h1>
           <h2 style="color: #1f2937; text-align: center;">${discount.name} - ${discountVal}</h2>
           <p>Hi there,</p>
-          <p>${customMessage}</p>
+          <p>${escapeHtmlWithBreaks(customMessage)}</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${siteUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Shop Now</a>
           </div>
@@ -59,7 +60,7 @@ async function notifySubscribers(supabase: SupabaseClient, req: NextRequest) {
         </div>
       `;
 
-  const result = await sendBulkEmail(subscribers.map((s: any) => s.email), customSubject, html);
+  const result = await sendBulkEmail(subscribers.map((s: any) => s.email), sanitizeHeader(customSubject), html);
 
   if (!result.success) {
     return NextResponse.json({ success: false, error: result.error || 'Failed to send email.' }, { status: 500 });

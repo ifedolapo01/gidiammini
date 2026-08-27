@@ -7,6 +7,7 @@
 // never drift out of sync on which statuses exist.
 import { formatOrderStatus } from '@/lib/commerce/order-status';
 import { buildTrackOrderButton } from './track-order-cta';
+import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 export interface StatusEmailParams {
   orderNumber: string;
@@ -65,7 +66,7 @@ export function getNextSteps(status: string, estimatedDeliveryText?: string): st
       return `
         <li>We'll prepare your order</li>
         <li>You'll receive another update as it progresses</li>
-        <li>${estimatedDeliveryText || "We'll share your estimated timeline shortly"}</li>
+        <li>${escapeHtml(estimatedDeliveryText) || "We'll share your estimated timeline shortly"}</li>
       `;
     case 'rescheduled':
       return `
@@ -115,8 +116,8 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
   const statusLabel = formatOrderStatus(newStatus);
   const message = STATUS_MESSAGES[newStatus] || `Your order status has been updated to: ${statusLabel}`;
   const subject = STATUS_MESSAGES[newStatus]
-    ? `${getStatusIcon(newStatus)} Order ${statusLabel} - #${orderNumber}`
-    : `Order Status Update - #${orderNumber}`;
+    ? sanitizeHeader(`${getStatusIcon(newStatus)} Order ${statusLabel} - #${orderNumber}`)
+    : sanitizeHeader(`Order Status Update - #${orderNumber}`);
 
   const html = `
     <!DOCTYPE html>
@@ -134,14 +135,14 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
     <body>
       <div class="header">
         <h1>${getStatusIcon(newStatus)} Order Status Update</h1>
-        <p>Hello ${customerName},</p>
+        <p>Hello ${escapeHtml(customerName)},</p>
       </div>
       <div class="content">
         <div style="text-align: center;">
           <div class="status-badge">
             ${statusLabel}
           </div>
-          <h2>Order #${orderNumber}</h2>
+          <h2>Order #${escapeHtml(orderNumber)}</h2>
         </div>
 
         <div class="message-box">
@@ -151,7 +152,7 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
           ${customMessage ? `
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
               <h4>📝 Additional Message:</h4>
-              <p>${customMessage}</p>
+              <p>${escapeHtmlWithBreaks(customMessage)}</p>
             </div>
           ` : ''}
         </div>

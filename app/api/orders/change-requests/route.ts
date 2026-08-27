@@ -9,6 +9,9 @@ import { canRequestOrderChange, canCancelOrder } from '@/lib/commerce/order-stat
 import { asOrderStatus } from '@/lib/commerce/db-narrowing';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
 import { sendOrderEmail } from '@/lib/email';
+import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
+import { withRateLimit } from '@/lib/api/rate-limit';
+import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 import type { OrderChangeRequestType } from '@/types/orderChangeRequest';
 
 const REQUEST_TYPES: OrderChangeRequestType[] = ['reschedule', 'delivery_method_change', 'cancel'];
@@ -32,22 +35,25 @@ function validateDetails(requestType: OrderChangeRequestType, details: any): str
 }
 
 async function notifyOwner(order: any, requestType: OrderChangeRequestType, details: any, customerNote?: string) {
+  // details.preferredDate is customer-supplied free text; newDeliveryOption is
+  // validated against a fixed pair but escaped anyway so the rule is uniform.
   const summary = requestType === 'reschedule'
-    ? `reschedule to ${details.preferredDate}`
+    ? `reschedule to ${escapeHtml(details.preferredDate)}`
     : requestType === 'cancel'
     ? 'cancel their order'
-    : `switch to ${details.newDeliveryOption}`;
+    : `switch to ${escapeHtml(details.newDeliveryOption)}`;
 
   await sendOrderEmail(
     process.env.STORE_OWNER_EMAIL || 'ifedolapoajayi0@gmail.com',
-    `Order change request: #${order.order_number}`,
-    `<p>${order.customer_name} (${order.customer_email || order.customer_phone}) requested a ${summary} for order #${order.order_number}.</p>` +
-      (customerNote ? `<p>Note: ${customerNote}</p>` : '') +
+    sanitizeHeader(`Order change request: #${order.order_number}`),
+    `<p>${escapeHtml(order.customer_name)} (${escapeHtml(order.customer_email || order.customer_phone)}) ` +
+      `requested a ${summary} for order #${escapeHtml(order.order_number)}.</p>` +
+      (customerNote ? `<p>Note: ${escapeHtmlWithBreaks(customerNote)}</p>` : '') +
       `<p>Review it in the admin dashboard.</p>`
   );
 }
 
-export async function POST(request: NextRequest) {
+async function submitChangeRequest(request: NextRequest) {
   try {
     const { orderNumber, contact, requestType, details, customerNote } = await request.json();
 
@@ -140,3 +146,9 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(
+  RATE_LIMITS.changeRequest,
+  submitChangeRequest,
+  'Too many requests. Please wait before submitting another.'
+);

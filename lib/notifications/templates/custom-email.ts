@@ -1,6 +1,7 @@
 // lib/notifications/templates/custom-email.ts
 // HTML builder for ad-hoc "message about your order" emails sent by admins.
 import { buildTrackOrderButton } from './track-order-cta';
+import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 export interface CustomEmailParams {
   orderNumber: string;
@@ -31,16 +32,16 @@ export function buildCustomEmail(params: CustomEmailParams): CustomEmailContent 
     <body>
       <div class="header">
         <h1>📨 Message About Your Order</h1>
-        <p>Hello ${customerName},</p>
+        <p>Hello ${escapeHtml(customerName)},</p>
       </div>
       <div class="content">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h2>Order #${orderNumber}</h2>
+          <h2>Order #${escapeHtml(orderNumber)}</h2>
           <p>You have a new message from our team:</p>
         </div>
 
         <div class="message-box">
-          <p style="font-style: italic; color: #4b5563;">"${message}"</p>
+          <p style="font-style: italic; color: #4b5563;">"${escapeHtmlWithBreaks(message)}"</p>
         </div>
 
         ${buildTrackOrderButton('#4F46E5')}
@@ -63,5 +64,5 @@ export function buildCustomEmail(params: CustomEmailParams): CustomEmailContent 
     </html>
   `;
 
-  return { subject: `Message About Your Order #${orderNumber}`, html };
+  return { subject: sanitizeHeader(`Message About Your Order #${orderNumber}`), html };
 }

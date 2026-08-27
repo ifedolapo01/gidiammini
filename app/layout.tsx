@@ -1,6 +1,6 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -10,7 +10,31 @@ import { Analytics } from "@vercel/analytics/next";
 import StorefrontDiscountManager from '@/components/StorefrontDiscountManager';
 import { Toaster } from '@/components/ui';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+/**
+ * Inter, self-hosted.
+ *
+ * Previously `Inter` from `next/font/google`, which downloads the font from
+ * Google at BUILD time — so every deploy needed Google Fonts to be reachable,
+ * and the build failed outright when it wasn't (twice in one afternoon here).
+ * A font is not a reason for a deploy to fail.
+ *
+ * The file is the latin subset of Inter v20, variable weight 100-900, taken
+ * straight from Google's own CDN — the exact same bytes next/font was fetching,
+ * now committed. One 48KB file covers every weight because Inter is a variable
+ * font. Add app/fonts/inter-latin-ext-variable.woff2 and a second src entry if
+ * the store ever needs the extended latin range.
+ */
+const inter = localFont({
+  src: './fonts/inter-latin-variable.woff2',
+  variable: '--font-inter',
+  weight: '100 900',
+  style: 'normal',
+  display: 'swap',
+  // Metric-adjusted local fallback, so text laid out before the font loads
+  // doesn't visibly reflow when it arrives.
+  adjustFontFallback: 'Arial',
+  fallback: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+});
 
 export const metadata: Metadata = {
   title: 'GidiamMini | Baby, Kids & Maternity Store',

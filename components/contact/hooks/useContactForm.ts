@@ -8,6 +8,9 @@ interface ContactFormParams {
   email: string;
   phone?: string;
   message: string;
+  /** Honeypot value. Sent through so the server can discard bot submissions;
+   * a real person can never populate it. */
+  website?: string;
 }
 
 export function useContactForm() {
