@@ -28,6 +28,9 @@ export const RESERVATION_HOURS = Number(process.env.STOCK_RESERVATION_HOURS) || 
 
 export interface OrderRowFields {
   order_number: string;
+  /** Unique per checkout attempt. The partial unique index on this column is
+   * what makes a concurrent duplicate impossible rather than merely unlikely. */
+  idempotency_key: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
@@ -38,7 +41,10 @@ export interface OrderRowFields {
 }
 
 export type PersistOrderResult =
-  | { ok: true; order: { id: string; order_number: string } }
+  /** `joinedExisting` marks the concurrent-duplicate path: this call did not
+   * create the order, it lost the race and is returning the winner's. Callers
+   * report it as a replay so three racing requests don't log three creations. */
+  | { ok: true; order: { id: string; order_number: string }; joinedExisting?: boolean }
   | { ok: false; error: string; status: number };
 
 export async function persistOrderWithReservedStock(
@@ -90,6 +96,31 @@ export async function persistOrderWithReservedStock(
     .single();
 
   if (orderError) {
+    // 23505 = unique violation. On idempotency_key it means a concurrent
+    // request for this same checkout attempt won the race — the customer
+    // double-clicked, or retried while the first call was still in flight.
+    // Their order exists, so return it, and give back the stock this call
+    // claimed a moment ago (the winning call claimed its own).
+    if (orderError.code === '23505') {
+      const { data: winner } = await supabase
+        .from('orders')
+        .select('id, order_number')
+        .eq('idempotency_key', fields.idempotency_key)
+        .maybeSingle();
+
+      await releaseClaim('a concurrent request for the same checkout attempt won');
+
+      if (winner) {
+        console.log(`Concurrent duplicate for ${winner.order_number} — returning the winning order.`);
+        return { ok: true, order: winner, joinedExisting: true };
+      }
+
+      // A unique violation on something other than idempotency_key (an order
+      // number collision, which the sequence should make impossible).
+      console.error('Unique violation creating order, but no matching order found:', orderError.message);
+      return { ok: false, status: 409, error: 'That order already exists. Please refresh and check your order status.' };
+    }
+
     console.error('Error creating order:', orderError);
     await releaseClaim('the order insert failed');
     return { ok: false, status: 500, error: 'We could not save your order. Please try again.' };

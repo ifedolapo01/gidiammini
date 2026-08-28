@@ -5,9 +5,14 @@
  * other order mutations in this folder (applyOrderStatusTransition,
  * applyOrderShippingTransition) so the API route stays a thin adapter.
  *
- * The one rule this file exists to enforce: every amount persisted comes from
- * priceOrder() reading the live catalogue. The caller's own figures are only
- * ever compared, never stored.
+ * Two rules this file exists to enforce:
+ *
+ *   1. Every amount persisted comes from priceOrder() reading the live
+ *      catalogue. The caller's own figures are only ever compared, never stored.
+ *   2. Creating an order is idempotent. The checkout flow uploads a receipt and
+ *      then inserts, so a response lost after a successful insert used to leave
+ *      the customer retrying into a second order against one payment — with
+ *      stock claimed twice. A replay now returns the order that already exists.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { priceOrder, findStockShortage } from './price-order';
@@ -15,6 +20,7 @@ import type { PricedOrder } from './price-order.types';
 import { sendOrderReceivedEmail } from '@/lib/notifications';
 import { INITIAL_ORDER_STATUS } from './order-status';
 import { persistOrderWithReservedStock } from './persist-order';
+import { reserveOrderNumber, isValidIdempotencyKey } from './order-number';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,7 +31,9 @@ function trimmed(value: unknown): string {
 /** Everything the checkout is allowed to submit. Anything not named here
  * cannot reach the database, whatever else the request body contains. */
 export interface CreateOrderSubmission {
-  order_number?: unknown;
+  /** One value per checkout attempt, minted by the browser. The order number is
+   * derived from it server-side; the client never chooses either. */
+  idempotency_key?: unknown;
   customer_name?: unknown;
   customer_email?: unknown;
   customer_phone?: unknown;
@@ -43,21 +51,62 @@ export interface CreateOrderSubmission {
 }
 
 export type CreateOrderResult =
-  | { ok: true; order: { id: string; order_number: string } }
+  | { ok: true; order: { id: string; order_number: string }; replayed?: boolean }
   | { ok: false; error: string; status: number; code?: 'price_mismatch'; quote?: PricedOrder };
+
+/** The order this checkout attempt already created, if any. */
+async function findOrderByIdempotencyKey(
+  supabase: SupabaseClient,
+  idempotencyKey: string
+): Promise<{ id: string; order_number: string } | null> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, order_number')
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+
+  if (error) {
+    // Don't block a genuine order because the lookup hiccuped; the unique index
+    // on idempotency_key is the real guarantee, and persistOrderWithReservedStock
+    // handles the conflict.
+    console.error('Idempotency lookup failed:', error.message);
+    return null;
+  }
+
+  return data ?? null;
+}
 
 export async function createCustomerOrder(
   supabase: SupabaseClient,
   submission: CreateOrderSubmission
 ): Promise<CreateOrderResult> {
-  const orderNumber = trimmed(submission.order_number);
   const customerName = trimmed(submission.customer_name);
   const customerEmail = trimmed(submission.customer_email).toLowerCase();
   const customerPhone = trimmed(submission.customer_phone);
 
-  if (!orderNumber || !customerName || !customerEmail || !customerPhone) {
-    return { ok: false, status: 400, error: 'Your name, email, phone and order number are all required.' };
+  if (!isValidIdempotencyKey(submission.idempotency_key)) {
+    return { ok: false, status: 400, error: 'This checkout session is missing its reference. Please reload and try again.' };
   }
+  const idempotencyKey = submission.idempotency_key.trim().toLowerCase();
+
+  if (!customerName || !customerEmail || !customerPhone) {
+    return { ok: false, status: 400, error: 'Your name, email and phone are all required.' };
+  }
+
+  // Replay check first, before any pricing or stock work: if this checkout
+  // attempt already produced an order, hand that one back rather than doing it
+  // all again. This is the cheap path and the common one for a retry.
+  const existing = await findOrderByIdempotencyKey(supabase, idempotencyKey);
+  if (existing) {
+    console.log(`Idempotent replay for ${existing.order_number} — returning the existing order.`);
+    return { ok: true, order: existing, replayed: true };
+  }
+
+  const reserved = await reserveOrderNumber(supabase, idempotencyKey);
+  if (!reserved.ok) {
+    return { ok: false, status: reserved.status, error: reserved.error };
+  }
+  const orderNumber = reserved.orderNumber;
 
   if (!EMAIL_PATTERN.test(customerEmail)) {
     return { ok: false, status: 400, error: 'Please enter a valid email address.' };
@@ -111,6 +160,7 @@ export async function createCustomerOrder(
     supabase,
     {
       order_number: orderNumber,
+      idempotency_key: idempotencyKey,
       customer_name: customerName,
       customer_email: customerEmail,
       customer_phone: customerPhone,
@@ -127,6 +177,12 @@ export async function createCustomerOrder(
   }
 
   const { order } = persisted;
+
+  // Lost a concurrent race: the order exists but this call didn't make it, so
+  // skip the history row and the email — the winning call already did both.
+  if (persisted.joinedExisting) {
+    return { ok: true, order, replayed: true };
+  }
 
   // Best-effort from here on: the order exists, its stock is held, and the
   // customer has their number on screen — neither a missed history row nor a

@@ -65,14 +65,21 @@ async function createOrder(request: NextRequest) {
       );
     }
 
-    console.log(`✅ Order created successfully: ${result.order.order_number}`);
+    // A replay is a success, but it is not a creation — saying "created" here
+    // would make a retry look like a second order in the logs.
+    if (result.replayed) {
+      console.log(`↩ Idempotent replay: ${result.order.order_number}`);
+    } else {
+      console.log(`✅ Order created successfully: ${result.order.order_number}`);
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Order created successfully',
+      message: result.replayed ? 'Order already submitted' : 'Order created successfully',
       order_id: result.order.id,
-      order_number: result.order.order_number
-    }, { status: 201 });
+      order_number: result.order.order_number,
+      replayed: result.replayed === true,
+    }, { status: result.replayed ? 200 : 201 });
 
   } catch (error: any) {
     console.error('Error in orders POST API:', error);

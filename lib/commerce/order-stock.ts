@@ -13,9 +13,11 @@
  *    leave the earlier items already decremented. The function raises, so
  *    Postgres rolls back the whole adjustment.
  *
- * The bucket-selection rules there deliberately mirror
- * stock-adjustment.ts::adjustVariantStockByDelta, so claim and release remain
- * exact inverses and pricing_config can't drift from products.stock.
+ * Claiming and releasing are exact inverses inside that one function, so
+ * pricing_config can't drift from products.stock. The JS mirror of this
+ * arithmetic (stock-adjustment.ts) was deleted once the SQL became
+ * authoritative — two copies with nothing comparing them would have drifted
+ * apart while both looked correct.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 

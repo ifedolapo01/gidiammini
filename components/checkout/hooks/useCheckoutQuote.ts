@@ -20,6 +20,8 @@ export interface CheckoutQuote {
   tax: number;
   shipping: number;
   total: number;
+  /** Server-issued, and stable for this checkout attempt. */
+  orderNumber: string;
 }
 
 interface QuoteRequest {
@@ -28,6 +30,9 @@ interface QuoteRequest {
   selectedState: string;
   selectedLga: string;
   selectedPlace: string;
+  /** Identifies this checkout attempt, so the order number and the eventual
+   * order are both tied to it. */
+  idempotencyKey: string;
 }
 
 export function useCheckoutQuote() {
@@ -47,6 +52,7 @@ export function useCheckoutQuote() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          idempotency_key: request.idempotencyKey,
           delivery_option: request.deliveryOption,
           selected_state: request.selectedState,
           selected_lga: request.selectedLga || null,
@@ -67,7 +73,7 @@ export function useCheckoutQuote() {
         return null;
       }
 
-      const quote: CheckoutQuote = result.quote;
+      const quote: CheckoutQuote = { ...result.quote, orderNumber: result.order_number };
 
       if (syncPrices(quote.items)) {
         toast.info(`Prices have changed since you added these items. Your new total is ${formatCurrency(quote.total)}.`, {

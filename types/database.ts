@@ -175,6 +175,24 @@ export type Database = {
           },
         ]
       }
+      order_number_reservations: {
+        Row: {
+          created_at: string
+          idempotency_key: string
+          order_number: string
+        }
+        Insert: {
+          created_at?: string
+          idempotency_key: string
+          order_number: string
+        }
+        Update: {
+          created_at?: string
+          idempotency_key?: string
+          order_number?: string
+        }
+        Relationships: []
+      }
       order_status_history: {
         Row: {
           changed_at: string | null
@@ -214,6 +232,7 @@ export type Database = {
           delivery_address: string | null
           delivery_option: string
           id: string
+          idempotency_key: string | null
           note: string | null
           order_number: string
           payment_reminder_sent_at: string | null
@@ -239,6 +258,7 @@ export type Database = {
           delivery_address?: string | null
           delivery_option: string
           id?: string
+          idempotency_key?: string | null
           note?: string | null
           order_number: string
           payment_reminder_sent_at?: string | null
@@ -264,6 +284,7 @@ export type Database = {
           delivery_address?: string | null
           delivery_option?: string
           id?: string
+          idempotency_key?: string | null
           note?: string | null
           order_number?: string
           payment_reminder_sent_at?: string | null
@@ -592,7 +613,19 @@ export type Database = {
         Args: { p_older_than_hours?: number }
         Returns: number
       }
+      reserve_order_number: {
+        Args: { p_idempotency_key: string }
+        Returns: string
+      }
       reset_rate_limit: { Args: { p_key: string }; Returns: undefined }
+      set_variant_stock: {
+        Args: {
+          p_new_stock: number
+          p_product_id: string
+          p_variant_key: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

@@ -26,6 +26,18 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string>('');
   const [orderTotal, setOrderTotal] = useState<number>(0);
 
+  /**
+   * One value per checkout attempt, minted here and sent with both the quote
+   * and the order. It is what makes order creation idempotent: the flow uploads
+   * a receipt and then inserts, so a response lost after a successful insert
+   * used to leave the customer retrying into a second order against one
+   * payment. Now the retry returns the order that already exists.
+   *
+   * The lazy initialiser matters — a plain `useState(crypto.randomUUID())`
+   * would generate a fresh value on every render.
+   */
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
+
   const { formData, setFormData } = useCheckoutForm();
   const {
     zones,
@@ -54,6 +66,7 @@ export default function CheckoutPage() {
     // customer was actually asked to transfer, not the locally-derived preview.
     total: orderTotal || total,
     orderNumber,
+    idempotencyKey,
     items,
     formData,
     deliveryOption,
@@ -63,6 +76,9 @@ export default function CheckoutPage() {
     onSuccess: () => {
       clearCart();
       setStep('confirmation');
+      // A second order in the same session is a new attempt, so it needs its
+      // own key — otherwise it would replay straight back into this order.
+      setIdempotencyKey(crypto.randomUUID());
     }
   });
 
@@ -74,8 +90,11 @@ export default function CheckoutPage() {
     selectedPlace,
     selectedZone,
     address: formData.address,
-    onReady: (confirmedTotal) => {
-      setOrderNumber(`UT${Date.now().toString().slice(-8)}`);
+    idempotencyKey,
+    // Both values come from the server: the total from priceOrder(), and the
+    // order number from a Postgres sequence. Neither is invented here any more.
+    onReady: ({ total: confirmedTotal, orderNumber: issuedNumber }) => {
+      setOrderNumber(issuedNumber);
       setOrderTotal(confirmedTotal);
       setStep('payment');
     },

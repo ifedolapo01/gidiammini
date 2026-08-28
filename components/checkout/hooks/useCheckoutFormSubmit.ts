@@ -20,8 +20,11 @@ interface UseCheckoutFormSubmitParams {
   selectedPlace: string;
   selectedZone?: ShippingZone;
   address: string;
-  /** Receives the server-confirmed total for the order about to be paid. */
-  onReady: (confirmedTotal: number) => void;
+  /** Identifies this checkout attempt. */
+  idempotencyKey: string;
+  /** Receives the server-confirmed total and the server-issued order number for
+   * the order about to be paid. */
+  onReady: (confirmed: { total: number; orderNumber: string }) => void;
 }
 
 export function useCheckoutFormSubmit({
@@ -32,6 +35,7 @@ export function useCheckoutFormSubmit({
   selectedPlace,
   selectedZone,
   address,
+  idempotencyKey,
   onReady,
 }: UseCheckoutFormSubmitParams) {
   const { validateStock, isValidating } = useCheckoutStockValidation();
@@ -50,10 +54,12 @@ export function useCheckoutFormSubmit({
     // The server prices the cart itself. If anything has moved since these
     // items were added, this is where the cart is corrected and the customer
     // told — rather than after they have already transferred money.
-    const quote = await fetchQuote({ items, deliveryOption, selectedState, selectedLga, selectedPlace });
+    const quote = await fetchQuote({
+      items, deliveryOption, selectedState, selectedLga, selectedPlace, idempotencyKey,
+    });
     if (!quote) return;
 
-    onReady(quote.total);
+    onReady({ total: quote.total, orderNumber: quote.orderNumber });
   };
 
   return { handleSubmit, isSubmitting: isValidating || isQuoting };

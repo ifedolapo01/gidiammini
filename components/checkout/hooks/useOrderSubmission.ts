@@ -6,7 +6,12 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { CheckoutFormData } from './useCheckoutForm';
 
 interface UseOrderSubmissionParams {
+  /** Only used to name the uploaded receipt; the server derives the order's own
+   * number from the idempotency key. */
   orderNumber: string;
+  /** Identifies this checkout attempt. The server uses it to look up the
+   * reserved order number and to make the insert idempotent. */
+  idempotencyKey: string;
   /** The total the customer was shown and asked to transfer. Sent for the
    * server to verify against its own pricing — never used as the order's
    * amount, which the server computes itself. */
@@ -26,6 +31,7 @@ interface UseOrderSubmissionParams {
 // come from a zone the client picked.
 export function useOrderSubmission({
   orderNumber,
+  idempotencyKey,
   total,
   items,
   formData,
@@ -90,7 +96,7 @@ export function useOrderSubmission({
       // figure the customer was shown, sent purely so the server can refuse
       // the order if its own pricing disagrees.
       const orderPayload = {
-        order_number: orderNumber,
+        idempotency_key: idempotencyKey,
         customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
         customer_email: formData.email,
         customer_phone: formData.phone,
