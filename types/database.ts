@@ -599,6 +599,53 @@ export type Database = {
           },
         ]
       }
+      payment_events: {
+        Row: {
+          amount_kobo: number | null
+          event: string
+          id: string
+          order_id: string | null
+          outcome: string
+          payload: Json
+          provider: string
+          received_at: string
+          reference: string
+          transaction_id: string | null
+        }
+        Insert: {
+          amount_kobo?: number | null
+          event: string
+          id?: string
+          order_id?: string | null
+          outcome: string
+          payload: Json
+          provider?: string
+          received_at?: string
+          reference: string
+          transaction_id?: string | null
+        }
+        Update: {
+          amount_kobo?: number | null
+          event?: string
+          id?: string
+          order_id?: string | null
+          outcome?: string
+          payload?: Json
+          provider?: string
+          received_at?: string
+          reference?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_pairs: {
         Row: {
           co_purchase_count: number
