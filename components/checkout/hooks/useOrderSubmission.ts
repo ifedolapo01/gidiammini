@@ -2,9 +2,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/order';
-import { formatCurrency } from '@/lib/commerce/pricing';
 import { CheckoutFormData } from './useCheckoutForm';
 import { submitNewsletterOptIn } from './newsletter-opt-in';
+import { buildOrderPayload, reportOrderFailure } from './order-request';
 
 interface UseOrderSubmissionParams {
   /** Only used to name the uploaded receipt; the server derives the order's own
@@ -99,32 +99,21 @@ export function useOrderSubmission({
 
       const receiptPath: string = uploadResult.path;
 
-      // Describes only *what* is being bought and *where* it's going. Every
-      // amount on the resulting order is computed server-side from the
-      // catalogue — see lib/commerce/price-order.ts. `expected_total` is the
-      // figure the customer was shown, sent purely so the server can refuse
-      // the order if its own pricing disagrees.
-      const orderPayload = {
-        idempotency_key: idempotencyKey,
-        customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        expected_total: total,
-        delivery_option: deliveryOption,
-        selected_state: selectedState,
-        selected_lga: selectedLga || null,
-        selected_place: selectedPlace || null,
-        delivery_address: deliveryOption === 'delivery' ? formData.address : undefined,
-        city: formData.city,
-        note: formData.note,
-        receipt_path: receiptPath,
-        items: items.map((item: CartItem) => ({
-          product_id: item.productId,
-          size: item.size || null,
-          color: item.color || null,
-          quantity: item.quantity,
-        }))
-      };
+      // Shared with the online-payment path, which sends the same order with
+      // no receipt — see order-request.ts.
+      const orderPayload = buildOrderPayload(
+        {
+          idempotencyKey,
+          total,
+          items,
+          formData,
+          deliveryOption,
+          selectedState,
+          selectedLga,
+          selectedPlace,
+        },
+        receiptPath
+      );
 
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -134,28 +123,7 @@ export function useOrderSubmission({
 
       const result = await response.json().catch(() => null);
 
-      // The server priced this order differently from what the customer was
-      // shown. They have already transferred the old amount, so this needs a
-      // person: tell them the real total and point them at support rather than
-      // quietly recording a different figure.
-      if (response.status === 409 && result?.code === 'price_mismatch') {
-        const correctedTotal = result.quote?.total;
-        toast.error(
-          correctedTotal
-            ? `The total for this order is now ${formatCurrency(correctedTotal)}, not ${formatCurrency(total)}. Please contact us before paying so we can sort this out.`
-            : result.error,
-          { duration: 12000 }
-        );
-        return;
-      }
-
-      // A 400 means the body itself was rejected. When the server named the
-      // fields, the customer is sent back to the details step with those inputs
-      // marked, which is more use than a toast they can't act on.
-      if (response.status === 400 && onValidationError?.(result)) {
-        toast.error(result?.error || 'Please check the highlighted details and try again.');
-        return;
-      }
+      if (reportOrderFailure(response, result, { total, onValidationError })) return;
 
       if (!response.ok || !result) {
         console.error('Order API error:', response.status, result);

@@ -13,6 +13,7 @@
 import { Package } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui';
+import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatDateOnly } from '@/lib/commerce/format-date';
 import { formatCustomerStatusLabel } from '@/lib/commerce/order-status';
 import type { OrderStatus } from '@/types/order';
@@ -27,7 +28,6 @@ function toneFor(status: string): 'success' | 'destructive' | 'warning' | 'info'
   return 'info';
 }
 
-const naira = (kobo: number) => `₦${kobo.toLocaleString('en-NG')}`;
 
 interface AccountOrderListProps {
   orders: AccountOrder[];
@@ -62,7 +62,7 @@ export function AccountOrderList({ orders }: AccountOrderListProps) {
               <p className="text-caption-md text-text-secondary">
                 <time dateTime={order.created_at}>{formatDateOnly(order.created_at)}</time>
                 {' · '}
-                {naira(order.total_amount)}
+                {formatCurrency(order.total_amount)}
                 {order.delivery_option === 'pickup' ? ' · Pickup' : ''}
               </p>
             </div>

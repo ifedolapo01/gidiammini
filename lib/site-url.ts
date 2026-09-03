@@ -19,6 +19,29 @@ const FALLBACK_ORIGIN = 'https://gidiammini.com';
 /** The absolute origin, no trailing slash. */
 export const SITE_URL: string = normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL);
 
+/**
+ * Falling back in production is a misconfiguration worth shouting about.
+ *
+ * Every emailed link, every canonical URL and — since online payment — the
+ * address the payment provider returns the customer to are built from this. A
+ * deployment on a different domain with this unset sends real customers, mid
+ * payment, to whatever FALLBACK_ORIGIN points at, and the order is never
+ * confirmed. That happened once; the silence is what made it hard to spot.
+ *
+ * Server-side only, so it does not become browser console noise, and once at
+ * module load rather than per request.
+ */
+if (
+  typeof window === 'undefined' &&
+  process.env.NODE_ENV === 'production' &&
+  !(process.env.NEXT_PUBLIC_SITE_URL ?? '').trim()
+) {
+  console.warn(
+    `NEXT_PUBLIC_SITE_URL is not set — every link, email and payment callback will use ${FALLBACK_ORIGIN}. ` +
+      'Set it to the origin this deployment is served from.'
+  );
+}
+
 /** Strips trailing slashes; an unset *or empty* env var falls back. An empty
  *  string is a misconfiguration, not a request for a relative site. */
 export function normalizeOrigin(origin: string | undefined | null): string {

@@ -77,6 +77,14 @@ export interface Order {
   selected_place?: string | null;
   shipping_zone_id?: string | null;
   payment_verified: boolean;
+  /** 'transfer' — a receipt somebody inspects — or 'paystack', verified by the
+   *  provider's webhook. Defaulted in the database, so an order that predates
+   *  online payment reads as a transfer. */
+  payment_method?: 'transfer' | 'paystack';
+  /** How they paid, in the provider's words: card, bank, ussd. */
+  payment_channel?: string | null;
+  /** When the provider confirmed the money. Null for a manual transfer. */
+  paid_at?: string | null;
   created_at: string;
   updated_at: string;
   /** Object path inside the private 'receipts' bucket — read it via the

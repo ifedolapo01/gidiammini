@@ -196,6 +196,9 @@ keeps them from running again.
 | `20251101003400` | Q&A: `product_questions` (question + answer in one table) | yes |
 | `20251101003500` | size guides: `categories.size_guidance`, `products.fit_rating`/`fit_note`, `sizing_type` allows `maternity` | yes |
 | `20251101003600` | customer accounts: `customer_auth_tokens` + `customer_sessions` + `prune_customer_auth()` | **not yet — pending `db push`** |
+| `20251101003700` | `customer_wishlist` — a wishlist that follows the customer | **not yet — pending `db push`** |
+| `20251101003800` | online payments: `orders.payment_method`/`payment_reference`/`paid_at`/`payment_channel` | **not yet — pending `db push`** |
+| `20251101003900` | `payment_events` — the provider's own messages, and what was done about each | **not yet — pending `db push`** |
 
 ### Failed first push: `uuid_generate_v4()`
 
@@ -737,3 +740,82 @@ match, for the same reason the sign-in lookup refuses an ambiguous number.
 quantity to current stock, and names what could not come back. Adding lines at
 the price that was paid would put a cart on screen that disagrees with the
 checkout quote, and the customer would discover that at the total.
+
+## Wishlist across devices (`20251101003700`)
+
+The wishlist lived in localStorage, so the list built on a phone did not exist
+on the laptop it was bought from. Now that a customer can be signed in without
+a password, it can follow them — and localStorage stays the guest wishlist and
+the local cache either way.
+
+**Ids only.** The browser stores whole product snapshots so a guest's list
+survives with no server; this table stores which product, because a signed-in
+list is looked up through `product_cards()` and shows current prices.
+
+**The merge is a union, always.** Nothing on either side records *when* an
+entry was added or removed, so a last-write-wins rule would silently delete
+saved products. Union can only over-keep, which costs one unwanted row the
+customer removes in a tap. Removal is therefore explicit and immediate: once
+signed in, un-hearting deletes on the server too, or it would come back on the
+next sync.
+
+## Online payments (`20251101003800`)
+
+Bank transfer was the only way to pay: read the account details, leave for a
+banking app, screenshot the receipt, come back, upload it — then wait, which is
+where the support messages live and why this shop needed a payment-reminder
+cron. On the shop's side it is a human inspecting an image on every order.
+
+**Beside, not instead of.** Transfer is unchanged and still first-class. What
+is new is a second column — card, bank, USSD or transfer through Paystack,
+verified automatically.
+
+**Four columns and nothing else.** The status machine, stock reservation and
+notification pipeline are untouched: an online payment arrives exactly where a
+verified transfer arrives, `payment_verified` true and status `confirmed`, via
+`applyOrderStatusTransition`.
+
+**The reference is shaped `<order number>-<random>`** so a webhook can always
+recover the order — match the reference exactly, and fall back to the order
+number before the dash. Order numbers are `UT` + 8 digits and contain no dash,
+which is what makes that parse unambiguous, and it is what saves an order where
+the customer abandoned one attempt and paid on another.
+
+**No `payment_events` table.** Considered. Idempotency does not need one: the
+guard is `orders.payment_verified`, a fact that cannot drift from itself. A log
+of raw provider payloads is the obvious next step if disputes ever become a
+thing here, but adding it now would be storing evidence for a problem this shop
+does not have.
+
+**The amount is always checked**, and a mismatch is never confirmed — it is
+flagged for a person, because confirming anyway and refusing a genuine payment
+are both worse than a shopkeeper looking at it.
+
+**The payment-reminder cron now skips online orders.** Its email tells somebody
+to transfer money and upload a receipt, which is the wrong instruction for an
+order started at the provider.
+
+## Payment events (`20251101003900`)
+
+003800 shipped without this deliberately, and this adds it deliberately. What
+changed is not the reasoning about idempotency — that guard is still
+`orders.payment_verified`, a fact that cannot drift from itself — but that
+three questions turned out to have no answer without a log: settling "he says
+he paid", finding a payment whose confirmation threw after the money landed,
+and reconciling a month.
+
+**Only signature-verified events are stored.** Logging rejected attempts is the
+more obvious security choice and is the wrong one: the webhook endpoint is
+public, so it would turn an unauthenticated request into an unbounded write and
+a stranger could fill the table by looping. A bad HMAC is counted in the server
+log and dropped.
+
+**Retries collapse.** A provider resends until it gets a 200, so the partial
+unique index on (provider, transaction_id, event, outcome) keeps one row per
+distinct thing that happened rather than one per delivery.
+
+**Never pruned.** One row per payment, growing no faster than `orders` — and
+the value of a financial record is precisely that it is still there in a year.
+
+**No card data.** The payload is what Paystack sends, which carries a bin,
+last4, card type and bank, and never a PAN or CVV.

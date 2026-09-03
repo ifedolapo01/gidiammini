@@ -43,6 +43,9 @@ export interface CreateOrderSubmission {
   note?: unknown;
   receipt_path?: unknown;
   items?: unknown;
+  /** 'transfer' (the default) or 'paystack'. Set by the route, never by the
+   *  request: which endpoint was called is the only honest source for it. */
+  payment_method?: 'transfer' | 'paystack';
 }
 
 export type CreateOrderResult =
@@ -168,6 +171,7 @@ export async function createCustomerOrder(
       city: trimmed(submission.city) || null,
       note: trimmed(submission.note) || null,
       receipt_path: trimmed(submission.receipt_path) || null,
+      payment_method: submission.payment_method ?? 'transfer',
     },
     priced
   );

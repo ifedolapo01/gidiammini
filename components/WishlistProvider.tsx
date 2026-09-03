@@ -1,8 +1,9 @@
 // components/WishlistProvider.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { ProductCardProduct } from '@/types/product';
+import { useWishlistSync } from './hooks/useWishlistSync';
 
 interface WishlistContextType {
   items: ProductCardProduct[];
@@ -37,22 +38,32 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   }, [items, isLoaded]);
 
+  // Signed in, the list also lives on the account and follows the customer to
+  // their other devices. Signed out — the normal case — none of this fires and
+  // the wishlist behaves exactly as it always has.
+  const onMerged = useCallback((merged: ProductCardProduct[]) => setItems(merged), []);
+  const { mirror } = useWishlistSync({ localItems: items, ready: isLoaded, onMerged });
+
   const isInWishlist = (productId: string) => items.some(item => item.id === productId);
 
   const addToWishlist = (product: ProductCardProduct) => {
     setItems(current => (current.some(item => item.id === product.id) ? current : [...current, product]));
+    mirror('PUT', product.id);
   };
 
   const removeFromWishlist = (productId: string) => {
     setItems(current => current.filter(item => item.id !== productId));
+    // Explicit, because the merge is a union: a removal that only happened
+    // locally would come back on the next sync.
+    mirror('DELETE', productId);
   };
 
   const toggleWishlist = (product: ProductCardProduct) => {
+    const has = items.some(item => item.id === product.id);
     setItems(current =>
-      current.some(item => item.id === product.id)
-        ? current.filter(item => item.id !== product.id)
-        : [...current, product]
+      has ? current.filter(item => item.id !== product.id) : [...current, product]
     );
+    mirror(has ? 'DELETE' : 'PUT', product.id);
   };
 
   const clearWishlist = () => {

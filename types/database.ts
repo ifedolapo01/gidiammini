@@ -176,6 +176,46 @@ export type Database = {
           },
         ]
       }
+      customer_wishlist: {
+        Row: {
+          created_at: string
+          customer_id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_wishlist_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_wishlist_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_wishlist_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           blocked_reason: string | null
@@ -455,6 +495,10 @@ export type Database = {
           idempotency_key: string | null
           note: string | null
           order_number: string
+          paid_at: string | null
+          payment_channel: string | null
+          payment_method: string
+          payment_reference: string | null
           payment_reminder_sent_at: string | null
           payment_verified: boolean
           receipt_path: string | null
@@ -482,6 +526,10 @@ export type Database = {
           idempotency_key?: string | null
           note?: string | null
           order_number: string
+          paid_at?: string | null
+          payment_channel?: string | null
+          payment_method?: string
+          payment_reference?: string | null
           payment_reminder_sent_at?: string | null
           payment_verified?: boolean
           receipt_path?: string | null
@@ -509,6 +557,10 @@ export type Database = {
           idempotency_key?: string | null
           note?: string | null
           order_number?: string
+          paid_at?: string | null
+          payment_channel?: string | null
+          payment_method?: string
+          payment_reference?: string | null
           payment_reminder_sent_at?: string | null
           payment_verified?: boolean
           receipt_path?: string | null

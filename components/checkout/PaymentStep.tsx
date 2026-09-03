@@ -5,8 +5,11 @@ import { ArrowLeft, MessageCircle } from 'lucide-react';
 import { Badge, Spinner } from '@/components/ui';
 import { getDeliveryLabel } from '@/lib/commerce/checkout';
 import type { ShippingZone } from '@/types/shipping';
+import type { CheckoutPayment } from './hooks/useCheckoutPayment';
 import BankDetails from './BankDetails';
 import ReceiptUpload from './ReceiptUpload';
+import PaymentMethodChoice from './PaymentMethodChoice';
+import OnlinePaymentPanel from './OnlinePaymentPanel';
 
 interface PaymentStepProps {
   orderNumber: string;
@@ -16,12 +19,9 @@ interface PaymentStepProps {
   selectedPlace: string;
   zones: ShippingZone[];
   total: number;
-  uploadedReceipt: string | null;
-  setUploadedReceipt: (receipt: string | null) => void;
-  handleReceiptUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  isProcessing: boolean;
   setStep: (step: 'form' | 'payment' | 'confirmation') => void;
-  handleSendReceipt: () => void;
+  /** The whole payment surface: both paths, and which one is selected. */
+  payment: CheckoutPayment;
 }
 
 export default function PaymentStep({
@@ -32,13 +32,23 @@ export default function PaymentStep({
   selectedPlace,
   zones,
   total,
-  uploadedReceipt,
-  setUploadedReceipt,
-  handleReceiptUpload,
-  isProcessing,
   setStep,
-  handleSendReceipt
+  payment,
 }: PaymentStepProps) {
+  const {
+    uploadedReceipt,
+    setUploadedReceipt,
+    handleReceiptUpload,
+    handleSendReceipt,
+    isProcessing,
+    paymentMethod,
+    setPaymentMethod,
+    onlineAvailable,
+    isRedirecting,
+    handlePayOnline,
+  } = payment;
+
+  const payingOnline = onlineAvailable && paymentMethod === 'online';
 
   const bankDetails = {
     bankName: process.env.NEXT_PUBLIC_BANK_NAME || 'OPAY',
@@ -65,19 +75,31 @@ export default function PaymentStep({
           </div>
         </div>
 
-        {/* Bank Details */}
-        <BankDetails
-          bankDetails={bankDetails}
-          orderNumber={orderNumber}
-          total={total}
+        <PaymentMethodChoice
+          value={paymentMethod}
+          onChange={setPaymentMethod}
+          onlineAvailable={onlineAvailable}
         />
 
-        {/* Receipt Upload */}
-        <ReceiptUpload
-          uploadedReceipt={uploadedReceipt}
-          setUploadedReceipt={setUploadedReceipt}
-          handleReceiptUpload={handleReceiptUpload}
-        />
+        {payingOnline ? (
+          <OnlinePaymentPanel total={total} isRedirecting={isRedirecting} onPay={handlePayOnline} />
+        ) : (
+          <>
+            {/* Bank Details */}
+            <BankDetails
+              bankDetails={bankDetails}
+              orderNumber={orderNumber}
+              total={total}
+            />
+
+            {/* Receipt Upload */}
+            <ReceiptUpload
+              uploadedReceipt={uploadedReceipt}
+              setUploadedReceipt={setUploadedReceipt}
+              handleReceiptUpload={handleReceiptUpload}
+            />
+          </>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col md:flex-row gap-4">
@@ -96,6 +118,7 @@ export default function PaymentStep({
           {/* Judgment call: not using Button's `loading` prop — this button swaps to
               different inline status copy ("Sending Receipt...") while loading,
               which the primitive's built-in loading state doesn't support. */}
+          {!payingOnline && (
           <button
             onClick={handleSendReceipt}
             disabled={!uploadedReceipt || isProcessing}
@@ -113,9 +136,11 @@ export default function PaymentStep({
               </>
             )}
           </button>
+          )}
         </div>
 
-        {/* WhatsApp Note */}
+        {/* What happens next, on the transfer path. */}
+        {!payingOnline && (
         <div className="mt-6 md:mt-8 p-4 bg-success-background border border-success-border rounded-surface">
           <div className="flex items-center">
             <MessageCircle className="w-4 h-4 md:w-5 h-5 text-success mr-2" />
@@ -126,6 +151,7 @@ export default function PaymentStep({
             We'll verify your payment and contact you via email/SMS for order confirmation.
           </p>
         </div>
+        )}
       </div>
     </div>
   );

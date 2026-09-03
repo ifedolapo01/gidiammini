@@ -4,9 +4,7 @@
 
 import { useState } from 'react';
 import { useCart } from '@/components/CartProvider';
-
 import { calculateTax } from '@/lib/commerce/checkout';
-
 import CheckoutHeader, { type CheckoutStep } from '@/components/checkout/CheckoutHeader';
 import EmptyCart from '@/components/checkout/EmptyCart';
 import PaymentStep from '@/components/checkout/PaymentStep';
@@ -15,7 +13,7 @@ import CheckoutFormStep from '@/components/checkout/CheckoutFormStep';
 import { useCheckoutForm } from '@/components/checkout/hooks/useCheckoutForm';
 import { PrefilledNotice } from '@/components/checkout/PrefilledNotice';
 import { useCheckoutFormSubmit } from '@/components/checkout/hooks/useCheckoutFormSubmit';
-import { useOrderSubmission } from '@/components/checkout/hooks/useOrderSubmission';
+import { useCheckoutPayment } from '@/components/checkout/hooks/useCheckoutPayment';
 import { useCheckoutShipping } from '@/components/checkout/hooks/useCheckoutShipping';
 import { useMobileOrderSummaryModal } from '@/components/checkout/hooks/useMobileOrderSummaryModal';
 import { useCheckoutFieldErrors } from '@/components/checkout/hooks/useCheckoutFieldErrors';
@@ -56,15 +54,9 @@ export default function CheckoutPage() {
   const tax = calculateTax(subtotal);
   const total = subtotal + tax + shippingCost;
 
-  const {
-    uploadedReceipt,
-    setUploadedReceipt,
-    isProcessing,
-    handleReceiptUpload,
-    handleSendReceipt
-  } = useOrderSubmission({
+  const payment = useCheckoutPayment({
     // From the payment step onwards this is the server-confirmed total the
-    // customer was actually asked to transfer, not the locally-derived preview.
+    // customer was actually asked to pay, not the locally-derived preview.
     total: orderTotal || total,
     orderNumber,
     idempotencyKey,
@@ -74,15 +66,15 @@ export default function CheckoutPage() {
     selectedState,
     selectedLga,
     selectedPlace,
-    onSuccess: () => {
+    onOrdered: () => {
       clearCart();
       setStep('confirmation');
-      // A second order in the same session is a new attempt, so it needs its
-      // own key — otherwise it would replay straight back into this order.
+      // A second order in this session is a new attempt and needs its own key,
+      // or it would replay straight back into this order.
       setIdempotencyKey(crypto.randomUUID());
     },
-    // The rejected fields live on the details step, so go back to it rather
-    // than leaving the customer on a payment screen with nothing to fix.
+    // Rejected fields live on the details step, so go back to it rather than
+    // leaving the customer on a payment screen with nothing to fix.
     onValidationError: (body) => {
       const named = captureFieldErrors(body);
       if (named) setStep('form');
@@ -170,12 +162,8 @@ export default function CheckoutPage() {
             selectedPlace={selectedPlace}
             zones={zones}
             total={orderTotal || total}
-            uploadedReceipt={uploadedReceipt}
-            setUploadedReceipt={setUploadedReceipt}
-            handleReceiptUpload={handleReceiptUpload}
-            isProcessing={isProcessing}
             setStep={setStep}
-            handleSendReceipt={handleSendReceipt}
+            payment={payment}
           />
         )}
 

@@ -38,6 +38,9 @@ export interface OrderRowFields {
   city: string | null;
   note: string | null;
   receipt_path: string | null;
+  /** How this order is being paid for. 'transfer' means a receipt an admin
+   *  will inspect; 'paystack' means the provider verifies it. */
+  payment_method: 'transfer' | 'paystack';
   /** The buyer's durable identity. Nullable because customer bookkeeping must
    * never be able to fail an order — see lib/commerce/customer-identity.ts. */
   customer_id: string | null;

@@ -29,6 +29,12 @@ export async function GET(req: NextRequest) {
       .select('id, order_number, customer_name, customer_email, total_amount')
       .eq('status', 'pending')
       .eq('payment_verified', false)
+      // Transfer orders only. This email tells somebody to send money to an
+      // account number and upload a receipt, which is the wrong instruction
+      // for an order that was started at the payment provider — they either
+      // paid (and the webhook confirmed it) or abandoned the attempt, and
+      // neither is fixed by a receipt.
+      .eq('payment_method', 'transfer')
       .is('payment_reminder_sent_at', null)
       .lte('created_at', cutoff);
 

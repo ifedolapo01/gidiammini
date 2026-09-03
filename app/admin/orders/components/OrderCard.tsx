@@ -76,6 +76,16 @@ export default function OrderCard({ order, shippingZones = [], onOpenDetails, on
               <Badge tone={order.delivery_option === 'pickup' ? 'info' : 'neutral'}>
                 {order.delivery_option === 'pickup' ? 'Pickup' : 'Delivery'} • {order.selected_state}
               </Badge>
+              {/* How it was paid, when it was not the usual way. A shopkeeper
+                  looking for a receipt on an order that has none needs to know
+                  it was paid at the provider rather than not paid at all. */}
+              {order.payment_method === 'paystack' && (
+                <Badge tone={order.payment_verified ? 'success' : 'warning'}>
+                  {order.payment_verified
+                    ? `Paid online${order.payment_channel ? ` · ${order.payment_channel}` : ''}`
+                    : 'Online payment not completed'}
+                </Badge>
+              )}
               {order.receipt_path && (
                 <button
                   type="button"
