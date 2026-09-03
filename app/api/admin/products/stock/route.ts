@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, category, sub_category, stock, colors, sizes, price, main_image, images, pricing_config')
+      .select(`id, name, category, sub_category, stock, colors, sizes, price, main_image, images, pricing_config, product_variants(*)`)
       .eq('is_active', true)
       .order('stock', { ascending: true });
 

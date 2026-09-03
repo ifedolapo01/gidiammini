@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Button, Textarea } from '@/components/ui';
+import { Modal, Button, Textarea, FieldError, fieldErrorId } from '@/components/ui';
 import { useOrderChangeRequest } from './hooks/useOrderChangeRequest';
 
 interface CancelOrderFormProps {
@@ -14,7 +14,7 @@ interface CancelOrderFormProps {
 
 export default function CancelOrderForm({ orderNumber, contact, onClose, onSubmitted }: CancelOrderFormProps) {
   const [customerNote, setCustomerNote] = useState('');
-  const { submitChangeRequest, submitting, error } = useOrderChangeRequest();
+  const { submitChangeRequest, submitting, error, fieldErrors } = useOrderChangeRequest();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,13 +35,17 @@ export default function CancelOrderForm({ orderNumber, contact, onClose, onSubmi
           We'll review your request and confirm the cancellation shortly.
         </p>
         <div>
-          <label className="block text-body-sm font-medium text-text-primary mb-1.5">Reason (optional)</label>
+          <label htmlFor="cancel-reason" className="block text-body-sm font-medium text-text-primary mb-1.5">Reason (optional)</label>
           <Textarea
+            id="cancel-reason"
             value={customerNote}
             onChange={(e) => setCustomerNote(e.target.value)}
             rows={3}
+            invalid={!!fieldErrors.customerNote}
+            aria-describedby={fieldErrors.customerNote ? fieldErrorId('customerNote') : undefined}
             placeholder="Let us know why, if you'd like"
           />
+          <FieldError id={fieldErrorId('customerNote')}>{fieldErrors.customerNote}</FieldError>
         </div>
         {error && <p className="text-body-sm text-destructive">{error}</p>}
         <div className="flex gap-3">

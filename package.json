@@ -10,9 +10,10 @@
     "test:watch": "vitest",
     "test:ui": "vitest --reporter=verbose",
     "db:link": "npx --yes supabase link --project-ref",
-    "db:status": "npx --yes supabase migration list",
+    "db:status": "node scripts/db-status.mjs",
     "db:new": "npx --yes supabase migration new",
-    "db:push": "npx --yes supabase db push",
+    "db:push": "node scripts/db-push.mjs",
+    "db:push:direct": "npx --yes supabase db push",
     "db:types": "node scripts/gen-types.mjs"
   },
   "dependencies": {
@@ -49,6 +50,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.10.43",
+    "playwright": "^1.62.1",
     "supabase": "^2.116.0",
     "tailwindcss": "^4",
     "typescript": "^5",

@@ -4,11 +4,15 @@
 import Link from 'next/link';
 import { useWishlist } from '@/components/WishlistProvider';
 import WishlistItemCard from './components/WishlistItemCard';
+import { useWishlistCards } from './hooks/useWishlistCards';
 
 export default function WishlistPage() {
-  const { items } = useWishlist();
+  const { items: stored } = useWishlist();
+  // Saved items, refreshed against the catalogue — see useWishlistCards. The
+  // stored list still decides what is on the page and in what order.
+  const { items, discounts } = useWishlistCards(stored);
 
-  if (items.length === 0) {
+  if (stored.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center overflow-x-hidden">
         <div className="max-w-md mx-auto">
@@ -32,7 +36,7 @@ export default function WishlistPage() {
       <h1 className="text-h3 font-extrabold text-text-primary tracking-tight mb-8">Your Wishlist</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {items.map(product => (
-          <WishlistItemCard key={product.id} product={product} />
+          <WishlistItemCard key={product.id} product={product} discounts={discounts} />
         ))}
       </div>
     </div>

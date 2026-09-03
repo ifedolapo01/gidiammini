@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { notifyOrdersChanged } from '../../lib/orderEvents';
+import { describeDelivery } from '@/lib/notifications/delivery';
 
 interface UseOrderChangeRequestsParams {
   syncOrdersSilently: () => Promise<void>;
@@ -35,8 +36,9 @@ export function useOrderChangeRequests({ syncOrdersSilently, showToast }: UseOrd
       if (response.ok && result.success) {
         notifyOrdersChanged();
         await syncOrdersSilently();
+        const how = result.delivery ? describeDelivery(result.delivery) : 'No notification sent';
         showToast(
-          decision === 'approved' ? 'Request approved. Customer has been notified.' : 'Request rejected. Customer has been notified.',
+          `${decision === 'approved' ? 'Request approved' : 'Request rejected'}. ${how}.`,
           'success'
         );
       } else {

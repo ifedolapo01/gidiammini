@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { withAdminAuth, type AuditRecorder } from '@/lib/api/with-admin-auth';
+import { diffForAudit, isEmptyDiff, readForAudit, withoutTimestamps } from '@/lib/api/audit';
 
 export const maxDuration = 30;
 
@@ -15,7 +16,7 @@ async function listDiscounts(supabase: SupabaseClient) {
   return NextResponse.json({ success: true, discounts: data });
 }
 
-async function createDiscount(supabase: SupabaseClient, request: NextRequest) {
+async function createDiscount(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   const body = await request.json();
 
   if (!body.name || !body.type || !body.value || !body.scope) {
@@ -44,10 +45,12 @@ async function createDiscount(supabase: SupabaseClient, request: NextRequest) {
 
   if (error) throw error;
 
+  audit({ entityType: 'discount', entityId: data.id, action: 'create', after: data });
+
   return NextResponse.json({ success: true, discount: data, message: 'Discount created successfully' });
 }
 
-async function updateDiscount(supabase: SupabaseClient, request: NextRequest) {
+async function updateDiscount(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   const body = await request.json();
 
   if (!body.id) {
@@ -68,6 +71,8 @@ async function updateDiscount(supabase: SupabaseClient, request: NextRequest) {
     end_date: body.end_date
   };
 
+  const previous = await readForAudit(supabase, 'discounts', body.id);
+
   const { data, error } = await supabase
     .from('discounts')
     .update(updateData)
@@ -77,10 +82,22 @@ async function updateDiscount(supabase: SupabaseClient, request: NextRequest) {
 
   if (error) throw error;
 
+  const diff = withoutTimestamps(diffForAudit(previous, data));
+  if (!isEmptyDiff(diff)) {
+    audit({
+      entityType: 'discount',
+      entityId: body.id,
+      action: 'update',
+      before: diff.before,
+      after: diff.after,
+      reason: typeof body.reason === 'string' ? body.reason : null,
+    });
+  }
+
   return NextResponse.json({ success: true, discount: data, message: 'Discount updated successfully' });
 }
 
-async function deleteDiscount(supabase: SupabaseClient, request: NextRequest) {
+async function deleteDiscount(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   const body = await request.json();
 
   if (!body.id) {
@@ -90,6 +107,8 @@ async function deleteDiscount(supabase: SupabaseClient, request: NextRequest) {
     );
   }
 
+  const previous = await readForAudit(supabase, 'discounts', body.id);
+
   const { error } = await supabase
     .from('discounts')
     .delete()
@@ -97,10 +116,18 @@ async function deleteDiscount(supabase: SupabaseClient, request: NextRequest) {
 
   if (error) throw error;
 
+  audit({
+    entityType: 'discount',
+    entityId: body.id,
+    action: 'delete',
+    before: previous,
+    reason: typeof body.reason === 'string' ? body.reason : null,
+  });
+
   return NextResponse.json({ success: true, message: 'Discount deleted successfully' });
 }
 
 export const GET = withAdminAuth((_request, { supabase }) => listDiscounts(supabase));
-export const POST = withAdminAuth((request, { supabase }) => createDiscount(supabase, request));
-export const PUT = withAdminAuth((request, { supabase }) => updateDiscount(supabase, request));
-export const DELETE = withAdminAuth((request, { supabase }) => deleteDiscount(supabase, request));
+export const POST = withAdminAuth((request, { supabase, audit }) => createDiscount(supabase, request, audit));
+export const PUT = withAdminAuth((request, { supabase, audit }) => updateDiscount(supabase, request, audit));
+export const DELETE = withAdminAuth((request, { supabase, audit }) => deleteDiscount(supabase, request, audit));

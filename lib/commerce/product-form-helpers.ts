@@ -8,12 +8,17 @@ export interface VariantColor {
   name: string;
   price: number;
   stock: number;
+  /** What this unit costs the store. Optional: null means "not recorded",
+   * which is deliberately different from 0 — zero cost would report the whole
+   * sale price as profit. */
+  cost?: number | null;
 }
 
 export interface VariantSize {
   size: string;
   price: number;
   stock: number;
+  cost?: number | null;
   colors: VariantColor[];
 }
 
@@ -44,6 +49,8 @@ export interface BuildPricingConfigParams {
   singleStock: number;
   singleSize?: string;
   singleColor?: string;
+  /** Cost for a product with no variants. */
+  singleCost?: number | null;
 }
 
 export interface BuildPricingConfigResult {

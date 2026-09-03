@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { sendCustomNotification } from '@/lib/notifications';
+import { describeDelivery, anyDelivered } from '@/lib/notifications/delivery';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function notifyOrderCustomer(
@@ -50,17 +51,19 @@ async function notifyOrderCustomer(
       viaSMS
     });
 
-    if (!result.success) {
+    // "Nothing went out" is a failure the admin needs to see, not a success
+    // with an empty channel list.
+    if (!anyDelivered(result)) {
       return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 }
+        { success: false, error: describeDelivery(result), delivery: result },
+        { status: 502 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Notification sent successfully',
-      channels: result.channels
+      message: describeDelivery(result),
+      delivery: result,
     });
 
   } catch (error) {

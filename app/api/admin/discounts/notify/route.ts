@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { SITE_URL } from '@/lib/site-url';
 import { sendBulkEmail } from '@/lib/email';
 import { escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
@@ -41,7 +42,7 @@ async function notifySubscribers(supabase: SupabaseClient, req: NextRequest) {
   }
 
   const storeName = 'GidiamMini';
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gidiammini.com';
+  const siteUrl = SITE_URL;
 
   const discountVal = discount.type === 'PERCENTAGE' ? `${discount.value}% OFF` : `₦${discount.value} OFF`;
 
@@ -63,7 +64,7 @@ async function notifySubscribers(supabase: SupabaseClient, req: NextRequest) {
   const result = await sendBulkEmail(subscribers.map((s: any) => s.email), sanitizeHeader(customSubject), html);
 
   if (!result.success) {
-    return NextResponse.json({ success: false, error: result.error || 'Failed to send email.' }, { status: 500 });
+    return NextResponse.json({ success: false, error: result.detail, reason: result.reason }, { status: 500 });
   }
 
   return NextResponse.json({

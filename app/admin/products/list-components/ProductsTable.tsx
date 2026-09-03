@@ -34,7 +34,10 @@ export function ProductsTable({ products, onDelete }: ProductsTableProps) {
           </thead>
           <tbody className="divide-y divide-divider bg-surface">
             {Object.entries(groupedProducts).map(([productId, variants]) => {
-              if (variants.length === 1 && variants[0].variantKey === 'single') {
+              // One variant means one row. Previously this also checked for the
+                // 'single' key; a lone variant that records a size or colour now
+                // keys on those instead, and still needs no expansion.
+                if (variants.length === 1) {
                 return <SingleProductRow key={variants[0].id} product={variants[0]} onDelete={onDelete} />;
               }
 

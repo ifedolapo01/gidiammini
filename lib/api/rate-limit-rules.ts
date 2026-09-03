@@ -54,6 +54,83 @@ export const RATE_LIMITS = {
   subscribe: { bucket: 'subscribe', limit: 5, windowSeconds: HOUR },
 
   /**
+   * Search. Typeahead fires as the visitor types, so this has to be generous —
+   * a debounced input still sends a request every few keystrokes, and a
+   * browsing session can easily run several searches. Costs one indexed read
+   * and one small insert, so the ceiling is about stopping a scraper walking
+   * the catalogue rather than about protecting anything expensive.
+   */
+  search: { bucket: 'search', limit: 120, windowSeconds: 5 * MINUTE },
+
+  /**
+   * Product listing. Every facet change is a request, and a shopper ticking
+   * through sizes and colours generates them in bursts, so this is deliberately
+   * loose. It exists to stop a scraper paging the whole catalogue in a loop,
+   * not to ration browsing.
+   */
+  browse: { bucket: 'browse', limit: 180, windowSeconds: 5 * MINUTE },
+
+  /**
+   * "Email me when it's back". Writes an email address to a table, so it is
+   * held to roughly the newsletter's budget — a shopper might legitimately ask
+   * about several sold-out products in one visit, but not thirty.
+   */
+  stockAlert: { bucket: 'stock-alert', limit: 10, windowSeconds: HOUR },
+
+  /**
+   * Writing a review. Only an invite holder can, and the unique index allows
+   * one review per product per order — so this is not the spam gate, it is a
+   * ceiling on how fast someone with a valid link can hammer the endpoint. A
+   * three-item order legitimately produces three submits in a couple of
+   * minutes, plus a retry or two.
+   */
+  reviewSubmit: { bucket: 'review-submit', limit: 15, windowSeconds: HOUR },
+
+  /**
+   * Review photos. Writes an object to storage, like the receipt upload, and
+   * one review may carry four — so a family posting three reviews with photos
+   * is a genuine dozen uploads.
+   */
+  reviewPhoto: { bucket: 'review-photo', limit: 20, windowSeconds: HOUR },
+
+  /**
+   * Asking a product question. The only unauthenticated write here with no
+   * purchase behind it, so it is held to the contact form's budget rather than
+   * the review flow's: a shopper comparing three products might genuinely ask
+   * about each, and nothing they submit is visible until an admin answers it.
+   */
+  askQuestion: { bucket: 'ask-question', limit: 5, windowSeconds: HOUR },
+
+  /**
+   * Asking for a customer sign-in link. Sends mail, and it is the one endpoint
+   * where somebody could probe whether an address shops here — so it gets the
+   * contact form's budget. A real customer asks once, maybe twice if the first
+   * mail is slow.
+   *
+   * Deliberately NOT failClosed, despite being an auth endpoint. There is no
+   * password here to grind: the credential is a 43-character random token, so
+   * the threat is mail spam rather than guessing, and that is the same threat
+   * the contact form accepts. Failing closed would mean a limiter outage locks
+   * every customer out of their own order history — a worse outage than the one
+   * it would be protecting against.
+   */
+  signInRequest: { bucket: 'signin-request', limit: 5, windowSeconds: HOUR },
+
+  /**
+   * Redeeming a sign-in link. A separate budget because the customer has
+   * already proved control of the inbox by getting here; this only caps how
+   * fast somebody can throw guessed tokens at the endpoint, which is already
+   * hopeless against 32 bytes of entropy.
+   */
+  signInVerify: { bucket: 'signin-verify', limit: 20, windowSeconds: 15 * MINUTE },
+
+  /**
+   * Reorder. One indexed read plus a product lookup, and it only ever answers
+   * a signed-in session about its own orders.
+   */
+  reorder: { bucket: 'reorder', limit: 30, windowSeconds: HOUR },
+
+  /**
    * Admin login, per IP. Fails closed: an unthrottled password guesser against
    * a single shared credential is worse than a login page that is unavailable
    * while the database is down — and with the database down the admin cannot

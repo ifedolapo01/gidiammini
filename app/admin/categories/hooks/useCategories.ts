@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { slugify } from '@/lib/commerce/format-text';
 import type { Category } from '@/types/product';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
+import { useSubcategoryForm } from './useSubcategoryForm';
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -17,14 +18,20 @@ export function useCategories() {
   const [newCatSlug, setNewCatSlug] = useState('');
   const [isAddingCat, setIsAddingCat] = useState(false);
 
-  // New Subcategory State
-  const [selectedCategoryForSub, setSelectedCategoryForSub] = useState<string>('');
-  const [newSubName, setNewSubName] = useState('');
-  const [newSubSlug, setNewSubSlug] = useState('');
-  const [isAddingSub, setIsAddingSub] = useState(false);
-
   // Which category/subcategory row is currently being deleted
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  // Which category's size guidance is being written. Per-row, so one save does
+  // not put every category's button in a pending state.
+  const [savingGuidanceId, setSavingGuidanceId] = useState<string | null>(null);
+
+  // The subcategory form is its own hook, composed here so the page keeps one
+  // destructure. It needs only a way to refresh the list and the shared
+  // per-row deleting flag.
+  const subcategories = useSubcategoryForm({
+    refresh: () => fetchCategories(),
+    setPendingDeleteId,
+  });
 
   useEffect(() => {
     fetchCategories();
@@ -60,23 +67,6 @@ export function useCategories() {
     const name = e.target.value;
     setNewCatName(name);
     setNewCatSlug(slugify(name));
-  };
-
-  const handleSubNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.value;
-    setNewSubName(name);
-    if (selectedCategoryForSub) {
-      setNewSubSlug(`${selectedCategoryForSub}-${slugify(name)}`);
-    } else {
-      setNewSubSlug(slugify(name));
-    }
-  };
-
-  const handleParentCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCategoryForSub(e.target.value);
-    if (newSubName) {
-      setNewSubSlug(`${e.target.value}-${slugify(newSubName)}`);
-    }
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -130,59 +120,30 @@ export function useCategories() {
     }
   };
 
-  const handleAddSubcategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSubName || !newSubSlug || !selectedCategoryForSub) return;
-
-    setIsAddingSub(true);
+  /**
+   * Saves one category's size guidance. An empty string clears it — the route
+   * stores that as NULL, so the storefront shows the tables alone.
+   */
+  const handleSaveGuidance = async (id: string, guidance: string) => {
+    setSavingGuidanceId(id);
     try {
-      const res = await fetch('/api/admin/subcategories', {
-        method: 'POST',
+      const res = await fetch('/api/admin/categories', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newSubName,
-          slug: newSubSlug,
-          category_slug: selectedCategoryForSub
-        })
+        body: JSON.stringify({ id, size_guidance: guidance })
       });
       const data = await res.json();
 
       if (data.success) {
-        setNewSubName('');
-        setNewSubSlug('');
-        setSelectedCategoryForSub('');
-        fetchCategories();
+        toast.success(guidance.trim() ? 'Size guidance saved' : 'Size guidance removed');
+        fetchCategories({ silent: true });
       } else {
-        toast.error(data.error || 'Failed to create subcategory');
+        toast.error(data.error || 'Failed to save size guidance');
       }
     } catch (err) {
       toast.error('Network error');
     } finally {
-      setIsAddingSub(false);
-    }
-  };
-
-  const handleDeleteSubcategory = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this subcategory?')) return;
-
-    setPendingDeleteId(id);
-    try {
-      const res = await fetch('/api/admin/subcategories', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        fetchCategories();
-      } else {
-        toast.error(data.error || 'Failed to delete subcategory');
-      }
-    } catch (err) {
-      toast.error('Network error');
-    } finally {
-      setPendingDeleteId(null);
+      setSavingGuidanceId(null);
     }
   };
 
@@ -194,17 +155,12 @@ export function useCategories() {
     newCatSlug,
     setNewCatSlug,
     isAddingCat,
-    selectedCategoryForSub,
-    newSubName,
-    newSubSlug,
-    isAddingSub,
     pendingDeleteId,
+    savingGuidanceId,
     handleCatNameChange,
-    handleSubNameChange,
-    handleParentCategoryChange,
     handleAddCategory,
     handleDeleteCategory,
-    handleAddSubcategory,
-    handleDeleteSubcategory,
+    handleSaveGuidance,
+    ...subcategories,
   };
 }

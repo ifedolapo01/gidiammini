@@ -6,7 +6,8 @@ import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { useProductForm, useProductVariants, useProductImages, useProductCategories, useProductSubmit, useEditProductData } from '../../hooks';
-import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductDetailsEditor, ProductImageUploader } from '../../components';
+import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductFitSection, ProductDetailsEditor, ProductImageUploader } from '../../components';
+import EntityHistory from '@/app/admin/components/EntityHistory';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -19,6 +20,7 @@ export default function EditProductPage(props: PageProps) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
     detailFields,
@@ -105,7 +107,11 @@ export default function EditProductPage(props: PageProps) {
 
         <hr className="border-border-light" />
 
-        <PricingVariantsEditor register={register} errors={errors} {...variantsApi} />
+        <PricingVariantsEditor register={register} errors={errors} watch={watch} {...variantsApi} />
+
+        <ProductFitSection register={register} />
+
+        <hr className="border-border-light" />
 
         <ProductDetailsEditor
           register={register}
@@ -147,6 +153,12 @@ export default function EditProductPage(props: PageProps) {
           </Button>
         </div>
       </form>
+
+      {/* Outside the form: what has changed on this product, and who changed
+          it. "The price is wrong — what was it before?" is answerable here. */}
+      <div className="mt-8">
+        <EntityHistory entityType="product" entityId={params.id} pageSize={10} />
+      </div>
     </ProductFormShell>
   );
 }

@@ -5,6 +5,7 @@ import { RefObject } from 'react';
 import { Plus, Star, Upload, X } from 'lucide-react';
 import { Spinner } from '@/components/ui';
 import { ImageFile } from '@/lib/commerce/product-form-helpers';
+import { IMAGE_FALLBACK_SRC } from '@/lib/image-placeholder';
 
 export interface ProductImageUploaderProps {
   images: ImageFile[];
@@ -76,12 +77,18 @@ export function ProductImageUploader({
                     <div
                       className={`absolute inset-0 border-4 rounded-surface z-10 pointer-events-none transition-colors ${image.isMain ? 'border-primary' : 'border-transparent'}`}
                     />
+                    {/* Stays a raw <img>: until the upload finishes this is a
+                        local object URL for a file the admin just picked, which
+                        the optimiser cannot fetch. The fallback no longer calls
+                        out to via.placeholder.com — a third-party request, from
+                        the admin panel, to show that an image failed.
+                        eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={image.url}
                       alt={`Product image ${index + 1}`}
                       className="w-full h-auto block rounded-surface"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=Error';
+                        (e.target as HTMLImageElement).src = IMAGE_FALLBACK_SRC;
                       }}
                     />
                     {image.isMain && (

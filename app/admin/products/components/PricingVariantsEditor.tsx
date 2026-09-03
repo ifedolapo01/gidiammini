@@ -2,41 +2,50 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { FieldErrors, UseFormRegister } from 'react-hook-form';
+import { FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
 import { Checkbox, Input } from '@/components/ui';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { VariantSize } from '@/lib/commerce/product-form-helpers';
 import { VariantGroupCard } from './VariantGroupCard';
+import CostInput from './CostInput';
+import SingleCostField from './SingleCostField';
+import type { SizingType } from '@/lib/commerce/product-form-schema';
+import { SizingTypeToggle } from './SizingTypeToggle';
 
 export interface PricingVariantsEditorProps {
   register: UseFormRegister<ProductFormValues>;
   errors: FieldErrors<ProductFormValues>;
+  /** Used only for the live margin beside the cost field. */
+  watch: UseFormWatch<ProductFormValues>;
   hasVariants: boolean;
   toggleHasVariants: (checked: boolean) => void;
   hasSizes: boolean;
   setHasSizes: (value: boolean) => void;
   hasColors: boolean;
   setHasColors: (value: boolean) => void;
-  sizingType: 'size' | 'age';
-  setSizingType: (value: 'size' | 'age') => void;
+  sizingType: SizingType;
+  setSizingType: (value: SizingType) => void;
   variants: VariantSize[];
   addVariant: () => void;
   removeVariant: (vIdx: number) => void;
   updateVariantSize: (vIdx: number, value: string) => void;
   updateVariantPrice: (vIdx: number, value: number) => void;
   updateVariantStock: (vIdx: number, value: number) => void;
+  updateVariantCost: (vIdx: number, value: number | null) => void;
   blurVariantSize: (vIdx: number) => void;
   addColorToVariant: (vIdx: number) => void;
   removeColorFromVariant: (vIdx: number, cIdx: number) => void;
   updateColorName: (vIdx: number, cIdx: number, value: string) => void;
   updateColorPrice: (vIdx: number, cIdx: number, value: number) => void;
   updateColorStock: (vIdx: number, cIdx: number, value: number) => void;
+  updateColorCost: (vIdx: number, cIdx: number, value: number | null) => void;
   blurColorName: (vIdx: number, cIdx: number) => void;
 }
 
 export function PricingVariantsEditor({
   register,
   errors,
+  watch,
   hasVariants,
   toggleHasVariants,
   hasSizes,
@@ -51,12 +60,14 @@ export function PricingVariantsEditor({
   updateVariantSize,
   updateVariantPrice,
   updateVariantStock,
+  updateVariantCost,
   blurVariantSize,
   addColorToVariant,
   removeColorFromVariant,
   updateColorName,
   updateColorPrice,
   updateColorStock,
+  updateColorCost,
   blurColorName,
 }: PricingVariantsEditorProps) {
   return (
@@ -102,6 +113,9 @@ export function PricingVariantsEditor({
             <Input {...register('stock')} type="number" onFocus={(e) => e.target.select()} invalid={!!errors.stock} min="0" placeholder="0" />
             {errors.stock && <p className="text-destructive text-body-sm mt-1.5">{errors.stock.message}</p>}
           </div>
+          {/* Cost for a product with no variants. Live margin beside it, so
+              the admin sees whether the price they set actually earns. */}
+          <SingleCostField register={register} errors={errors} watch={watch} />
           <div>
             <label className="block text-body-sm font-bold text-text-primary mb-2">Size/Age (Optional)</label>
             <Input {...register('singleSize')} type="text" placeholder="e.g., XL, 2-3 Years" />
@@ -122,22 +136,7 @@ export function PricingVariantsEditor({
               <Checkbox checked={hasColors} onChange={(e) => setHasColors(e.target.checked)} />
               <span className="text-body-sm font-medium text-text-primary">Has Colors</span>
             </label>
-            {hasSizes && (
-              <div className="ml-auto flex items-center bg-background-secondary rounded-control border border-border p-1">
-                <label
-                  className={`cursor-pointer px-3 py-1 rounded-control text-caption-md font-medium transition-colors ${sizingType === 'size' ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:bg-surface-hover'}`}
-                >
-                  <input type="radio" value="size" checked={sizingType === 'size'} onChange={() => setSizingType('size')} className="sr-only" /> Use
-                  Sizes (S, M, L)
-                </label>
-                <label
-                  className={`cursor-pointer px-3 py-1 rounded-control text-caption-md font-medium transition-colors ${sizingType === 'age' ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:bg-surface-hover'}`}
-                >
-                  <input type="radio" value="age" checked={sizingType === 'age'} onChange={() => setSizingType('age')} className="sr-only" /> Use
-                  Ages (3-6m)
-                </label>
-              </div>
-            )}
+            {hasSizes && <SizingTypeToggle value={sizingType} onChange={setSizingType} />}
           </div>
 
           <div className="space-y-4">
@@ -154,11 +153,13 @@ export function PricingVariantsEditor({
                 onUpdateSize={updateVariantSize}
                 onUpdatePrice={updateVariantPrice}
                 onUpdateStock={updateVariantStock}
+                onUpdateCost={updateVariantCost}
                 onBlurSize={blurVariantSize}
                 onAddColor={addColorToVariant}
                 onUpdateColorName={updateColorName}
                 onUpdateColorPrice={updateColorPrice}
                 onUpdateColorStock={updateColorStock}
+                onUpdateColorCost={updateColorCost}
                 onBlurColorName={blurColorName}
                 onRemoveColor={removeColorFromVariant}
               />

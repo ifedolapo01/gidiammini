@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui';
 import { CheckoutFormData } from './hooks/useCheckoutForm';
 import { findShippingZone } from '@/lib/commerce/checkout';
 import type { ShippingZone } from '@/types/shipping';
+import type { FieldErrors } from '@/lib/api/field-errors';
 import FormInput from './FormInput';
 import AddressFields from './AddressFields';
 
@@ -17,6 +18,8 @@ interface CustomerInformationProps {
   zones: ShippingZone[];
   formData: CheckoutFormData;
   setFormData: (formData: CheckoutFormData) => void;
+  /** Per-field messages from a rejected submission, keyed by form field name. */
+  fieldErrors?: FieldErrors;
 }
 
 export default function CustomerInformation({
@@ -27,7 +30,8 @@ export default function CustomerInformation({
   selectedPlace,
   zones,
   formData,
-  setFormData
+  setFormData,
+  fieldErrors = {},
 }: CustomerInformationProps) {
   const zone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
   const isDoorDelivery = !!zone?.is_door_delivery;
@@ -44,12 +48,16 @@ export default function CustomerInformation({
       <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3 md:gap-4">
         <FormInput
           label="First Name *"
+          name="firstName"
+          error={fieldErrors.firstName}
           value={formData.firstName}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, firstName: e.target.value })}
           placeholder="First Name"
         />
         <FormInput
           label="Last Name *"
+          name="lastName"
+          error={fieldErrors.lastName}
           value={formData.lastName}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, lastName: e.target.value })}
           placeholder="Last Name"
@@ -60,6 +68,8 @@ export default function CustomerInformation({
         <FormInput
           type="email"
           label="Email *"
+          name="email"
+          error={fieldErrors.email}
           value={formData.email}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
           placeholder="your@email.com"
@@ -67,6 +77,8 @@ export default function CustomerInformation({
         <FormInput
           type="tel"
           label="Phone Number *"
+          name="phone"
+          error={fieldErrors.phone}
           value={formData.phone}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, phone: e.target.value })}
           placeholder="Phone Number"
@@ -98,6 +110,7 @@ export default function CustomerInformation({
           city={formData.city}
           setAddress={(value: string) => setFormData({ ...formData, address: value })}
           setCity={(value: string) => setFormData({ ...formData, city: value })}
+          fieldErrors={fieldErrors}
         />
       )}
 

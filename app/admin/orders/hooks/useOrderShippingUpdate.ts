@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { Order } from '@/types/order';
+import { describeDelivery } from '@/lib/notifications/delivery';
 
 interface UseOrderShippingUpdateParams {
   setOrders: Dispatch<SetStateAction<Order[]>>;
@@ -31,7 +32,8 @@ export function useOrderShippingUpdate({ setOrders, setSelectedOrder, showToast 
           prevOrders.map(order => (order.id === orderId ? { ...order, ...result.order } : order))
         );
         setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, ...result.order } : prev));
-        showToast('Shipping method updated. Customer has been notified.', 'success');
+        const how = result.delivery ? describeDelivery(result.delivery) : 'No notification sent';
+        showToast(`Shipping method updated. ${how}.`, 'success');
       } else {
         showToast(`Failed to update shipping method: ${result.error || 'Unknown error'}`, 'error');
       }

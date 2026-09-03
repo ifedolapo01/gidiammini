@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { Button, Input, Textarea } from '@/components/ui';
+import { Button, Input, Textarea, FieldError, fieldErrorId } from '@/components/ui';
 import { useContactForm } from './hooks/useContactForm';
 
 export default function ContactForm() {
@@ -13,7 +13,7 @@ export default function ContactForm() {
   const [message, setMessage] = useState('');
   /** Honeypot — must stay empty for a real submission. */
   const [website, setWebsite] = useState('');
-  const { submitContactForm, submitting, error, submitted } = useContactForm();
+  const { submitContactForm, submitting, error, fieldErrors, submitted } = useContactForm();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,27 +64,59 @@ export default function ContactForm() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-body-sm font-medium text-text-primary mb-1.5">Name</label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
+          <label htmlFor="contact-name" className="block text-body-sm font-medium text-text-primary mb-1.5">Name</label>
+          <Input
+            id="contact-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            invalid={!!fieldErrors.name}
+            aria-describedby={fieldErrors.name ? fieldErrorId('name') : undefined}
+            required
+          />
+          <FieldError id={fieldErrorId('name')}>{fieldErrors.name}</FieldError>
         </div>
         <div>
-          <label className="block text-body-sm font-medium text-text-primary mb-1.5">Email</label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+          <label htmlFor="contact-email" className="block text-body-sm font-medium text-text-primary mb-1.5">Email</label>
+          <Input
+            id="contact-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            invalid={!!fieldErrors.email}
+            aria-describedby={fieldErrors.email ? fieldErrorId('email') : undefined}
+            required
+          />
+          <FieldError id={fieldErrorId('email')}>{fieldErrors.email}</FieldError>
         </div>
       </div>
       <div>
-        <label className="block text-body-sm font-medium text-text-primary mb-1.5">Phone (optional)</label>
-        <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="080..." />
+        <label htmlFor="contact-phone" className="block text-body-sm font-medium text-text-primary mb-1.5">Phone (optional)</label>
+        <Input
+          id="contact-phone"
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="080..."
+          invalid={!!fieldErrors.phone}
+          aria-describedby={fieldErrors.phone ? fieldErrorId('phone') : undefined}
+        />
+        <FieldError id={fieldErrorId('phone')}>{fieldErrors.phone}</FieldError>
       </div>
       <div>
-        <label className="block text-body-sm font-medium text-text-primary mb-1.5">Message</label>
+        <label htmlFor="contact-message" className="block text-body-sm font-medium text-text-primary mb-1.5">Message</label>
         <Textarea
+          id="contact-message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={5}
           placeholder="How can we help?"
+          invalid={!!fieldErrors.message}
+          aria-describedby={fieldErrors.message ? fieldErrorId('message') : undefined}
           required
         />
+        <FieldError id={fieldErrorId('message')}>{fieldErrors.message}</FieldError>
       </div>
       {error && <p className="text-body-sm text-destructive">{error}</p>}
       <Button type="submit" loading={submitting} className="w-full sm:w-auto font-semibold">

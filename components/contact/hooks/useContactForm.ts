@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { readFieldErrors, type FieldErrors } from '@/lib/api/field-errors';
 
 interface ContactFormParams {
   name: string;
@@ -16,11 +17,14 @@ interface ContactFormParams {
 export function useContactForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  /** The form's field names match the API's, so no remapping is needed here. */
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitted, setSubmitted] = useState(false);
 
   const submitContactForm = async (params: ContactFormParams): Promise<boolean> => {
     setSubmitting(true);
     setError('');
+    setFieldErrors({});
 
     try {
       const res = await fetch('/api/contact', {
@@ -35,6 +39,7 @@ export function useContactForm() {
         return true;
       }
 
+      setFieldErrors(readFieldErrors(data));
       setError(data.error || 'Something went wrong. Please try again.');
       return false;
     } catch (err) {
@@ -45,5 +50,5 @@ export function useContactForm() {
     }
   };
 
-  return { submitContactForm, submitting, error, submitted };
+  return { submitContactForm, submitting, error, fieldErrors, submitted };
 }

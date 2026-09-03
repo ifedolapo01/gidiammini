@@ -15,3 +15,17 @@ export function getStockStatus(stock: number, lowStockThreshold = 5): StockStatu
   if (stock <= lowStockThreshold) return { level: 'low', tone: 'warning', text: 'Low Stock' };
   return { level: 'in', tone: 'success', text: 'In Stock' };
 }
+
+/**
+ * Whether a stock change is the moment a product became buyable again.
+ *
+ * The distinction the restock mail depends on: 0 -> 5 is news to everyone
+ * waiting, 4 -> 6 is not. Mailing on the second would train people to ignore
+ * the first.
+ *
+ * A missing previous level is treated as zero, because the only way to have no
+ * recorded stock is to have had none.
+ */
+export function isRestock(previousStock: number | null | undefined, newStock: number): boolean {
+  return (previousStock ?? 0) <= 0 && newStock > 0;
+}

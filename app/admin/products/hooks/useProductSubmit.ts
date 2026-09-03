@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { SubmitHandler } from 'react-hook-form';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { buildPricingConfigFromVariants, ImageFile, saveProduct, VariantSize } from '@/lib/commerce/product-form-helpers';
+import { buildVariantCosts } from '@/lib/commerce/variant-costs';
+import type { SizingType } from '@/lib/commerce/product-form-schema';
 
 interface UseProductSubmitArgs {
   /** Present (and truthy) only on the edit page; triggers a PUT instead of a POST. */
@@ -13,7 +15,7 @@ interface UseProductSubmitArgs {
   hasSizes: boolean;
   hasColors: boolean;
   variants: VariantSize[];
-  sizingType: 'size' | 'age';
+  sizingType: SizingType;
   images: ImageFile[];
   isCompressing: boolean;
   uploadAllForSubmit: () => Promise<{ mainImageUrl: string; additionalImages: string[]; colorImagesMap: Record<string, string> }>;
@@ -48,7 +50,7 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
       return;
     }
 
-    const { pricingConfig, totalStock, minPrice, uniqueSizes, uniqueColors } = buildPricingConfigFromVariants({
+    const variantParams = {
       hasVariants,
       hasSizes,
       hasColors,
@@ -57,7 +59,17 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
       singleStock: data.stock,
       singleSize: data.singleSize,
       singleColor: data.singleColor,
-    });
+      // An empty cost field means "not recorded", so it must reach
+      // buildVariantCosts as null rather than being coerced to 0.
+      singleCost: data.cost === '' || data.cost === undefined ? null : Number(data.cost),
+    };
+
+    const { pricingConfig, totalStock, minPrice, uniqueSizes, uniqueColors } =
+      buildPricingConfigFromVariants(variantParams);
+
+    // Costs travel beside pricing_config, not inside it — see
+    // lib/commerce/variant-costs.ts.
+    const variantCosts = buildVariantCosts(variantParams);
 
     if (hasVariants && hasColors && uniqueColors.size > 0 && images.length < uniqueColors.size) {
       setSubmitError(
@@ -85,11 +97,17 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
           sub_category: data.sub_category,
           main_image: mainImageUrl,
           images: additionalImages,
+          variant_costs: variantCosts,
           colors: Array.from(uniqueColors),
           sizes: Array.from(uniqueSizes),
           sizing_type: sizingType,
           stock: totalStock,
           details: data.details?.map((d) => d.value).filter((d) => d.trim() !== '') || [],
+          // '' from the radio group means "not recorded"; buildProduct*Payload
+          // stores that as NULL, so the storefront shows nothing rather than a
+          // fit claim nobody made.
+          fit_rating: data.fit_rating,
+          fit_note: data.fit_note,
           pricing_config: pricingConfig,
         },
         productId,

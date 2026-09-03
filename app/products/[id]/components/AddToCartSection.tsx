@@ -3,6 +3,7 @@
 
 import { QuantitySelector } from '@/components/commerce/QuantitySelector';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { OUT_OF_STOCK_PANEL_ID } from './OutOfStockNotice';
 
 interface AddToCartSectionProps {
   currentStock: number;
@@ -27,14 +28,25 @@ export default function AddToCartSection({
 
   if (currentStock <= 0) {
     return (
+      // The sticky bar sits directly over the out-of-stock panel on a phone, so
+      // it must not compete with it. It used to send the shopper back to the
+      // listing — away from the product they had already chosen — while the
+      // "tell me when it's back" form was hidden underneath it. Now it points
+      // at that form instead.
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-border shadow-elevation-3 z-50 p-4">
         <div className="text-center">
-          <p className="text-destructive font-medium mb-2">This item is currently out of stock</p>
+          <p className="text-text-secondary font-medium mb-2">Sold out for now</p>
           <button
-            onClick={() => window.location.href = '/products'}
+            onClick={() => {
+              const panel = document.getElementById(OUT_OF_STOCK_PANEL_ID);
+              panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // Focus follows the scroll, so a keyboard or screen-reader user
+              // lands in the form rather than being left where they were.
+              panel?.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+            }}
             className="w-full bg-surface-inverse text-on-inverse py-4 rounded-control font-semibold hover:opacity-90 transition-all text-body-lg"
           >
-            Browse Other Products
+            Email me when it's back
           </button>
         </div>
       </div>

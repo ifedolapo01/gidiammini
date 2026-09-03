@@ -6,6 +6,8 @@ import { Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { QuantitySelector } from '@/components/commerce/QuantitySelector';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import CartRecommendations from './components/CartRecommendations';
+import ProductImage from '@/components/commerce/ProductImage';
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, getTotal } = useCart();
@@ -38,10 +40,13 @@ export default function CartPage() {
           <div className="bg-surface rounded-surface shadow-elevation-1 border border-border">
             {items.map((item) => (
               <div key={item.productId} className="flex items-center border-b border-border p-3 sm:p-4 md:p-6 last:border-b-0 text-text-primary">
-                <img
+                {/* Square rather than the old `h-auto`: the row's height no
+                    longer depends on a photo that has not arrived. */}
+                <ProductImage
                   src={item.image}
                   alt={item.name}
-                  className="w-16 sm:w-20 md:w-24 h-auto block rounded-surface flex-shrink-0"
+                  className="w-16 sm:w-20 md:w-24 aspect-square rounded-surface flex-shrink-0"
+                  sizes="96px"
                 />
 
                 <div className="flex-1 ml-3 sm:ml-4 md:ml-6 min-w-0"> {/* Added min-w-0 */}
@@ -126,6 +131,11 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      {/* Below the summary, not beside it. The cross-sell must not compete with
+          the checkout button for the same glance — it is there for the shopper
+          who has already scrolled past it and is still deciding. */}
+      <CartRecommendations productIds={items.map((item) => item.productId)} />
     </div>
   );
 }

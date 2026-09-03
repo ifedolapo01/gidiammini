@@ -5,8 +5,16 @@ import { Heart } from 'lucide-react';
 import { ProductCardProduct } from '@/types/product';
 import ProductCard from '@/components/commerce/ProductCard';
 import { useWishlist } from '@/components/WishlistProvider';
+import type { Discount } from '@/lib/commerce/discounts';
 
-export default function WishlistItemCard({ product }: { product: ProductCardProduct }) {
+interface WishlistItemCardProps {
+  product: ProductCardProduct;
+  /** Passed through so a saved product is priced the way the listing prices
+   *  it. Without them the wishlist was the one surface with no sale badges. */
+  discounts?: Discount[];
+}
+
+export default function WishlistItemCard({ product, discounts = [] }: WishlistItemCardProps) {
   const { removeFromWishlist } = useWishlist();
 
   return (
@@ -22,7 +30,7 @@ export default function WishlistItemCard({ product }: { product: ProductCardProd
       >
         <Heart className="w-4 h-4 fill-destructive text-destructive" />
       </button>
-      <ProductCard product={product} />
+      <ProductCard product={product} discounts={discounts} />
     </div>
   );
 }

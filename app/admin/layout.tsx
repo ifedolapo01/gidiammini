@@ -16,7 +16,13 @@ import { useAdminSessionGuard } from './hooks/useAdminSessionGuard';
 import { adminConfig } from './config';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
+  // There is deliberately no `loading` gate here any more. One used to exist:
+  // initialised to true, then set to false by an effect whose entire body was
+  // that call. It performed no check and awaited nothing, so all it did was
+  // render a full-screen centred spinner in place of the admin shell on every
+  // single admin page, until hydration finished. Auth is middleware's job —
+  // an unauthenticated request never reaches this component — so the gate was
+  // guarding nothing and costing a flash on every navigation.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
@@ -27,15 +33,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(`${path}/`);
   };
-
-  useEffect(() => {
-    // Just check auth, don't redirect
-    const checkAuth = async () => {
-      setLoading(false); // Let middleware handle redirects
-    };
-
-    checkAuth();
-  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -51,14 +48,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setLoggingOut(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="theme-admin min-h-screen flex items-center justify-center">
-        <Spinner size="xl" className="text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="theme-admin min-h-screen bg-background-tertiary">

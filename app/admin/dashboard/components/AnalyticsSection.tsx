@@ -4,7 +4,6 @@
  * a new range refetches instead of flashing a skeleton. */
 'use client';
 
-import { Spinner } from '@/components/ui';
 import { useDashboardCharts } from '../hooks/useDashboardCharts';
 import { useSemanticChartColors } from '@/components/ui/charts/useSemanticChartColors';
 import { RevenueTrendChart } from './charts/RevenueTrendChart';
@@ -12,18 +11,13 @@ import { OrdersTrendChart } from './charts/OrdersTrendChart';
 import { OrderStatusBreakdownChart } from './charts/OrderStatusBreakdownChart';
 import { TopProductsChart } from './charts/TopProductsChart';
 import { TrendRangeToggle } from './charts/TrendRangeToggle';
+import { AnalyticsSkeleton } from './AnalyticsSkeleton';
 
 export function AnalyticsSection() {
   const { charts, range, setRange, loading, refreshing, error } = useDashboardCharts();
   const colors = useSemanticChartColors();
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-48 mb-8">
-        <Spinner size="lg" className="text-primary" />
-      </div>
-    );
-  }
+  if (loading) return <AnalyticsSkeleton />;
 
   if (error) {
     return (

@@ -6,6 +6,7 @@
 // aren't required to have an account to check order status.
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
+import { authorizeCron } from '@/lib/api/cron-auth';
 import { sendOrderEmail } from '@/lib/email';
 import { buildPaymentReminderEmail } from '@/lib/notifications/templates/payment-reminder-email';
 
@@ -15,13 +16,8 @@ export const maxDuration = 300;
 const REMINDER_DELAY_HOURS = 24;
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  const denied = authorizeCron(req, { jobName: 'the payment-reminder job' });
+  if (denied) return denied;
 
   try {
     const supabase = createAdminClient();

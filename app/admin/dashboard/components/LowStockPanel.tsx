@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { Package } from 'lucide-react';
 import { getStockStatus } from '@/lib/commerce/stock';
+import ProductImage from '@/components/commerce/ProductImage';
 
 interface LowStockPanelProps {
   products: any[];
@@ -36,10 +37,11 @@ export function LowStockPanel({ products }: LowStockPanelProps) {
                 key={product.id}
                 className="flex items-center p-3 hover:bg-destructive-background rounded-control"
               >
-                <img
+                <ProductImage
                   src={product.main_image}
                   alt={product.name}
-                  className="w-12 h-12 object-cover rounded-control mr-4"
+                  className="w-12 h-12 rounded-control mr-4 flex-shrink-0"
+                  sizes="48px"
                 />
                 <div className="flex-1">
                   <p className="font-medium text-text-primary">{product.name}</p>

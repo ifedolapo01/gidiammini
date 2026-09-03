@@ -3,6 +3,7 @@
 
 import { X } from 'lucide-react';
 import { VariantColor } from '@/lib/commerce/product-form-helpers';
+import CostInput from './CostInput';
 
 export interface VariantColorRowProps {
   color: VariantColor;
@@ -11,6 +12,7 @@ export interface VariantColorRowProps {
   onUpdateName: (vIdx: number, cIdx: number, value: string) => void;
   onUpdatePrice: (vIdx: number, cIdx: number, value: number) => void;
   onUpdateStock: (vIdx: number, cIdx: number, value: number) => void;
+  onUpdateCost: (vIdx: number, cIdx: number, value: number | null) => void;
   onBlurName: (vIdx: number, cIdx: number) => void;
   onRemove: (vIdx: number, cIdx: number) => void;
 }
@@ -22,6 +24,7 @@ export function VariantColorRow({
   onUpdateName,
   onUpdatePrice,
   onUpdateStock,
+  onUpdateCost,
   onBlurName,
   onRemove,
 }: VariantColorRowProps) {
@@ -53,6 +56,11 @@ export function VariantColorRow({
         onChange={(e) => onUpdateStock(vIdx, cIdx, Number(e.target.value))}
         className="w-20 sm:w-24 border border-border-strong rounded-control px-2 py-1.5 text-body-sm text-text-primary bg-surface"
         placeholder="Stock"
+      />
+      <CostInput
+        price={color.price}
+        cost={color.cost}
+        onChange={(cost) => onUpdateCost(vIdx, cIdx, cost)}
       />
       <button
         type="button"

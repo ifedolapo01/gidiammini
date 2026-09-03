@@ -2,7 +2,9 @@
 export { ProductFormShell } from './ProductFormShell';
 export { ProductInfoSection } from './ProductInfoSection';
 export { PricingVariantsEditor } from './PricingVariantsEditor';
+export { SizingTypeToggle } from './SizingTypeToggle';
 export { VariantGroupCard } from './VariantGroupCard';
 export { VariantColorRow } from './VariantColorRow';
+export { ProductFitSection } from './ProductFitSection';
 export { ProductDetailsEditor } from './ProductDetailsEditor';
 export { ProductImageUploader } from './ProductImageUploader';

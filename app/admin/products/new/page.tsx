@@ -5,12 +5,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { useProductForm, useProductVariants, useProductImages, useProductCategories, useProductSubmit } from '../hooks';
-import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductDetailsEditor, ProductImageUploader } from '../components';
+import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductFitSection, ProductDetailsEditor, ProductImageUploader } from '../components';
 
 export default function AddProductPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
     detailFields,
@@ -95,7 +96,11 @@ export default function AddProductPage() {
 
         <hr className="border-border-light" />
 
-        <PricingVariantsEditor register={register} errors={errors} {...variantsApi} />
+        <PricingVariantsEditor register={register} errors={errors} watch={watch} {...variantsApi} />
+
+        <ProductFitSection register={register} />
+
+        <hr className="border-border-light" />
 
         <ProductDetailsEditor
           register={register}

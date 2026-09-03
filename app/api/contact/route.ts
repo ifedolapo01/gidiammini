@@ -6,52 +6,37 @@ import { sendOrderEmail } from '@/lib/email';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** Hidden form field. A human never sees it, so anything in it came from a bot
- * filling every input on the page. Answered with a success response rather than
- * an error, so a scripted submitter gets no signal that it was detected. */
-function isBotSubmission(body: Record<string, unknown>): boolean {
-  const trap = body.website ?? body.company_url;
-  return typeof trap === 'string' && trap.trim().length > 0;
-}
-
+import { parseJsonBody } from '@/lib/api/parse-body';
+import { contactFormSchema } from '@/lib/api/schemas/public-forms';
+import { isBotSubmission } from '@/lib/api/schemas/common';
 
 async function submitContactForm(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, email, phone, message } = body;
+    // Every field arrives trimmed, length-capped and the right type, so a
+    // malformed submission is a 400 naming the input rather than a 500 from
+    // calling .trim() on a number.
+    const parsed = await parseJsonBody(request, contactFormSchema);
+    if (!parsed.ok) return parsed.response;
 
-    if (isBotSubmission(body)) {
+    const { name, email, phone, message } = parsed.data;
+
+    // Answered with success rather than an error, so a scripted submitter gets
+    // no signal that it was detected.
+    if (isBotSubmission(parsed.data)) {
       console.warn('Contact form honeypot triggered — discarding silently.');
       return NextResponse.json({ success: true });
-    }
-
-    if (!name?.trim() || !email?.trim() || !message?.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Name, email, and message are required' },
-        { status: 400 }
-      );
-    }
-
-    if (!EMAIL_PATTERN.test(email.trim())) {
-      return NextResponse.json(
-        { success: false, error: 'Please enter a valid email address' },
-        { status: 400 }
-      );
     }
 
     const ownerEmail = process.env.STORE_OWNER_EMAIL || 'ifedolapoajayi0@gmail.com';
 
     const result = await sendOrderEmail(
       ownerEmail,
-      sanitizeHeader(`New contact form message from ${name.trim()}`),
+      sanitizeHeader(`New contact form message from ${name}`),
       // Every value here is typed by an anonymous visitor and read by the store
       // owner, so all of it is escaped before it reaches the mail body.
-      `<p><strong>From:</strong> ${escapeHtml(name.trim())} (${escapeHtml(email.trim())})</p>` +
-        (phone?.trim() ? `<p><strong>Phone:</strong> ${escapeHtml(phone.trim())}</p>` : '') +
-        `<p><strong>Message:</strong></p><p>${escapeHtmlWithBreaks(message.trim())}</p>`
+      `<p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>` +
+        (phone ? `<p><strong>Phone:</strong> ${escapeHtml(phone)}</p>` : '') +
+        `<p><strong>Message:</strong></p><p>${escapeHtmlWithBreaks(message)}</p>`
     );
 
     if (!result.success) {

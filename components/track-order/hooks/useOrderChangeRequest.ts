@@ -4,6 +4,12 @@
 
 import { useState } from 'react';
 import type { OrderChangeRequestType, RescheduleDetails, DeliveryMethodChangeDetails, CancelDetails } from '@/types/orderChangeRequest';
+import {
+  readFieldErrors,
+  mapFieldErrors,
+  CHANGE_REQUEST_FIELD_MAP,
+  type FieldErrors,
+} from '@/lib/api/field-errors';
 
 interface SubmitChangeRequestParams {
   orderNumber: string;
@@ -16,10 +22,12 @@ interface SubmitChangeRequestParams {
 export function useOrderChangeRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const submitChangeRequest = async (params: SubmitChangeRequestParams): Promise<boolean> => {
     setSubmitting(true);
     setError('');
+    setFieldErrors({});
 
     try {
       const res = await fetch('/api/orders/change-requests', {
@@ -31,6 +39,7 @@ export function useOrderChangeRequest() {
 
       if (data.success) return true;
 
+      setFieldErrors(mapFieldErrors(readFieldErrors(data), CHANGE_REQUEST_FIELD_MAP));
       setError(data.error || 'Something went wrong. Please try again.');
       return false;
     } catch (err) {
@@ -41,5 +50,5 @@ export function useOrderChangeRequest() {
     }
   };
 
-  return { submitChangeRequest, submitting, error };
+  return { submitChangeRequest, submitting, error, fieldErrors };
 }

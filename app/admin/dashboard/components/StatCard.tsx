@@ -19,13 +19,15 @@ export function StatCard({
   subtext
 }: StatCardProps) {
   return (
-    <div className="bg-surface p-6 rounded-surface shadow-elevation-1 border border-border">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-text-secondary">{title}</h3>
-        <div className={`p-3 ${iconBgClassName} rounded-control`}>{icon}</div>
+    // Padding and type step down at the five-across breakpoint so a card like
+    // "Revenue Confirmed" with a six-figure value does not wrap awkwardly.
+    <div className="bg-surface p-4 xl:p-5 rounded-surface shadow-elevation-1 border border-border">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <h3 className="font-semibold text-body-sm text-text-secondary">{title}</h3>
+        <div className={`p-2.5 ${iconBgClassName} rounded-control flex-shrink-0`}>{icon}</div>
       </div>
-      <p className={`text-h3 font-bold ${valueClassName}`}>{value}</p>
-      <p className="text-body-sm text-text-secondary mt-2">{subtext}</p>
+      <p className={`text-h4 xl:text-h3 font-bold break-words ${valueClassName}`}>{value}</p>
+      <p className="text-caption-md text-text-secondary mt-1.5">{subtext}</p>
     </div>
   );
 }

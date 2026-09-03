@@ -1,8 +1,9 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 'use client';
+import { ShippingSkeleton } from './components/ShippingSkeleton';
 
 import { Plus } from 'lucide-react';
-import { Button, Spinner } from '@/components/ui';
+import { Button } from '@/components/ui';
 import type { ShippingZone } from '@/types/shipping';
 import { useShippingZones } from './hooks/useShippingZones';
 import { useZoneExceptions } from './hooks/useZoneExceptions';
@@ -27,13 +28,7 @@ export default function ShippingPage() {
 
   const handleSubmit = (e: React.FormEvent) => submitZone(e, zoneExceptions.rows);
 
-  if (loading && zones.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="xl" className="text-primary" />
-      </div>
-    );
-  }
+  if (loading && zones.length === 0) return <ShippingSkeleton />;
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-8">

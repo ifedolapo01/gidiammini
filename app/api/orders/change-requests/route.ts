@@ -12,29 +12,20 @@ import { sendOrderEmail } from '@/lib/email';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
+import { parseJsonBody } from '@/lib/api/parse-body';
+import { orderChangeRequestSchema, type OrderChangeRequestBody } from '@/lib/api/schemas/public-orders';
 import type { OrderChangeRequestType } from '@/types/orderChangeRequest';
 
-const REQUEST_TYPES: OrderChangeRequestType[] = ['reschedule', 'delivery_method_change', 'cancel'];
+/** The validated details for one request type — exactly the fields that type
+ * declares, with anything else the caller sent already stripped. */
+type ChangeRequestDetails = OrderChangeRequestBody['details'];
 
-function validateDetails(requestType: OrderChangeRequestType, details: any): string | null {
-  if (requestType === 'reschedule') {
-    return details?.preferredDate ? null : 'A preferred date is required';
-  }
-
-  if (requestType === 'cancel') {
-    return null;
-  }
-
-  if (!['pickup', 'delivery'].includes(details?.newDeliveryOption)) {
-    return "newDeliveryOption must be 'pickup' or 'delivery'";
-  }
-  if (details.newDeliveryOption === 'delivery' && (!details.deliveryAddress?.trim() || !details.city?.trim())) {
-    return 'A delivery address and city are required';
-  }
-  return null;
-}
-
-async function notifyOwner(order: any, requestType: OrderChangeRequestType, details: any, customerNote?: string) {
+async function notifyOwner(
+  order: any,
+  requestType: OrderChangeRequestType,
+  details: any,
+  customerNote?: string
+) {
   // details.preferredDate is customer-supplied free text; newDeliveryOption is
   // validated against a fixed pair but escaped anyway so the rule is uniform.
   const summary = requestType === 'reschedule'
@@ -55,26 +46,21 @@ async function notifyOwner(order: any, requestType: OrderChangeRequestType, deta
 
 async function submitChangeRequest(request: NextRequest) {
   try {
-    const { orderNumber, contact, requestType, details, customerNote } = await request.json();
+    // A discriminated union on requestType, so each type accepts precisely its
+    // own detail fields. `details` is inserted into a jsonb column below, and
+    // before this it went in exactly as sent — extra keys included.
+    const parsed = await parseJsonBody(request, orderChangeRequestSchema);
+    if (!parsed.ok) return parsed.response;
 
-    if (!orderNumber?.trim() || !contact?.trim() || !REQUEST_TYPES.includes(requestType)) {
-      return NextResponse.json(
-        { success: false, error: 'Order number, contact, and a valid request type are required' },
-        { status: 400 }
-      );
-    }
-
-    const detailsError = validateDetails(requestType, details);
-    if (detailsError) {
-      return NextResponse.json({ success: false, error: detailsError }, { status: 400 });
-    }
+    const { orderNumber, contact, requestType, customerNote } = parsed.data;
+    const details: ChangeRequestDetails = parsed.data.details;
 
     const supabase = createAdminClient();
 
     const { data: order, error } = await supabase
       .from('orders')
       .select('*, order_change_requests (*)')
-      .eq('order_number', orderNumber.trim())
+      .eq('order_number', orderNumber)
       .single();
 
     if (error || !order || !verifyOrderContact(order, contact)) {
@@ -98,7 +84,7 @@ async function submitChangeRequest(request: NextRequest) {
       );
     }
 
-    if (requestType === 'delivery_method_change') {
+    if (requestType === 'delivery_method_change' && 'newDeliveryOption' in details) {
       if (details.newDeliveryOption === order.delivery_option) {
         return NextResponse.json(
           { success: false, error: `Your order is already set to ${details.newDeliveryOption}.` },
@@ -118,6 +104,8 @@ async function submitChangeRequest(request: NextRequest) {
 
     const { data: changeRequest, error: insertError } = await supabase
       .from('order_change_requests')
+      // Explicit columns only — the request body cannot set anything else, and
+      // `details` holds just the fields this request type declares.
       .insert({
         order_id: order.id,
         request_type: requestType,

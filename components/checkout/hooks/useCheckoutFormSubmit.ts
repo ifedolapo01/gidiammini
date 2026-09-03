@@ -20,6 +20,9 @@ interface UseCheckoutFormSubmitParams {
   selectedPlace: string;
   selectedZone?: ShippingZone;
   address: string;
+  /** Checked against the blocklist before the payment screen, so a barred
+   * buyer is refused before transferring rather than after. */
+  customerEmail: string;
   /** Identifies this checkout attempt. */
   idempotencyKey: string;
   /** Receives the server-confirmed total and the server-issued order number for
@@ -35,6 +38,7 @@ export function useCheckoutFormSubmit({
   selectedPlace,
   selectedZone,
   address,
+  customerEmail,
   idempotencyKey,
   onReady,
 }: UseCheckoutFormSubmitParams) {
@@ -56,6 +60,7 @@ export function useCheckoutFormSubmit({
     // told — rather than after they have already transferred money.
     const quote = await fetchQuote({
       items, deliveryOption, selectedState, selectedLga, selectedPlace, idempotencyKey,
+      customerEmail,
     });
     if (!quote) return;
 

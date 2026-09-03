@@ -40,6 +40,11 @@ export default function ReceiptUpload({ uploadedReceipt, setUploadedReceipt, han
       ) : (
         <>
           <div className="w-24 h-24 md:w-32 md:h-32 mx-auto mb-3 md:mb-4 border border-border rounded-control overflow-hidden">
+            {/* Stays a raw <img>: this is the customer's own file as a data:
+                URI, read by FileReader and never fetched over the network.
+                next/image cannot optimise a data URI, and there is no transfer
+                here to save — the bytes are already in the page.
+                eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={uploadedReceipt}
               alt="Payment receipt"

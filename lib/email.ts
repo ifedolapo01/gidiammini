@@ -1,5 +1,15 @@
-// lib/email.ts - ENHANCED
+// lib/email.ts - shared SMTP transport.
+//
+// Every send returns a named failure reason rather than a generic string, so
+// callers can tell an operator whether the problem is configuration, the
+// recipient's address, or the mail server.
 import nodemailer from 'nodemailer';
+import { classifyEmailError, isEmailConfigured } from './email-failure';
+import type { DeliveryFailureReason } from './notifications/delivery';
+
+export type EmailSendResult =
+  | { success: true; messageId?: string }
+  | { success: false; reason: DeliveryFailureReason; detail: string };
 
 // Create a reusable transporter
 const createTransporter = () => {
@@ -14,7 +24,15 @@ const createTransporter = () => {
   });
 };
 
-export async function sendOrderEmail(to: string, subject: string, html: string) {
+export async function sendOrderEmail(to: string, subject: string, html: string): Promise<EmailSendResult> {
+  if (!isEmailConfigured()) {
+    return { success: false, reason: 'not_configured', detail: 'EMAIL_USER and EMAIL_PASS are not set.' };
+  }
+
+  if (!to?.trim()) {
+    return { success: false, reason: 'no_recipient', detail: 'No recipient address given.' };
+  }
+
   try {
     const transporter = createTransporter();
 
@@ -29,29 +47,33 @@ export async function sendOrderEmail(to: string, subject: string, html: string) 
     console.log(`✅ Email sent to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Email send error:', error);
-    return { success: false, error: 'Failed to send email' };
+    const failure = classifyEmailError(error);
+    console.error(`Email to ${to} failed (${failure.reason}): ${failure.detail}`);
+    return { success: false, ...failure };
   }
 }
 
 // New function to send admin notifications
-export async function sendAdminNotification(subject: string, html: string) {
-  try {
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
-    if (!adminEmail) {
-      console.warn('⚠️ No admin email configured');
-      return { success: false, error: 'No admin email configured' };
-    }
-
-    return await sendOrderEmail(adminEmail, subject, html);
-  } catch (error) {
-    console.error('Admin email error:', error);
-    return { success: false, error: 'Failed to send admin email' };
+export async function sendAdminNotification(subject: string, html: string): Promise<EmailSendResult> {
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+  if (!adminEmail) {
+    console.warn('No admin email configured (set ADMIN_EMAIL or EMAIL_USER)');
+    return { success: false, reason: 'no_recipient', detail: 'ADMIN_EMAIL and EMAIL_USER are both unset.' };
   }
+
+  return sendOrderEmail(adminEmail, subject, html);
 }
 
 // Function to send email to multiple recipients
-export async function sendBulkEmail(recipients: string[], subject: string, html: string) {
+export async function sendBulkEmail(recipients: string[], subject: string, html: string): Promise<EmailSendResult> {
+  if (!isEmailConfigured()) {
+    return { success: false, reason: 'not_configured', detail: 'EMAIL_USER and EMAIL_PASS are not set.' };
+  }
+
+  if (recipients.length === 0) {
+    return { success: false, reason: 'no_recipient', detail: 'No recipients given.' };
+  }
+
   try {
     const transporter = createTransporter();
 
@@ -66,8 +88,9 @@ export async function sendBulkEmail(recipients: string[], subject: string, html:
     console.log(`✅ Bulk email sent to ${recipients.length} recipients: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Bulk email error:', error);
-    return { success: false, error: 'Failed to send bulk email' };
+    const failure = classifyEmailError(error);
+    console.error(`Bulk email to ${recipients.length} recipients failed (${failure.reason}): ${failure.detail}`);
+    return { success: false, ...failure };
   }
 }
 
@@ -79,7 +102,8 @@ export async function testEmailConnection() {
     console.log('✅ Email server connection verified');
     return { success: true, message: 'Email server connection verified' };
   } catch (error) {
-    console.error('❌ Email connection test failed:', error);
-    return { success: false, error: 'Email connection test failed' };
+    const failure = classifyEmailError(error);
+    console.error(`Email connection test failed (${failure.reason}): ${failure.detail}`);
+    return { success: false, ...failure };
   }
 }

@@ -17,13 +17,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { priceOrder, findStockShortage } from '@/lib/commerce/price-order';
 import { reserveOrderNumber } from '@/lib/commerce/order-number';
+import { isCustomerBlocked } from '@/lib/commerce/customer-identity';
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
+import { parseJsonBody } from '@/lib/api/parse-body';
+import { checkoutQuoteSchema } from '@/lib/api/schemas/public-orders';
 
 async function quoteCheckout(request: NextRequest) {
   try {
-    const body = await request.json();
+    // A non-object body (null, an array, a bare string) used to reach
+    // `body.items` and throw, answering a bad request with a 500.
+    const parsed = await parseJsonBody(request, checkoutQuoteSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const body = parsed.data;
     const supabase = createAdminClient();
+
+    // Refuse a barred buyer here, before they are shown an account number and
+    // an amount. The same check runs again at order creation, which is the
+    // authoritative one — this exists so nobody transfers money into an order
+    // that will be rejected. Fails open if the lookup errors.
+    if (body.customer_email) {
+      const blocked = await isCustomerBlocked(supabase, body.customer_email);
+      if (blocked.blocked) {
+        console.warn(`Refused a quote for blocked customer ${body.customer_email}: ${blocked.reason ?? 'no reason recorded'}`);
+        return NextResponse.json(
+          { success: false, error: 'We are not able to accept this order. Please contact us so we can help.' },
+          { status: 403 }
+        );
+      }
+    }
 
     const result = await priceOrder(supabase, {
       items: body.items,

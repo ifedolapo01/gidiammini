@@ -3,6 +3,7 @@
 
 import { CartItem } from '@/types/order';
 import type { ShippingZone } from '@/types/shipping';
+import type { FieldErrors } from '@/lib/api/field-errors';
 import { Spinner } from '@/components/ui';
 import StateDeliveryForm from './StateDeliveryForm';
 import CustomerInformation from './CustomerInformation';
@@ -32,6 +33,9 @@ interface CheckoutFormStepProps {
   total: number;
   onOpenMobileOrderSummary: () => void;
   onCloseMobileOrderSummary: () => void;
+  /** Set when the server rejected a submission, so the offending inputs are
+   * highlighted after the customer is returned to this step. */
+  fieldErrors?: FieldErrors;
 }
 
 export default function CheckoutFormStep({
@@ -57,6 +61,7 @@ export default function CheckoutFormStep({
   total,
   onOpenMobileOrderSummary,
   onCloseMobileOrderSummary,
+  fieldErrors,
 }: CheckoutFormStepProps) {
   return (
     <div className="md:grid md:grid-cols-3 md:gap-6 lg:gap-8">
@@ -85,6 +90,7 @@ export default function CheckoutFormStep({
             zones={zones}
             formData={formData}
             setFormData={setFormData}
+            fieldErrors={fieldErrors}
           />
 
           {/* Submit Button - Desktop */}

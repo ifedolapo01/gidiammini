@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { CartItem } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { CheckoutFormData } from './useCheckoutForm';
+import { submitNewsletterOptIn } from './newsletter-opt-in';
 
 interface UseOrderSubmissionParams {
   /** Only used to name the uploaded receipt; the server derives the order's own
@@ -24,6 +25,13 @@ interface UseOrderSubmissionParams {
   selectedPlace: string;
   /** Called after the order is created successfully (clears cart, advances step). */
   onSuccess: () => void;
+  /**
+   * Called when the server rejects the submission as invalid. Receives the
+   * response body so the caller can pull `fieldErrors` out of it, and should
+   * return true if it named a field the customer can correct — in which case
+   * the generic error toast is skipped in favour of the highlighted inputs.
+   */
+  onValidationError?: (body: unknown) => boolean;
 }
 
 // NOTE: no shippingZoneId is passed any more. The zone is resolved server-side
@@ -40,6 +48,7 @@ export function useOrderSubmission({
   selectedLga,
   selectedPlace,
   onSuccess,
+  onValidationError,
 }: UseOrderSubmissionParams) {
   /** Data URL, used only for the on-screen thumbnail. */
   const [uploadedReceipt, setUploadedReceipt] = useState<string | null>(null);
@@ -140,27 +149,22 @@ export function useOrderSubmission({
         return;
       }
 
+      // A 400 means the body itself was rejected. When the server named the
+      // fields, the customer is sent back to the details step with those inputs
+      // marked, which is more use than a toast they can't act on.
+      if (response.status === 400 && onValidationError?.(result)) {
+        toast.error(result?.error || 'Please check the highlighted details and try again.');
+        return;
+      }
+
       if (!response.ok || !result) {
         console.error('Order API error:', response.status, result);
         throw new Error(result?.error || `API Error: ${response.status} ${response.statusText}`);
       }
 
       if (result.success) {
-        // Handle Newsletter Subscription
-        if (formData.subscribeToNewsletter) {
-          try {
-            await fetch('/api/subscribe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: formData.email,
-                name: `${formData.firstName} ${formData.lastName}`
-              }),
-            });
-          } catch (e) {
-            console.error('Subscription failed but order succeeded', e);
-          }
-        }
+        // After the order, and never able to fail it.
+        await submitNewsletterOptIn(formData);
 
         onSuccess();
       } else {

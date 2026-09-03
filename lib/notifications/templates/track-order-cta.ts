@@ -3,7 +3,9 @@
 // template, so the link/copy/markup can't drift between templates and every
 // email gives the customer a one-click way to check their order.
 
-export const TRACK_ORDER_URL = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://gidiammini.com'}/track-order`;
+import { absoluteUrl } from '@/lib/site-url';
+
+export const TRACK_ORDER_URL = absoluteUrl('/track-order');
 
 /** `accentColor` matches each email's own theme color (its header/CTA hex) so the button never clashes. */
 export function buildTrackOrderButton(accentColor: string): string {

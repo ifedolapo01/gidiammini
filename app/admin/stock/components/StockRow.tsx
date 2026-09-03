@@ -4,6 +4,7 @@ import { formatCategoryStr, capitalizeText } from '@/lib/commerce/format-text';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
+import ProductImage from '@/components/commerce/ProductImage';
 
 function UpdateStockButton({ onClick }: { onClick: () => void }) {
   return (
@@ -31,9 +32,12 @@ export function SingleStockRow({ product, lowStockThreshold, onEdit }: SingleSto
       <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
         <div className="flex items-center justify-start gap-4">
           {product.main_image ? (
-            <div className="w-12 flex-shrink-0 relative rounded-control overflow-hidden">
-              <img src={product.main_image} alt={product.name} className="block w-full h-auto" />
-            </div>
+            <ProductImage
+              src={product.main_image}
+              alt={product.name}
+              className="w-12 h-12 flex-shrink-0 rounded-control"
+              sizes="48px"
+            />
           ) : (
             <div className="w-12 h-12 flex-shrink-0 bg-background-tertiary rounded-control flex items-center justify-center">
               <Package className="h-5 w-5 text-text-secondary" />
@@ -59,8 +63,12 @@ export function SingleStockRow({ product, lowStockThreshold, onEdit }: SingleSto
           {formatCategoryStr(product.category, product.sub_category)}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
-        <div className="flex items-center justify-start">
+      {/* Centred, matching the STOCK STATUS header and the variant rows below.
+          This cell had text-left/pl-16 copied from the product-name cell, which
+          pushed a single-variant product's badge out of line with every other
+          row in the table. */}
+      <td className="px-6 py-4 whitespace-nowrap text-center">
+        <div className="flex items-center justify-center">
           <StockBadge
             stock={product.stock}
             lowStockThreshold={lowStockThreshold}
@@ -88,9 +96,12 @@ export function ParentStockRow({ parent, variantsCount }: ParentStockRowProps) {
       <td className="px-6 py-3 whitespace-nowrap text-left pl-16">
         <div className="flex items-center justify-start gap-4">
           {parent.main_image ? (
-            <div className="w-12 flex-shrink-0 relative rounded-control overflow-hidden border border-border-strong">
-              <img src={parent.main_image} alt={parent.name} className="block w-full h-auto" />
-            </div>
+            <ProductImage
+              src={parent.main_image}
+              alt={parent.name}
+              className="w-12 h-12 flex-shrink-0 rounded-control border border-border-strong"
+              sizes="48px"
+            />
           ) : (
             <div className="w-12 h-12 flex-shrink-0 bg-background-tertiary rounded-control flex items-center justify-center border border-border-strong">
               <Package className="h-5 w-5 text-text-secondary" />

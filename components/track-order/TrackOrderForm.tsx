@@ -2,7 +2,8 @@
 'use client';
 
 import { Search } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, FieldError, fieldErrorId } from '@/components/ui';
+import type { FieldErrors } from '@/lib/api/field-errors';
 
 interface TrackOrderFormProps {
   orderNumber: string;
@@ -12,33 +13,44 @@ interface TrackOrderFormProps {
   loading: boolean;
   error: string;
   onSubmit: (e: React.FormEvent) => void;
+  /** Per-field messages from the server, keyed by form field name. */
+  fieldErrors?: FieldErrors;
 }
 
 export default function TrackOrderForm({
-  orderNumber, setOrderNumber, contact, setContact, loading, error, onSubmit
+  orderNumber, setOrderNumber, contact, setContact, loading, error, onSubmit,
+  fieldErrors = {},
 }: TrackOrderFormProps) {
   return (
     <form onSubmit={onSubmit} className="bg-surface p-4 md:p-6 rounded-surface shadow-elevation-1 border border-border space-y-4">
       <div>
-        <label className="block text-body-sm font-medium text-text-primary mb-1.5">Order Number</label>
+        <label htmlFor="track-order-number" className="block text-body-sm font-medium text-text-primary mb-1.5">Order Number</label>
         <Input
+          id="track-order-number"
           type="text"
           value={orderNumber}
           onChange={(e) => setOrderNumber(e.target.value)}
           placeholder="e.g. UT88478504"
+          invalid={!!fieldErrors.orderNumber}
+          aria-describedby={fieldErrors.orderNumber ? fieldErrorId('orderNumber') : undefined}
           required
         />
+        <FieldError id={fieldErrorId('orderNumber')}>{fieldErrors.orderNumber}</FieldError>
       </div>
 
       <div>
-        <label className="block text-body-sm font-medium text-text-primary mb-1.5">Email or Phone Number</label>
+        <label htmlFor="track-contact" className="block text-body-sm font-medium text-text-primary mb-1.5">Email or Phone Number</label>
         <Input
+          id="track-contact"
           type="text"
           value={contact}
           onChange={(e) => setContact(e.target.value)}
           placeholder="Whatever you used at checkout"
+          invalid={!!fieldErrors.contact}
+          aria-describedby={fieldErrors.contact ? fieldErrorId('contact') : undefined}
           required
         />
+        <FieldError id={fieldErrorId('contact')}>{fieldErrors.contact}</FieldError>
         <p className="text-caption-md text-text-muted mt-1">
           Used to confirm this order belongs to you.
         </p>

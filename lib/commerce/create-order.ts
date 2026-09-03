@@ -17,16 +17,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { priceOrder, findStockShortage } from './price-order';
 import type { PricedOrder } from './price-order.types';
-import { sendOrderReceivedEmail } from '@/lib/notifications';
-import { INITIAL_ORDER_STATUS } from './order-status';
 import { persistOrderWithReservedStock } from './persist-order';
-import { reserveOrderNumber, isValidIdempotencyKey } from './order-number';
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function trimmed(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
+import { runOrderCreatedEffects } from './order-created-effects';
+import { reserveOrderNumber } from './order-number';
+import { resolveCustomerId } from './customer-identity';
+import { validateOrderSubmission, trimmed } from './order-submission';
 
 /** Everything the checkout is allowed to submit. Anything not named here
  * cannot reach the database, whatever else the request body contains. */
@@ -80,18 +75,13 @@ export async function createCustomerOrder(
   supabase: SupabaseClient,
   submission: CreateOrderSubmission
 ): Promise<CreateOrderResult> {
-  const customerName = trimmed(submission.customer_name);
-  const customerEmail = trimmed(submission.customer_email).toLowerCase();
-  const customerPhone = trimmed(submission.customer_phone);
-
-  if (!isValidIdempotencyKey(submission.idempotency_key)) {
-    return { ok: false, status: 400, error: 'This checkout session is missing its reference. Please reload and try again.' };
+  // Shape and length are already guaranteed by the route's schema; this is the
+  // business layer's own check, including whether the buyer is barred.
+  const validation = await validateOrderSubmission(supabase, submission);
+  if (!validation.ok) {
+    return { ok: false, status: validation.status, error: validation.error };
   }
-  const idempotencyKey = submission.idempotency_key.trim().toLowerCase();
-
-  if (!customerName || !customerEmail || !customerPhone) {
-    return { ok: false, status: 400, error: 'Your name, email and phone are all required.' };
-  }
+  const { idempotencyKey, customerName, customerEmail, customerPhone } = validation.validated;
 
   // Replay check first, before any pricing or stock work: if this checkout
   // attempt already produced an order, hand that one back rather than doing it
@@ -107,10 +97,6 @@ export async function createCustomerOrder(
     return { ok: false, status: reserved.status, error: reserved.error };
   }
   const orderNumber = reserved.orderNumber;
-
-  if (!EMAIL_PATTERN.test(customerEmail)) {
-    return { ok: false, status: 400, error: 'Please enter a valid email address.' };
-  }
 
   // The only source of every amount written below.
   const pricing = await priceOrder(supabase, {
@@ -154,12 +140,26 @@ export async function createCustomerOrder(
     };
   }
 
+  // Resolve the buyer's durable identity before the insert so the order can
+  // carry it. Returns null rather than throwing if anything goes wrong — the
+  // order matters more than the link, which a backfill can repair.
+  const customerId = await resolveCustomerId(supabase, {
+    email: customerEmail,
+    name: customerName,
+    phone: customerPhone,
+  });
+
+  if (!customerId) {
+    console.warn(`Order ${orderNumber} has no customer_id — identity could not be resolved.`);
+  }
+
   // Claims stock, then writes the order and its items, unwinding whatever it
   // completed if a later step fails.
   const persisted = await persistOrderWithReservedStock(
     supabase,
     {
       order_number: orderNumber,
+      customer_id: customerId,
       idempotency_key: idempotencyKey,
       customer_name: customerName,
       customer_email: customerEmail,
@@ -184,25 +184,12 @@ export async function createCustomerOrder(
     return { ok: true, order, replayed: true };
   }
 
-  // Best-effort from here on: the order exists, its stock is held, and the
-  // customer has their number on screen — neither a missed history row nor a
-  // failed email is worth failing the request over.
-  const { error: historyError } = await supabase
-    .from('order_status_history')
-    .insert({ order_id: order.id, status: INITIAL_ORDER_STATUS, changed_at: new Date().toISOString() });
-  if (historyError) {
-    console.error('Error recording initial status history:', historyError);
-  }
-
-  try {
-    await sendOrderReceivedEmail({
-      orderNumber: order.order_number,
-      customerName: customerName,
-      customerEmail: customerEmail,
-    });
-  } catch (notificationError) {
-    console.error('Order-received email error:', notificationError);
-  }
+  await runOrderCreatedEffects(supabase, {
+    orderId: order.id,
+    orderNumber: order.order_number,
+    customerName,
+    customerEmail,
+  });
 
   return { ok: true, order };
 }

@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import type { Order } from '@/types/order';
+import { readFieldErrors, type FieldErrors } from '@/lib/api/field-errors';
 
 export function useTrackOrder() {
   const [orderNumber, setOrderNumber] = useState('');
@@ -10,6 +11,8 @@ export function useTrackOrder() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  /** The form's field names match the API's, so no remapping is needed here. */
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const fetchOrder = async () => {
     try {
@@ -23,6 +26,7 @@ export function useTrackOrder() {
       if (data.success) {
         setOrder(data.order);
       } else {
+        setFieldErrors(readFieldErrors(data));
         setError(data.error || 'Order not found');
       }
     } catch (err) {
@@ -34,6 +38,7 @@ export function useTrackOrder() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setFieldErrors({});
     setOrder(null);
     await fetchOrder();
     setLoading(false);
@@ -49,12 +54,13 @@ export function useTrackOrder() {
   const reset = () => {
     setOrder(null);
     setError('');
+    setFieldErrors({});
   };
 
   return {
     orderNumber, setOrderNumber,
     contact, setContact,
-    order, loading, error,
+    order, loading, error, fieldErrors,
     trackOrder, refreshOrder, reset,
   };
 }

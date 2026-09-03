@@ -7,6 +7,8 @@ import type { ShippingZone } from '@/types/shipping';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatDate } from '@/lib/commerce/format-date';
 import { getStatusIcon, getStatusColor, formatOrderStatus } from '@/lib/commerce/order-status';
+import EntityHistory from '@/app/admin/components/EntityHistory';
+import OrderStatusHistory from './OrderStatusHistory';
 import ShippingOverrideForm from './ShippingOverrideForm';
 import ChangeRequestReviewCard from './ChangeRequestReviewCard';
 
@@ -38,9 +40,6 @@ export default function OrderDetailsModal({
   onResolveChangeRequest,
 }: OrderDetailsModalProps) {
   const pendingChangeRequest = selectedOrder.order_change_requests?.find((r) => r.status === 'pending');
-  const statusHistory = [...(selectedOrder.order_status_history ?? [])].sort(
-    (a, b) => new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime()
-  );
   return (
     <Modal
       open
@@ -74,26 +73,13 @@ export default function OrderDetailsModal({
         </div>
       </div>
 
-      {/* Status History */}
-      {statusHistory.length > 0 && (
-        <div className="mb-6">
-          <h3 className="font-semibold text-text-primary mb-3">Status History</h3>
-          <ul className="space-y-2">
-            {statusHistory.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex items-center justify-between gap-3 p-3 bg-background-secondary rounded-surface"
-              >
-                <span className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
-                  {getStatusIcon(entry.status)}
-                  {formatOrderStatus(entry.status)}
-                </span>
-                <span className="text-body-sm text-text-secondary">{formatDate(entry.changed_at)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <OrderStatusHistory entries={selectedOrder.order_status_history ?? []} />
+
+      {/* Who changed this order, and why — the question order_status_history
+          cannot answer, since it records only a status and a timestamp. */}
+      <div className="mb-6">
+        <EntityHistory entityType="order" entityId={selectedOrder.id} pageSize={10} />
+      </div>
 
       {/* Order Items */}
       {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (

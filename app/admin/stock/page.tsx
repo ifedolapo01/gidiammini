@@ -1,8 +1,9 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/stock/page.tsx
 'use client';
+import { StockSkeleton } from './components/StockSkeleton';
 
-import { Input, Spinner } from '@/components/ui';
+import { Input } from '@/components/ui';
 import { useStock } from './hooks/useStock';
 import { useStockEditing } from './hooks/useStockEditing';
 import { StockSummaryCards } from './components/StockSummaryCards';
@@ -31,20 +32,7 @@ export default function StockManagementPage() {
     isSaving,
   } = useStockEditing(loadStockSilently);
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <Spinner size="xl" className="text-primary" />
-            </div>
-            <div className="text-body-lg text-text-secondary">Loading stock data...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <StockSkeleton />;
 
   return (
     <div className="p-4 md:p-6 lg:p-8">

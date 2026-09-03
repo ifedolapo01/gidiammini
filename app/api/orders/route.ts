@@ -6,6 +6,8 @@ import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { createCustomerOrder } from '@/lib/commerce/create-order';
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
+import { parseJsonBody } from '@/lib/api/parse-body';
+import { createOrderSchema } from '@/lib/api/schemas/public-orders';
 
 // GET method - fetch orders (for admin dashboard)
 async function listOrders(supabase: SupabaseClient, request: NextRequest) {
@@ -55,8 +57,14 @@ export const GET = withAdminAuth((request, { supabase }) => listOrders(supabase,
  */
 async function createOrder(request: NextRequest) {
   try {
+    // Strips every key the schema doesn't name, so nothing beyond the fields
+    // below can travel further even though createCustomerOrder allowlists again
+    // before the insert.
+    const parsed = await parseJsonBody(request, createOrderSchema);
+    if (!parsed.ok) return parsed.response;
+
     const supabase = createAdminClient();
-    const result = await createCustomerOrder(supabase, await request.json());
+    const result = await createCustomerOrder(supabase, parsed.data);
 
     if (!result.ok) {
       return NextResponse.json(

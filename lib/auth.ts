@@ -97,17 +97,41 @@ export async function verifyJWT(token: string, secret: string): Promise<any | nu
   }
 }
 
-// Verify admin auth cookie in NextRequest
-export async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
+/** Who is making this request, as far as the token can say. */
+export interface AdminActor {
+  email: string | null;
+  role: string;
+}
+
+/**
+ * Reads and verifies the admin cookie, returning the actor rather than a bare
+ * boolean.
+ *
+ * The audit trail needs to name whoever performed an action, and the only
+ * identity available is the email inside the token — the store has a single
+ * shared admin login. verifyAdminAuth is now a thin wrapper over this, so
+ * there is one place that decides whether a request is an authenticated admin.
+ */
+export async function getAdminActor(request: NextRequest): Promise<AdminActor | null> {
   const token = request.cookies.get('admin-token')?.value;
-  if (!token) return false;
-  
+  if (!token) return null;
+
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     console.error('JWT_SECRET environment variable is not defined');
-    return false;
+    return null;
   }
-  
+
   const payload = await verifyJWT(token, secret);
-  return payload !== null && payload.role === 'admin';
+  if (payload === null || payload.role !== 'admin') return null;
+
+  return {
+    email: typeof payload.email === 'string' ? payload.email : null,
+    role: payload.role,
+  };
+}
+
+// Verify admin auth cookie in NextRequest
+export async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
+  return (await getAdminActor(request)) !== null;
 }

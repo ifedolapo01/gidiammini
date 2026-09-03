@@ -21,6 +21,41 @@ import {
   checkRateLimit, resetRateLimit, rateLimitKey, clientIdentifier, tooManyRequests,
 } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
+import { createAdminClient } from '@/lib/supabase/admin-server';
+import { recordAudit, type AuditAction } from '@/lib/api/audit';
+
+/**
+ * Sign-in attempts go in the audit trail.
+ *
+ * This route cannot use withAdminAuth — nobody is authenticated yet, which is
+ * the point of it — so it records its own entries. Refused and throttled
+ * attempts matter more than successful ones: a run of them is what an attempted
+ * break-in looks like, and it is the one thing an operator would want to see
+ * without being told to look.
+ *
+ * The attempted email is recorded; the password never is. It is not passed to
+ * recordAudit at all, so there is nothing for redaction to catch.
+ */
+async function recordSignIn(
+  request: NextRequest,
+  action: AuditAction,
+  attemptedEmail: unknown,
+  statusCode: number
+): Promise<void> {
+  const email = typeof attemptedEmail === 'string' ? attemptedEmail.trim().toLowerCase() : null;
+
+  await recordAudit(
+    createAdminClient(),
+    { entityType: 'admin_session', entityId: email, action },
+    {
+      actorEmail: email,
+      method: 'POST',
+      path: '/api/admin/login',
+      ip: clientIdentifier(request),
+      statusCode,
+    }
+  );
+}
 
 const THROTTLED_MESSAGE = 'Too many sign-in attempts. Please wait 15 minutes and try again.';
 /** Deliberately identical for a wrong email and a wrong password, so the
@@ -41,6 +76,7 @@ export async function POST(request: NextRequest) {
     const byIp = await checkRateLimit(ipKey, RATE_LIMITS.loginPerIp);
     if (!byIp.allowed) {
       console.warn(`Login throttled by IP: ${clientIdentifier(request)}`);
+      await recordSignIn(request, 'login_throttled', null, 429);
       return tooManyRequests(byIp, THROTTLED_MESSAGE);
     }
 
@@ -52,6 +88,7 @@ export async function POST(request: NextRequest) {
     const byAccount = await checkRateLimit(accountLimitKey, RATE_LIMITS.loginPerAccount, { count: false });
     if (!byAccount.allowed) {
       console.warn('Login throttled by account (too many recent failures)');
+      await recordSignIn(request, 'login_throttled', email, 429);
       return tooManyRequests(byAccount, THROTTLED_MESSAGE);
     }
 
@@ -74,6 +111,7 @@ export async function POST(request: NextRequest) {
     if (email !== adminEmail || !isPasswordValid) {
       // Only now spend a slot from the per-account budget.
       await checkRateLimit(accountLimitKey, RATE_LIMITS.loginPerAccount);
+      await recordSignIn(request, 'login_failed', email, 401);
       return NextResponse.json({ success: false, error: INVALID_MESSAGE }, { status: 401 });
     }
 
@@ -88,6 +126,8 @@ export async function POST(request: NextRequest) {
       },
       jwtSecret
     );
+
+    await recordSignIn(request, 'login', email, 200);
 
     const response = NextResponse.json({ success: true, message: 'Login successful' });
 

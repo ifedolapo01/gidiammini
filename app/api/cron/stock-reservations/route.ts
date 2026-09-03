@@ -14,6 +14,7 @@
 // the customer is told — all by the same code path an admin's manual cancel uses.
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
+import { authorizeCron } from '@/lib/api/cron-auth';
 import { applyOrderStatusTransition } from '@/lib/commerce/order-status-transition';
 import { RESERVATION_HOURS } from '@/lib/commerce/persist-order';
 
@@ -24,22 +25,11 @@ const CANCELLATION_MESSAGE =
   'If you did pay, please reply with your receipt and we will sort it out right away.';
 
 export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-
   // Unlike the promotional crons, this one cancels orders. It fails closed
   // rather than running unauthenticated, so a missing secret can't turn a
   // public URL into a mass-cancel button.
-  if (!secret) {
-    console.error('CRON_SECRET is not set — refusing to run the stock-reservation sweep.');
-    return NextResponse.json(
-      { success: false, error: 'Cron is not configured on this deployment.' },
-      { status: 503 }
-    );
-  }
-
-  if (req.headers.get('authorization') !== `Bearer ${secret}`) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  const denied = authorizeCron(req, { failClosed: true, jobName: 'the stock-reservation sweep' });
+  if (denied) return denied;
 
   try {
     const supabase = createAdminClient();

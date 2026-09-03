@@ -3,14 +3,15 @@
 
 import { useMemo, useState } from 'react';
 import { VariantSize, toTitleCase } from '@/lib/commerce/product-form-helpers';
+import type { SizingType } from '@/lib/commerce/product-form-schema';
 
-const emptyVariant = (): VariantSize => ({ size: '', price: 0, stock: 0, colors: [] });
+const emptyVariant = (): VariantSize => ({ size: '', price: 0, stock: 0, cost: null, colors: [] });
 
 export function useProductVariants() {
   const [hasVariants, setHasVariants] = useState(false);
   const [hasSizes, setHasSizes] = useState(false);
   const [hasColors, setHasColors] = useState(false);
-  const [sizingType, setSizingType] = useState<'size' | 'age'>('size');
+  const [sizingType, setSizingType] = useState<SizingType>('size');
   const [variants, setVariants] = useState<VariantSize[]>([emptyVariant()]);
 
   const uniqueColorsArray = useMemo(() => {
@@ -40,7 +41,7 @@ export function useProductVariants() {
   };
 
   const addVariant = () => {
-    setVariants((prev) => [...prev, { size: '', price: 0, stock: 0, colors: [{ name: '', price: 0, stock: 0 }] }]);
+    setVariants((prev) => [...prev, { size: '', price: 0, stock: 0, cost: null, colors: [{ name: '', price: 0, stock: 0, cost: null }] }]);
   };
 
   const removeVariant = (vIdx: number) => {
@@ -71,6 +72,14 @@ export function useProductVariants() {
     });
   };
 
+  const updateVariantCost = (vIdx: number, value: number | null) => {
+    setVariants((prev) => {
+      const next = [...prev];
+      next[vIdx] = { ...next[vIdx], cost: value };
+      return next;
+    });
+  };
+
   const blurVariantSize = (vIdx: number) => {
     setVariants((prev) => {
       const val = prev[vIdx].size;
@@ -84,7 +93,7 @@ export function useProductVariants() {
   const addColorToVariant = (vIdx: number) => {
     setVariants((prev) => {
       const next = [...prev];
-      next[vIdx] = { ...next[vIdx], colors: [...next[vIdx].colors, { name: '', price: 0, stock: 0 }] };
+      next[vIdx] = { ...next[vIdx], colors: [...next[vIdx].colors, { name: '', price: 0, stock: 0, cost: null }] };
       return next;
     });
   };
@@ -127,6 +136,16 @@ export function useProductVariants() {
     });
   };
 
+  const updateColorCost = (vIdx: number, cIdx: number, value: number | null) => {
+    setVariants((prev) => {
+      const next = [...prev];
+      const colors = [...next[vIdx].colors];
+      colors[cIdx] = { ...colors[cIdx], cost: value };
+      next[vIdx] = { ...next[vIdx], colors };
+      return next;
+    });
+  };
+
   const blurColorName = (vIdx: number, cIdx: number) => {
     setVariants((prev) => {
       const val = prev[vIdx].colors[cIdx].name;
@@ -147,8 +166,8 @@ export function useProductVariants() {
     variants, setVariants,
     uniqueColorsArray, uniqueColorsCount,
     addVariant, removeVariant,
-    updateVariantSize, updateVariantPrice, updateVariantStock, blurVariantSize,
+    updateVariantSize, updateVariantPrice, updateVariantStock, updateVariantCost, blurVariantSize,
     addColorToVariant, removeColorFromVariant,
-    updateColorName, updateColorPrice, updateColorStock, blurColorName,
+    updateColorName, updateColorPrice, updateColorStock, updateColorCost, blurColorName,
   };
 }

@@ -1,7 +1,7 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 'use client';
+import { CategoriesSkeleton } from './components/CategoriesSkeleton';
 
-import { Spinner } from '@/components/ui';
 import { useCategories } from './hooks/useCategories';
 import { AddCategoryForm } from './components/AddCategoryForm';
 import { AddSubcategoryForm } from './components/AddSubcategoryForm';
@@ -21,6 +21,7 @@ export default function CategoriesPage() {
     newSubSlug,
     isAddingSub,
     pendingDeleteId,
+    savingGuidanceId,
     handleCatNameChange,
     handleSubNameChange,
     handleParentCategoryChange,
@@ -28,15 +29,10 @@ export default function CategoriesPage() {
     handleDeleteCategory,
     handleAddSubcategory,
     handleDeleteSubcategory,
+    handleSaveGuidance,
   } = useCategories();
 
-  if (loading && categories.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" className="text-primary" />
-      </div>
-    );
-  }
+  if (loading && categories.length === 0) return <CategoriesSkeleton />;
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-8">
@@ -83,8 +79,10 @@ export default function CategoriesPage() {
           <CategoryList
             categories={categories}
             pendingDeleteId={pendingDeleteId}
+            savingGuidanceId={savingGuidanceId}
             onDeleteCategory={handleDeleteCategory}
             onDeleteSubcategory={handleDeleteSubcategory}
+            onSaveGuidance={handleSaveGuidance}
           />
         </div>
 

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { getVariantStock } from '@/lib/commerce/pricing';
+import { PUBLIC_VARIANTS_SELECT } from '@/lib/commerce/product-variants';
 import { Product } from '@/types/product';
 import { CartItem } from '@/types/order';
 
@@ -23,7 +24,9 @@ export function useCheckoutStockValidation() {
 
       const { data: products, error } = await supabase
         .from('products')
-        .select('id, stock, pricing_config')
+        // Anon key: the columns are named because `product_variants(*)` would
+        // be refused — anon has no grant on cost.
+        .select(`id,stock,pricing_config,${PUBLIC_VARIANTS_SELECT}` as const)
         .in('id', productIds);
 
       if (error) throw error;

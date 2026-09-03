@@ -1,10 +1,10 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/products/page.tsx - PRODUCTS LIST ONLY
 'use client';
+import { ProductsSkeleton } from './components/ProductsSkeleton';
 
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { Spinner } from '@/components/ui';
 import { useProducts } from './list-hooks/useProducts';
 import { ProductsTable } from './list-components/ProductsTable';
 import { DeleteProductModal } from './list-components/DeleteProductModal';
@@ -43,9 +43,7 @@ export default function AdminProducts() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Spinner size="xl" className="text-primary" />
-        </div>
+        <ProductsSkeleton />
       ) : products.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-border-strong rounded-surface">
           <div className="w-16 h-16 bg-background-tertiary rounded-full flex items-center justify-center mx-auto mb-4">

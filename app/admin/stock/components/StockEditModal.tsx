@@ -3,6 +3,7 @@ import { Package, Save } from 'lucide-react';
 import { Button, Input, Modal } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
+import ProductImage from '@/components/commerce/ProductImage';
 
 interface StockEditModalProps {
   editingProduct: FlattenedProduct;
@@ -21,10 +22,11 @@ export function StockEditModal({ editingProduct, stockValue, onStockChange, onCa
           <div className="flex gap-4 items-start">
             {editingProduct.main_image ? (
               <div className="w-20 h-20 flex-shrink-0 rounded-control overflow-hidden border border-border shadow-elevation-1 bg-surface">
-                <img
+                <ProductImage
                   src={editingProduct.main_image}
                   alt={editingProduct.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full"
+                  sizes="80px"
                 />
               </div>
             ) : (

@@ -55,6 +55,12 @@ export function ReceiptPreviewModal({ orderId, onClose }: ReceiptPreviewModalPro
           <span className="text-body-sm">Opening receipt…</span>
         </div>
       ) : (
+        /* Stays a raw <img>. The URL is a short-lived signature over a
+           private object: routing it through the image optimiser would cache a
+           derivative under a key that expires, and would put a copy of a
+           customer's bank receipt in a public cache. One admin viewing one
+           receipt is not a payload problem worth taking that on.
+           eslint-disable-next-line @next/next/no-img-element */
         <img
           src={url}
           alt="Payment receipt"

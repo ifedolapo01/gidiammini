@@ -11,7 +11,7 @@ export default function TrackOrderPage() {
   const {
     orderNumber, setOrderNumber,
     contact, setContact,
-    order, loading, error,
+    order, loading, error, fieldErrors,
     trackOrder, refreshOrder, reset,
   } = useTrackOrder();
 
@@ -58,6 +58,7 @@ export default function TrackOrderPage() {
             setContact={setContact}
             loading={loading}
             error={error}
+            fieldErrors={fieldErrors}
             onSubmit={trackOrder}
           />
         )}

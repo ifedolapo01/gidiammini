@@ -7,6 +7,7 @@ import type { Category, Product } from '@/types/product';
 import type { VariantTarget } from '@/lib/commerce/discount-target';
 import type { DiscountFormData } from '../hooks/useDiscounts';
 import { DiscountTargetField } from './DiscountTargetField';
+import MarginFloorWarning from './MarginFloorWarning';
 
 interface VariantTargetingProps {
   addedVariants: VariantTarget[];
@@ -113,6 +114,9 @@ export function DiscountFormModal({
               </Select>
             </div>
 
+            {/* Placed after scope and target because the answer depends on
+                both: the same percentage is safe on one category and a loss on
+                another. */}
             <DiscountTargetField
               scope={formData.scope}
               targetId={formData.target_id}
@@ -122,6 +126,16 @@ export function DiscountFormModal({
               variantTargeting={variantTargeting}
             />
           </div>
+
+          <MarginFloorWarning
+            products={products}
+            discount={{
+              type: formData.type,
+              value: Number(formData.value) || 0,
+              scope: formData.scope,
+              target_id: formData.target_id || null,
+            }}
+          />
 
           <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border-light">
             <div>

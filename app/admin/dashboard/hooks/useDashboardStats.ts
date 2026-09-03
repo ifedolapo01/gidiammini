@@ -3,12 +3,15 @@
 
 import { useState, useEffect } from 'react';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
+import type { MarginTotals } from '@/lib/commerce/margin';
 
 export interface DashboardStats {
   totalProducts: number;
   totalOrders: number;
   pendingOrders: number;
   totalRevenue: number;
+  /** null until loaded, or when the dashboard query failed. */
+  margin: MarginTotals | null;
   recentOrders: any[];
   lowStockProducts: any[];
 }
@@ -19,6 +22,7 @@ export function useDashboardStats() {
     totalOrders: 0,
     pendingOrders: 0,
     totalRevenue: 0,
+    margin: null,
     recentOrders: [],
     lowStockProducts: []
   });

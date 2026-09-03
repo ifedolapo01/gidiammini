@@ -1,10 +1,10 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/page.tsx - UPDATED
 'use client';
+import { OrdersSkeleton } from './components/OrdersSkeleton';
 
 import { Suspense } from 'react';
 import { Package } from 'lucide-react';
-import { Spinner } from '@/components/ui';
 import OrderDetailsModal from './components/OrderDetailsModal';
 import OrderCard from './components/OrderCard';
 import OrderFilters from './components/OrderFilters';
@@ -36,18 +36,7 @@ function AdminOrdersContent() {
   const { filter, setFilter, searchTerm, setSearchTerm, searchedOrders } = useOrderFilters(orders, shippingZones);
   const overdueCount = orders.filter((order) => getShippingOverdueInfo(order, shippingZones) !== null).length;
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <Spinner size="xl" className="text-primary mx-auto mb-4" />
-            <div className="text-body-lg text-text-secondary">Loading orders...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <OrdersSkeleton />;
 
   return (
     <>
@@ -122,11 +111,7 @@ function AdminOrdersContent() {
 
 export default function AdminOrders() {
   return (
-    <Suspense fallback={
-      <div className="p-8 flex items-center justify-center h-64">
-        <Spinner size="xl" className="text-primary" />
-      </div>
-    }>
+    <Suspense fallback={<OrdersSkeleton />}>
       <AdminOrdersContent />
     </Suspense>
   );

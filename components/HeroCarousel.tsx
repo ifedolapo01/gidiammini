@@ -3,10 +3,20 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Image, { type StaticImageData } from 'next/image';
 import Link from 'next/link';
 
+// Imported rather than referenced by path, so the build reads each file's real
+// dimensions and generates its own blur preview. These three were the heaviest
+// thing the site served: 2.5MB of full-resolution PNG, set as CSS
+// background-image, which no optimiser can reach and no browser can lazy-load.
+// As <Image> they become AVIF/WebP at the width the device actually needs.
+import carouselBabies from '@/public/images/carousel_babies.png';
+import carouselMaternity from '@/public/images/carousel_maternity.png';
+import carouselKids from '@/public/images/carousel_kids.png';
+
 interface Slide {
-  image: string;
+  image: StaticImageData;
   title: string;
   subtitle: string;
   buttonText: string;
@@ -16,7 +26,7 @@ interface Slide {
 
 const slides: Slide[] = [
   {
-    image: '/images/carousel_babies.png',
+    image: carouselBabies,
     title: 'A World of Softness for Your Baby',
     subtitle: 'Organic cotton wear, cozy blankets and nursery essentials crafted for delicate skin.',
     buttonText: 'Shop Babies Collection',
@@ -24,7 +34,7 @@ const slides: Slide[] = [
     bgColor: 'from-accent/15 to-background-secondary'
   },
   {
-    image: '/images/carousel_maternity.png',
+    image: carouselMaternity,
     title: 'Maternity Comfort & Chic Style',
     subtitle: 'Buttery-soft, elegant silhouettes designed to support and embrace you throughout motherhood.',
     buttonText: 'Explore Maternity Wear',
@@ -32,7 +42,7 @@ const slides: Slide[] = [
     bgColor: 'from-primary/15 to-background-secondary'
   },
   {
-    image: '/images/carousel_kids.png',
+    image: carouselKids,
     title: 'Outfits Crafted for Playful Days',
     subtitle: 'Vibrant, durable clothing for active kids and pre-teens to run, jump and explore.',
     buttonText: 'Shop Kids & Pre-teens',
@@ -66,23 +76,39 @@ export default function HeroCarousel() {
         {slides.map((slide, index) => (
           <div
             key={index}
-            className={`absolute top-0 left-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col md:flex-row items-center ${
+            className={`absolute top-0 left-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
               index === current ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
             {/* Background Pastel Gradient Overlay */}
             <div className={`absolute inset-0 bg-gradient-to-tr ${slide.bgColor} z-0`} />
 
-            {/* Mobile Image Banner */}
-            <div className="md:hidden w-full h-[45%] relative z-10">
-              <div
-                className="w-full h-full bg-cover bg-center"
-                style={{ backgroundImage: `url(${slide.image})` }}
+            {/* One image element, not two.
+                The layout used to hold a mobile copy and a desktop copy of the
+                same photo and hide one with `md:hidden` / `hidden md:block`.
+                As CSS backgrounds that was free — a background on a
+                display:none element is never fetched. As <Image> it is not: a
+                phone would download the desktop half-width crop it can never
+                see. Absolute positioning gets the same two geometries out of a
+                single element: a banner across the top 45% on mobile, the
+                right half of the stage from md. */}
+            <div className="absolute inset-x-0 top-0 h-[45%] md:inset-y-0 md:left-1/2 md:right-0 md:h-full z-10">
+              <Image
+                src={slide.image}
+                alt=""
+                fill
+                // Only the first slide is on screen at load; the other two sit
+                // behind an opacity transition and can wait. Marking all three
+                // priority would have them race the one that is actually visible.
+                priority={index === 0}
+                placeholder="blur"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover object-center"
               />
             </div>
 
-            {/* Left Column: Text Content */}
-            <div className="w-full h-[55%] md:h-full md:w-1/2 flex items-center justify-center px-12 md:px-16 pb-8 pt-4 md:py-16 relative z-10">
+            {/* Text: under the banner on mobile, the left half from md. */}
+            <div className="absolute inset-x-0 bottom-0 h-[55%] md:inset-y-0 md:left-0 md:right-1/2 md:h-full flex items-center justify-center px-12 md:px-16 pb-8 pt-4 md:py-16 z-10">
               <div className="max-w-xl text-center md:text-left">
                 <span className="inline-block px-3 py-1 mb-2 md:mb-4 bg-primary/10 text-primary text-caption-md md:text-body-sm font-semibold rounded-full tracking-wide shadow-elevation-1 uppercase">
                   New Arrival
@@ -102,15 +128,6 @@ export default function HeroCarousel() {
               </div>
             </div>
 
-            {/* Right Column: Visual Image Banner (Desktop) */}
-            <div className="hidden md:block w-1/2 h-full relative z-10">
-              <div
-                className="w-full h-full bg-cover bg-center"
-                style={{ backgroundImage: `url(${slide.image})` }}
-              />
-              {/* Soft visual curve separator */}
-              <div className="absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-transparent to-transparent pointer-events-none" />
-            </div>
           </div>
         ))}
       </div>

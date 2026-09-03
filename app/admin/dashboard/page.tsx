@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { Package, ShoppingBag } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faNairaSign } from '@fortawesome/free-solid-svg-icons';
-import { Button, Spinner } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { StatCard } from './components/StatCard';
+import { DashboardSkeleton } from './components/DashboardSkeleton';
+import MarginStatCard from './components/MarginStatCard';
 import { AnalyticsSection } from './components/AnalyticsSection';
 import { RecentOrdersPanel } from './components/RecentOrdersPanel';
 import { LowStockPanel } from './components/LowStockPanel';
@@ -18,16 +20,7 @@ import { formatCurrency } from './format-currency';
 export default function AdminDashboard() {
   const { stats, loading, error, fetchDashboardStats } = useDashboardStats();
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <Spinner size="xl" className="text-primary mx-auto mb-4" />
-          <div className="text-text-secondary">Loading dashboard data...</div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   if (error) {
     return (
@@ -60,7 +53,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Five cards: 2-up on tablet, 3-up on laptop, all five in one row on a
+          wide screen. Four columns would leave the fifth stranded alone on
+          its own row. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 mb-8">
         <StatCard
           title="Total Products"
           icon={<Package className="w-5 h-5 text-primary" />}
@@ -84,6 +80,8 @@ export default function AdminDashboard() {
           value={formatCurrency(stats.totalRevenue)}
           subtext="All time"
         />
+
+        <MarginStatCard margin={stats.margin} />
 
         <StatCard
           title="Pending Orders"

@@ -25,8 +25,11 @@ export const adminConfig = {
     { href: '/admin/products', label: 'Products' },
     { href: '/admin/orders', label: 'Orders' },
     { href: '/admin/stock', label: 'Stock Management' },
+    { href: '/admin/reviews', label: 'Reviews' },
+    { href: '/admin/questions', label: 'Questions' },
     { href: '/admin/categories', label: 'Categories' },
     { href: '/admin/discounts', label: 'Discounts' },
     { href: '/admin/shipping', label: 'Shipping' },
+    { href: '/admin/activity', label: 'Activity' },
   ] satisfies AdminNavItem[],
 };

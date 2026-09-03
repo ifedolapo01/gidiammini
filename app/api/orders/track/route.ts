@@ -7,30 +7,27 @@ import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
+import { parseJsonBody } from '@/lib/api/parse-body';
+import { trackOrderSchema } from '@/lib/api/schemas/public-orders';
 
 const NOT_FOUND_MESSAGE = "We couldn't find an order matching that order number and email/phone.";
 
 async function trackOrder(request: NextRequest) {
   try {
-    const { orderNumber, contact } = await request.json();
+    // The schema trims, length-caps and strips the leading '#' customers paste
+    // from their confirmation email. A non-string order number used to reach
+    // .trim() and 500.
+    const parsed = await parseJsonBody(request, trackOrderSchema);
+    if (!parsed.ok) return parsed.response;
 
-    if (!orderNumber?.trim() || !contact?.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Order number and email or phone are required' },
-        { status: 400 }
-      );
-    }
+    const { orderNumber, contact } = parsed.data;
 
     const supabase = createAdminClient();
-
-    // Customers often paste the order number as shown on the confirmation
-    // page/email, "#UT12345678" — strip a leading '#' so that still matches.
-    const normalizedOrderNumber = orderNumber.trim().replace(/^#/, '');
 
     const { data: order, error } = await supabase
       .from('orders')
       .select(`*, order_items (*), order_change_requests (*)`)
-      .eq('order_number', normalizedOrderNumber)
+      .eq('order_number', orderNumber)
       .single();
 
     if (error || !order || !verifyOrderContact(order, contact)) {

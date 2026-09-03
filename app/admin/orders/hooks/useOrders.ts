@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Order } from '@/types/order';
 import { formatOrderStatus } from '@/lib/commerce/order-status';
+import { describeDelivery, anyDelivered } from '@/lib/notifications/delivery';
 import { notifyOrdersChanged } from '../../lib/orderEvents';
 import { useToast } from '../../hooks/useToast';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
@@ -116,11 +117,18 @@ export function useOrders() {
         notifyOrdersChanged();
         await syncOrdersSilently();
 
-        const message = result.paymentVerified
-          ? 'Order confirmed! Payment marked as verified. Customer has been notified.'
-          : `Order status updated to ${formatOrderStatus(newStatus)}. Customer has been notified.`;
+        // Say what actually went out. Claiming "Customer has been notified"
+        // when SMS is unconfigured is how an operator ends up skipping the
+        // follow-up call.
+        const what = result.paymentVerified
+          ? 'Order confirmed and payment verified.'
+          : `Order status updated to ${formatOrderStatus(newStatus)}.`;
+        const how = result.delivery ? describeDelivery(result.delivery) : 'No notification sent';
 
-        showToast(message, 'success');
+        showToast(
+          `${what} ${how}.`,
+          result.delivery && !anyDelivered(result.delivery) ? 'error' : 'success'
+        );
       } else {
         console.error('Update failed:', result);
         showToast(`Failed to update order status: ${result.error || 'Unknown error'}`, 'error');
@@ -154,14 +162,17 @@ export function useOrders() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          showToast('Notification sent successfully!', 'success');
+          showToast(result.message || 'Notification sent.', 'success');
           setNotificationMessage('');
           setSelectedOrder(null);
         } else {
-          showToast(`Failed to send notification: ${result.error}`, 'error');
+          // The route returns 502 with a human-readable reason when nothing
+          // could be delivered, e.g. "Nothing sent — SMS not configured".
+          showToast(result.error || 'Failed to send notification', 'error');
         }
       } else {
-        showToast('Failed to send notification', 'error');
+        const result = await response.json().catch(() => null);
+        showToast(result?.error || 'Failed to send notification', 'error');
       }
     } catch (error) {
       console.error('Error sending notification:', error);

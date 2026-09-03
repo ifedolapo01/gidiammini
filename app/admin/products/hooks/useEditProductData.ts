@@ -6,6 +6,8 @@ import type { UseFormReset } from 'react-hook-form';
 import { Product } from '@/types/product';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { ImageFile, VariantColor, VariantSize } from '@/lib/commerce/product-form-helpers';
+import { variantKeyFor } from '@/lib/commerce/product-variants';
+import type { SizingType } from '@/lib/commerce/product-form-schema';
 
 interface UseEditProductDataArgs {
   productId: string;
@@ -14,7 +16,7 @@ interface UseEditProductDataArgs {
   setHasVariants: (value: boolean) => void;
   setHasSizes: (value: boolean) => void;
   setHasColors: (value: boolean) => void;
-  setSizingType: (value: 'size' | 'age') => void;
+  setSizingType: (value: SizingType) => void;
   setVariants: (value: VariantSize[]) => void;
 }
 
@@ -61,6 +63,16 @@ export function useEditProductData(args: UseEditProductDataArgs) {
 
       if (productData) {
         setProduct(productData);
+
+        // Cost lives on product_variants, not in pricing_config, so it is
+        // reloaded from the embedded rows and keyed the same way the database
+        // keys them.
+        const costFor = (size: string | null, color: string | null): number | null => {
+          const key = variantKeyFor(size, color);
+          const row = (productData?.product_variants ?? []).find((v) => v.variant_key === key);
+          return typeof row?.cost === 'number' ? row.cost : null;
+        };
+
         reset({
           name: productData.name,
           description: productData.description || '',
@@ -70,7 +82,15 @@ export function useEditProductData(args: UseEditProductDataArgs) {
           singleSize: productData.pricing_config?.singleSize || '',
           singleColor: productData.pricing_config?.singleColor || '',
           stock: productData.stock,
+          // '' rather than 0 for an unrecorded cost — see the note in
+          // lib/commerce/product-form-schema.ts.
+          cost: costFor(
+            productData.pricing_config?.singleSize ?? null,
+            productData.pricing_config?.singleColor ?? null,
+          ) ?? '',
           sizing_type: productData.sizing_type || 'size',
+          fit_rating: (productData as any).fit_rating || '',
+          fit_note: (productData as any).fit_note || '',
           colors: productData.colors.length > 0 ? productData.colors.map((c) => ({ value: c })) : [{ value: '' }],
           sizes: productData.sizes.length > 0 ? productData.sizes.map((s) => ({ value: s })) : [{ value: '' }],
           details: productData.details.length > 0 ? productData.details.map((d) => ({ value: d })) : [{ value: '' }],
@@ -98,7 +118,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
             setHasVariants(false);
             setHasSizes(false);
             setHasColors(false);
-            setVariants([{ size: '', price: productData.price, stock: config.singleStock || productData.stock, colors: [] }]);
+            setVariants([{ size: '', price: productData.price, stock: config.singleStock || productData.stock, cost: null, colors: [] }]);
           } else {
             setHasVariants(true);
             const newVariants: VariantSize[] = [];
@@ -115,15 +135,15 @@ export function useEditProductData(args: UseEditProductDataArgs) {
                 const [size, color] = key.split('|');
                 if (size && color) {
                   if (!sizeMap.has(size)) sizeMap.set(size, []);
-                  sizeMap.get(size)!.push({ name: color, price: prices[key] || 0, stock: stocks[key] || 0 });
+                  sizeMap.get(size)!.push({ name: color, price: prices[key] || 0, stock: stocks[key] || 0, cost: costFor(size, color) });
                 }
               });
 
               sizeMap.forEach((colors, size) => {
-                newVariants.push({ size, price: 0, stock: 0, colors });
+                newVariants.push({ size, price: 0, stock: 0, cost: null, colors });
               });
 
-              if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, colors: [] });
+              if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, cost: null, colors: [] });
             } else if (config.mode === 'size') {
               setHasSizes(true);
               setHasColors(false);
@@ -132,10 +152,10 @@ export function useEditProductData(args: UseEditProductDataArgs) {
               const stocks = config.sizeStock || {};
 
               Object.keys(prices).forEach((size) => {
-                newVariants.push({ size, price: prices[size] || 0, stock: stocks[size] || 0, colors: [] });
+                newVariants.push({ size, price: prices[size] || 0, stock: stocks[size] || 0, cost: costFor(size, null), colors: [] });
               });
 
-              if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, colors: [] });
+              if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, cost: null, colors: [] });
             } else if (config.mode === 'color') {
               setHasSizes(false);
               setHasColors(true);
@@ -145,7 +165,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
               const colors: VariantColor[] = [];
 
               Object.keys(prices).forEach((color) => {
-                colors.push({ name: color, price: prices[color] || 0, stock: stocks[color] || 0 });
+                colors.push({ name: color, price: prices[color] || 0, stock: stocks[color] || 0, cost: costFor(null, color) });
               });
 
               newVariants.push({ size: '', price: 0, stock: 0, colors });

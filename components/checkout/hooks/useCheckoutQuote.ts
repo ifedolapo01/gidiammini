@@ -33,6 +33,9 @@ interface QuoteRequest {
   /** Identifies this checkout attempt, so the order number and the eventual
    * order are both tied to it. */
   idempotencyKey: string;
+  /** Sent so the server can refuse a barred buyer before the payment screen,
+   * rather than after they have transferred. Never used for pricing. */
+  customerEmail: string;
 }
 
 export function useCheckoutQuote() {
@@ -53,6 +56,7 @@ export function useCheckoutQuote() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idempotency_key: request.idempotencyKey,
+          customer_email: request.customerEmail,
           delivery_option: request.deliveryOption,
           selected_state: request.selectedState,
           selected_lga: request.selectedLga || null,

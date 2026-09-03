@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { withAdminAuth, type AuditRecorder } from '@/lib/api/with-admin-auth';
+import { diffForAudit, isEmptyDiff, readForAudit, withoutTimestamps } from '@/lib/api/audit';
 
 export const maxDuration = 30;
 
@@ -76,7 +77,7 @@ async function saveZoneExceptions(supabase: SupabaseClient, parentZoneId: string
   if (insertError) throw insertError;
 }
 
-async function createShippingZone(supabase: SupabaseClient, request: NextRequest) {
+async function createShippingZone(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   const body = await request.json();
 
   if (!body.name || !body.state) {
@@ -102,10 +103,12 @@ async function createShippingZone(supabase: SupabaseClient, request: NextRequest
     await saveZoneExceptions(supabase, data.id, body.exceptions);
   }
 
+  audit({ entityType: 'shipping_zone', entityId: data.id, action: 'create', after: data });
+
   return NextResponse.json({ success: true, zone: data, message: 'Shipping zone created successfully' });
 }
 
-async function updateShippingZone(supabase: SupabaseClient, request: NextRequest) {
+async function updateShippingZone(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   const body = await request.json();
 
   if (!body.id) {
@@ -118,6 +121,8 @@ async function updateShippingZone(supabase: SupabaseClient, request: NextRequest
   if (body.is_primary) {
     await clearOtherPrimaryZones(supabase, body.id);
   }
+
+  const previous = await readForAudit(supabase, 'shipping_zones', body.id);
 
   const { data, error } = await supabase
     .from('shipping_zones')
@@ -132,10 +137,22 @@ async function updateShippingZone(supabase: SupabaseClient, request: NextRequest
     await saveZoneExceptions(supabase, body.id, body.exceptions);
   }
 
+  const diff = withoutTimestamps(diffForAudit(previous, data));
+  if (!isEmptyDiff(diff)) {
+    audit({
+      entityType: 'shipping_zone',
+      entityId: body.id,
+      action: 'update',
+      before: diff.before,
+      after: diff.after,
+      reason: typeof body.reason === 'string' ? body.reason : null,
+    });
+  }
+
   return NextResponse.json({ success: true, zone: data, message: 'Shipping zone updated successfully' });
 }
 
-async function deleteShippingZone(supabase: SupabaseClient, request: NextRequest) {
+async function deleteShippingZone(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   const body = await request.json();
 
   if (!body.id) {
@@ -145,6 +162,8 @@ async function deleteShippingZone(supabase: SupabaseClient, request: NextRequest
     );
   }
 
+  const previous = await readForAudit(supabase, 'shipping_zones', body.id);
+
   const { error } = await supabase
     .from('shipping_zones')
     .delete()
@@ -152,10 +171,18 @@ async function deleteShippingZone(supabase: SupabaseClient, request: NextRequest
 
   if (error) throw error;
 
+  audit({
+    entityType: 'shipping_zone',
+    entityId: body.id,
+    action: 'delete',
+    before: previous,
+    reason: typeof body.reason === 'string' ? body.reason : null,
+  });
+
   return NextResponse.json({ success: true, message: 'Shipping zone deleted successfully' });
 }
 
 export const GET = withAdminAuth((_request, { supabase }) => listShippingZones(supabase));
-export const POST = withAdminAuth((request, { supabase }) => createShippingZone(supabase, request));
-export const PUT = withAdminAuth((request, { supabase }) => updateShippingZone(supabase, request));
-export const DELETE = withAdminAuth((request, { supabase }) => deleteShippingZone(supabase, request));
+export const POST = withAdminAuth((request, { supabase, audit }) => createShippingZone(supabase, request, audit));
+export const PUT = withAdminAuth((request, { supabase, audit }) => updateShippingZone(supabase, request, audit));
+export const DELETE = withAdminAuth((request, { supabase, audit }) => deleteShippingZone(supabase, request, audit));

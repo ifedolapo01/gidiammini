@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/stock-reservations",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/product-pairs",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/customer-auth",
+      "schedule": "45 3 * * *"
     }
   ]
 }

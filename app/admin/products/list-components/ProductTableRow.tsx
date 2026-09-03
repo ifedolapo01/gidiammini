@@ -6,6 +6,7 @@ import { formatCategoryStr } from '@/lib/commerce/format-text';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
+import ProductImage from '@/components/commerce/ProductImage';
 
 interface RowActionsProps {
   productId: string;
@@ -43,16 +44,12 @@ export function SingleProductRow({ product, onDelete }: SingleProductRowProps) {
     <tr className="hover:bg-surface-hover transition-colors">
       <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
         <div className="flex items-center justify-start">
-          <div className="w-12 flex-shrink-0">
-            <img
-              className="w-12 h-auto rounded-control block"
-              src={product.main_image}
-              alt={product.name}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image';
-              }}
-            />
-          </div>
+          <ProductImage
+            src={product.main_image}
+            alt={product.name}
+            className="w-12 h-12 flex-shrink-0 rounded-control"
+            sizes="48px"
+          />
           <div className="ml-4 text-left">
             <div className="text-body-sm font-bold text-text-primary">{product.name}</div>
           </div>
@@ -102,16 +99,12 @@ export function GroupedParentRow({ parent, variantsCount, onDelete }: GroupedPar
     <tr className="bg-background-secondary border-t-2 border-border">
       <td className="px-6 py-3 whitespace-nowrap text-left pl-16">
         <div className="flex items-center justify-start">
-          <div className="w-12 flex-shrink-0 border border-border-strong rounded-control overflow-hidden">
-            <img
-              className="w-12 h-auto block"
-              src={parent.main_image}
-              alt={parent.name}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image';
-              }}
-            />
-          </div>
+          <ProductImage
+            src={parent.main_image}
+            alt={parent.name}
+            className="w-12 h-12 flex-shrink-0 rounded-control border border-border-strong"
+            sizes="48px"
+          />
           <div className="ml-4 text-left">
             <div className="text-body-sm font-bold text-text-primary">{parent.name}</div>
             <div className="text-caption-md text-text-secondary">{variantsCount} variations</div>

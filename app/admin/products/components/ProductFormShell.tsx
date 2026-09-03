@@ -4,7 +4,8 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, X } from 'lucide-react';
-import { Button, Spinner } from '@/components/ui';
+import { ProductFormSkeleton } from './ProductFormSkeleton';
+import { Button } from '@/components/ui';
 
 function BackToProductsLink() {
   return (
@@ -52,9 +53,7 @@ export function ProductFormShell({
       <div className="min-h-screen bg-background-secondary p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <BackToProductsLink />
-          <div className="flex justify-center items-center h-64">
-            <Spinner size="xl" className="text-primary" />
-          </div>
+          <ProductFormSkeleton />
         </div>
       </div>
     );

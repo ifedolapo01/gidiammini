@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
+import { authorizeCron } from '@/lib/api/cron-auth';
 import { computeDiscountPhase } from '@/lib/commerce/discount-phase';
 import { asNotifiedPhases } from '@/lib/commerce/db-narrowing';
 import { sendBulkEmail } from '@/lib/email';
 import { escapeHtml, sanitizeHeader } from '@/lib/notifications/escape-html';
+import { SITE_URL } from '@/lib/site-url';
 
 export const maxDuration = 300; // Allows up to 5 minutes for sending emails
 
 export async function GET(req: NextRequest) {
   // 1. Verify Vercel Cron Secret to ensure only Vercel can trigger this
-  const authHeader = req.headers.get('authorization');
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  const denied = authorizeCron(req, { jobName: 'the discount job' });
+  if (denied) return denied;
 
   try {
     const supabase = createAdminClient();
@@ -54,7 +51,7 @@ export async function GET(req: NextRequest) {
     }
 
     const storeName = 'GidiamMini';
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gidiammini.com';
+    const siteUrl = SITE_URL;
 
     let emailsSent = 0;
     let discountsProcessed = 0;

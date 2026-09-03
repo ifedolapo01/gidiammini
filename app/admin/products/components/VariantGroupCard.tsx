@@ -5,6 +5,8 @@ import { Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui';
 import { VariantSize } from '@/lib/commerce/product-form-helpers';
 import { VariantColorRow } from './VariantColorRow';
+import CostInput from './CostInput';
+import type { SizingType } from '@/lib/commerce/product-form-schema';
 
 export interface VariantGroupCardProps {
   variant: VariantSize;
@@ -12,16 +14,18 @@ export interface VariantGroupCardProps {
   canRemove: boolean;
   hasSizes: boolean;
   hasColors: boolean;
-  sizingType: 'size' | 'age';
+  sizingType: SizingType;
   onRemoveVariant: (vIdx: number) => void;
   onUpdateSize: (vIdx: number, value: string) => void;
   onUpdatePrice: (vIdx: number, value: number) => void;
   onUpdateStock: (vIdx: number, value: number) => void;
+  onUpdateCost: (vIdx: number, value: number | null) => void;
   onBlurSize: (vIdx: number) => void;
   onAddColor: (vIdx: number) => void;
   onUpdateColorName: (vIdx: number, cIdx: number, value: string) => void;
   onUpdateColorPrice: (vIdx: number, cIdx: number, value: number) => void;
   onUpdateColorStock: (vIdx: number, cIdx: number, value: number) => void;
+  onUpdateColorCost: (vIdx: number, cIdx: number, value: number | null) => void;
   onBlurColorName: (vIdx: number, cIdx: number) => void;
   onRemoveColor: (vIdx: number, cIdx: number) => void;
 }
@@ -37,11 +41,13 @@ export function VariantGroupCard({
   onUpdateSize,
   onUpdatePrice,
   onUpdateStock,
+  onUpdateCost,
   onBlurSize,
   onAddColor,
   onUpdateColorName,
   onUpdateColorPrice,
   onUpdateColorStock,
+  onUpdateColorCost,
   onBlurColorName,
   onRemoveColor,
 }: VariantGroupCardProps) {
@@ -99,6 +105,20 @@ export function VariantGroupCard({
                 placeholder="Qty"
               />
             </div>
+            <div className="md:col-span-1">
+              <label
+                htmlFor={`variant-cost-${vIdx}`}
+                className="block text-caption-md font-bold text-text-secondary uppercase tracking-wider mb-1"
+              >
+                Cost (₦)
+              </label>
+              <CostInput
+                id={`variant-cost-${vIdx}`}
+                price={variant.price}
+                cost={variant.cost}
+                onChange={(cost) => onUpdateCost(vIdx, cost)}
+              />
+            </div>
           </>
         )}
       </div>
@@ -127,6 +147,7 @@ export function VariantGroupCard({
                 onUpdateName={onUpdateColorName}
                 onUpdatePrice={onUpdateColorPrice}
                 onUpdateStock={onUpdateColorStock}
+                onUpdateCost={onUpdateColorCost}
                 onBlurName={onBlurColorName}
                 onRemove={onRemoveColor}
               />

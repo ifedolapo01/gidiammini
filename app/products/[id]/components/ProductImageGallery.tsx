@@ -1,8 +1,10 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
+import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Badge } from '@/components/ui';
+import ProductImage from '@/components/commerce/ProductImage';
 
 interface ProductImageGalleryProps {
   images: string[];
@@ -13,20 +15,36 @@ interface ProductImageGalleryProps {
 }
 
 export default function ProductImageGallery({ images, productName, currentIndex, onIndexChange, currentStock }: ProductImageGalleryProps) {
+  // Which URLs would not load. Tracked by index rather than by a single flag so
+  // one dead storage object does not blank out the other photos, which is what
+  // the old shared onError handler effectively did once it fired.
+  const [failed, setFailed] = useState<Set<number>>(new Set());
+  const markFailed = (index: number) =>
+    setFailed((previous) => (previous.has(index) ? previous : new Set(previous).add(index)));
+  const srcFor = (index: number) => (failed.has(index) ? null : images[index]);
+
   return (
     <div>
       {/* Main Image */}
       <div className="relative rounded-surface overflow-hidden shadow-elevation-3 mb-3 md:mb-4 bg-surface">
-        <div className="w-full">
-          <img
-            src={images[currentIndex]}
-            alt={productName}
-            className="w-full h-auto block"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder.jpg';
-            }}
-          />
-        </div>
+        {/* A declared square rather than the old intrinsic `h-auto`. The height
+            was previously unknown until the bytes arrived, so everything below
+            — price, size picker, add to cart — jumped down the page when they
+            did. object-contain keeps the whole photo visible inside it, so
+            reserving the space costs no cropping. */}
+        <ProductImage
+          src={srcFor(currentIndex)}
+          alt={productName}
+          fit="contain"
+          // The one image on this page worth fetching eagerly: it is the
+          // product, and it is the largest paint on the route.
+          priority
+          onError={() => markFailed(currentIndex)}
+          className="w-full aspect-square bg-surface"
+          // Full width on phones; half the 1280px container from lg, where the
+          // page becomes two columns.
+          sizes="(max-width: 1024px) 100vw, 600px"
+        />
 
         {/* Stock Badge on Image */}
         {currentStock <= 5 && currentStock > 0 && (
@@ -83,7 +101,7 @@ export default function ProductImageGallery({ images, productName, currentIndex,
       {images.length > 1 && (
         <>
           <div className="hidden md:grid md:grid-cols-4 gap-2">
-            {images.map((img, idx) => (
+            {images.map((_img, idx) => (
               <button
                 key={idx}
                 onClick={() => onIndexChange(idx)}
@@ -91,13 +109,12 @@ export default function ProductImageGallery({ images, productName, currentIndex,
                   currentIndex === idx ? 'border-2 border-primary' : ''
                 }`}
               >
-                <img
-                  src={img}
-                  alt={`Thumbnail ${idx + 1}`}
-                  className="w-full h-20 object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.jpg';
-                  }}
+                <ProductImage
+                  src={srcFor(idx)}
+                  alt={`${productName}, view ${idx + 1}`}
+                  onError={() => markFailed(idx)}
+                  className="w-full h-20"
+                  sizes="160px"
                 />
               </button>
             ))}
@@ -106,7 +123,7 @@ export default function ProductImageGallery({ images, productName, currentIndex,
           {/* Mobile Thumbnail Swipe (Horizontal Scroll) */}
           <div className="md:hidden overflow-x-auto pb-2 -mx-4 px-4">
             <div className="flex space-x-3 w-max">
-              {images.map((img, idx) => (
+              {images.map((_img, idx) => (
                 <button
                   key={idx}
                   onClick={() => onIndexChange(idx)}
@@ -114,13 +131,12 @@ export default function ProductImageGallery({ images, productName, currentIndex,
                     currentIndex === idx ? 'border-2 border-primary' : 'border-border-strong'
                   }`}
                 >
-                  <img
-                    src={img}
-                    alt={`Thumbnail ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.jpg';
-                    }}
+                  <ProductImage
+                    src={srcFor(idx)}
+                    alt={`${productName}, view ${idx + 1}`}
+                    onError={() => markFailed(idx)}
+                    className="w-full h-full"
+                    sizes="80px"
                   />
                 </button>
               ))}

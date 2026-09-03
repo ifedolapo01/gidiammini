@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { REVENUE_STATUSES } from '@/lib/commerce/order-status';
+import { marginTotals } from '@/lib/commerce/margin';
 
 async function getDashboardStats(supabase: SupabaseClient) {
   try {
@@ -30,6 +31,27 @@ async function getDashboardStats(supabase: SupabaseClient) {
       .in('status', REVENUE_STATUSES);
 
     const totalRevenue = revenueOrders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+
+    // Gross margin, from what was actually sold rather than from the order
+    // totals: order_items carries the price paid per line and points at the
+    // variant it sold, and the variant carries the cost. Revenue-only figures
+    // make a high-turnover, low-margin line look like the best seller.
+    //
+    // Cost is optional, so marginTotals() also reports how much of this
+    // revenue had a cost at all — a margin computed over a third of the
+    // catalogue must not be read as the whole picture.
+    const { data: soldLines } = await supabase
+      .from('order_items')
+      .select('price, quantity, orders!inner(status), product_variants(cost)')
+      .in('orders.status', REVENUE_STATUSES);
+
+    const margin = marginTotals(
+      (soldLines ?? []).map((line: any) => ({
+        price: line.price,
+        quantity: line.quantity,
+        cost: typeof line.product_variants?.cost === 'number' ? line.product_variants.cost : null,
+      }))
+    );
 
     // Fetch recent orders (last 5)
     const { data: recentOrders } = await supabase
@@ -61,6 +83,7 @@ async function getDashboardStats(supabase: SupabaseClient) {
       totalOrders: totalOrders || 0,
       pendingOrders: pendingOrders || 0,
       totalRevenue,
+      margin,
       recentOrders: recentOrders || [],
       lowStockProducts: lowStockProducts || [],
       outOfStockProducts: outOfStockProducts || []
@@ -75,6 +98,7 @@ async function getDashboardStats(supabase: SupabaseClient) {
         totalOrders: 0,
         pendingOrders: 0,
         totalRevenue: 0,
+        margin: null,
         recentOrders: [],
         lowStockProducts: [],
         outOfStockProducts: []

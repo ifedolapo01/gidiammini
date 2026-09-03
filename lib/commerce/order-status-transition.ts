@@ -4,9 +4,11 @@
  * and the change-request approval flow, so both behave identically. */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendOrderStatusUpdate } from '@/lib/notifications';
+import type { DeliveryOutcome } from '@/lib/notifications/delivery';
 import type { OrderStatus } from '@/types/order';
 import { hasStockReserved, formatOrderStatus } from './order-status';
 import { applyOrderStockChange } from './order-stock';
+import { inviteReviewIfFulfilled } from './review-invite';
 import { resolveOrderShippingZone } from './order-shipping-zone';
 import { formatZoneEta } from './shipping-eta';
 
@@ -21,7 +23,12 @@ interface ApplyOrderStatusTransitionResult {
   error?: string;
   status?: number;
   order?: any;
+  /** The status this order held before the change, for the audit trail. */
+  previousStatus?: string;
   stockUpdated?: boolean;
+  /** Which channels the customer was actually reached on. Undefined when the
+   * caller asked for no notification. */
+  delivery?: DeliveryOutcome;
 }
 
 /** Resolves the real delivery ETA text for a 'confirmed' notification, using
@@ -109,13 +116,15 @@ export async function applyOrderStatusTransition(
     console.error('Error recording status history:', historyError);
   }
 
+  let delivery: DeliveryOutcome | undefined;
+
   if (sendNotification) {
     try {
       const estimatedDeliveryText = newStatus === 'confirmed'
         ? await resolveEstimatedDeliveryText(supabase, currentOrder)
         : undefined;
 
-      await sendOrderStatusUpdate({
+      delivery = await sendOrderStatusUpdate({
         orderNumber: currentOrder.order_number,
         customerName: currentOrder.customer_name,
         customerEmail: currentOrder.customer_email,
@@ -130,9 +139,17 @@ export async function applyOrderStatusTransition(
     }
   }
 
+  // The review invitation, on the transition that earns it. A fulfilled order
+  // is the only source of a review this shop will ever have, and asking is not
+  // something anyone should have to remember to do. Best-effort and one per
+  // order — see review-invite.ts.
+  await inviteReviewIfFulfilled(supabase, currentOrder, currentOrder.status, newStatus);
+
   return {
     success: true,
     order: updatedOrder,
-    stockUpdated: willHaveStockReserved !== hadStockReserved
+    previousStatus: currentOrder.status,
+    stockUpdated: willHaveStockReserved !== hadStockReserved,
+    delivery
   };
 }

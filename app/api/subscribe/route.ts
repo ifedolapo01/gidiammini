@@ -4,37 +4,32 @@ import { sendOrderEmail } from '@/lib/email';
 import { escapeHtml, sanitizeHeader } from '@/lib/notifications/escape-html';
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
-
-/** Hidden form field. A human never sees it, so anything in it came from a bot
- * filling every input on the page. Answered with a success response rather than
- * an error, so a scripted submitter gets no signal that it was detected. */
-function isBotSubmission(body: Record<string, unknown>): boolean {
-  const trap = body.website ?? body.company_url;
-  return typeof trap === 'string' && trap.trim().length > 0;
-}
-
+import { parseJsonBody } from '@/lib/api/parse-body';
+import { subscribeSchema } from '@/lib/api/schemas/public-forms';
+import { isBotSubmission } from '@/lib/api/schemas/common';
+import { SITE_URL } from '@/lib/site-url';
 
 async function subscribeToNewsletter(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, name } = body;
+    // The address is format-checked before it reaches the table. Previously any
+    // string was accepted and stored, so junk rows accumulated and every later
+    // campaign tried to mail them.
+    const parsed = await parseJsonBody(req, subscribeSchema);
+    if (!parsed.ok) return parsed.response;
 
-    if (isBotSubmission(body)) {
+    const { email, name } = parsed.data;
+
+    // Answered with success rather than an error, so a scripted submitter gets
+    // no signal that it was detected.
+    if (isBotSubmission(parsed.data)) {
       console.warn('Newsletter honeypot triggered — discarding silently.');
       return NextResponse.json({ success: true });
     }
 
-    if (!email || !name) {
-      return NextResponse.json(
-        { success: false, error: 'Email and name are required' },
-        { status: 400 }
-      );
-    }
-
-    // Initialize Supabase client
     const supabase = createAdminClient();
 
-    // 1. Save Subscriber
+    // 1. Save Subscriber. Explicit columns: nothing else from the body can
+    // reach the row, whatever the caller sent.
     const { error } = await supabase
       .from('subscribers')
       .upsert(
@@ -71,7 +66,7 @@ async function subscribeToNewsletter(req: NextRequest) {
 
       if (best) {
         const storeName = 'GidiamMini';
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gidiammini.com';
+        const siteUrl = SITE_URL;
         const discountVal = best.type === 'PERCENTAGE' ? `${best.value}% OFF` : `₦${best.value} OFF`;
 
         const start = best.start_date ? new Date(best.start_date) : now;
@@ -106,7 +101,7 @@ async function subscribeToNewsletter(req: NextRequest) {
 
         const result = await sendOrderEmail(email, sanitizeHeader(`${title} - ${best.name}`), html);
         if (!result.success) {
-          console.error('Welcome email failed:', result.error);
+          console.error(`Welcome email failed (${result.reason}): ${result.detail}`);
         }
       }
     }

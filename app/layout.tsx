@@ -9,6 +9,7 @@ import { WishlistProvider } from '@/components/WishlistProvider';
 import { Analytics } from "@vercel/analytics/next";
 import StorefrontDiscountManager from '@/components/StorefrontDiscountManager';
 import { Toaster } from '@/components/ui';
+import { SITE_URL } from '@/lib/site-url';
 
 /**
  * Inter, self-hosted.
@@ -36,9 +37,62 @@ const inter = localFont({
   fallback: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
 });
 
+const SITE_NAME = 'GidiamMini';
+const SITE_DESCRIPTION =
+  'Premium clothing, maternity wear and essentials for babies, kids and pre-teens.';
+
+/**
+ * Site-wide defaults. Every page that exports its own metadata overrides the
+ * parts it cares about and inherits the rest.
+ *
+ * `metadataBase` is what makes a page able to write `alternates.canonical:
+ * '/products/123'` and have Next resolve it to an absolute URL — og:url and
+ * canonical are both required to be absolute, and until this was set the only
+ * metadata in the app was the block below, shared by the entire catalogue.
+ *
+ * The title template means a page exports `title: product.name` and the tab,
+ * the SERP entry and the share card all read "Name | GidiamMini" without
+ * anyone re-typing the suffix. `default` is what the home page gets, which is
+ * why it is spelled out in full rather than run through the template.
+ */
 export const metadata: Metadata = {
-  title: 'GidiamMini | Baby, Kids & Maternity Store',
-  description: 'Premium clothing, maternity wear and essentials for babies, kids and pre-teens.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} | Baby, Kids & Maternity Store`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | Baby, Kids & Maternity Store`,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    locale: 'en_NG',
+    images: [{ url: '/images/logo.png', alt: SITE_NAME }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} | Baby, Kids & Maternity Store`,
+    description: SITE_DESCRIPTION,
+    images: ['/images/logo.png'],
+  },
+  // Deliberately no index/follow directive. Indexable is already the default
+  // without a robots tag, and stating it here put "index, follow" on *every*
+  // response — including the 404 that notFound() renders, where Next emits its
+  // own "noindex". Two contradictory robots tags is at best untidy; the same
+  // mistake under `googleBot` would be worse, since a crawler-specific tag
+  // outranks the generic one and would have told Google to index our 404s.
+  //
+  // What is left is the pair of directives that only widen what Google may
+  // show and carry no indexing claim to conflict with: a full-size image
+  // thumbnail (this is a clothing store — the picture is the product) and an
+  // unclipped snippet.
+  robots: {
+    googleBot: { 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
 };
 
 export const viewport = {

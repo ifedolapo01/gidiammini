@@ -4,15 +4,26 @@
 import { Trash2 } from 'lucide-react';
 import { Spinner } from '@/components/ui';
 import type { Category } from '@/types/product';
+import { CategorySizeGuidance } from './CategorySizeGuidance';
 
 interface CategoryListProps {
   categories: Category[];
   pendingDeleteId: string | null;
+  /** Which category's guidance is being saved, if any. */
+  savingGuidanceId: string | null;
   onDeleteCategory: (id: string) => void;
   onDeleteSubcategory: (id: string) => void;
+  onSaveGuidance: (id: string, guidance: string) => void;
 }
 
-export function CategoryList({ categories, pendingDeleteId, onDeleteCategory, onDeleteSubcategory }: CategoryListProps) {
+export function CategoryList({
+  categories,
+  pendingDeleteId,
+  savingGuidanceId,
+  onDeleteCategory,
+  onDeleteSubcategory,
+  onSaveGuidance,
+}: CategoryListProps) {
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border-light overflow-hidden">
       <div className="p-6 border-b border-border-light bg-background-secondary flex justify-between items-center">
@@ -48,7 +59,17 @@ export function CategoryList({ categories, pendingDeleteId, onDeleteCategory, on
                 </button>
               </div>
 
-              <div className="pl-13 ml-4 border-l-2 border-border-light pb-2">
+              {/* Above the subcategories: guidance is about the category
+                  itself, and it is the field an admin comes here to edit. */}
+              <CategorySizeGuidance
+                categoryId={category.id}
+                categoryName={category.name}
+                current={category.size_guidance ?? null}
+                saving={savingGuidanceId === category.id}
+                onSave={onSaveGuidance}
+              />
+
+              <div className="pl-13 ml-4 border-l-2 border-border-light pb-2 mt-4">
                 <h5 className="text-caption-md font-semibold text-text-secondary uppercase tracking-wider mb-3 ml-4">Subcategories</h5>
                 {category.subcategories && category.subcategories.length > 0 ? (
                   <ul className="space-y-2 ml-4">

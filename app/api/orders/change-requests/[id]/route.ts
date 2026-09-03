@@ -2,10 +2,10 @@
 // customer's reschedule or delivery-method-change request. Approving delegates
 // to the same commerce functions the admin's manual order controls use, so
 // the outcome is identical either way.
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin-server';
-import { verifyAdminAuth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { sendCustomNotification } from '@/lib/notifications';
+import type { DeliveryOutcome } from '@/lib/notifications/delivery';
 import { applyOrderStatusTransition } from '@/lib/commerce/order-status-transition';
 import { applyOrderShippingTransition } from '@/lib/commerce/order-shipping-transition';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
@@ -17,14 +17,14 @@ async function applyApprovedChange(supabase: any, order: any, changeRequest: any
     const result = await applyOrderStatusTransition(supabase, order.id, 'rescheduled', {
       notificationMessage: `Your delivery reschedule request has been approved — new date: ${preferredDate}.`,
     });
-    return { success: result.success, error: result.error, status: result.status };
+    return { success: result.success, error: result.error, status: result.status, delivery: result.delivery };
   }
 
   if (changeRequest.request_type === 'cancel') {
     const result = await applyOrderStatusTransition(supabase, order.id, 'cancelled', {
       notificationMessage: 'Your cancellation request has been approved — your order has been cancelled.',
     });
-    return { success: result.success, error: result.error, status: result.status };
+    return { success: result.success, error: result.error, status: result.status, delivery: result.delivery };
   }
 
   const { newDeliveryOption, deliveryAddress, city } = changeRequest.details as DeliveryMethodChangeDetails;
@@ -40,17 +40,13 @@ async function applyApprovedChange(supabase: any, order: any, changeRequest: any
     deliveryAddress,
     city,
   });
-  return { success: result.success, error: result.error, status: result.status };
+  return { success: result.success, error: result.error, status: result.status, delivery: result.delivery };
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  if (!(await verifyAdminAuth(request))) {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-  }
-
+// Goes through withAdminAuth so an approval or rejection is attributable.
+// Approving a change request runs the same stock and notification work as a
+// manual admin edit, so it belongs in the trail for the same reasons.
+export const PUT = withAdminAuth(async (request, { supabase, params, audit }) => {
   try {
     const { id } = await params;
     const { decision, adminResponse } = await request.json();
@@ -61,8 +57,6 @@ export async function PUT(
         { status: 400 }
       );
     }
-
-    const supabase = createAdminClient();
 
     const { data: changeRequest, error: fetchError } = await supabase
       .from('order_change_requests')
@@ -80,11 +74,17 @@ export async function PUT(
 
     const order = changeRequest.orders;
 
+    /** Which channels the customer was actually reached on, for either branch —
+     * so the admin toast can say "Email sent · SMS not configured" instead of
+     * claiming the customer was notified regardless. */
+    let delivery: DeliveryOutcome | undefined;
+
     if (decision === 'approved') {
       const applyResult = await applyApprovedChange(supabase, order, changeRequest);
       if (!applyResult.success) {
         return NextResponse.json({ success: false, error: applyResult.error }, { status: applyResult.status || 500 });
       }
+      delivery = applyResult.delivery;
     } else {
       try {
         const requestLabel = changeRequest.request_type === 'reschedule'
@@ -92,7 +92,7 @@ export async function PUT(
           : changeRequest.request_type === 'cancel'
           ? 'cancellation'
           : 'delivery method change';
-        await sendCustomNotification({
+        delivery = await sendCustomNotification({
           orderNumber: order.order_number,
           customerName: order.customer_name,
           customerEmail: order.customer_email,
@@ -121,7 +121,17 @@ export async function PUT(
       return NextResponse.json({ success: false, error: `Database error: ${updateError.message}` }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, changeRequest: updatedRequest });
+    audit({
+      entityType: 'order_change_request',
+      entityId: id,
+      action: decision === 'approved' ? 'approve' : 'reject',
+      before: { status: 'pending', request_type: changeRequest.request_type, details: changeRequest.details },
+      after: { status: decision },
+      // The admin's own words to the customer double as the reason.
+      reason: typeof adminResponse === 'string' ? adminResponse : null,
+    });
+
+    return NextResponse.json({ success: true, changeRequest: updatedRequest, delivery });
   } catch (error: any) {
     console.error('Error resolving change request:', error);
     return NextResponse.json(
@@ -129,4 +139,4 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+});

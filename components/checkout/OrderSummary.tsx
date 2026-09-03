@@ -6,6 +6,7 @@ import { CartItem } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { getDeliveryLabel } from '@/lib/commerce/checkout';
 import type { ShippingZone } from '@/types/shipping';
+import ProductImage from '@/components/commerce/ProductImage';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -41,10 +42,11 @@ export default function OrderSummary({
         {items.map(item => (
           <div key={item.productId} className="flex items-start justify-between pb-3 md:pb-4 border-b border-border-light">
             <div className="flex items-start space-x-2 md:space-x-3">
-              <img
+              <ProductImage
                 src={item.image}
                 alt={item.name}
-                className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-control"
+                className="w-12 h-12 md:w-16 md:h-16 rounded-control flex-shrink-0"
+                sizes="64px"
               />
               <div>
                 <span className="font-medium text-text-primary text-body-sm md:text-body-md">{item.name}</span>

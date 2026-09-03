@@ -19,6 +19,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Product } from '@/types/product';
 import type { ShippingZone } from '@/types/shipping';
 import { getVariantPrice, getVariantStock } from './pricing';
+import { ADMIN_VARIANTS_SELECT } from './product-variants';
 import { getBestDiscount, calculateDiscountedPrice, type Discount } from './discounts';
 import { calculateTax } from './checkout';
 import { resolveEffectiveZone } from './shipping-match';
@@ -90,7 +91,10 @@ export async function priceOrder(
   const productIds = [...new Set(lines.map((line) => line.product_id))];
 
   const [productsResult, discountsResult, zonesResult] = await Promise.all([
-    supabase.from('products').select('*').in('id', productIds).eq('is_active', true),
+    // Variants must be embedded: getVariantPrice/getVariantStock below read
+    // them, and without the embed they would silently fall back to the stale
+    // pricing_config maps and price against the wrong numbers.
+    supabase.from('products').select(`*, ${ADMIN_VARIANTS_SELECT}`).in('id', productIds).eq('is_active', true),
     supabase.from('discounts').select('*').eq('is_active', true),
     supabase.from('shipping_zones').select('*, shipping_zone_exceptions(*)').eq('is_active', true),
   ]);

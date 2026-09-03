@@ -55,7 +55,10 @@ export function StockTable({ products, lowStockThreshold, onEdit }: StockTablePr
             </thead>
             <tbody className="bg-surface divide-y divide-divider">
               {Object.entries(groupFlattenedByProduct(products)).map(([productId, variants]) => {
-                if (variants.length === 1 && variants[0].variantKey === 'single') {
+                // One variant means one row. Previously this also checked for the
+                // 'single' key; a lone variant that records a size or colour now
+                // keys on those instead, and still needs no expansion.
+                if (variants.length === 1) {
                   return (
                     <SingleStockRow
                       key={variants[0].id}

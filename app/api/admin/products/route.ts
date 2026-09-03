@@ -1,7 +1,13 @@
 // app/api/admin/products/route.ts - UPDATED FOR COMPLETE CRUD
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { withAdminAuth, type AuditRecorder } from '@/lib/api/with-admin-auth';
+import { diffForAudit, isEmptyDiff, withoutTimestamps } from '@/lib/api/audit';
+import { syncVariants, applyVariantCosts } from './product-write';
+import {
+  buildProductCreatePayload,
+  buildProductUpdatePayload,
+} from '@/lib/commerce/product-payload';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -13,7 +19,9 @@ async function listProducts(supabase: SupabaseClient) {
 
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    // Variants embedded: flattenProducts renders one row per variant from
+    // these, and without them it falls back to the legacy pricing_config maps.
+    .select('*, product_variants(*)')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
@@ -22,7 +30,7 @@ async function listProducts(supabase: SupabaseClient) {
   return NextResponse.json({ success: true, products: data }, { headers: JSON_HEADERS });
 }
 
-async function createProduct(supabase: SupabaseClient, request: NextRequest) {
+async function createProduct(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   console.log('📱 Creating new product');
 
   const body = await request.json();
@@ -34,24 +42,7 @@ async function createProduct(supabase: SupabaseClient, request: NextRequest) {
     );
   }
 
-  const productData = {
-    name: body.name.substring(0, 100),
-    description: (body.description || '').substring(0, 500),
-    price: Number(body.price),
-    category: body.category || 'babies',
-    main_image: body.main_image || '',
-    images: body.images || [],
-    colors: body.colors || [],
-    sizes: body.sizes || [],
-    sizing_type: body.sizing_type || 'size',
-    details: body.details || [],
-    sub_category: body.sub_category || null,
-    pricing_config: body.pricing_config || null,
-    stock: Number(body.stock) || 0,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
+  const productData = buildProductCreatePayload(body);
 
   console.log('Creating product:', productData.name);
 
@@ -63,6 +54,11 @@ async function createProduct(supabase: SupabaseClient, request: NextRequest) {
 
   if (error) throw error;
 
+  await syncVariants(supabase, data.id);
+  await applyVariantCosts(supabase, data.id, body.variant_costs);
+
+  audit({ entityType: 'product', entityId: data.id, action: 'create', after: data });
+
   console.log('✅ Product created:', data.id);
 
   return NextResponse.json(
@@ -71,7 +67,7 @@ async function createProduct(supabase: SupabaseClient, request: NextRequest) {
   );
 }
 
-async function updateProduct(supabase: SupabaseClient, request: NextRequest) {
+async function updateProduct(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   console.log('📱 Updating product');
 
   const body = await request.json();
@@ -83,22 +79,17 @@ async function updateProduct(supabase: SupabaseClient, request: NextRequest) {
     );
   }
 
-  const updateData = {
-    name: body.name.substring(0, 100),
-    description: (body.description || '').substring(0, 500),
-    price: Number(body.price),
-    category: body.category || 'babies',
-    main_image: body.main_image,
-    images: body.images || [],
-    colors: body.colors || [],
-    sizes: body.sizes || [],
-    sizing_type: body.sizing_type || 'size',
-    details: body.details || [],
-    sub_category: body.sub_category || null,
-    pricing_config: body.pricing_config || null,
-    stock: Number(body.stock) || 0,
-    updated_at: new Date().toISOString()
-  };
+  // Read the row before changing it. Nothing needed this until now, but "the
+  // price is wrong, what was it before" is unanswerable without it.
+  const { data: previous } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', body.id)
+    .maybeSingle();
+
+  // Only the fields this request actually mentioned. Building a whole row here
+  // is what let a partial update wipe sizes, colours, stock and the image.
+  const updateData = buildProductUpdatePayload(body);
 
   const { data, error } = await supabase
     .from('products')
@@ -109,6 +100,24 @@ async function updateProduct(supabase: SupabaseClient, request: NextRequest) {
 
   if (error) throw error;
 
+  await syncVariants(supabase, body.id);
+  await applyVariantCosts(supabase, body.id, body.variant_costs);
+
+  // Only the fields that moved. A save that changed nothing records nothing,
+  // so the feed shows real edits rather than every time someone opened a form
+  // and pressed save.
+  const diff = withoutTimestamps(diffForAudit(previous ?? null, data));
+  if (!isEmptyDiff(diff)) {
+    audit({
+      entityType: 'product',
+      entityId: body.id,
+      action: 'update',
+      before: diff.before,
+      after: diff.after,
+      reason: typeof body.reason === 'string' ? body.reason : null,
+    });
+  }
+
   console.log('✅ Product updated:', body.id);
 
   return NextResponse.json(
@@ -117,7 +126,7 @@ async function updateProduct(supabase: SupabaseClient, request: NextRequest) {
   );
 }
 
-async function deleteProduct(supabase: SupabaseClient, request: NextRequest) {
+async function deleteProduct(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
   console.log('📱 Deleting product');
 
   const body = await request.json();
@@ -128,6 +137,12 @@ async function deleteProduct(supabase: SupabaseClient, request: NextRequest) {
       { status: 400, headers: JSON_HEADERS }
     );
   }
+
+  const { data: previous } = await supabase
+    .from('products')
+    .select('id, name, price, stock, is_active, category')
+    .eq('id', body.id)
+    .maybeSingle();
 
   // Soft delete (set is_active to false)
   const { error } = await supabase
@@ -140,6 +155,14 @@ async function deleteProduct(supabase: SupabaseClient, request: NextRequest) {
 
   if (error) throw error;
 
+  audit({
+    entityType: 'product',
+    entityId: body.id,
+    action: 'delete',
+    before: previous,
+    reason: typeof body.reason === 'string' ? body.reason : null,
+  });
+
   console.log('✅ Product deleted:', body.id);
 
   return NextResponse.json(
@@ -149,6 +172,6 @@ async function deleteProduct(supabase: SupabaseClient, request: NextRequest) {
 }
 
 export const GET = withAdminAuth((_request, { supabase }) => listProducts(supabase));
-export const POST = withAdminAuth((request, { supabase }) => createProduct(supabase, request));
-export const PUT = withAdminAuth((request, { supabase }) => updateProduct(supabase, request));
-export const DELETE = withAdminAuth((request, { supabase }) => deleteProduct(supabase, request));
+export const POST = withAdminAuth((request, { supabase, audit }) => createProduct(supabase, request, audit));
+export const PUT = withAdminAuth((request, { supabase, audit }) => updateProduct(supabase, request, audit));
+export const DELETE = withAdminAuth((request, { supabase, audit }) => deleteProduct(supabase, request, audit));

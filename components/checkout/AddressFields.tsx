@@ -4,6 +4,7 @@
 import { findShippingZone } from '@/lib/commerce/checkout';
 import { formatZoneEta } from '@/lib/commerce/shipping-eta';
 import type { ShippingZone } from '@/types/shipping';
+import type { FieldErrors } from '@/lib/api/field-errors';
 import FormInput from './FormInput';
 
 interface AddressFieldsProps {
@@ -15,10 +16,13 @@ interface AddressFieldsProps {
   city: string;
   setAddress: (value: string) => void;
   setCity: (value: string) => void;
+  /** Per-field messages from the server, keyed by form field name. */
+  fieldErrors?: FieldErrors;
 }
 
 export default function AddressFields({
-  selectedState, selectedLga, selectedPlace, zones, address, city, setAddress, setCity
+  selectedState, selectedLga, selectedPlace, zones, address, city, setAddress, setCity,
+  fieldErrors = {},
 }: AddressFieldsProps) {
   const zone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
   const deliveryLabel = zone?.delivery_label || 'Delivery';
@@ -28,15 +32,19 @@ export default function AddressFields({
       <div className="space-y-3">
         <FormInput
           label={`${deliveryLabel} Address *`}
+          name="address"
           value={address}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
           placeholder="House number, street, area, or drop-off point"
+          error={fieldErrors.address}
         />
         <FormInput
           label="City/Town *"
+          name="city"
           value={city}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
           placeholder="City or town in your state"
+          error={fieldErrors.city}
         />
       </div>
       {zone && (

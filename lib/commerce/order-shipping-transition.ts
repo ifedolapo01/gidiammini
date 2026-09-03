@@ -4,6 +4,7 @@
  * (app/api/orders/[id]/shipping/route.ts) and the change-request approval flow. */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendCustomNotification } from '@/lib/notifications';
+import type { DeliveryOutcome } from '@/lib/notifications/delivery';
 import { formatZoneEta } from './shipping-eta';
 
 interface ApplyOrderShippingTransitionParams {
@@ -19,7 +20,9 @@ interface ApplyOrderShippingTransitionResult {
   error?: string;
   status?: number;
   order?: any;
-  channels?: string[];
+  /** The shipping fields as they were before the override, for the audit trail. */
+  previous?: Record<string, unknown>;
+  delivery?: DeliveryOutcome;
 }
 
 export async function applyOrderShippingTransition(
@@ -80,9 +83,9 @@ export async function applyOrderShippingTransition(
     ? `Pickup from ${zone.pickup_address}`
     : `${zone.delivery_label} to ${zone.name} (${formatZoneEta(zone)})`;
 
-  let channels: string[] = [];
+  let delivery: DeliveryOutcome | undefined;
   try {
-    const notifyResult = await sendCustomNotification({
+    delivery = await sendCustomNotification({
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,
@@ -91,10 +94,20 @@ export async function applyOrderShippingTransition(
       viaEmail: true,
       viaSMS: true,
     });
-    channels = notifyResult.channels || [];
   } catch (notificationError) {
     console.error('Shipping update notification error:', notificationError);
   }
 
-  return { success: true, order: updatedOrder, channels };
+  return {
+    success: true,
+    order: updatedOrder,
+    previous: {
+      shipping_zone_id: order.shipping_zone_id,
+      delivery_option: order.delivery_option,
+      delivery_address: order.delivery_address,
+      city: order.city,
+      total_amount: order.total_amount,
+    },
+    delivery,
+  };
 }

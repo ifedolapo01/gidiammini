@@ -1,10 +1,11 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 'use client';
+import { DiscountsSkeleton } from './components/DiscountsSkeleton';
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button, Spinner } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
 import { parseVariantTargets } from '@/lib/commerce/discount-target';
 import { useDiscounts } from './hooks/useDiscounts';
@@ -73,13 +74,7 @@ export default function DiscountsPage() {
     }
   };
 
-  if (loading && discounts.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="xl" className="text-primary" />
-      </div>
-    );
-  }
+  if (loading && discounts.length === 0) return <DiscountsSkeleton />;
 
   const now = new Date();
   const activeDiscounts = discounts.filter(d => d.is_active && (!d.end_date || new Date(d.end_date) > now));
