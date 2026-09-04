@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useTrackOrder } from '@/components/track-order/hooks/useTrackOrder';
 import TrackOrderForm from '@/components/track-order/TrackOrderForm';
 import TrackedOrderSummary from '@/components/track-order/TrackedOrderSummary';
+import SignInPrompt from '@/components/track-order/SignInPrompt';
 
 export default function TrackOrderPage() {
   const {
@@ -34,6 +35,10 @@ export default function TrackOrderPage() {
             Enter your order number and the email or phone you checked out with.
           </p>
         </div>
+
+        {/* Above the form, not instead of it: the order-number route stays for
+            the emails that link here and for anyone who prefers it. */}
+        {!order && <SignInPrompt />}
 
         {order ? (
           <div className="space-y-4">

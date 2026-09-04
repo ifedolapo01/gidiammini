@@ -1,6 +1,6 @@
 /**
- * The three decisions behind a passwordless account, tested without a browser
- * or a database.
+ * The two decisions behind a passwordless account, tested without a browser or
+ * a database.
  *
  * The reorder cases are the ones that matter most: a customer taps "buy it
  * again" on an order from three months ago, and the catalogue has moved on
@@ -10,7 +10,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildReorderLines,
-  maskEmail,
   parseContact,
   reorderSummary,
   type PastOrderLine,
@@ -36,25 +35,6 @@ describe('parseContact', () => {
     expect(parseContact('   ')).toBeNull();
     expect(parseContact('ada')).toBeNull();
     expect(parseContact('not an email@')).toBeNull();
-  });
-});
-
-describe('maskEmail', () => {
-  it('shows enough to find the inbox and no more', () => {
-    const masked = maskEmail('adaobi@gmail.com');
-    expect(masked.startsWith('ad')).toBe(true);
-    expect(masked.endsWith('@gmail.com')).toBe(true);
-    expect(masked).not.toContain('adaobi');
-  });
-
-  it('does not lengthen a short local part into a hint about its length', () => {
-    // Three dots minimum, so "jo@x.com" and "jonathan@x.com" are not
-    // distinguishable by counting.
-    expect(maskEmail('jo@x.com')).toBe('jo•••@x.com');
-  });
-
-  it('degrades to nothing useful on a value that is not an address', () => {
-    expect(maskEmail('nonsense')).toBe('•••');
   });
 });
 

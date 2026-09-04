@@ -18,7 +18,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
-import { requireCustomer } from '@/lib/api/customer-session';
+import { optionalCustomer, requireCustomer } from '@/lib/api/customer-session';
 import { loadProductsByIds, loadActiveDiscounts } from '@/lib/commerce/recommendations';
 import {
   idsToAdd,
@@ -61,14 +61,18 @@ async function listResponse(supabase: SupabaseClient, ids: string[]) {
 }
 
 export async function POST(request: NextRequest) {
-  const guard = await requireCustomer(request);
-  if (!guard.ok) return guard.response;
+  // Runs on every page load through WishlistProvider, and most visitors are
+  // guests — answered rather than refused. See optionalCustomer.
+  const customer = await optionalCustomer(request);
+  if (!customer) {
+    return NextResponse.json({ success: true, signedIn: false, ids: [], products: [], discounts: [] });
+  }
 
   const supabase: SupabaseClient = createAdminClient();
   const body = await request.json().catch(() => null);
   const local = sanitiseWishlistIds(body?.ids);
 
-  const server = await savedIds(supabase, guard.customer.id);
+  const server = await savedIds(supabase, customer.id);
   const missing = idsToAdd(server, local);
 
   if (missing.length > 0) {
@@ -77,7 +81,7 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase
       .from('customer_wishlist')
       .upsert(
-        missing.map((productId) => ({ customer_id: guard.customer.id, product_id: productId })),
+        missing.map((productId) => ({ customer_id: customer.id, product_id: productId })),
         { onConflict: 'customer_id,product_id', ignoreDuplicates: true }
       );
 

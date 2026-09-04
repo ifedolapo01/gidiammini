@@ -11,15 +11,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
-import { requireCustomer } from '@/lib/api/customer-session';
+import { optionalCustomer } from '@/lib/api/customer-session';
 import { loadCustomerOrders, loadSavedDetails } from '@/lib/commerce/account-query';
 
 export async function GET(request: NextRequest) {
-  const guard = await requireCustomer(request);
-  if (!guard.ok) return guard.response;
+  // Checkout asks this on every page load, most of them guests — so being
+  // signed out is answered, not refused. See optionalCustomer.
+  const customer = await optionalCustomer(request);
+  if (!customer) return NextResponse.json({ success: true, signedIn: false, orders: [], saved: null });
 
   const supabase = createAdminClient();
-  const { customer } = guard;
 
   // Checkout wants the saved address and nothing else. Reading forty orders to
   // prefill six inputs would be work nobody asked for on the page where speed

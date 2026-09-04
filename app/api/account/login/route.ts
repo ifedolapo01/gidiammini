@@ -20,10 +20,16 @@ import { signInRequestSchema } from '@/lib/api/schemas/account';
 import { parseContact } from '@/lib/commerce/customer-account';
 import { requestSignInLink } from '@/lib/commerce/customer-auth';
 
-/** Said whatever happened. "If" is doing the work in that sentence. */
+/**
+ * Said whatever happened — "if" is doing the work in that sentence, and the
+ * response carries nothing else. It also answers the question a first-time
+ * shopper has: signing in works once you have ordered, because ordering is
+ * what creates the account.
+ */
 const SENT = {
   success: true,
-  message: 'If that matches an order, we have emailed you a sign-in link. It works once and lasts 20 minutes.',
+  message:
+    'If you have ordered with that email or phone number, a sign-in link is on its way to the email address on your order. It works once and lasts 20 minutes.',
 };
 
 async function requestLink(request: NextRequest) {
@@ -47,9 +53,9 @@ async function requestLink(request: NextRequest) {
     );
   }
 
-  const outcome = await requestSignInLink(createAdminClient(), contact);
+  await requestSignInLink(createAdminClient(), contact);
 
-  return NextResponse.json({ ...SENT, sentTo: outcome.sentTo });
+  return NextResponse.json(SENT);
 }
 
 export const POST = withRateLimit(

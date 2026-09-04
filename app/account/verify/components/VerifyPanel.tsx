@@ -34,9 +34,15 @@ export function VerifyPanel({ token }: VerifyPanelProps) {
         return;
       }
 
+      // Back to whatever they were doing — checkout, usually — or their orders.
+      // Read once and cleared, so a later sign-in does not bounce somewhere
+      // they have long since finished with.
+      const next = sessionStorage.getItem('post-signin');
+      sessionStorage.removeItem('post-signin');
+
       // replace, not push: the URL holds a spent token and there is no reason
       // for the back button to return to it.
-      router.replace('/account');
+      router.replace(next?.startsWith('/') && !next.startsWith('//') ? next : '/account');
     } catch {
       setError('We could not reach the server. Please check your connection.');
     } finally {

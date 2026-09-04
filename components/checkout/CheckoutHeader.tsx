@@ -9,7 +9,7 @@ export type CheckoutStep = 'form' | 'payment' | 'confirmation';
 
 const TITLES: Partial<Record<CheckoutStep, { heading: string; subheading: string }>> = {
   form: { heading: 'Checkout', subheading: 'Complete your purchase' },
-  payment: { heading: 'Make Payment', subheading: 'Transfer funds and upload receipt' },
+  payment: { heading: 'Make Payment', subheading: 'Choose how you would like to pay' },
 };
 
 /**

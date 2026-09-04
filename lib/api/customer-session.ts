@@ -62,6 +62,25 @@ export type CustomerGuard =
   | { ok: true; customer: SignedInCustomer; token: string }
   | { ok: false; response: NextResponse };
 
+/**
+ * The signed-in customer, or null, without treating "signed out" as a failure.
+ *
+ * For the endpoints a page probes speculatively — "fill this in if you can",
+ * "sync this if there is an account" — where being a guest is the normal
+ * answer rather than an error. They answer 200 with signedIn:false, because a
+ * 401 there puts a red line in the console of every guest who opens the cart,
+ * for a question that was only ever optional.
+ *
+ * Mutations keep requireCustomer and its 401: there, being signed out really
+ * does mean the request cannot be honoured.
+ */
+export async function optionalCustomer(request: NextRequest): Promise<SignedInCustomer | null> {
+  const token = sessionTokenFrom(request);
+  if (!token) return null;
+
+  return readSession(createAdminClient(), token);
+}
+
 export async function requireCustomer(request: NextRequest): Promise<CustomerGuard> {
   const token = sessionTokenFrom(request);
   const supabase = createAdminClient();

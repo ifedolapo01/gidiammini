@@ -10,7 +10,9 @@ import EmptyCart from '@/components/checkout/EmptyCart';
 import PaymentStep from '@/components/checkout/PaymentStep';
 import ConfirmationStep from '@/components/checkout/ConfirmationStep';
 import CheckoutFormStep from '@/components/checkout/CheckoutFormStep';
+import CheckoutSignInGate from '@/components/checkout/CheckoutSignInGate';
 import { useCheckoutForm } from '@/components/checkout/hooks/useCheckoutForm';
+import { useCheckoutIdentity } from '@/components/checkout/hooks/useCheckoutIdentity';
 import { PrefilledNotice } from '@/components/checkout/PrefilledNotice';
 import { useCheckoutFormSubmit } from '@/components/checkout/hooks/useCheckoutFormSubmit';
 import { useCheckoutPayment } from '@/components/checkout/hooks/useCheckoutPayment';
@@ -35,6 +37,10 @@ export default function CheckoutPage() {
    * would generate a fresh value on every render.
    */
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
+
+  // Signed in, straight through with everything prefilled. Signed out, offered
+  // the choice — an offer, never a wall: see CheckoutSignInGate.
+  const identity = useCheckoutIdentity();
 
   const { formData, setFormData, prefill } = useCheckoutForm();
   const { fieldErrors, captureFieldErrors, clearFieldErrors } = useCheckoutFieldErrors();
@@ -113,6 +119,10 @@ export default function CheckoutPage() {
   if (items.length === 0 && step !== 'confirmation') {
     return <EmptyCart />;
   }
+
+  // Only on the details step: once an order number has been issued the choice
+  // has been made, and interrupting would strand a customer mid-payment.
+  if (step === 'form' && !identity.ready) return <CheckoutSignInGate identity={identity} />;
 
   return (
     <div className="min-h-screen bg-background-secondary overflow-x-hidden">

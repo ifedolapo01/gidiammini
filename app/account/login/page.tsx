@@ -22,6 +22,10 @@ export default function AccountLoginPage() {
             No password. Tell us the email address or phone number you used at
             checkout and we will email you a link.
           </p>
+          <p className="mt-2 text-caption-md text-text-secondary">
+            For customers who have ordered before — ordering is what creates your
+            account. If this is your first time, just check out as a guest.
+          </p>
         </header>
 
         <SignInForm />

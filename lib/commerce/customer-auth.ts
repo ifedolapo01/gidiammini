@@ -4,10 +4,9 @@
  * The whole flow, and the rules that keep it safe:
  *
  *   1. Asking is not an oracle. requestSignInLink answers the same way whether
- *      the contact matched a customer, matched several, or matched nobody. A
- *      different answer per case turns this endpoint into a way to ask "does
- *      this person shop here", which is exactly the question a stranger should
- *      not be able to put to a shop selling baby clothes.
+ *      the contact matched a customer, several, or nobody — otherwise the
+ *      endpoint becomes a way to ask "does this person shop here", of a shop
+ *      selling baby clothes.
  *
  *   2. The link goes to the email on file, never to an address supplied in the
  *      request. Sending to what was typed would let anyone name a victim's
@@ -15,8 +14,7 @@
  *
  *   3. An ambiguous contact identifies nobody — see customer-lookup.ts.
  *
- *   4. Redemption is single use and short lived, and it is what mints the
- *      session. The link in the inbox stops working the moment it is used.
+ *   4. Redemption is single use, short lived, and what mints the session.
  */
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -24,7 +22,7 @@ import { sendOrderEmail } from '@/lib/email';
 import { buildSignInLinkEmail } from '@/lib/notifications/templates/sign-in-link-email';
 import { absoluteUrl } from '@/lib/site-url';
 import { hashBearerToken, isBearerTokenShape, newBearerToken } from './bearer-token';
-import { maskEmail, type Contact } from './customer-account';
+import type { Contact } from './customer-account';
 import {
   findCustomer,
   toCustomer,
@@ -37,12 +35,16 @@ import {
 // for it because of this module's functions, not because of the lookup's.
 export type { SignedInCustomer };
 
-/** What the sign-in endpoint says, whatever actually happened. See rule 1. */
-export interface SignInRequestResult {
-  /** Masked, and only when we genuinely sent something — the UI falls back to
-   *  a generic sentence when it is absent, so the two cases read the same. */
-  sentTo?: string;
-}
+/**
+ * What the sign-in endpoint says, which is nothing.
+ *
+ * An earlier version returned the masked destination when a mail had actually
+ * gone out. That was a mistake: present-or-absent is itself the answer, so the
+ * response leaked exactly what rule 1 exists to withhold — type an address,
+ * learn whether that person shops at a baby store. The copy now covers the
+ * useful case ("check the email on your order") without confirming anything.
+ */
+export type SignInRequestResult = Record<string, never>;
 
 /**
  * Sends a sign-in link, if there is somebody to send it to.
@@ -86,7 +88,7 @@ export async function requestSignInLink(
     return {};
   }
 
-  return { sentTo: maskEmail(customer.email) };
+  return {};
 }
 
 export type RedeemFailure = 'invalid' | 'expired';

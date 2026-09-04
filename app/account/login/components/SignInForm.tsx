@@ -10,17 +10,37 @@
 // box under "we sent you a link" invites a second request.
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MailCheck } from 'lucide-react';
 import { Button, FieldError, Input, fieldErrorId } from '@/components/ui';
 import { MAX_CONTACT_LENGTH } from '@/lib/api/schemas/account';
+
+/** Only our own paths, so a crafted ?next= cannot bounce somebody off-site
+ *  after they sign in. */
+function safeNext(value: string | null): string | null {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : null;
+}
 
 export function SignInForm() {
   const [contact, setContact] = useState('');
   const [website, setWebsite] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [sent, setSent] = useState<{ message: string; sentTo?: string } | null>(null);
+  const [sent, setSent] = useState<string | null>(null);
+
+  // Stashed now, read after the emailed link is opened. sessionStorage rather
+  // than a URL: the link often gets opened in a different browser to the one
+  // that asked, and then there is simply no stash and /account is the right
+  // destination anyway.
+  //
+  // Read from location rather than useSearchParams: this is a one-shot read on
+  // mount, and the hook would force a Suspense boundary and stop this page
+  // being prerendered for the sake of a value that never changes while it is
+  // open.
+  useEffect(() => {
+    const next = safeNext(new URLSearchParams(window.location.search).get('next'));
+    if (next) sessionStorage.setItem('post-signin', next);
+  }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -40,7 +60,7 @@ export function SignInForm() {
         return;
       }
 
-      setSent({ message: result.message, sentTo: result.sentTo });
+      setSent(result.message);
     } catch {
       setError('We could not reach the server. Please check your connection.');
     } finally {
@@ -53,12 +73,11 @@ export function SignInForm() {
       <div className="rounded-surface border border-border bg-surface p-6 text-center">
         <MailCheck className="mx-auto h-8 w-8 text-success" aria-hidden="true" />
         <p className="mt-3 text-body-md font-medium text-text-primary">Check your email</p>
-        <p className="mt-2 text-body-sm text-text-secondary">
-          {sent.sentTo ? `We sent a sign-in link to ${sent.sentTo}.` : sent.message}
-        </p>
+        <p className="mt-2 text-body-sm text-text-secondary">{sent}</p>
         <p className="mt-2 text-caption-md text-text-secondary">
-          It works once and lasts 20 minutes. Check your spam folder if it has not
-          arrived in a minute.
+          Check your spam folder if nothing arrives in a minute. Never ordered with
+          that email or phone before? There is no account yet — place an order as a
+          guest and one is created for you.
         </p>
       </div>
     );

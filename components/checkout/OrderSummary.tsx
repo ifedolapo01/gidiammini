@@ -21,6 +21,9 @@ interface OrderSummaryProps {
   zones: ShippingZone[];
 }
 
+/** Mirrors the payment step's own check — see useCheckoutPayment. */
+const onlinePaymentAvailable = process.env.NEXT_PUBLIC_PAYSTACK_ENABLED === 'true';
+
 export default function OrderSummary({
   items,
   subtotal,
@@ -112,13 +115,20 @@ export default function OrderSummary({
         </div>
       </div>
 
+      {/* What the next step will offer. Driven by the same flag the payment step
+          reads, so this cannot promise a method that is not there — it said
+          "Bank Transfer Only" for a while after online payment shipped. */}
       <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-border">
         <div className="flex items-center text-caption-md md:text-body-sm text-text-secondary mb-3 md:mb-4">
           <Banknote className="w-4 h-4 md:w-5 md:h-5 mr-2 text-success" />
-          <span className="font-medium">Bank Transfer Only</span>
+          <span className="font-medium">
+            {onlinePaymentAvailable ? 'Card, bank transfer or USSD' : 'Bank Transfer Only'}
+          </span>
         </div>
         <p className="text-caption-md md:text-body-sm text-text-secondary">
-          Pay via bank transfer and upload your receipt. We'll verify and process your order.
+          {onlinePaymentAvailable
+            ? 'Pay now and your order is confirmed straight away, or transfer yourself and upload the receipt. You choose at the next step.'
+            : "Pay via bank transfer and upload your receipt. We'll verify and process your order."}
         </p>
       </div>
     </div>

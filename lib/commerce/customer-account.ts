@@ -1,17 +1,19 @@
 /**
  * COMMERCE layer — the parts of a customer account that are pure decisions.
  *
- * Three of them, and each is a place where getting it slightly wrong is a bug
- * a customer would feel:
+ * Two of them, and each is a place where getting it slightly wrong is a bug a
+ * customer would feel:
  *
  *   1. What the person typed into the sign-in box. Email or phone, and the
  *      phone in any of the four ways Nigerians write one.
- *   2. What we are allowed to tell them about where the link went. Enough to
- *      find the email, not enough to confirm an address exists.
- *   3. What "reorder" means when the catalogue has moved on — a price change,
+ *   2. What "reorder" means when the catalogue has moved on — a price change,
  *      a sold-out size, a delisted product.
  *
- * No React, no Supabase, so all three are testable directly.
+ * There was a third — masking the address a sign-in link went to — until it
+ * turned out that returning it at all told a stranger whether an address shops
+ * here. See SignInRequestResult in customer-auth.ts.
+ *
+ * No React, no Supabase, so both are testable directly.
  */
 import { isValidEmail } from '@/lib/validation';
 import { normalisePhone } from '@/lib/notifications/phone';
@@ -41,21 +43,6 @@ export function parseContact(input: string): Contact | null {
   if (phone.ok) return { kind: 'phone', msisdn: phone.msisdn };
 
   return null;
-}
-
-/**
- * "ad•••@gmail.com" — enough for the customer to know which inbox to open,
- * not enough to hand an address to somebody who guessed at it.
- *
- * The domain stays whole on purpose: knowing it is Gmail rather than Yahoo is
- * most of what makes this useful, and the domain is not the secret.
- */
-export function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (!domain) return '•••';
-
-  const head = local.slice(0, 2);
-  return `${head}${'•'.repeat(Math.max(3, Math.min(local.length - head.length, 6)))}@${domain}`;
 }
 
 /** Why a line from the old order could not be added back to the cart. */
