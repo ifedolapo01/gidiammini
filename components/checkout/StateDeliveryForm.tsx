@@ -13,6 +13,9 @@ interface StateDeliveryFormProps {
   selectedState: string;
   selectedLga: string;
   selectedPlace: string;
+  /** Zones still loading. The state list is derived from them, so until they
+   *  land there is nothing to choose. */
+  zonesLoading?: boolean;
   deliveryOption: 'pickup' | 'delivery';
   setSelectedState: (state: string) => void;
   setSelectedLga: (lga: string) => void;
@@ -26,6 +29,7 @@ export default function StateDeliveryForm({
   selectedState,
   selectedLga,
   selectedPlace,
+  zonesLoading = false,
   deliveryOption,
   setSelectedState,
   setSelectedLga,
@@ -74,12 +78,27 @@ export default function StateDeliveryForm({
         <Select
           value={selectedState}
           onChange={(e) => handleStateChange(e.target.value)}
+          disabled={zonesLoading || availableStates.length === 0}
           required
         >
           {availableStates.map((state) => (
             <option key={state} value={state}>{state}</option>
           ))}
         </Select>
+
+        {/* An empty required select cannot be satisfied, and the browser
+            refuses the submit without saying why — so say why here. */}
+        {zonesLoading && (
+          <p className="mt-2 text-caption-md text-text-secondary">
+            Loading the places we deliver to…
+          </p>
+        )}
+        {!zonesLoading && availableStates.length === 0 && (
+          <p role="alert" className="mt-2 text-caption-md text-destructive">
+            We could not load our delivery areas. Please refresh the page, or
+            contact us and we will take the order by hand.
+          </p>
+        )}
       </div>
 
       {/* Pickup vs Delivery - asked up front (before LGA), so picking pickup can skip it entirely */}

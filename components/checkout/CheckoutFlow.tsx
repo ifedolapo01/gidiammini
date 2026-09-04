@@ -44,6 +44,7 @@ export default function CheckoutFlow() {
 
   const {
     zones,
+    zonesLoading,
     deliveryOption, setDeliveryOption,
     selectedState, setSelectedState,
     selectedLga, setSelectedLga,
@@ -86,6 +87,7 @@ export default function CheckoutFlow() {
             pickupAddress={pickupAddress}
             pickupAvailable={pickupAvailable}
             zones={zones}
+            zonesLoading={zonesLoading}
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleFormSubmit}

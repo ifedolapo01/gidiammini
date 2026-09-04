@@ -24,7 +24,7 @@ export function useCheckoutShipping(initial?: InitialShippingSelection | null) {
   const [selectedLga, setSelectedLga] = useState<string>(initial?.selectedLga ?? '');
   const [selectedPlace, setSelectedPlace] = useState<string>(initial?.selectedPlace ?? '');
 
-  const { zones } = useActiveShippingZones();
+  const { zones, loading: zonesLoading } = useActiveShippingZones();
 
   // 'Abuja' is just a starting guess — once zones load, fall back to whatever
   // state the admin has actually configured if that guess isn't available.
@@ -46,6 +46,10 @@ export function useCheckoutShipping(initial?: InitialShippingSelection | null) {
 
   return {
     zones,
+    /** Zones decide which states can be picked, and the state select is
+     *  `required` — so submitting before they arrive is blocked by the
+     *  browser's own validation, silently. Callers gate the submit on this. */
+    zonesLoading,
     deliveryOption, setDeliveryOption,
     selectedState, setSelectedState,
     selectedLga, setSelectedLga,

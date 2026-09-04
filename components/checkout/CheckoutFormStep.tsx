@@ -4,8 +4,8 @@
 import { CartItem } from '@/types/order';
 import type { ShippingZone } from '@/types/shipping';
 import type { FieldErrors } from '@/lib/api/field-errors';
-import { Spinner } from '@/components/ui';
 import StateDeliveryForm from './StateDeliveryForm';
+import ProceedToPaymentButton from './ProceedToPaymentButton';
 import CustomerInformation from './CustomerInformation';
 import OrderSummary from './OrderSummary';
 import MobileOrderSummary from './MobileOrderSummary';
@@ -22,6 +22,9 @@ interface CheckoutFormStepProps {
   pickupAddress: string;
   pickupAvailable: boolean;
   zones: ShippingZone[];
+  /** Zones still on their way. The submit waits for them — see
+   *  ProceedToPaymentButton. */
+  zonesLoading: boolean;
   formData: any;
   setFormData: (formData: any) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -50,6 +53,7 @@ export default function CheckoutFormStep({
   pickupAddress,
   pickupAvailable,
   zones,
+  zonesLoading,
   formData,
   setFormData,
   onSubmit,
@@ -63,6 +67,10 @@ export default function CheckoutFormStep({
   onCloseMobileOrderSummary,
   fieldErrors,
 }: CheckoutFormStepProps) {
+  // Zones loaded and there are none: no state can be selected, so nothing can
+  // be submitted. Said out loud below rather than left as a dead select.
+  const noZones = !zonesLoading && zones.length === 0;
+
   return (
     <div className="md:grid md:grid-cols-3 md:gap-6 lg:gap-8">
       {/* Mobile: Single column, Desktop: Two-thirds for form */}
@@ -79,6 +87,7 @@ export default function CheckoutFormStep({
             setDeliveryOption={setDeliveryOption}
             pickupAddress={pickupAddress}
             zones={zones}
+            zonesLoading={zonesLoading}
           />
 
           <CustomerInformation
@@ -94,14 +103,12 @@ export default function CheckoutFormStep({
           />
 
           {/* Submit Button - Desktop */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="hidden md:flex w-full items-center justify-center gap-2 bg-primary text-primary-foreground py-3 md:py-4 rounded-control font-semibold text-body-md md:text-body-lg hover:bg-primary-hover transition-all duration-300 shadow-elevation-3 hover:shadow-elevation-4 disabled:opacity-60 disabled:pointer-events-none"
-          >
-            {isSubmitting && <Spinner size="sm" />}
-            {isSubmitting ? 'Checking availability…' : 'Proceed to Payment'}
-          </button>
+          <ProceedToPaymentButton
+            variant="desktop"
+            isSubmitting={isSubmitting}
+            zonesLoading={zonesLoading}
+            noZones={noZones}
+          />
         </form>
       </div>
 
@@ -126,15 +133,12 @@ export default function CheckoutFormStep({
         {/* Mobile Bottom Bar */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t shadow-elevation-3 z-50 p-3 sm:p-4">
           <MobileOrderSummary total={total} onViewDetails={onOpenMobileOrderSummary} />
-          <button
-            type="submit"
-            form="checkout-form"
-            disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 sm:py-4 rounded-control font-semibold text-body-md sm:text-body-lg hover:bg-primary-hover disabled:opacity-60 disabled:pointer-events-none"
-          >
-            {isSubmitting && <Spinner size="sm" />}
-            {isSubmitting ? 'Checking availability…' : 'Proceed to Payment'}
-          </button>
+          <ProceedToPaymentButton
+            variant="mobile"
+            isSubmitting={isSubmitting}
+            zonesLoading={zonesLoading}
+            noZones={noZones}
+          />
         </div>
 
         {/* Mobile Order Summary Modal */}
