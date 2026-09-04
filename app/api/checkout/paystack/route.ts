@@ -89,7 +89,10 @@ async function startPayment(request: NextRequest) {
       amountNaira: order.total_amount,
       email: order.customer_email,
       orderNumber: order.order_number,
-      callbackUrl: absoluteUrl(`/checkout/paid?reference=${encodeURIComponent(reference)}`),
+      // No reference in this URL: Paystack appends both `reference` and
+      // `trxref` itself. Adding ours made the parameter repeat, which Next
+      // parses as an array — and the array reached the verify call as "X,X".
+      callbackUrl: absoluteUrl('/checkout/paid'),
     });
 
     // Stored before the customer leaves, so the webhook can find this order

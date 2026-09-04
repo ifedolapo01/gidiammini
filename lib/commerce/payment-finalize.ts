@@ -82,6 +82,29 @@ async function findOrderByReference(
   return (byNumber as unknown as OrderRow) ?? null;
 }
 
+/**
+ * What our own database already knows about this reference.
+ *
+ * Checked before the provider is asked, and consulted again if asking them
+ * fails. The webhook is authoritative and usually lands first, so by the time
+ * the customer's browser gets back the order is frequently already confirmed —
+ * and if the provider is slow, rate-limiting us, or the reference is malformed,
+ * an order that is already paid must still be reported as paid. Telling
+ * somebody whose card was charged that we have not seen their payment is the
+ * worst thing this page can do.
+ */
+export async function readPaymentState(
+  supabase: SupabaseClient,
+  reference: string
+): Promise<FinalizeOutcome | null> {
+  const order = await findOrderByReference(supabase, reference);
+  if (!order) return null;
+
+  return order.payment_verified === true
+    ? { status: 'already_paid', orderNumber: order.order_number, orderId: order.id }
+    : null;
+}
+
 export async function finalizePayment(
   supabase: SupabaseClient,
   payment: VerifiedPayment

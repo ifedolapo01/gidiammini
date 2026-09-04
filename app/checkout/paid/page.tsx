@@ -14,7 +14,12 @@ import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { isPaystackConfigured, verifyPayment } from '@/lib/payments/paystack';
-import { finalizePayment, type FinalizeOutcome } from '@/lib/commerce/payment-finalize';
+import { paymentReferenceFrom } from '@/lib/payments/callback-params';
+import {
+  finalizePayment,
+  readPaymentState,
+  type FinalizeOutcome,
+} from '@/lib/commerce/payment-finalize';
 import { ClearCartOnPaid } from './components/ClearCartOnPaid';
 
 export const metadata: Metadata = {
@@ -26,27 +31,44 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 interface PaidPageProps {
-  searchParams: Promise<{ reference?: string }>;
+  /** Repeated parameters arrive as arrays — see callback-params.ts. */
+  searchParams: Promise<{ reference?: string | string[]; trxref?: string | string[] }>;
 }
 
-async function resolve(reference: string): Promise<FinalizeOutcome> {
-  if (!reference || !isPaystackConfigured()) return { status: 'not_paid' };
+/**
+ * Our record first, the provider second.
+ *
+ * The webhook is authoritative and often lands before the customer's browser
+ * does, so the common case is answered without an API call at all. It also
+ * means a provider that is slow, down or rate-limiting us cannot make this
+ * page tell somebody whose card was charged that we have not seen their
+ * payment — which is exactly what it did when a malformed reference reached
+ * verify.
+ */
+async function resolve(reference: string | null): Promise<FinalizeOutcome> {
+  if (!reference) return { status: 'not_paid' };
+
+  // Typed loosely until `npm run db:types` reruns against a database that has
+  // migration 003800.
+  const supabase: SupabaseClient = createAdminClient();
+
+  const known = await readPaymentState(supabase, reference);
+  if (known) return known;
+
+  if (!isPaystackConfigured()) return { status: 'not_paid' };
 
   try {
-    const payment = await verifyPayment(reference);
-    // Typed loosely until `npm run db:types` reruns against a database that
-    // has migration 003800.
-    const supabase: SupabaseClient = createAdminClient();
-    return await finalizePayment(supabase, payment);
+    return await finalizePayment(supabase, await verifyPayment(reference));
   } catch (error) {
     console.error(`Verifying ${reference} on return failed:`, error);
-    return { status: 'not_paid' };
+    // One more look at our own record: the webhook may have landed while the
+    // provider call was failing.
+    return (await readPaymentState(supabase, reference)) ?? { status: 'not_paid' };
   }
 }
 
 export default async function PaidPage({ searchParams }: PaidPageProps) {
-  const { reference } = await searchParams;
-  const outcome = await resolve(reference ?? '');
+  const outcome = await resolve(paymentReferenceFrom(await searchParams));
 
   const paid = outcome.status === 'confirmed' || outcome.status === 'already_paid';
 
@@ -81,11 +103,16 @@ export default async function PaidPage({ searchParams }: PaidPageProps) {
             <>
               <Clock className="mx-auto h-10 w-10 text-warning" aria-hidden="true" />
               <h1 className="mt-3 text-h5 font-bold text-text-primary">
-                We have not seen that payment
+                We have not seen that payment yet
               </h1>
               <p className="mt-2 text-body-md text-text-secondary">
-                It may have been cancelled, or it may still be going through. Your cart is
-                untouched — try again, or pay by bank transfer instead.
+                It may have been cancelled, or it may still be settling — refresh in a
+                moment to check. Your cart is untouched, so nothing is lost either way,
+                and you can pay by bank transfer instead.
+              </p>
+              <p className="mt-2 text-caption-md text-text-muted">
+                If your bank has already debited you, do not pay again — contact us with
+                your order number and we will confirm it by hand.
               </p>
             </>
           )}

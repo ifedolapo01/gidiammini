@@ -791,6 +791,13 @@ does not have.
 flagged for a person, because confirming anyway and refusing a genuine payment
 are both worse than a shopkeeper looking at it.
 
+**The callback URL carries no reference.** Paystack appends both `reference`
+and `trxref` itself. Adding ours made the parameter repeat, Next parsed it as
+an array, and the array reached verify encoded as `"X,X"` — so a customer whose
+card had been charged was told the payment had not been seen. The return page
+now reads its own record first and only asks the provider if that comes back
+unpaid, so a provider hiccup can never misreport a paid order.
+
 **The payment-reminder cron now skips online orders.** Its email tells somebody
 to transfer money and upload a receipt, which is the wrong instruction for an
 order started at the provider.
