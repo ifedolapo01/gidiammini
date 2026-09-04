@@ -14,6 +14,7 @@ import MarginStatCard from './components/MarginStatCard';
 import { AnalyticsSection } from './components/AnalyticsSection';
 import { RecentOrdersPanel } from './components/RecentOrdersPanel';
 import { LowStockPanel } from './components/LowStockPanel';
+import { WishlistDemandPanel } from './components/WishlistDemandPanel';
 import { QuickActionsGrid } from './components/QuickActionsGrid';
 import { formatCurrency } from './format-currency';
 
@@ -100,6 +101,13 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <RecentOrdersPanel orders={stats.recentOrders} />
         <LowStockPanel products={stats.lowStockProducts} />
+      </div>
+
+      {/* Beside low stock on purpose: one says what is running out, the other
+          says what people are waiting for. Together they are the restocking
+          decision. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <WishlistDemandPanel />
       </div>
 
       {/* Quick Actions */}

@@ -27,7 +27,7 @@ function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
     return null;
   }
   const { getItemCount } = useCart();
-  const { items: wishlistItems } = useWishlist();
+  const { ids: wishlistIds } = useWishlist();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string, category?: string) => {
@@ -100,9 +100,9 @@ function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
 
             <Link href="/wishlist" className="relative p-1 hover:bg-primary/10 rounded-full transition-colors">
               <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-text-secondary" />
-              {wishlistItems.length > 0 && (
+              {wishlistIds.length > 0 && (
                 <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 bg-primary text-primary-foreground text-caption-sm sm:text-caption-md font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-elevation-1">
-                  {wishlistItems.length}
+                  {wishlistIds.length}
                 </span>
               )}
             </Link>

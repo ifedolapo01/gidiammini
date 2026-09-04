@@ -12,6 +12,8 @@ import { Toaster } from '@/components/ui';
 import { SITE_URL } from '@/lib/site-url';
 import { CategoryProvider } from '@/components/CategoryProvider';
 import { CartDrawerProvider } from '@/components/cart/CartDrawerProvider';
+import ServiceWorkerRegistrar from '@/components/pwa/ServiceWorkerRegistrar';
+import OfflineBanner from '@/components/pwa/OfflineBanner';
 import { loadCategoryNav } from '@/lib/commerce/category-nav';
 
 /**
@@ -96,11 +98,25 @@ export const metadata: Metadata = {
   robots: {
     googleBot: { 'max-image-preview': 'large', 'max-snippet': -1 },
   },
+  // iOS ignores the manifest's icons for "Add to Home Screen" and looks for
+  // this one instead. Same artwork, built by scripts/build-pwa-icons.mjs.
+  appleWebApp: {
+    capable: true,
+    title: 'GidiamMini',
+    statusBarStyle: 'default',
+  },
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  // The colour behind the status bar in an installed window. Matches the
+  // manifest's theme_color — see app/manifest.ts.
+  themeColor: '#db2777',
 }
 
 /**
@@ -135,6 +151,9 @@ export default async function RootLayout({
         {/* Inside CartProvider, because the drawer it mounts reads the cart. */}
         <CartDrawerProvider>
           <StorefrontDiscountManager />
+          {/* Above the header, because a dropped connection explains
+              everything else on the page. */}
+          <OfflineBanner />
           <Header categories={categories} />
           <main className="min-h-screen overflow-x-hidden">{children}</main>
           <Analytics />
@@ -144,6 +163,7 @@ export default async function RootLayout({
         </WishlistProvider>
         </CartProvider>
         <Toaster />
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );

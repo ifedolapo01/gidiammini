@@ -16,17 +16,17 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ProductCardProduct } from '@/types/product';
 
 interface UseWishlistSyncArgs {
   /** What this browser holds, once localStorage has been read. */
-  localItems: ProductCardProduct[];
+  localIds: string[];
   ready: boolean;
-  /** Called with the merged list, as fresh product cards. */
-  onMerged: (items: ProductCardProduct[]) => void;
+  /** Called with the merged list of ids. Cards are looked up separately, by
+   *  whichever surface needs to draw one. */
+  onMerged: (ids: string[]) => void;
 }
 
-export function useWishlistSync({ localItems, ready, onMerged }: UseWishlistSyncArgs) {
+export function useWishlistSync({ localIds, ready, onMerged }: UseWishlistSyncArgs) {
   const [signedIn, setSignedIn] = useState(false);
   // The sync runs once per page load. Without this guard it would re-run every
   // time the list changed — which is every time somebody hearts something.
@@ -41,14 +41,17 @@ export function useWishlistSync({ localItems, ready, onMerged }: UseWishlistSync
     fetch('/api/account/wishlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: localItems.map((item) => item.id) }),
+      body: JSON.stringify({ ids: localIds }),
       signal: controller.signal,
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((result) => {
         if (!result?.success) return;
+        // `signedIn: false` is the guest answer — a 200 with an empty list, so
+        // adopting it would wipe the browser's own wishlist.
+        if (!result.signedIn) return;
         setSignedIn(true);
-        onMerged((result.products ?? []) as ProductCardProduct[]);
+        onMerged((result.ids ?? []) as string[]);
       })
       .catch(() => {
         // Signed out, offline, or aborted. The wishlist works exactly as it did
@@ -56,7 +59,7 @@ export function useWishlistSync({ localItems, ready, onMerged }: UseWishlistSync
       });
 
     return () => controller.abort();
-    // localItems is read once, at the moment the sync fires; adding it to the
+    // localIds is read once, at the moment the sync fires; adding it to the
     // dependencies would re-run this on every heart.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, onMerged]);

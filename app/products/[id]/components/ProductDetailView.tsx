@@ -98,7 +98,7 @@ export default function ProductDetailView({
         currentStock={currentStock}
         isWishlisted={isWishlisted}
         onBack={() => router.back()}
-        onToggleWishlist={() => toggleWishlist(product)}
+        onToggleWishlist={() => toggleWishlist(product.id)}
       />
 
       <div className="container mx-auto px-4 py-4 md:py-8">
@@ -129,7 +129,7 @@ export default function ProductDetailView({
               currentBasePrice={currentBasePrice}
               currentStock={currentStock}
               isWishlisted={isWishlisted}
-              onToggleWishlist={() => toggleWishlist(product)}
+              onToggleWishlist={() => toggleWishlist(product.id)}
             />
 
             <ProductHeadlineBlock
@@ -174,7 +174,7 @@ export default function ProductDetailView({
                     : null
                 }
                 isWishlisted={isWishlisted}
-                onWishlist={() => addToWishlist(product)}
+                onWishlist={() => addToWishlist(product.id)}
               />
             )}
 

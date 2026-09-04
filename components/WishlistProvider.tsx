@@ -1,78 +1,87 @@
 // components/WishlistProvider.tsx
+//
+// IDS ONLY.
+//
+// This used to store whole product objects in localStorage — name, image,
+// price, stock — captured at the moment the heart was tapped. Everything about
+// that snapshot except the id goes stale: a saved item would show what it cost
+// weeks ago, whether it was in stock weeks ago, and a rating from before
+// anybody had left one. The wishlist page papered over it by re-fetching, but
+// the header, the product page and anything else reading this list did not.
+//
+// So the browser stores a list of ids and nothing else, and every surface that
+// needs a card asks the catalogue for one. Ids do not go stale, and the same
+// list is what the account already stores (see 20251101003700), so the local
+// and server copies are finally the same kind of thing.
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { ProductCardProduct } from '@/types/product';
+import { readStoredWishlist, WISHLIST_STORAGE_KEY } from '@/lib/commerce/wishlist-storage';
 import { useWishlistSync } from './hooks/useWishlistSync';
 
 interface WishlistContextType {
-  items: ProductCardProduct[];
+  /** Product ids, in the order they were saved. */
+  ids: string[];
   isInWishlist: (productId: string) => boolean;
-  addToWishlist: (product: ProductCardProduct) => void;
+  addToWishlist: (productId: string) => void;
   removeFromWishlist: (productId: string) => void;
-  toggleWishlist: (product: ProductCardProduct) => void;
+  toggleWishlist: (productId: string) => void;
   clearWishlist: () => void;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<ProductCardProduct[]>([]);
+  const [ids, setIds] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const savedWishlist = localStorage.getItem('gidiammini_wishlist');
-    if (savedWishlist) {
-      try {
-        setItems(JSON.parse(savedWishlist));
-      } catch (e) {
-        console.error('Failed to parse saved wishlist from localStorage:', e);
-      }
-    }
+    // Reads both shapes: the old array of product objects is converted to ids
+    // on the way in, so nobody's saved list disappears on the deploy that
+    // changed the format.
+    setIds(readStoredWishlist(localStorage.getItem(WISHLIST_STORAGE_KEY)));
     setIsLoaded(true);
   }, []);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('gidiammini_wishlist', JSON.stringify(items));
+      localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(ids));
     }
-  }, [items, isLoaded]);
+  }, [ids, isLoaded]);
 
   // Signed in, the list also lives on the account and follows the customer to
   // their other devices. Signed out — the normal case — none of this fires and
   // the wishlist behaves exactly as it always has.
-  const onMerged = useCallback((merged: ProductCardProduct[]) => setItems(merged), []);
-  const { mirror } = useWishlistSync({ localItems: items, ready: isLoaded, onMerged });
+  const onMerged = useCallback((merged: string[]) => setIds(merged), []);
+  const { mirror } = useWishlistSync({ localIds: ids, ready: isLoaded, onMerged });
 
-  const isInWishlist = (productId: string) => items.some(item => item.id === productId);
+  const isInWishlist = (productId: string) => ids.includes(productId);
 
-  const addToWishlist = (product: ProductCardProduct) => {
-    setItems(current => (current.some(item => item.id === product.id) ? current : [...current, product]));
-    mirror('PUT', product.id);
+  const addToWishlist = (productId: string) => {
+    setIds((current) => (current.includes(productId) ? current : [...current, productId]));
+    mirror('PUT', productId);
   };
 
   const removeFromWishlist = (productId: string) => {
-    setItems(current => current.filter(item => item.id !== productId));
+    setIds((current) => current.filter((id) => id !== productId));
     // Explicit, because the merge is a union: a removal that only happened
     // locally would come back on the next sync.
     mirror('DELETE', productId);
   };
 
-  const toggleWishlist = (product: ProductCardProduct) => {
-    const has = items.some(item => item.id === product.id);
-    setItems(current =>
-      has ? current.filter(item => item.id !== product.id) : [...current, product]
-    );
-    mirror(has ? 'DELETE' : 'PUT', product.id);
+  const toggleWishlist = (productId: string) => {
+    const has = ids.includes(productId);
+    setIds((current) => (has ? current.filter((id) => id !== productId) : [...current, productId]));
+    mirror(has ? 'DELETE' : 'PUT', productId);
   };
 
   const clearWishlist = () => {
-    setItems([]);
+    setIds([]);
   };
 
   return (
     <WishlistContext.Provider
-      value={{ items, isInWishlist, addToWishlist, removeFromWishlist, toggleWishlist, clearWishlist }}
+      value={{ ids, isInWishlist, addToWishlist, removeFromWishlist, toggleWishlist, clearWishlist }}
     >
       {children}
     </WishlistContext.Provider>

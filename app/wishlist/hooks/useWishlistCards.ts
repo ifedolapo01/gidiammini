@@ -1,21 +1,19 @@
 /**
- * STOREFRONT layer — the wishlist's cards, refreshed against the catalogue.
+ * STOREFRONT layer — the wishlist's cards, looked up from its ids.
  *
- * The wishlist stores a *snapshot* of each product in localStorage, taken
- * whenever the heart was tapped. That is the right thing for identity — it is
- * how the list survives with no account — but a snapshot cannot carry a rating
- * that did not exist yet, and weeks later it is also quietly showing an old
- * price and an old stock level.
+ * The wishlist stores ids and nothing else (see WishlistProvider), so this is
+ * where a saved list becomes something that can be drawn. Every card is
+ * current by construction: there is no snapshot to fall out of date, which is
+ * the whole reason the stored shape changed.
  *
- * So the ids are sent back to the server for fresh card rows. Not a new
- * endpoint: /api/recommendations' 'viewed' type is already "ids in, cards out,
- * uncached" — the same call the recently-viewed rail makes — and since reviews
- * shipped those rows carry the star row too.
+ * Not a new endpoint: /api/recommendations' 'viewed' type is already "ids in,
+ * cards out, uncached" — the same call the recently-viewed rail makes — and
+ * those rows carry the star row too.
  *
- * The stored snapshot stays the fallback. A product that has been delisted
- * comes back from the server as nothing, and dropping it would leave the page
- * showing fewer items than the wishlist says it holds; it renders from the
- * snapshot instead, as it did before this hook existed.
+ * A product that has been delisted comes back as nothing and simply is not
+ * drawn. That is a change from the old behaviour, which rendered it from its
+ * snapshot: a card for something nobody can buy, at whatever it used to cost,
+ * is worse than one fewer card.
  */
 'use client';
 
@@ -28,25 +26,26 @@ export interface WishlistCards {
   /** So a wishlisted product shows the same sale badge the listing gives it —
    *  the page had no discounts of its own to pass down before. */
   discounts: Discount[];
+  /** False until the lookup answers, so an empty list can be told apart from
+   *  one that has not arrived. */
+  loaded: boolean;
 }
 
-export function useWishlistCards(stored: ProductCardProduct[]): WishlistCards {
-  const ids = stored.map((item) => item.id);
-
+export function useWishlistCards(ids: string[]): WishlistCards {
   // The route caps how many ids one request may carry, so a very long wishlist
-  // refreshes its first page and the rest render from their snapshots. That is
-  // the same trade the recently-viewed rail makes, and the cap is what stops
-  // this being a way to ask about the whole catalogue in one call.
-  const { products, discounts } = useRecommendations({ type: 'viewed', ids });
+  // shows its first page. That is the same trade the recently-viewed rail
+  // makes, and the cap is what stops this being a way to ask about the whole
+  // catalogue in one call.
+  const { products, discounts, loading } = useRecommendations({ type: 'viewed', ids });
 
-  if (products.length === 0) return { items: stored, discounts };
-
-  const fresh = new Map(products.map((product) => [product.id, product]));
+  const cards = new Map(products.map((product) => [product.id, product]));
 
   return {
-    // Merged, not replaced: the fresh row wins field by field, and anything it
-    // does not know about (a product no longer listed) keeps what was saved.
-    items: stored.map((item) => ({ ...item, ...fresh.get(item.id) })),
+    // The saved order is the customer's, not the server's: they built this
+    // list, and it should not reshuffle because a lookup came back in a
+    // different order.
+    items: ids.map((id) => cards.get(id)).filter((card): card is ProductCardProduct => Boolean(card)),
     discounts,
+    loaded: !loading && (ids.length === 0 || products.length > 0),
   };
 }
