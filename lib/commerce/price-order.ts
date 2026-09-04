@@ -19,6 +19,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Product } from '@/types/product';
 import type { ShippingZone } from '@/types/shipping';
 import { getVariantPrice, getVariantStock } from './pricing';
+import { describeStockShortage } from './cart-stock';
 import { ADMIN_VARIANTS_SELECT } from './product-variants';
 import { getBestDiscount, calculateDiscountedPrice, type Discount } from './discounts';
 import { calculateTax } from './checkout';
@@ -50,12 +51,15 @@ function fail(error: string, status = 400): { ok: false; error: string; status: 
 export function findStockShortage(priced: PricedLine[]): string | null {
   for (const line of priced) {
     if (line.available_stock < line.quantity) {
-      const variant = [line.size, line.color].filter(Boolean).join(' / ');
-      const label = variant ? `${line.product_name} (${variant})` : line.product_name;
-
-      return line.available_stock <= 0
-        ? `${label} has just sold out.`
-        : `Only ${line.available_stock} left of ${label}.`;
+      // Same sentence the cart page and the checkout gate use, from
+      // cart-stock.ts, so a shopper is not told two different things about
+      // one line depending on which screen noticed.
+      return describeStockShortage({
+        name: line.product_name,
+        size: line.size,
+        color: line.color,
+        available: line.available_stock,
+      });
     }
   }
 

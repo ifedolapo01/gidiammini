@@ -10,6 +10,9 @@ import { Analytics } from "@vercel/analytics/next";
 import StorefrontDiscountManager from '@/components/StorefrontDiscountManager';
 import { Toaster } from '@/components/ui';
 import { SITE_URL } from '@/lib/site-url';
+import { CategoryProvider } from '@/components/CategoryProvider';
+import { CartDrawerProvider } from '@/components/cart/CartDrawerProvider';
+import { loadCategoryNav } from '@/lib/commerce/category-nav';
 
 /**
  * Inter, self-hosted.
@@ -100,11 +103,20 @@ export const viewport = {
   initialScale: 1,
 }
 
-export default function RootLayout({
+/**
+ * The category list is read here, once per request and cached, and handed to
+ * the header and the footer directly. CategoryProvider carries the same list
+ * to the product cards, which are rendered too far down to be passed a prop.
+ * Before this, all three hardcoded Babies / Kids / Maternity, so the admin's
+ * Categories page changed nothing a shopper could see.
+ */
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const categories = await loadCategoryNav();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -119,11 +131,16 @@ export default function RootLayout({
       <body className={`${inter.variable} ${inter.className} theme-storefront`} suppressHydrationWarning>
         <CartProvider>
         <WishlistProvider>
+        <CategoryProvider categories={categories}>
+        {/* Inside CartProvider, because the drawer it mounts reads the cart. */}
+        <CartDrawerProvider>
           <StorefrontDiscountManager />
-          <Header />
+          <Header categories={categories} />
           <main className="min-h-screen overflow-x-hidden">{children}</main>
           <Analytics />
-          <Footer />
+          <Footer categories={categories} />
+        </CartDrawerProvider>
+        </CategoryProvider>
         </WishlistProvider>
         </CartProvider>
         <Toaster />

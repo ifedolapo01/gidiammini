@@ -4,8 +4,12 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import CheckoutSteps from './CheckoutSteps';
+import type { CheckoutStep } from '@/lib/commerce/checkout-draft';
 
-export type CheckoutStep = 'form' | 'payment' | 'confirmation';
+// Defined alongside the draft that persists it, since the URL and
+// sessionStorage both have to agree on what a step is. Re-exported because
+// this is where the flow's components have always imported it from.
+export type { CheckoutStep };
 
 const TITLES: Partial<Record<CheckoutStep, { heading: string; subheading: string }>> = {
   form: { heading: 'Checkout', subheading: 'Complete your purchase' },

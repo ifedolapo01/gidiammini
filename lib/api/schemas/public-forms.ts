@@ -28,9 +28,17 @@ export const contactFormSchema = z.object({
 
 export type ContactFormBody = z.infer<typeof contactFormSchema>;
 
+/**
+ * Newsletter signup.
+ *
+ * The name is optional because the footer form — the one on every page of the
+ * site — asks for an email and nothing else; a second box there costs more
+ * subscribers than the greeting in the welcome email is worth. The checkout
+ * opt-in still sends one, because it already has it.
+ */
 export const subscribeSchema = z.object({
   ...honeypotFields,
-  name: nameField,
+  name: optionalText('Name', MAX_LENGTHS.name),
   email: emailField,
 });
 

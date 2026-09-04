@@ -27,6 +27,22 @@ export interface CartLineInput {
   quantity: number;
 }
 
+/**
+ * The identity of a cart line: a product plus the variant chosen on it.
+ *
+ * The cart merges, removes and re-prices by these three fields, so anything
+ * that needs to name one line — a lookup map, a React key — must key on the
+ * same three. Keying on the product alone makes two variants of one product
+ * indistinguishable.
+ */
+export function cartLineKey(
+  productId: string,
+  size?: string | null,
+  color?: string | null
+): string {
+  return `${productId}|${size ?? ''}|${color ?? ''}`;
+}
+
 /** Trimmed string, or null for anything empty or non-string. */
 export function asTrimmedString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -88,7 +104,7 @@ export function mergeCartLines(lines: CartLineInput[]): CartLineInput[] {
   const merged = new Map<string, CartLineInput>();
 
   for (const line of lines) {
-    const key = `${line.product_id}|${line.size ?? ''}|${line.color ?? ''}`;
+    const key = cartLineKey(line.product_id, line.size, line.color);
     const existing = merged.get(key);
     if (existing) {
       existing.quantity = Math.min(existing.quantity + line.quantity, MAX_LINE_QUANTITY);

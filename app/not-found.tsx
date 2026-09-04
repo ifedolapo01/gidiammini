@@ -56,7 +56,7 @@ export default async function NotFound() {
                     href={`/products?category=${encodeURIComponent(category.slug)}`}
                     className="inline-flex h-11 items-center rounded-full bg-primary/10 px-5 text-body-sm font-semibold text-primary transition-colors hover:bg-primary/20"
                   >
-                    {category.name}
+                    {category.label}
                   </Link>
                 </li>
               ))}

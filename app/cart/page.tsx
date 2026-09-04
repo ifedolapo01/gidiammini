@@ -1,16 +1,19 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
-import { useCart } from '@/components/CartProvider';
-import { Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { QuantitySelector } from '@/components/commerce/QuantitySelector';
-import { formatCurrency } from '@/lib/commerce/pricing';
+import { useCart } from '@/components/CartProvider';
+import { cartLineKey } from '@/lib/commerce/cart-input';
 import CartRecommendations from './components/CartRecommendations';
-import ProductImage from '@/components/commerce/ProductImage';
+import CartLineRow from './components/CartLineRow';
+import CartSummary from './components/CartSummary';
+import { useCartStockIssues } from './hooks/useCartStockIssues';
 
 export default function CartPage() {
-  const { items, removeFromCart, updateQuantity, getTotal } = useCart();
+  const { items, removeFromCart, updateQuantity, getTotal, getItemCount } = useCart();
+  // Live stock, read on mount: a line that has sold out since it was added is
+  // flagged here rather than at the checkout gate.
+  const issues = useCartStockIssues(items);
 
   if (items.length === 0) {
     return (
@@ -38,97 +41,31 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
         <div className="lg:col-span-2">
           <div className="bg-surface rounded-surface shadow-elevation-1 border border-border">
-            {items.map((item) => (
-              <div key={item.productId} className="flex items-center border-b border-border p-3 sm:p-4 md:p-6 last:border-b-0 text-text-primary">
-                {/* Square rather than the old `h-auto`: the row's height no
-                    longer depends on a photo that has not arrived. */}
-                <ProductImage
-                  src={item.image}
-                  alt={item.name}
-                  className="w-16 sm:w-20 md:w-24 aspect-square rounded-surface flex-shrink-0"
-                  sizes="96px"
+            {items.map((item) => {
+              // Product + size + colour, because that is what the cart itself
+              // keys on. On the product id alone, two variants of one product
+              // collide and React reconciles the wrong row.
+              const key = cartLineKey(item.productId, item.size, item.color);
+
+              return (
+                <CartLineRow
+                  key={key}
+                  item={item}
+                  issue={issues.get(key)}
+                  onQuantityChange={(next) => updateQuantity(item.productId, item.size, item.color, next)}
+                  onRemove={() => removeFromCart(item.productId, item.size, item.color)}
                 />
-
-                <div className="flex-1 ml-3 sm:ml-4 md:ml-6 min-w-0"> {/* Added min-w-0 */}
-                  <h3 className="font-semibold text-body-sm sm:text-body-md md:text-body-lg truncate">{item.name}</h3>
-                  <p className="text-text-secondary text-caption-md sm:text-body-sm mt-1 truncate">
-                    {item.color && `Color: ${item.color}`}
-                    {item.size && ` • Size/Age: ${item.size}`}
-                  </p>
-                  <div className="flex items-center justify-between mt-2 sm:mt-3 md:mt-4 flex-wrap sm:flex-nowrap gap-2">
-                    <div className="order-1 sm:order-none">
-                      <QuantitySelector
-                        size="sm"
-                        quantity={item.quantity}
-                        onChange={(next) => updateQuantity(item.productId, item.size, item.color, next)}
-                      />
-                    </div>
-
-                    <div className="flex items-center order-2 sm:order-none ml-auto sm:ml-0">
-                      <span className="text-body-sm sm:text-body-md md:text-body-lg font-semibold whitespace-nowrap">
-                        {formatCurrency(item.price * item.quantity)}
-                      </span>
-                      <button
-                        onClick={() => removeFromCart(item.productId, item.size, item.color)}
-                        className="text-destructive/70 hover:text-destructive ml-3 sm:ml-4 md:ml-6"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Order Summary */}
         <div>
-          <div className="bg-surface rounded-surface shadow-elevation-1 border border-border p-4 sm:p-6 sticky top-20 sm:top-24 text-text-primary">
-            <h2 className="text-body-lg sm:text-h5 font-bold mb-4 sm:mb-6">Order Summary</h2>
-
-            <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-              <div className="flex justify-between text-body-sm sm:text-body-md">
-                <span>Subtotal ({items.length} items)</span>
-                <span>{formatCurrency(getTotal())}</span>
-              </div>
-              <div className="flex justify-between text-body-sm sm:text-body-md">
-                <span>Shipping</span>
-                <span className="text-text-secondary">Calculated at checkout</span>
-              </div>
-              <div className="flex justify-between text-body-sm sm:text-body-md">
-                <span>Tax (7.5%)</span>
-                <span>{formatCurrency(getTotal() * 0.075)}</span>
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-3 sm:pt-4 mb-4 sm:mb-6">
-              <div className="flex justify-between text-body-md sm:text-body-lg font-bold">
-                <span>Estimated Total</span>
-                <span className='text-primary'>
-                  {formatCurrency(getTotal() + (getTotal() * 0.075))}
-                </span>
-              </div>
-              <p className="text-caption-md sm:text-body-sm text-text-secondary mt-1 sm:mt-2">
-                Shipping fee will be added based on location
-              </p>
-            </div>
-
-            <Link
-              href="/checkout"
-              className="block w-full bg-primary text-primary-foreground text-center py-2 sm:py-3 rounded-control font-semibold text-body-sm sm:text-body-md hover:bg-primary-hover mb-3 sm:mb-4"
-            >
-              Proceed to Checkout
-            </Link>
-
-            <Link
-              href="/products"
-              className="block w-full border border-border text-center py-2 sm:py-3 rounded-control font-semibold text-body-sm sm:text-body-md hover:bg-surface-hover"
-            >
-              Continue Shopping
-            </Link>
-          </div>
+          <CartSummary
+            subtotal={getTotal()}
+            itemCount={getItemCount()}
+            issueCount={issues.size}
+          />
         </div>
       </div>
 

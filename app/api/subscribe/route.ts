@@ -30,16 +30,32 @@ async function subscribeToNewsletter(req: NextRequest) {
 
     // 1. Save Subscriber. Explicit columns: nothing else from the body can
     // reach the row, whatever the caller sent.
+    //
+    // `name` is left out of the payload entirely when we don't have one,
+    // rather than sent as null: the upsert's DO UPDATE only touches the
+    // columns present, so somebody who subscribed at checkout under their name
+    // and later uses the footer form keeps it.
     const { error } = await supabase
       .from('subscribers')
       .upsert(
-        { email, name, is_active: true },
+        { email, is_active: true, ...(name ? { name } : {}) },
         { onConflict: 'email' }
       );
 
     if (error) {
+      // Reported as a failure, not as `success: true` with a warning nobody
+      // reads. The footer form now shows a real success state on success, and
+      // telling someone they are on the list when the row did not save is the
+      // same broken promise as the button that did nothing.
+      //
+      // The checkout opt-in is unaffected: it ignores this response by design,
+      // because a customer who has paid must not see an error about a mailing
+      // list (see submitNewsletterOptIn).
       console.error('Subscription error:', error);
-      return NextResponse.json({ success: true, warning: 'Failed to save to database' });
+      return NextResponse.json(
+        { success: false, error: 'We could not save your subscription. Please try again.' },
+        { status: 500 }
+      );
     }
 
     // 2. Check for active/upcoming discounts
@@ -88,13 +104,13 @@ async function subscribeToNewsletter(req: NextRequest) {
             <div style="font-family: Arial, sans-serif; max-w: 600px; margin: 0 auto; padding: 20px;">
               <h1 style="color: #2563eb; text-align: center;">${storeName}</h1>
               <h2 style="color: #1f2937;">${title}</h2>
-              <p>Hi ${escapeHtml(name)},</p>
+              <p>Hi ${escapeHtml(name || 'there')},</p>
               <p>${message}</p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${siteUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Shop Now</a>
               </div>
               <p style="color: #6b7280; font-size: 12px; text-align: center;">
-                You received this email because you subscribed to exclusive offers at checkout.
+                You received this email because you subscribed to exclusive offers at ${escapeHtml(storeName)}.
               </p>
             </div>
           `;

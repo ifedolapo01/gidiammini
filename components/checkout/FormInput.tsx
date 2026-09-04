@@ -35,13 +35,21 @@ export default function FormInput({
 }: FormInputProps) {
   const field = name ?? label;
   const errorId = fieldErrorId(field);
+  // The label was attached to nothing: no htmlFor, no id. Sighted users read
+  // it by position; a screen reader announced "edit text, blank" on every
+  // field of the checkout form.
+  const inputId = `checkout-${field.replace(/\s+/g, '-').toLowerCase()}`;
 
   return (
     <div>
-      <label className="block text-caption-md sm:text-body-sm font-medium text-text-primary mb-1">
+      <label
+        htmlFor={inputId}
+        className="block text-caption-md sm:text-body-sm font-medium text-text-primary mb-1"
+      >
         {label}
       </label>
       <input
+        id={inputId}
         type={type}
         value={value}
         onChange={onChange}

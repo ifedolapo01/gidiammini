@@ -9,7 +9,7 @@ export { Badge, type BadgeTone, type BadgeVariant } from './Badge';
 export { Spinner, type SpinnerSize } from './Spinner';
 export { Skeleton } from './Skeleton';
 export { ErrorState } from './ErrorState';
-export { Modal, type ModalSize } from './Modal';
+export { Modal, type ModalSize, type ModalPlacement } from './Modal';
 export { Select, type SelectProps, type SelectSize } from './Select';
 export { Checkbox, type CheckboxProps } from './Checkbox';
 export { FieldError, fieldErrorId, type FieldErrorProps } from './FieldError';

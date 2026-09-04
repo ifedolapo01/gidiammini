@@ -1,4 +1,9 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
+// Two Add to Cart buttons: one in the desktop column, one in the sticky mobile
+// bar, with CSS hiding whichever does not apply. They used to share the id
+// `add-to-cart-button` — invalid HTML, and the reason the old confirmation
+// (getElementById, textContent rewritten) always animated the desktop one. The
+// confirmation is now the cart drawer, so neither needs an id.
 'use client';
 
 import { QuantitySelector } from '@/components/commerce/QuantitySelector';
@@ -60,7 +65,6 @@ export default function AddToCartSection({
         <div className="hidden md:flex items-center gap-4 mb-6">
           <QuantitySelector quantity={quantity} onChange={onQuantityChange} min={1} max={currentStock} />
           <button
-            id="add-to-cart-button"
             onClick={onAddToCart}
             disabled={!canAdd}
             className="flex-1 bg-primary text-primary-foreground py-3 rounded-control font-semibold hover:bg-primary-hover disabled:bg-disabled disabled:cursor-not-allowed transition-all text-body-md md:text-body-lg"
@@ -86,7 +90,6 @@ export default function AddToCartSection({
           />
         </div>
         <button
-          id="add-to-cart-button"
           onClick={onAddToCart}
           disabled={!canAdd}
           className="w-full bg-primary text-primary-foreground py-4 rounded-control font-semibold hover:bg-primary-hover disabled:bg-disabled disabled:cursor-not-allowed transition-all text-body-lg"

@@ -6,11 +6,23 @@ import { useEffect, useState } from 'react';
 import { getDeliveryFee, isPickupAvailable, findShippingZone, getAvailableStates } from '@/lib/commerce/checkout';
 import { useActiveShippingZones } from './useActiveShippingZones';
 
-export function useCheckoutShipping() {
-  const [deliveryOption, setDeliveryOption] = useState<'pickup' | 'delivery'>('pickup');
-  const [selectedState, setSelectedState] = useState<string>('Abuja');
-  const [selectedLga, setSelectedLga] = useState<string>('');
-  const [selectedPlace, setSelectedPlace] = useState<string>('');
+/** Where a returning customer had got to, when this is a restored checkout. */
+export interface InitialShippingSelection {
+  deliveryOption: 'pickup' | 'delivery';
+  selectedState: string;
+  selectedLga: string;
+  selectedPlace: string;
+}
+
+export function useCheckoutShipping(initial?: InitialShippingSelection | null) {
+  const [deliveryOption, setDeliveryOption] = useState<'pickup' | 'delivery'>(
+    initial?.deliveryOption ?? 'pickup'
+  );
+  // 'Abuja' only when nothing was restored — a returning customer's own choice
+  // outranks the guess, and the effect below would otherwise re-resolve it.
+  const [selectedState, setSelectedState] = useState<string>(initial?.selectedState || 'Abuja');
+  const [selectedLga, setSelectedLga] = useState<string>(initial?.selectedLga ?? '');
+  const [selectedPlace, setSelectedPlace] = useState<string>(initial?.selectedPlace ?? '');
 
   const { zones } = useActiveShippingZones();
 

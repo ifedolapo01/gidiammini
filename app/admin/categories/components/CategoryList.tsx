@@ -5,24 +5,30 @@ import { Trash2 } from 'lucide-react';
 import { Spinner } from '@/components/ui';
 import type { Category } from '@/types/product';
 import { CategorySizeGuidance } from './CategorySizeGuidance';
+import { CategoryDisplayName } from './CategoryDisplayName';
 
 interface CategoryListProps {
   categories: Category[];
   pendingDeleteId: string | null;
   /** Which category's guidance is being saved, if any. */
   savingGuidanceId: string | null;
+  /** Which category's storefront name is being saved, if any. */
+  savingDisplayNameId: string | null;
   onDeleteCategory: (id: string) => void;
   onDeleteSubcategory: (id: string) => void;
   onSaveGuidance: (id: string, guidance: string) => void;
+  onSaveDisplayName: (id: string, displayName: string) => void;
 }
 
 export function CategoryList({
   categories,
   pendingDeleteId,
   savingGuidanceId,
+  savingDisplayNameId,
   onDeleteCategory,
   onDeleteSubcategory,
   onSaveGuidance,
+  onSaveDisplayName,
 }: CategoryListProps) {
   return (
     <div className="bg-surface rounded-surface shadow-elevation-1 border border-border-light overflow-hidden">
@@ -59,8 +65,18 @@ export function CategoryList({
                 </button>
               </div>
 
-              {/* Above the subcategories: guidance is about the category
-                  itself, and it is the field an admin comes here to edit. */}
+              {/* Above the subcategories: both of these are about the
+                  category itself, and they are the fields an admin comes here
+                  to edit. The storefront name comes first — it is the one a
+                  shopper sees on every page. */}
+              <CategoryDisplayName
+                categoryId={category.id}
+                categoryName={category.name}
+                current={category.display_name ?? null}
+                saving={savingDisplayNameId === category.id}
+                onSave={onSaveDisplayName}
+              />
+
               <CategorySizeGuidance
                 categoryId={category.id}
                 categoryName={category.name}

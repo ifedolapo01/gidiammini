@@ -19,6 +19,14 @@ interface BankDetailsProps {
 export default function BankDetails({ bankDetails, orderNumber, total }: BankDetailsProps) {
   const accountCopy = useCopyToClipboard();
   const orderCopy = useCopyToClipboard();
+  const amountCopy = useCopyToClipboard();
+
+  /**
+   * The digits, not the rendered "₦23,500": a banking app's amount field wants
+   * a number, and pasting a currency symbol and a thousands separator into one
+   * is how a transfer ends up rejected — or, worse, sent for the wrong amount.
+   */
+  const amountToCopy = String(total);
 
   return (
     <div className="bg-info-background border border-info-border rounded-surface p-4 md:p-6 mb-6 md:mb-8">
@@ -44,7 +52,9 @@ export default function BankDetails({ bankDetails, orderNumber, total }: BankDet
             <div className="flex items-center">
               <p className="font-bold text-body-md md:text-body-lg font-mono text-text-primary">{bankDetails.accountNumber}</p>
               <button
-                onClick={() => accountCopy.copy(bankDetails.accountNumber)}
+                type="button"
+                onClick={() => accountCopy.copy(bankDetails.accountNumber, 'Account number copied!')}
+                aria-label="Copy the account number"
                 className="ml-3 md:ml-4 bg-primary/10 text-primary px-2 py-1 md:px-3 md:py-1 rounded-control text-caption-md md:text-body-sm hover:bg-primary/20 flex items-center gap-1"
               >
                 {accountCopy.copied && <Check className="w-3.5 h-3.5" />}
@@ -54,7 +64,18 @@ export default function BankDetails({ bankDetails, orderNumber, total }: BankDet
           </div>
           <div className="bg-surface p-3 md:p-4 rounded-control border border-border">
             <p className="text-caption-md md:text-body-sm text-text-secondary mb-1">Amount to Pay</p>
-            <p className="font-bold text-h5 md:text-h4 text-primary">{formatCurrency(total)}</p>
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1">
+              <p className="font-bold text-h5 md:text-h4 text-primary">{formatCurrency(total)}</p>
+              <button
+                type="button"
+                onClick={() => amountCopy.copy(amountToCopy, 'Amount copied!')}
+                aria-label={`Copy the amount, ${amountToCopy} naira`}
+                className="bg-primary/10 text-primary px-2 py-1 md:px-3 md:py-1 rounded-control text-caption-md md:text-body-sm hover:bg-primary/20 flex items-center gap-1"
+              >
+                {amountCopy.copied && <Check className="w-3.5 h-3.5" />}
+                {amountCopy.copied ? 'Copied!' : 'Copy amount'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -65,7 +86,9 @@ export default function BankDetails({ bankDetails, orderNumber, total }: BankDet
           <li className="flex items-center flex-wrap gap-2">
             <span>• Use <strong>Order #{orderNumber}</strong> as payment description/remark</span>
             <button
-              onClick={() => orderCopy.copy(orderNumber)}
+              type="button"
+              onClick={() => orderCopy.copy(orderNumber, 'Order number copied!')}
+              aria-label="Copy the order number for the transfer remark"
               className="bg-primary/10 text-primary px-2 py-0.5 rounded-control text-caption-md hover:bg-primary/20 flex items-center gap-1"
             >
               {orderCopy.copied && <Check className="w-3.5 h-3.5" />}

@@ -4,6 +4,10 @@
  * Built on the native <dialog> element: focus is trapped while open,
  * Escape closes, and focus returns to the triggering element on close
  * (per the design system's overlay accessibility rules).
+ *
+ * `placement` is what makes a slide-over a configuration of this rather than a
+ * second component: a drawer needs exactly the four behaviours above and
+ * differs only in where it sits and how it enters.
  */
 'use client';
 
@@ -20,11 +24,21 @@ const sizes = {
 
 export type ModalSize = keyof typeof sizes;
 
+/** Centred dialog, or a full-height panel against the trailing edge. */
+export type ModalPlacement = 'center' | 'right';
+
 interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: string;
   size?: ModalSize;
+  /**
+   * 'right' renders a slide-over: full height against the trailing edge,
+   * entering from it. The panel becomes a flex column and its body fills the
+   * remaining height, so children can own a scrolling middle and a pinned
+   * footer. Implies `scrollable`'s intent, so that flag is ignored.
+   */
+  placement?: ModalPlacement;
   /** Close when the backdrop is clicked (default true). */
   dismissible?: boolean;
   /** Suppress the built-in header row entirely; children own the header and close control. */
@@ -46,6 +60,7 @@ export function Modal({
   onClose,
   title,
   size = 'md',
+  placement = 'center',
   dismissible = true,
   hideHeader = false,
   ariaLabel,
@@ -57,6 +72,7 @@ export function Modal({
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const drawer = placement === 'right';
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -93,16 +109,23 @@ export function Modal({
         if (dismissible && event.target === dialogRef.current) onClose();
       }}
       className={cn(
-        'm-auto w-[calc(100%-2rem)] rounded-overlay bg-surface p-0 text-text-primary shadow-elevation-4',
+        'bg-surface p-0 text-text-primary shadow-elevation-4',
         'backdrop:bg-overlay backdrop:backdrop-blur-sm',
-        'open:animate-modalIn',
         sizes[size],
-        scrollable && 'open:flex flex-col max-h-[85vh]',
+        // Written as two whole variants rather than a base plus overrides:
+        // cn() is a plain join, so a later `m-0` would not beat an earlier
+        // `m-auto` — stylesheet order would decide, not this file.
+        drawer
+          ? 'my-0 mr-0 ml-auto h-dvh max-h-dvh w-full rounded-none open:flex flex-col open:animate-drawerIn'
+          : cn(
+              'm-auto w-[calc(100%-2rem)] rounded-overlay open:animate-modalIn',
+              scrollable && 'open:flex flex-col max-h-[85vh]',
+            ),
         className,
       )}
     >
       {!hideHeader && (
-        <div className={cn('flex items-start justify-between gap-4 p-6 pb-0', scrollable && 'shrink-0', headerClassName)}>
+        <div className={cn('flex items-start justify-between gap-4 p-6 pb-0', (scrollable || drawer) && 'shrink-0', headerClassName)}>
           {title ? (
             <h2 id={titleId} className="text-h5 font-semibold">
               {title}
@@ -120,7 +143,16 @@ export function Modal({
           </button>
         </div>
       )}
-      <div className={cn(padded && 'p-6', scrollable && 'overflow-y-auto')}>{children}</div>
+      <div
+        className={cn(
+          padded && 'p-6',
+          // A drawer's body is the panel's remaining height; whatever scrolls
+          // inside it is the child's decision.
+          drawer ? 'min-h-0 flex-1' : scrollable && 'overflow-y-auto',
+        )}
+      >
+        {children}
+      </div>
     </dialog>
   );
 }

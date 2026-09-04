@@ -135,6 +135,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string | null
+          display_name: string | null
           id: string
           name: string
           size_guidance: string | null
@@ -143,6 +144,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string | null
+          display_name?: string | null
           id?: string
           name: string
           size_guidance?: string | null
@@ -151,6 +153,7 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string | null
+          display_name?: string | null
           id?: string
           name?: string
           size_guidance?: string | null
@@ -1244,21 +1247,21 @@ export type Database = {
           email: string
           id: string
           is_active: boolean | null
-          name: string
+          name: string | null
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
           is_active?: boolean | null
-          name: string
+          name?: string | null
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
           is_active?: boolean | null
-          name?: string
+          name?: string | null
         }
         Relationships: []
       }

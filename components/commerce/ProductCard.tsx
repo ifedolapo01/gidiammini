@@ -1,12 +1,14 @@
 /** COMMERCE layer — shared product card. Used by Storefront (and available to Admin). No branding — renders via tokens. */
 import Link from 'next/link';
 import { ProductCardProduct } from '@/types/product';
-import { Discount, getBestDiscount, calculateDiscountedPrice, formatDiscountValue } from '@/lib/commerce/discounts';
-import { getProductPriceRange, formatPriceRange } from '@/lib/commerce/pricing';
+import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
+import { formatPriceRange } from '@/lib/commerce/pricing';
+import { getCardPricing } from '@/lib/commerce/card-pricing';
 import { Badge } from '@/components/ui';
 import { StockBadge } from './StockBadge';
 import ProductImage from './ProductImage';
 import StarRating from './StarRating';
+import CategoryLabel from './CategoryLabel';
 
 interface ProductCardProps {
   product: ProductCardProduct;
@@ -29,19 +31,15 @@ export default function ProductCard({ product, discounts = [], priority = false 
   const category = product.category || '';
   const stock = product.stock || 0;
 
-  const bestDiscount = getBestDiscount(product, discounts);
-
-  // Price range. The listing precomputes this in SQL from the variants table
-  // and sends price_min/price_max, so the card no longer needs the whole
-  // pricing_config to derive two numbers. Anything still passing a full product
-  // row — the homepage, the wishlist — falls through to the old derivation.
-  const { min, max } =
-    typeof product.price_min === 'number' && typeof product.price_max === 'number'
-      ? { min: product.price_min, max: product.price_max }
-      : getProductPriceRange(product as any);
-
-  const finalMinPrice = calculateDiscountedPrice(min, bestDiscount);
-  const finalMaxPrice = calculateDiscountedPrice(max, bestDiscount);
+  // Shared with the cart drawer's compact suggestions, so the same product
+  // cannot be advertised at two prices on two surfaces.
+  const {
+    min,
+    max,
+    finalMin: finalMinPrice,
+    finalMax: finalMaxPrice,
+    discount: bestDiscount,
+  } = getCardPricing(product, discounts);
 
   return (
     <Link href={`/products/${product.id}`} className="group">
@@ -118,8 +116,12 @@ export default function ProductCard({ product, discounts = [], priority = false 
             {description}
           </p>
           <div className="flex items-center justify-between">
+            {/* The category's own label, from the table. This used to be a
+                hardcoded 'kids' -> 'Kids & Pre-teens' special case, which no
+                category added since could ever benefit from. `capitalize`
+                still covers the fallback to a bare slug. */}
             <span className="text-body-sm text-text-secondary capitalize">
-              {category.toLowerCase() === 'kids' ? 'Kids & Pre-teens' : category}
+              <CategoryLabel slug={category} />
             </span>
             <span className="text-body-sm font-medium text-primary">
               View Details →

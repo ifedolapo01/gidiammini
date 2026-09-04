@@ -6,6 +6,7 @@
 // left no trace of who did it.
 import { NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { parseCategoryEdit } from '@/lib/commerce/category-edit';
 
 export const maxDuration = 30;
 
@@ -67,12 +68,13 @@ export const POST = withAdminAuth(async (request, { supabase, audit }) => {
 });
 
 /**
- * Editing a category's size guidance.
+ * Editing a category.
  *
- * A PATCH rather than a PUT because it is the only editable field on a
- * category: name and slug are referenced by products and discounts by value,
- * so changing them is a migration, not a form. Guidance is free text nothing
- * points at.
+ * A PATCH rather than a PUT because only two fields are editable: the size
+ * guidance, and the storefront name the navigation and product cards render.
+ * `name` and `slug` are referenced by products and discounts by value, so
+ * changing those is a migration, not a form. Which fields are valid, and what
+ * an empty one means, is parseCategoryEdit's job.
  */
 export const PATCH = withAdminAuth(async (request, { supabase, audit }) => {
   const body = await request.json();
@@ -84,35 +86,20 @@ export const PATCH = withAdminAuth(async (request, { supabase, audit }) => {
     );
   }
 
-  if (typeof body.size_guidance !== 'string') {
-    return NextResponse.json(
-      { success: false, error: 'Size guidance must be text' },
-      { status: 400 }
-    );
-  }
-
-  // Matches the column's CHECK. Refused rather than truncated: silently
-  // dropping the end of somebody's paragraph is worse than telling them.
-  if (body.size_guidance.length > 2000) {
-    return NextResponse.json(
-      { success: false, error: 'Size guidance must be 2000 characters or fewer' },
-      { status: 400 }
-    );
+  const edit = parseCategoryEdit(body);
+  if (!edit.ok) {
+    return NextResponse.json({ success: false, error: edit.error }, { status: 400 });
   }
 
   const { data: previous } = await supabase
     .from('categories')
-    .select('id, name, size_guidance')
+    .select('id, name, display_name, size_guidance')
     .eq('id', body.id)
     .maybeSingle();
 
-  const guidance = body.size_guidance.trim();
-
   const { data, error } = await supabase
     .from('categories')
-    // Empty means "no guidance", which is NULL — the storefront checks for a
-    // value, and '' would render an empty panel.
-    .update({ size_guidance: guidance === '' ? null : guidance })
+    .update(edit.update)
     .eq('id', body.id)
     .select()
     .single();
@@ -127,7 +114,7 @@ export const PATCH = withAdminAuth(async (request, { supabase, audit }) => {
 
   audit({ entityType: 'category', entityId: body.id, action: 'update', before: previous, after: data });
 
-  return NextResponse.json({ success: true, category: data, message: 'Size guidance saved' });
+  return NextResponse.json({ success: true, category: data, message: 'Category saved' });
 });
 
 export const DELETE = withAdminAuth(async (request, { supabase, audit }) => {

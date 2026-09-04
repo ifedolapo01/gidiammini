@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CartItem } from '@/types/order';
+import { cartLineKey } from '@/lib/commerce/cart-input';
 
 /** A server-priced line, as returned by /api/checkout/quote. Only the fields
  * needed to match it back to a cart line and correct its price. */
@@ -98,11 +99,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
    * wins and the cart is corrected so the customer sees the real amount. */
   const syncPrices = (lines: PricedCartLine[]) => {
     const priceFor = new Map(
-      lines.map((line) => [`${line.product_id}|${line.size ?? ''}|${line.color ?? ''}`, line.price])
+      lines.map((line) => [cartLineKey(line.product_id, line.size, line.color), line.price])
     );
 
-    const keyOf = (item: CartItem) => `${item.productId}|${item.size ?? ''}|${item.color ?? ''}`;
-    const corrected = (item: CartItem) => priceFor.get(keyOf(item)) ?? item.price;
+    const corrected = (item: CartItem) =>
+      priceFor.get(cartLineKey(item.productId, item.size, item.color)) ?? item.price;
 
     // Computed against the rendered items rather than inside the updater, so
     // the caller gets a reliable answer it can act on in the same tick.

@@ -1,9 +1,13 @@
-/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives). */
+/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { CategoryNavItem } from '@/lib/commerce/storefront-nav';
+import NewsletterForm from './footer/NewsletterForm';
 
-export default function Footer() {
+/** `categories` comes from the root layout, which reads them once per request. */
+export default function Footer({ categories }: { categories: CategoryNavItem[] }) {
   const pathname = usePathname();
 
   // Don't render the storefront footer on admin pages
@@ -23,11 +27,20 @@ export default function Footer() {
           </div>
           <div>
             <h4 className="font-semibold mb-3 md:mb-4 text-body-md md:text-body-lg">Shop</h4>
+            {/* The categories the admin actually has, not three names typed in
+                here. Same list the header renders. */}
             <ul className="space-y-2 text-on-inverse/70 text-body-sm md:text-body-md">
-              <li><a href="/products" className="hover:text-on-inverse">All Products</a></li>
-              <li><a href="/products?category=babies" className="hover:text-on-inverse">Babies</a></li>
-              <li><a href="/products?category=kids" className="hover:text-on-inverse">Kids & Pre-teens</a></li>
-              <li><a href="/products?category=maternity" className="hover:text-on-inverse">Maternity</a></li>
+              <li><Link href="/products" className="hover:text-on-inverse">All Products</Link></li>
+              {categories.map((category) => (
+                <li key={category.slug}>
+                  <Link
+                    href={`/products?category=${encodeURIComponent(category.slug)}`}
+                    className="hover:text-on-inverse"
+                  >
+                    {category.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
@@ -44,16 +57,7 @@ export default function Footer() {
             <p className="text-on-inverse/70 mb-3 md:mb-4 text-body-sm md:text-body-md">
               Subscribe for updates and exclusive offers.
             </p>
-            <div className="flex">
-              <input
-                type="email"
-                placeholder="Your email"
-                className="flex-1 px-3 md:px-4 py-2 rounded-l-control bg-surface text-text-primary text-body-sm md:text-body-md"
-              />
-              <button className="bg-primary px-3 md:px-4 py-2 rounded-r-control text-body-sm md:text-body-md">
-                →
-              </button>
-            </div>
+            <NewsletterForm />
           </div>
         </div>
       </div>

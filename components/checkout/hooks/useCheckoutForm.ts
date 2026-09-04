@@ -5,17 +5,12 @@ import { useState } from 'react';
 import { useCheckoutPrefill } from './useCheckoutPrefill';
 import { useAbandonedCartCapture } from './useAbandonedCartCapture';
 import type { CartItem } from '@/types/order';
+import type { CheckoutFormData } from '@/lib/commerce/checkout-draft';
 
-export interface CheckoutFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  note: string;
-  subscribeToNewsletter: boolean;
-}
+// The shape moved to lib/commerce/checkout-draft.ts, which persists it across a
+// refresh and so has to define it. Re-exported because seven files import it
+// from here and none of them cares where it lives.
+export type { CheckoutFormData };
 
 const initialFormData: CheckoutFormData = {
   firstName: '',
@@ -33,10 +28,16 @@ interface UseCheckoutFormArgs {
   items: CartItem[];
   /** False once an order has been created — nothing left to abandon. */
   capture: boolean;
+  /**
+   * What the customer had already typed, when this page is a return to a
+   * checkout in progress. Without it a restored payment screen would submit an
+   * order with no name, email or address on it.
+   */
+  initial?: CheckoutFormData | null;
 }
 
-export function useCheckoutForm({ items, capture }: UseCheckoutFormArgs) {
-  const [formData, setFormData] = useState<CheckoutFormData>(initialFormData);
+export function useCheckoutForm({ items, capture, initial }: UseCheckoutFormArgs) {
+  const [formData, setFormData] = useState<CheckoutFormData>(initial ?? initialFormData);
 
   // A signed-in customer's last order fills the empty fields. It lives here
   // rather than in the page because "what is in this form" and "what was it

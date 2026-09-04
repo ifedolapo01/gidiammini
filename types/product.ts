@@ -108,6 +108,9 @@ export interface Category {
   name: string;
   slug: string;
   color: string;
+  /** What the storefront calls this category — navigation, footer, product
+   *  cards. Null means "use name"; see lib/commerce/storefront-nav.ts. */
+  display_name?: string | null;
   /** Free text shown at the top of the size guide for every product in this
    *  category. Edited in the admin; null when nothing has been written. */
   size_guidance?: string | null;

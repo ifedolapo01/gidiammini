@@ -14,8 +14,10 @@ import { useState, Suspense } from "react";
 import { usePathname, useSearchParams } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui';
 import SearchBox from '@/components/search/SearchBox';
+import StorefrontNav from '@/components/header/StorefrontNav';
+import type { CategoryNavItem } from '@/lib/commerce/storefront-nav';
 
-function HeaderContent() {
+function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentCategory = searchParams?.get('category');
@@ -38,7 +40,7 @@ function HeaderContent() {
     if (path === '/products') {
       return pathname === '/products' && !currentCategory;
     }
-    return pathname?.startsWith(path) && !currentCategory;
+    return Boolean(pathname?.startsWith(path)) && !currentCategory;
   };
 
   return (
@@ -73,23 +75,7 @@ function HeaderContent() {
             </Link>
           </div>
 
-          <nav className="hidden md:flex space-x-4 lg:space-x-6">
-            <Link href="/" className={`font-semibold text-body-sm lg:text-body-md transition-colors ${isActive('/') ? 'text-primary border-b-2 border-primary pb-1' : 'text-text-secondary hover:text-primary'}`}>
-              Home
-            </Link>
-            <Link href="/products" className={`font-semibold text-body-sm lg:text-body-md transition-colors ${isActive('/products') ? 'text-primary border-b-2 border-primary pb-1' : 'text-text-secondary hover:text-primary'}`}>
-              All Products
-            </Link>
-            <Link href="/products?category=babies" className={`font-semibold text-body-sm lg:text-body-md transition-colors ${isActive('/products', 'babies') ? 'text-primary border-b-2 border-primary pb-1' : 'text-text-secondary hover:text-primary'}`}>
-              Babies
-            </Link>
-            <Link href="/products?category=kids" className={`font-semibold text-body-sm lg:text-body-md transition-colors ${isActive('/products', 'kids') ? 'text-primary border-b-2 border-primary pb-1' : 'text-text-secondary hover:text-primary'}`}>
-              Kids & Pre-teens
-            </Link>
-            <Link href="/products?category=maternity" className={`font-semibold text-body-sm lg:text-body-md transition-colors ${isActive('/products', 'maternity') ? 'text-primary border-b-2 border-primary pb-1' : 'text-text-secondary hover:text-primary'}`}>
-              Maternity
-            </Link>
-          </nav>
+          <StorefrontNav categories={categories} variant="desktop" isActive={isActive} />
 
           {/* Desktop search. Given a max width so it does not squeeze the nav
               on a laptop, and hidden on mobile where it gets its own full-width
@@ -141,43 +127,12 @@ function HeaderContent() {
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-primary/10">
-            <nav className="flex flex-col space-y-2 text-text-primary">
-              <Link
-                href="/"
-                className={`py-2 px-3 sm:px-4 rounded-control text-body-sm sm:text-body-md font-medium ${isActive('/') ? 'bg-primary/10 text-primary' : 'hover:bg-primary/10'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/products"
-                className={`py-2 px-3 sm:px-4 rounded-control text-body-sm sm:text-body-md font-medium ${isActive('/products') ? 'bg-primary/10 text-primary' : 'hover:bg-primary/10'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                All Products
-              </Link>
-              <Link
-                href="/products?category=babies"
-                className={`py-2 px-3 sm:px-4 rounded-control text-body-sm sm:text-body-md font-medium ${isActive('/products', 'babies') ? 'bg-primary/10 text-primary' : 'hover:bg-primary/10'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Babies
-              </Link>
-              <Link
-                href="/products?category=kids"
-                className={`py-2 px-3 sm:px-4 rounded-control text-body-sm sm:text-body-md font-medium ${isActive('/products', 'kids') ? 'bg-primary/10 text-primary' : 'hover:bg-primary/10'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Kids & Pre-teens
-              </Link>
-              <Link
-                href="/products?category=maternity"
-                className={`py-2 px-3 sm:px-4 rounded-control text-body-sm sm:text-body-md font-medium ${isActive('/products', 'maternity') ? 'bg-primary/10 text-primary' : 'hover:bg-primary/10'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Maternity
-              </Link>
-            </nav>
+            <StorefrontNav
+              categories={categories}
+              variant="mobile"
+              isActive={isActive}
+              onNavigate={() => setMobileMenuOpen(false)}
+            />
           </div>
         )}
       </div>
@@ -185,10 +140,11 @@ function HeaderContent() {
   );
 }
 
-export default function Header() {
+/** `categories` comes from the root layout, which reads them once per request. */
+export default function Header({ categories }: { categories: CategoryNavItem[] }) {
   return (
     <Suspense fallback={<div className="h-[80px] bg-surface border-b border-primary/10"></div>}>
-      <HeaderContent />
+      <HeaderContent categories={categories} />
     </Suspense>
   );
 }

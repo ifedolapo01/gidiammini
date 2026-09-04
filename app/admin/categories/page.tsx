@@ -22,6 +22,7 @@ export default function CategoriesPage() {
     isAddingSub,
     pendingDeleteId,
     savingGuidanceId,
+    savingDisplayNameId,
     handleCatNameChange,
     handleSubNameChange,
     handleParentCategoryChange,
@@ -30,6 +31,7 @@ export default function CategoriesPage() {
     handleAddSubcategory,
     handleDeleteSubcategory,
     handleSaveGuidance,
+    handleSaveDisplayName,
   } = useCategories();
 
   if (loading && categories.length === 0) return <CategoriesSkeleton />;
@@ -80,9 +82,11 @@ export default function CategoriesPage() {
             categories={categories}
             pendingDeleteId={pendingDeleteId}
             savingGuidanceId={savingGuidanceId}
+            savingDisplayNameId={savingDisplayNameId}
             onDeleteCategory={handleDeleteCategory}
             onDeleteSubcategory={handleDeleteSubcategory}
             onSaveGuidance={handleSaveGuidance}
+            onSaveDisplayName={handleSaveDisplayName}
           />
         </div>
 

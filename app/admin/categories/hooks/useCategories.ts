@@ -7,6 +7,7 @@ import { slugify } from '@/lib/commerce/format-text';
 import type { Category } from '@/types/product';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import { useSubcategoryForm } from './useSubcategoryForm';
+import { useCategoryPatch } from './useCategoryPatch';
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -21,16 +22,27 @@ export function useCategories() {
   // Which category/subcategory row is currently being deleted
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  // Which category's size guidance is being written. Per-row, so one save does
-  // not put every category's button in a pending state.
-  const [savingGuidanceId, setSavingGuidanceId] = useState<string | null>(null);
-
   // The subcategory form is its own hook, composed here so the page keeps one
   // destructure. It needs only a way to refresh the list and the shared
   // per-row deleting flag.
   const subcategories = useSubcategoryForm({
     refresh: () => fetchCategories(),
     setPendingDeleteId,
+  });
+
+  // The two editable fields on a category, each saved through the same PATCH.
+  // Separate instances so their pending states are independent — see
+  // useCategoryPatch.
+  const guidance = useCategoryPatch({
+    field: 'size_guidance',
+    labels: { saved: 'Size guidance saved', cleared: 'Size guidance removed' },
+    onSaved: () => fetchCategories({ silent: true }),
+  });
+
+  const displayName = useCategoryPatch({
+    field: 'display_name',
+    labels: { saved: 'Storefront name saved', cleared: 'Storefront name reset' },
+    onSaved: () => fetchCategories({ silent: true }),
   });
 
   useEffect(() => {
@@ -120,33 +132,6 @@ export function useCategories() {
     }
   };
 
-  /**
-   * Saves one category's size guidance. An empty string clears it — the route
-   * stores that as NULL, so the storefront shows the tables alone.
-   */
-  const handleSaveGuidance = async (id: string, guidance: string) => {
-    setSavingGuidanceId(id);
-    try {
-      const res = await fetch('/api/admin/categories', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, size_guidance: guidance })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        toast.success(guidance.trim() ? 'Size guidance saved' : 'Size guidance removed');
-        fetchCategories({ silent: true });
-      } else {
-        toast.error(data.error || 'Failed to save size guidance');
-      }
-    } catch (err) {
-      toast.error('Network error');
-    } finally {
-      setSavingGuidanceId(null);
-    }
-  };
-
   return {
     categories,
     loading,
@@ -156,11 +141,13 @@ export function useCategories() {
     setNewCatSlug,
     isAddingCat,
     pendingDeleteId,
-    savingGuidanceId,
+    savingGuidanceId: guidance.savingId,
+    savingDisplayNameId: displayName.savingId,
     handleCatNameChange,
     handleAddCategory,
     handleDeleteCategory,
-    handleSaveGuidance,
+    handleSaveGuidance: guidance.save,
+    handleSaveDisplayName: displayName.save,
     ...subcategories,
   };
 }

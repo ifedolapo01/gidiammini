@@ -32,8 +32,15 @@ describe('subscribeSchema', () => {
       .toMatchObject({ email: 'ada@example.com', name: 'Ada' });
   });
 
-  it('requires both fields, naming each', () => {
-    expect(errorFields(subscribeSchema, {})).toEqual(['email', 'name']);
+  it('requires the email and names it', () => {
+    expect(errorFields(subscribeSchema, {})).toEqual(['email']);
+  });
+
+  it('accepts a signup with no name at all', () => {
+    // The footer form sends one field. The name became optional when that
+    // form was wired up; subscribers.name is nullable for the same reason.
+    expect(parsed(subscribeSchema, { email: 'ada@example.com' }))
+      .toMatchObject({ email: 'ada@example.com', name: '' });
   });
 
   it('rejects a non-string email instead of coercing it', () => {

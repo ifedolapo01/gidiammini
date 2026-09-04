@@ -463,6 +463,24 @@ img, video, canvas {
   animation: modalIn var(--duration-slow) ease-out;
 }
 
+/* A slide-over panel entering from the trailing edge. Paired with Modal's
+   placement="right", so the cart drawer and any later slide-over share one
+   motion. Global prefers-reduced-motion handling above neutralises it. */
+@keyframes drawerIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-drawerIn {
+  animation: drawerIn var(--duration-slow) ease-out;
+}
+
 /* Payment Gateway Animations */
 @keyframes gatewaySwitch {
   from {

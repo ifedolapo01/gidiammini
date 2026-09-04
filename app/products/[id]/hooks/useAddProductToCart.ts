@@ -8,11 +8,15 @@
  *
  * The price written to the cart line is the *discounted* one, not the product's
  * base price. That is the whole reason this cannot be a one-liner in the button.
+ *
+ * Success opens the cart drawer; only the two ways to fail are toasts.
  */
 'use client';
 
 import { toast } from 'sonner';
 import { useCart } from '@/components/CartProvider';
+import { useCartDrawer } from '@/components/cart/CartDrawerProvider';
+import { cartLineKey } from '@/lib/commerce/cart-input';
 import type { ProductCardProduct } from '@/types/product';
 
 interface UseAddProductToCartArgs {
@@ -25,30 +29,6 @@ interface UseAddProductToCartArgs {
   finalPrice: number;
 }
 
-/**
- * Momentary "Added to Cart!" feedback on the button.
- *
- * Judgment call, preserved as it was: kept as direct DOM manipulation rather
- * than React state. There are two #add-to-cart-button elements in the DOM
- * (mobile + desktop, one CSS-hidden per breakpoint) and getElementById always
- * grabs the first (desktop) one — so on mobile this updates the hidden desktop
- * button, not the visible one. That is a pre-existing quirk; converting it to
- * state driving both buttons would be a behaviour change, so it stays as-is.
- */
-function flashAddedFeedback(): void {
-  const addButton = document.getElementById('add-to-cart-button');
-  if (!addButton) return;
-
-  const originalText = addButton.textContent;
-  addButton.textContent = 'Added to Cart!';
-  addButton.classList.add('bg-success');
-
-  setTimeout(() => {
-    addButton.textContent = originalText;
-    addButton.classList.remove('bg-success');
-  }, 1500);
-}
-
 export function useAddProductToCart({
   product,
   selectedSize,
@@ -58,6 +38,7 @@ export function useAddProductToCart({
   finalPrice,
 }: UseAddProductToCartArgs) {
   const { addToCart } = useCart();
+  const { openCart } = useCartDrawer();
 
   return function handleAddToCart(): void {
     if (!product) return;
@@ -82,6 +63,11 @@ export function useAddProductToCart({
       color: selectedColor,
     });
 
-    flashAddedFeedback();
+    // The confirmation. This was `getElementById('add-to-cart-button')` with
+    // its textContent rewritten, which — with a desktop button and a sticky
+    // mobile one both carrying that id — always found the desktop one, so a
+    // phone got nothing back for the tap and shoppers added twice. The drawer
+    // names the line it just added and is the same on both breakpoints.
+    openCart(cartLineKey(product.id, selectedSize, selectedColor));
   };
 }
