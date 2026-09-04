@@ -42,7 +42,9 @@ export default function CheckoutPage() {
   // the choice — an offer, never a wall: see CheckoutSignInGate.
   const identity = useCheckoutIdentity();
 
-  const { formData, setFormData, prefill } = useCheckoutForm();
+  // capture stops once an order exists — nothing left to abandon, and the row
+  // is marked recovered server-side anyway.
+  const { formData, setFormData, prefill } = useCheckoutForm({ items, capture: step === 'form' });
   const { fieldErrors, captureFieldErrors, clearFieldErrors } = useCheckoutFieldErrors();
   const {
     zones,

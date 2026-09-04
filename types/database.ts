@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          abandoned_at: string
+          created_at: string
+          customer_id: string | null
+          email: string
+          first_sent_at: string | null
+          full_name: string | null
+          id: string
+          items: Json
+          opted_out: boolean
+          phone: string | null
+          recovered_at: string | null
+          second_sent_at: string | null
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          abandoned_at?: string
+          created_at?: string
+          customer_id?: string | null
+          email: string
+          first_sent_at?: string | null
+          full_name?: string | null
+          id?: string
+          items?: Json
+          opted_out?: boolean
+          phone?: string | null
+          recovered_at?: string | null
+          second_sent_at?: string | null
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          abandoned_at?: string
+          created_at?: string
+          customer_id?: string | null
+          email?: string
+          first_sent_at?: string | null
+          full_name?: string | null
+          id?: string
+          items?: Json
+          opted_out?: boolean
+          phone?: string | null
+          recovered_at?: string | null
+          second_sent_at?: string | null
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abandoned_carts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "abandoned_carts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string

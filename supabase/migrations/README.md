@@ -199,6 +199,7 @@ keeps them from running again.
 | `20251101003700` | `customer_wishlist` — a wishlist that follows the customer | **not yet — pending `db push`** |
 | `20251101003800` | online payments: `orders.payment_method`/`payment_reference`/`paid_at`/`payment_channel` | **not yet — pending `db push`** |
 | `20251101003900` | `payment_events` — the provider's own messages, and what was done about each | **not yet — pending `db push`** |
+| `20251101004000` | `abandoned_carts` — the basket last seen for an email that did not order | **not yet — pending `db push`** |
 
 ### Failed first push: `uuid_generate_v4()`
 
@@ -826,3 +827,56 @@ the value of a financial record is precisely that it is still there in a year.
 
 **No card data.** The payload is what Paystack sends, which carries a bin,
 last4, card type and bank, and never a PAN or CVV.
+
+## Abandoned carts (`20251101004000`)
+
+The cart lived in localStorage and nowhere else, so somebody who filled in
+their details and went to find their banking app left no trace. On a
+transfer-first checkout that is the worst gap in the funnel: those people meant
+to pay.
+
+### One row per email, not one per visit
+
+The row is "the cart we last saw for this address", not a log of abandonment
+events. A shopper who edits their basket four times produces one reminder, and
+the table grows with distinct customers rather than with visits.
+
+### The restraint is the feature
+
+This is unsolicited mail to somebody who typed an address into a form, so every
+rule that stops it sending is in `lib/commerce/abandoned-cart.ts` as a named,
+tested function rather than a condition in a cron route:
+
+- **Two, ever.** `first_sent_at` and `second_sent_at` are stamps, not counters.
+- **Never after they buy.** `recovered_at` is set by the order-created effects,
+  so a reminder cannot arrive after the thing it is reminding them to do.
+- **Never again if they ask.** `opted_out` is permanent and is not cleared when
+  the row is reused for a later cart. The opt-out is a visible link, not grey
+  four-point text.
+- **A fresh sequence only after 14 days.** Without that, somebody who browses
+  weekly would be reminded weekly forever, because each visit refreshes the row.
+- **Both deadlines run from `abandoned_at`** — the last time the cart was seen
+  — so the first email cannot land while they are still choosing sizes, and a
+  late first email does not drag the second out with it.
+
+### Items are ids, prices are not stored
+
+The snapshot records what was in the basket, never what it cost. The email is
+built from the catalogue at send time, so it can never quote a price the shop no
+longer charges, and anything sold out or delisted is dropped — if that leaves
+nothing, no email goes at all.
+
+### The resume link is a basket, not a session
+
+It restores a cart and grants nothing else: no account, no order, no address.
+The token is rotated on every send, so the link in an older reminder stops
+working, and it is stored only as a SHA-256 hash like every other bearer token
+here.
+
+### This one needs an hourly cron
+
+The first reminder is due an hour after abandonment, so `vercel.json` schedules
+`0 * * * *`. **Vercel Hobby only runs cron once a day** — on that plan the
+hourly schedule will not fire, and the sweep needs either Pro or an external
+scheduler (GitHub Actions, cron-job.org) calling the endpoint with the
+`CRON_SECRET` header.

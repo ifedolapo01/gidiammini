@@ -3,6 +3,8 @@
 
 import { useState } from 'react';
 import { useCheckoutPrefill } from './useCheckoutPrefill';
+import { useAbandonedCartCapture } from './useAbandonedCartCapture';
+import type { CartItem } from '@/types/order';
 
 export interface CheckoutFormData {
   firstName: string;
@@ -26,7 +28,14 @@ const initialFormData: CheckoutFormData = {
   subscribeToNewsletter: false,
 };
 
-export function useCheckoutForm() {
+interface UseCheckoutFormArgs {
+  /** The basket, for the abandoned-cart capture. */
+  items: CartItem[];
+  /** False once an order has been created — nothing left to abandon. */
+  capture: boolean;
+}
+
+export function useCheckoutForm({ items, capture }: UseCheckoutFormArgs) {
   const [formData, setFormData] = useState<CheckoutFormData>(initialFormData);
 
   // A signed-in customer's last order fills the empty fields. It lives here
@@ -34,6 +43,11 @@ export function useCheckoutForm() {
   // seeded from" are one concern, and the page should not have to wire two
   // hooks together to get a filled-in form.
   const prefill = useCheckoutPrefill(setFormData);
+
+  // The other direction: once there is a valid email and a basket, the cart is
+  // recorded so it can be recovered if they leave. Debounced and silent — see
+  // useAbandonedCartCapture.
+  useAbandonedCartCapture({ formData, items, active: capture });
 
   const updateField = <K extends keyof CheckoutFormData>(field: K, value: CheckoutFormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));

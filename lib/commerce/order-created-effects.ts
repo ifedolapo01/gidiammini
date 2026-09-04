@@ -11,6 +11,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendOrderReceivedEmail } from '@/lib/notifications';
 import { INITIAL_ORDER_STATUS } from './order-status';
+import { markCartRecovered } from './abandoned-cart-query';
 
 interface OrderCreatedEffectsParams {
   orderId: string;
@@ -35,5 +36,15 @@ export async function runOrderCreatedEffects(
     await sendOrderReceivedEmail({ orderNumber, customerName, customerEmail });
   } catch (notificationError) {
     console.error('Order-received email error:', notificationError);
+  }
+
+  // They bought, so the abandoned-cart sequence is over. Here rather than in
+  // the cron's guard because the reminder must not be able to arrive after the
+  // thing it is reminding them to do — and like everything else in this file,
+  // it cannot fail the order.
+  try {
+    await markCartRecovered(supabase, customerEmail);
+  } catch (recoveryError) {
+    console.error('Marking the abandoned cart recovered failed:', recoveryError);
   }
 }

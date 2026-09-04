@@ -131,6 +131,15 @@ export const RATE_LIMITS = {
   reorder: { bucket: 'reorder', limit: 30, windowSeconds: HOUR },
 
   /**
+   * Recording an abandoned cart. Called as somebody types their email at
+   * checkout, debounced, so a genuine shopper produces a handful per visit and
+   * a determined one a few dozen. The row is keyed on the address, so the
+   * table grows with distinct customers rather than with requests — what this
+   * caps is the write rate, not the size.
+   */
+  cartCapture: { bucket: 'cart-capture', limit: 60, windowSeconds: HOUR },
+
+  /**
    * Admin login, per IP. Fails closed: an unthrottled password guesser against
    * a single shared credential is worse than a login page that is unavailable
    * while the database is down — and with the database down the admin cannot
