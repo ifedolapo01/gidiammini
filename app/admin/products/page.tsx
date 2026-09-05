@@ -8,7 +8,7 @@
 'use client';
 import { ProductsSkeleton } from './components/ProductsSkeleton';
 
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useProducts } from './list-hooks/useProducts';
 import { useProductCategories } from './hooks/useProductCategories';
@@ -19,6 +19,7 @@ import { DeleteProductModal } from './list-components/DeleteProductModal';
 import TablePagination from '../components/TablePagination';
 import LiveIndicator from '../components/LiveIndicator';
 import BulkResultSummary from '../components/BulkResultSummary';
+import ExportButton from '../components/ExportButton';
 import { useTableSelection } from '../hooks/useTableSelection';
 
 function EmptyProducts({ filtered }: { filtered: boolean }) {
@@ -78,13 +79,23 @@ export default function AdminProducts() {
             <LiveIndicator live={live} subject="products" />
           </p>
         </div>
-        <Link
-          href="/admin/products/new"
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-control font-semibold hover:bg-primary-hover transition-colors"
-        >
-          <Plus size={20} />
-          Add New Product
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton dataset="products" label="Export" />
+          <Link
+            href="/admin/products/import"
+            className="flex items-center gap-2 rounded-control border border-border-strong px-4 py-3 text-body-sm font-medium text-text-primary transition-colors hover:bg-surface-hover"
+          >
+            <Upload size={18} />
+            Import CSV
+          </Link>
+          <Link
+            href="/admin/products/new"
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-control font-semibold hover:bg-primary-hover transition-colors"
+          >
+            <Plus size={20} />
+            Add New Product
+          </Link>
+        </div>
       </div>
 
       <ProductsFilters

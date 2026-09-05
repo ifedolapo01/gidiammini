@@ -16,6 +16,7 @@ import { useTableSelection } from '../hooks/useTableSelection';
 import TablePagination from '../components/TablePagination';
 import LiveIndicator from '../components/LiveIndicator';
 import BulkResultSummary from '../components/BulkResultSummary';
+import ExportButton from '../components/ExportButton';
 import { StockSummaryCards } from './components/StockSummaryCards';
 import { StockFilters } from './components/StockFilters';
 import { StockTable } from './components/StockTable';
@@ -57,12 +58,17 @@ export default function StockManagementPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
-      <div className="mb-6 md:mb-8">
+      <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
         <h1 className="text-h4 md:text-h3 font-bold text-text-primary">Stock Management</h1>
         <p className="flex items-center gap-3 text-text-secondary mt-1" aria-live="polite">
           <span>{meta.total} product{meta.total !== 1 ? 's' : ''} match these filters</span>
           <LiveIndicator live={live} subject="stock levels" />
         </p>
+        </div>
+        {/* Exports the same variant_ref the bulk stock endpoint accepts, so a
+            counted sheet can come back in. */}
+        <ExportButton dataset="stock" label="Export stock" />
       </div>
 
       <StockSummaryCards summary={summary} />

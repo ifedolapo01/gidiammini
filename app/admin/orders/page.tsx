@@ -18,6 +18,7 @@ import OrdersBulkBar from './components/OrdersBulkBar';
 import TablePagination from '../components/TablePagination';
 import LiveIndicator from '../components/LiveIndicator';
 import BulkResultSummary from '../components/BulkResultSummary';
+import ExportButton from '../components/ExportButton';
 import { useTableSelection } from '../hooks/useTableSelection';
 import { useOrders } from './hooks/useOrders';
 import { useShippingZoneOptions } from './hooks/useShippingZoneOptions';
@@ -62,6 +63,11 @@ function AdminOrdersContent() {
               <span>{meta.total} order{meta.total !== 1 ? 's' : ''} found</span>
               <LiveIndicator live={live} subject="orders" />
             </p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            {/* Line items flattened, one row each — the shape an accountant
+                can pivot. */}
+            <ExportButton dataset="orders" label="Export orders" />
           </div>
         </div>
 

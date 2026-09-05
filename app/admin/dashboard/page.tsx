@@ -16,6 +16,7 @@ import { RecentOrdersPanel } from './components/RecentOrdersPanel';
 import { LowStockPanel } from './components/LowStockPanel';
 import { WishlistDemandPanel } from './components/WishlistDemandPanel';
 import { QuickActionsGrid } from './components/QuickActionsGrid';
+import ExportButton from '../components/ExportButton';
 import { formatCurrency } from './format-currency';
 
 export default function AdminDashboard() {
@@ -43,7 +44,10 @@ export default function AdminDashboard() {
           <h1 className="text-h3 font-bold text-text-primary">Admin Dashboard</h1>
           <p className="text-text-secondary mt-1">Welcome back! Here's what's happening with your store.</p>
         </div>
-        <div className="flex items-center gap-3 mt-4 md:mt-0">
+        <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+          {/* The customer list has no page of its own, so its export lives
+              here rather than nowhere. */}
+          <ExportButton dataset="customers" label="Export customers" />
           <Link
             href="/admin/products/new"
             className="px-4 py-2 bg-primary text-primary-foreground rounded-control hover:bg-primary-hover transition-colors"

@@ -617,6 +617,7 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           customer_phone: string
+          customer_phone_digits: string | null
           delivery_address: string | null
           delivery_option: string
           id: string
@@ -648,6 +649,7 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           customer_phone: string
+          customer_phone_digits?: string | null
           delivery_address?: string | null
           delivery_option: string
           id?: string
@@ -679,6 +681,7 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           customer_phone?: string
+          customer_phone_digits?: string | null
           delivery_address?: string | null
           delivery_option?: string
           id?: string
@@ -1507,10 +1510,7 @@ export type Database = {
         }
         Returns: number
       }
-      is_active_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_active_admin: { Args: never; Returns: boolean }
       list_products: {
         Args: {
           p_category?: string

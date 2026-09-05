@@ -14,10 +14,12 @@ export interface AdminIdentity {
   role: string;
 }
 
-export function useAdminIdentity() {
+export function useAdminIdentity(enabled: boolean = true) {
   const [admin, setAdmin] = useState<AdminIdentity | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
+
     let cancelled = false;
 
     fetch('/api/admin/session')
@@ -30,7 +32,7 @@ export function useAdminIdentity() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
   /** What to call this admin on screen. */
   const label = admin ? admin.name || admin.email || 'Signed in' : null;

@@ -60,6 +60,9 @@ export type AuditAction =
   | 'login_failed'
   | 'login_throttled'
   | 'logout'
+  /** A dataset left the building as a file. Not a mutation, but the one read
+   * worth recording — see app/api/admin/export. */
+  | 'export'
   /** The automatic fallback, when a route did not describe itself. */
   | 'request';
 

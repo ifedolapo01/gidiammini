@@ -6,9 +6,21 @@
  * Admin means editing this file and the token values only.
  */
 
+import type { LucideIcon } from 'lucide-react';
+import {
+  LayoutDashboard, Package, ShoppingCart, Boxes, Star,
+  CircleQuestionMark, FolderTree, Percent, Truck, History,
+} from 'lucide-react';
+
 export interface AdminNavItem {
   href: string;
   label: string;
+  /** Shown beside the label, and on its own when the sidebar is collapsed —
+   * which is why every item needs one rather than it being optional. */
+  icon: LucideIcon;
+  /** A shorter label for the collapsed rail's tooltip and for narrow screens.
+   * Defaults to `label`. */
+  shortLabel?: string;
 }
 
 /**
@@ -45,15 +57,15 @@ export const adminConfig = {
    */
   primaryColorHex: '#2563eb',
   navigation: [
-    { href: '/admin/dashboard', label: 'Dashboard' },
-    { href: '/admin/products', label: 'Products' },
-    { href: '/admin/orders', label: 'Orders' },
-    { href: '/admin/stock', label: 'Stock Management' },
-    { href: '/admin/reviews', label: 'Reviews' },
-    { href: '/admin/questions', label: 'Questions' },
-    { href: '/admin/categories', label: 'Categories' },
-    { href: '/admin/discounts', label: 'Discounts' },
-    { href: '/admin/shipping', label: 'Shipping' },
-    { href: '/admin/activity', label: 'Activity' },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/products', label: 'Products', icon: Package },
+    { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
+    { href: '/admin/stock', label: 'Stock Management', icon: Boxes, shortLabel: 'Stock' },
+    { href: '/admin/reviews', label: 'Reviews', icon: Star },
+    { href: '/admin/questions', label: 'Questions', icon: CircleQuestionMark },
+    { href: '/admin/categories', label: 'Categories', icon: FolderTree },
+    { href: '/admin/discounts', label: 'Discounts', icon: Percent },
+    { href: '/admin/shipping', label: 'Shipping', icon: Truck },
+    { href: '/admin/activity', label: 'Activity', icon: History },
   ] satisfies AdminNavItem[],
 };

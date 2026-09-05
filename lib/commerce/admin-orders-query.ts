@@ -19,6 +19,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseListParams, listMeta, ilikeAcross, type ListMeta } from '@/lib/api/list-params';
 import { ORDER_STATUSES } from './order-status';
 import { findOverdueOrders } from './overdue-orders';
+import { phoneSearchTerm } from './phone-search';
 
 export const ADMIN_ORDER_SORTABLE = [
   'created_at',
@@ -110,7 +111,14 @@ export async function fetchAdminOrders(supabase: SupabaseClient, url: URL): Prom
   }
 
   if (params.search) {
-    query = query.or(ilikeAcross(SEARCH_COLUMNS, params.search));
+    // A number typed in any format also matches the normalised column, so
+    // "0809 653" finds an order stored as "+2348096539067". See
+    // lib/commerce/phone-search.ts.
+    const digits = phoneSearchTerm(params.search);
+    const clauses = [ilikeAcross(SEARCH_COLUMNS, params.search)];
+    if (digits) clauses.push(`customer_phone_digits.ilike.*${digits}*`);
+
+    query = query.or(clauses.join(','));
   }
 
   const { data, error, count } = await query;
