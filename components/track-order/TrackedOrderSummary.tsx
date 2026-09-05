@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { getStatusColor, formatCustomerStatusLabel } from '@/lib/commerce/order-status';
 import type { Order } from '@/types/order';
 import OrderStatusTimeline from './OrderStatusTimeline';
+import TrackingDetails from './TrackingDetails';
 import RequestChangeActions from './RequestChangeActions';
 
 interface TrackedOrderSummaryProps {
@@ -33,6 +34,11 @@ export default function TrackedOrderSummary({ order, orderNumber, contact, onOrd
 
         <OrderStatusTimeline status={order.status} deliveryOption={order.delivery_option} />
       </div>
+
+      {/* Directly under the stepper. "It has shipped" and "here is how to find
+          it" are one thought, and separating them is what sends the customer
+          back to WhatsApp. Renders nothing when there is no tracking. */}
+      <TrackingDetails order={order} />
 
       <RequestChangeActions
         order={order}

@@ -1,62 +1,102 @@
 // app/api/admin/customers/route.ts - the buyer list behind the admin customer
 // view. Reads customer_stats, the view that derives order counts and lifetime
 // value from orders on read, so the figures here can never be stale.
+//
+// Takes the same query shape as every other admin list (lib/api/list-params.ts)
+// and answers with the same { items, meta } envelope, so the page is built from
+// useListParams / useListData / TablePagination rather than from a paging
+// implementation of its own. It previously used a 0-based page and a
+// `pageSize` of its own invention, which no client had yet been written
+// against.
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
-
-/** Server-side paging, so the list stays usable as the store grows. */
-const DEFAULT_PAGE_SIZE = 50;
-const MAX_PAGE_SIZE = 200;
+import { parseListParams, listMeta } from '@/lib/api/list-params';
 
 /** Columns a caller may order by. An allowlist, because this value reaches the
  * query builder — anything else would let the URL choose the sort expression. */
-const SORTABLE = {
-  lifetime_value: 'lifetime_value',
-  orders_revenue: 'orders_revenue',
-  orders_total: 'orders_total',
-  last_order_at: 'last_order_at',
-  first_order_at: 'first_order_at',
-  email: 'email',
-} as const;
+export const CUSTOMER_SORTABLE = [
+  'lifetime_value',
+  'net_lifetime_value',
+  'orders_revenue',
+  'orders_total',
+  'orders_cancelled',
+  'last_order_at',
+  'first_order_at',
+  'email',
+] as const;
 
-type SortKey = keyof typeof SORTABLE;
+/**
+ * Every tag in use, for the filter control.
+ *
+ * Read from the customers table rather than kept as a vocabulary of its own:
+ * a tag exists because somebody applied it, and a list of tags nobody is
+ * carrying is a list of typos. Capped, because a filter dropdown past a few
+ * dozen entries is not a filter.
+ */
+async function usedTags(supabase: SupabaseClient<Database>): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('tags')
+    .not('tags', 'eq', '{}')
+    .limit(1000);
 
-function parseSort(value: string | null): SortKey {
-  return value && value in SORTABLE ? (value as SortKey) : 'lifetime_value';
-}
+  if (error) {
+    // A missing filter is not worth failing the page for.
+    console.error('Tag facet lookup failed:', error.message);
+    return [];
+  }
 
-function parseSize(value: string | null): number {
-  const size = Number(value);
-  if (!Number.isFinite(size) || size < 1) return DEFAULT_PAGE_SIZE;
-  return Math.min(Math.trunc(size), MAX_PAGE_SIZE);
+  const seen = new Set<string>();
+  for (const row of data ?? []) {
+    for (const tag of (row as { tags: string[] | null }).tags ?? []) seen.add(tag);
+  }
+
+  return [...seen].sort().slice(0, 60);
 }
 
 async function listCustomers(supabase: SupabaseClient<Database>, request: NextRequest) {
   const url = new URL(request.url);
-  const search = (url.searchParams.get('search') ?? '').trim();
-  const sort = parseSort(url.searchParams.get('sort'));
-  const ascending = url.searchParams.get('direction') === 'asc';
-  const pageSize = parseSize(url.searchParams.get('pageSize'));
-  const page = Math.max(0, Math.trunc(Number(url.searchParams.get('page')) || 0));
+  const params = parseListParams(url, {
+    sortable: CUSTOMER_SORTABLE,
+    defaultSort: 'lifetime_value',
+    defaultDirection: 'desc',
+  });
+
+  const tag = (url.searchParams.get('tag') ?? '').trim().toLowerCase();
+  const blocked = url.searchParams.get('blocked');
 
   let query = supabase
     .from('customer_stats')
     .select('*', { count: 'exact' })
-    .order(SORTABLE[sort], { ascending, nullsFirst: false })
-    .range(page * pageSize, page * pageSize + pageSize - 1);
+    .order(params.sort, { ascending: params.ascending, nullsFirst: false })
+    // A stable tiebreaker. Two customers with the same lifetime value would
+    // otherwise be free to swap places between pages.
+    .order('customer_id', { ascending: true })
+    .range(params.from, params.to);
 
-  if (search) {
+  if (params.search) {
     // Escape the PostgREST `or` metacharacters so a comma or paren in the
     // search box cannot break out of the filter expression.
-    const safe = search.replace(/[,()\\]/g, ' ').trim();
+    const safe = params.search.replace(/[,()\\]/g, ' ').trim();
     if (safe) {
       query = query.or(`email.ilike.%${safe}%,full_name.ilike.%${safe}%,phone_e164.ilike.%${safe}%`);
     }
   }
 
-  const { data, error, count } = await query;
+  if (tag) {
+    // `contains` compiles to @>, which customers_tags_idx serves. The tag is
+    // passed as a value rather than interpolated into a filter string, so its
+    // own punctuation cannot alter the query.
+    query = query.contains('tags', [tag]);
+  }
+
+  if (blocked === 'true' || blocked === 'false') {
+    query = query.eq('is_blocked', blocked === 'true');
+  }
+
+  const [{ data, error, count }, tags] = await Promise.all([query, usedTags(supabase)]);
 
   if (error) {
     console.error('Error listing customers:', error);
@@ -69,9 +109,8 @@ async function listCustomers(supabase: SupabaseClient<Database>, request: NextRe
   return NextResponse.json({
     success: true,
     customers: data ?? [],
-    page,
-    pageSize,
-    total: count ?? 0,
+    tags,
+    meta: listMeta(params, count ?? 0),
   });
 }
 

@@ -12,6 +12,8 @@
  * never reports success.
  */
 import type { DeliveryFailureReason } from './delivery';
+import type { OrderTracking } from '@/lib/commerce/order-tracking';
+import { trackingSmsLine } from './templates/tracking-block';
 import { normalisePhone } from './phone';
 
 const TERMII_ENDPOINT = 'https://api.ng.termii.com/api/sms/send';
@@ -94,7 +96,9 @@ async function sendSms(phone: string, message: string): Promise<SmsResult> {
 
 const STATUS_TEXTS: Record<string, (orderNumber: string) => string> = {
   confirmed: (n) => `Your order #${n} has been confirmed! We're processing it now.`,
-  shipped: (n) => `Great news! Your order #${n} has been shipped. Track your package for updates.`,
+  // No longer promises tracking it cannot supply — the waybill, when there is
+  // one, is appended by sendStatusSMS below.
+  shipped: (n) => `Great news! Your order #${n} has been shipped.`,
   ready_for_pickup: (n) => `Your order #${n} is ready for pickup.`,
   picked_up: (n) => `Your order #${n} has been picked up. Thank you for shopping with GidiamMini.`,
   delivered: (n) => `Your order #${n} has been delivered! Thank you for shopping with GidiamMini.`,
@@ -107,11 +111,19 @@ export async function sendStatusSMS(params: {
   orderNumber: string;
   newStatus: string;
   customMessage?: string;
+  /** Courier and waybill, for a shipment. */
+  tracking?: Partial<OrderTracking> | null;
 }): Promise<SmsResult> {
-  const { customerPhone, orderNumber, newStatus, customMessage } = params;
+  const { customerPhone, orderNumber, newStatus, customMessage, tracking } = params;
 
   const base = STATUS_TEXTS[newStatus]?.(orderNumber) ?? `Your order #${orderNumber} status: ${newStatus}`;
-  const message = customMessage ? `${base}\n\n${customMessage}` : base;
+
+  // A waybill is exactly what SMS is good for: short, needed away from a
+  // computer, and read out loud over the phone. Only on 'shipped' — anywhere
+  // else it is noise the customer pays to receive.
+  const waybill = newStatus === 'shipped' ? trackingSmsLine(tracking) : '';
+
+  const message = [base, waybill, customMessage].filter(Boolean).join('\n\n');
 
   return sendSms(customerPhone, message);
 }

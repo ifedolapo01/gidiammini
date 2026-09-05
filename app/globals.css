@@ -569,3 +569,65 @@ img, video, canvas {
     margin-right: calc(-50vw + 50%) !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Print: one document on the page, and nothing else
+ * ---------------------------------------------------------------------------
+ * A packing slip and an invoice are the two pieces of paper this shop needs,
+ * and neither of them is "the admin screen, printed". The order detail panel
+ * sits inside a <dialog> over a sidebar, a top bar and an alert ticker; asking
+ * a browser to print that produces four pages of navigation and a cropped
+ * table.
+ *
+ * So the printable document is rendered separately, into a portal at the end
+ * of <body>, and these rules hide everything that is not it. Targeting body's
+ * own children rather than a list of components means a section added to the
+ * admin next year is hidden automatically — the opposite of a print stylesheet
+ * that has to be maintained alongside the layout.
+ *
+ * The document itself is deliberately plain: black on white, no tokens, no
+ * dark mode. Paper has one theme.
+ */
+@media print {
+  body > *:not([data-print-root]) {
+    display: none !important;
+  }
+
+  [data-print-root] {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+  }
+
+  /* Backgrounds and borders are structure here, not decoration — a table with
+   * its rules dropped is unreadable — so ask the browser to keep them. */
+  [data-print-root] * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* A row split across a page break is a row somebody misreads. */
+  [data-print-root] tr,
+  [data-print-root] .print-keep-together {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+/* Off-screen until the browser is printing. `display: none` would keep it out
+ * of the print output too on some engines, so it is positioned away instead. */
+[data-print-root] {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 210mm;
+}

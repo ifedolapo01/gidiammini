@@ -9,9 +9,14 @@ export interface DashboardStats {
   totalProducts: number;
   totalOrders: number;
   pendingOrders: number;
-  /** Money actually received, across every non-cancelled order. Not the value
-   *  of orders placed — see app/api/admin/dashboard/route.ts. */
+  /** Money actually received and kept, across every non-cancelled order:
+   *  payments less completed refunds. Not the value of orders placed — see
+   *  app/api/admin/dashboard/route.ts. */
   totalRevenue: number;
+  /** Sent back out. Shown beside revenue rather than folded silently into it,
+   *  because "we took 900,000 and gave 120,000 back" and "we took 780,000" are
+   *  the same net figure and very different businesses. */
+  totalRefunded: number;
   /** Still owed on orders the shop intends to fulfil. */
   outstanding: number;
   /** Orders holding some money, but not enough. */
@@ -28,6 +33,7 @@ export function useDashboardStats() {
     totalOrders: 0,
     pendingOrders: 0,
     totalRevenue: 0,
+    totalRefunded: 0,
     outstanding: 0,
     partPaidOrders: 0,
     margin: null,

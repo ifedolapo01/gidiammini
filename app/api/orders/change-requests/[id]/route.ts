@@ -39,6 +39,10 @@ async function applyApprovedChange(
       notificationMessage: 'Your cancellation request has been approved — your order has been cancelled.',
       actor,
       reason,
+      // A customer-initiated cancellation always has the same ground, and
+      // recording it here is what keeps the breakdown honest: without it every
+      // approved request would land in the cancellation report as "no reason".
+      reasonCode: 'customer_changed_mind',
     });
     return { success: result.success, error: result.error, status: result.status, delivery: result.delivery };
   }

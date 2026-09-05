@@ -88,6 +88,15 @@ export async function persistOrderWithReservedStock(
     .insert([{
       ...fields,
       total_amount: priced.total,
+      // The breakdown behind that total, written now rather than reconstructed
+      // later. priceOrder() is the only thing that knows how much of the total
+      // was tax and how much was the zone's delivery fee, and once the row
+      // exists that split is unrecoverable — subtracting the line subtotal
+      // works exactly once and then drifts on the first edit. It is also what
+      // the invoice prints and what edit_order_items() recomputes against.
+      items_subtotal: priced.subtotal,
+      tax_amount: priced.tax,
+      shipping_amount: priced.shipping,
       delivery_option: priced.delivery_option,
       selected_state: priced.selected_state,
       selected_lga: priced.selected_lga,

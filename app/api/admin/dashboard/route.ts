@@ -37,22 +37,40 @@ async function getDashboardStats(supabase: SupabaseClient) {
     // Cancelled orders are left out of both figures. Money received against a
     // cancelled order is a refund waiting to happen, not revenue, and its
     // balance is not owed to the shop.
+    //
+    // Refunds come off. Money that arrived and then went back out again is not
+    // revenue by any definition a shopkeeper would accept, and a refund
+    // feature that leaves the headline figure untouched is worse than no
+    // refund feature — it makes the number quietly wrong rather than obviously
+    // missing. amount_refunded is the trigger-maintained sum of that order's
+    // completed refunds (migration 20260905190200); a refund that has been
+    // agreed but not sent is deliberately not deducted, because the money is
+    // still in the account.
     const { data: paymentRows } = await supabase
       .from('orders')
-      .select('total_amount, amount_paid, status')
+      .select('total_amount, amount_paid, amount_refunded, status')
       .neq('status', 'cancelled');
 
     // Number() rather than a bare read: amount_paid is a Postgres `numeric`,
     // and a numeric that ever arrives as a string would turn this sum into
     // string concatenation rather than an error anybody would notice.
     const paid = (order: { amount_paid: number | null }) => Number(order.amount_paid ?? 0);
+    const refunded = (order: { amount_refunded: number | null }) => Number(order.amount_refunded ?? 0);
 
-    const totalRevenue = paymentRows?.reduce((sum, order) => sum + paid(order), 0) || 0;
+    const totalRefunded = paymentRows?.reduce((sum, order) => sum + refunded(order), 0) || 0;
+    const totalRevenue =
+      (paymentRows?.reduce((sum, order) => sum + paid(order), 0) || 0) - totalRefunded;
 
     // What customers still owe on orders the shop intends to fulfil. The
     // counterpart to revenue: together they are the value of every live order.
+    // Refunds count against what has been received here too: an order that was
+    // paid and then partly refunded genuinely does owe that money again if it
+    // is still being fulfilled.
     const outstanding =
-      paymentRows?.reduce((sum, order) => sum + Math.max(0, order.total_amount - paid(order)), 0) || 0;
+      paymentRows?.reduce(
+        (sum, order) => sum + Math.max(0, order.total_amount - (paid(order) - refunded(order))),
+        0
+      ) || 0;
 
     // Orders with money against them that does not cover the total. These are
     // a balance to chase rather than a receipt to verify, which is why the
@@ -111,6 +129,7 @@ async function getDashboardStats(supabase: SupabaseClient) {
       totalOrders: totalOrders || 0,
       pendingOrders: pendingOrders || 0,
       totalRevenue,
+      totalRefunded,
       outstanding,
       partPaidOrders,
       margin,
@@ -128,6 +147,7 @@ async function getDashboardStats(supabase: SupabaseClient) {
         totalOrders: 0,
         pendingOrders: 0,
         totalRevenue: 0,
+        totalRefunded: 0,
         outstanding: 0,
         partPaidOrders: 0,
         margin: null,

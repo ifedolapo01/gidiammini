@@ -1,13 +1,24 @@
 // lib/notifications/templates/status-email.ts
-// HTML builder for order status-update emails, plus the color/icon/next-steps
-// helpers used purely for this email's presentation (hex colors + emoji —
-// email HTML can't use Tailwind tokens or lucide-react JSX icons, so these
-// stay distinct from lib/commerce/order-status.ts's web-UI versions). The
-// status LIST/labels still come from lib/commerce/order-status.ts so the two
-// never drift out of sync on which statuses exist.
-import { formatOrderStatus } from '@/lib/commerce/order-status';
+// HTML builder for order status-update emails. The wording, colours and
+// "What's Next" bullets live in status-email-copy.ts; this file is only the
+// assembly.
+//
+// It predates buildEmailShell() and keeps its own <style> block on purpose —
+// see the note in email-shell.ts about not rewriting a working email's markup
+// for no functional gain. The .panel and .figures rules below are the shell's,
+// copied so buildTrackingPanel() renders identically here.
+import type { OrderTracking } from '@/lib/commerce/order-tracking';
 import { buildTrackOrderButton } from './track-order-cta';
+import { buildTrackingPanel } from './tracking-block';
+import {
+  STATUS_MESSAGES, formatOrderStatus, getStatusColor, getStatusIcon, getNextSteps,
+} from './status-email-copy';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
+
+// Re-exported: these were part of this module's surface before the copy split,
+// and moving them silently would be a needless break for anything importing
+// them.
+export { getStatusColor, getStatusIcon, getNextSteps } from './status-email-copy';
 
 export interface StatusEmailParams {
   orderNumber: string;
@@ -16,6 +27,9 @@ export interface StatusEmailParams {
   customMessage?: string;
   /** Real, order-specific delivery/pickup timing text — only used for 'confirmed'. */
   estimatedDeliveryText?: string;
+  /** Courier and waybill, once the order has them. Only rendered for
+   * 'shipped': a tracking panel on a cancellation is noise. */
+  tracking?: Partial<OrderTracking> | null;
 }
 
 export interface StatusEmailContent {
@@ -23,95 +37,9 @@ export interface StatusEmailContent {
   html: string;
 }
 
-const STATUS_MESSAGES: Record<string, string> = {
-  confirmed: 'Your order has been confirmed and is being processed.',
-  rescheduled: 'Your delivery timing has changed — see below for details.',
-  shipped: 'Your order has been shipped! Track your package for delivery updates.',
-  ready_for_pickup: 'Your order is ready for pickup!',
-  picked_up: 'Your order has been picked up. Thank you for shopping with us!',
-  delivered: 'Your order has been delivered. Thank you for shopping with us!',
-  cancelled: 'Your order has been cancelled. Contact us if you have any questions.'
-};
-
-const STATUS_EMOJI: Record<string, string> = {
-  confirmed: '✅',
-  rescheduled: '🗓️',
-  shipped: '🚚',
-  ready_for_pickup: '🏬',
-  picked_up: '📦',
-  delivered: '📦',
-  cancelled: '❌'
-};
-
-export function getStatusColor(status: string): string {
-  switch (status) {
-    case 'confirmed': return '#3b82f6'; // blue
-    case 'rescheduled': return '#b45309'; // amber
-    case 'shipped': return '#8b5cf6'; // purple
-    case 'ready_for_pickup': return '#f59e0b'; // orange
-    case 'picked_up': return '#10b981'; // green
-    case 'delivered': return '#10b981'; // green
-    case 'cancelled': return '#ef4444'; // red
-    default: return '#6b7280'; // gray
-  }
-}
-
-export function getStatusIcon(status: string): string {
-  return STATUS_EMOJI[status] || '📋';
-}
-
-export function getNextSteps(status: string, estimatedDeliveryText?: string): string {
-  switch (status) {
-    case 'confirmed':
-      return `
-        <li>We'll prepare your order</li>
-        <li>You'll receive another update as it progresses</li>
-        <li>${escapeHtml(estimatedDeliveryText) || "We'll share your estimated timeline shortly"}</li>
-      `;
-    case 'rescheduled':
-      return `
-        <li>Your new delivery timing will be confirmed shortly</li>
-        <li>Contact us if you'd like to discuss the new schedule</li>
-      `;
-    case 'shipped':
-      return `
-        <li>Track your package using the tracking link provided</li>
-        <li>Be available to receive your delivery</li>
-        <li>Contact us if there are any delivery issues</li>
-      `;
-    case 'ready_for_pickup':
-      return `
-        <li>Come by with your order number to collect your items</li>
-        <li>Contact us if you need to arrange a different pickup time</li>
-      `;
-    case 'picked_up':
-      return `
-        <li>Check your items after pickup</li>
-        <li>Contact us within 24 hours if there are any issues</li>
-        <li>Share your experience with a review</li>
-      `;
-    case 'delivered':
-      return `
-        <li>Check your items upon delivery</li>
-        <li>Contact us within 24 hours if there are any issues</li>
-        <li>Share your experience with a review</li>
-      `;
-    case 'cancelled':
-      return `
-        <li>Contact us if you have questions about the cancellation</li>
-        <li>Refunds (if applicable) will be processed within 5-7 business days</li>
-        <li>Browse our store for other items you might like</li>
-      `;
-    default:
-      return `
-        <li>We'll keep you updated on your order progress</li>
-        <li>Contact us if you have any questions</li>
-      `;
-  }
-}
-
 export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent {
-  const { orderNumber, customerName, newStatus, customMessage, estimatedDeliveryText } = params;
+  const { orderNumber, customerName, newStatus, customMessage, estimatedDeliveryText, tracking } = params;
+  const trackingPanel = newStatus === 'shipped' ? buildTrackingPanel(tracking, getStatusColor(newStatus)) : '';
 
   const statusLabel = formatOrderStatus(newStatus);
   const message = STATUS_MESSAGES[newStatus] || `Your order status has been updated to: ${statusLabel}`;
@@ -129,6 +57,10 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
         .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
         .status-badge { display: inline-block; padding: 8px 16px; background: white; color: ${getStatusColor(newStatus)}; border-radius: 20px; font-weight: bold; margin: 10px 0; }
         .message-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${getStatusColor(newStatus)}; }
+        .panel { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${getStatusColor(newStatus)}; }
+        .figures { width: 100%; border-collapse: collapse; margin: 8px 0; }
+        .figures td { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+        .figures td:last-child { text-align: right; font-weight: bold; }
         .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
       </style>
     </head>
@@ -157,9 +89,11 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
           ` : ''}
         </div>
 
+        ${trackingPanel}
+
         <p><strong>What's Next?</strong></p>
         <ul>
-          ${getNextSteps(newStatus, estimatedDeliveryText)}
+          ${getNextSteps(newStatus, estimatedDeliveryText, tracking)}
         </ul>
 
         ${buildTrackOrderButton(getStatusColor(newStatus))}

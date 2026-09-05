@@ -37,6 +37,20 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/orders/*', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/orders/*/shipping', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/orders/*/notify', read: 'orders:read', write: 'orders:write' },
+  // Editing an order's lines moves stock and changes what the customer owes,
+  // which is what orders:write already means. Deliberately not a permission of
+  // its own: whoever can cancel an order can already destroy more value than
+  // whoever can swap a colour on one.
+  { pattern: '/api/orders/*/items', read: 'orders:read', write: 'orders:write' },
+  // Refunds are money leaving the business, so they sit behind orders:write
+  // rather than store:read — a fulfilment assistant who can mark a parcel
+  // shipped can also refund the customer whose parcel was lost, which is the
+  // shape of the actual job.
+  { pattern: '/api/orders/*/refunds', read: 'orders:read', write: 'orders:write' },
+  { pattern: '/api/orders/*/refunds/*', read: 'orders:read', write: 'orders:write' },
+  // Correcting a waybill after the fact. Same permission as shipping the order
+  // it belongs to — it is the same act, done a day late.
+  { pattern: '/api/orders/*/tracking', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/admin/orders/*/receipt', read: 'orders:read' },
 
   // Payment verification. Confirming that money arrived is part of working an
@@ -71,6 +85,9 @@ const ROUTES: RoutePermission[] = [
 
   // The customer database, as distinct from the addresses on an order.
   { pattern: '/api/admin/customers', read: 'customers:read', write: 'customers:write' },
+  // More specific than the wildcard below it, so a segment message is governed
+  // by its own entry rather than by the one-customer editor's.
+  { pattern: '/api/admin/customers/campaign', read: 'customers:read', write: 'customers:write' },
   { pattern: '/api/admin/customers/*', read: 'customers:read', write: 'customers:write' },
 
   // Everyday reads, available to anyone who can see the shop at all.

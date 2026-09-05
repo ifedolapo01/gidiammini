@@ -357,6 +357,7 @@ export type Database = {
           notes: string | null
           phone_e164: string | null
           phone_raw: string | null
+          tags: string[]
           updated_at: string
         }
         Insert: {
@@ -369,6 +370,7 @@ export type Database = {
           notes?: string | null
           phone_e164?: string | null
           phone_raw?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Update: {
@@ -381,6 +383,7 @@ export type Database = {
           notes?: string | null
           phone_e164?: string | null
           phone_raw?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -466,6 +469,13 @@ export type Database = {
             foreignKeyName: "order_change_requests_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_change_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -509,6 +519,13 @@ export type Database = {
           variant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
@@ -608,6 +625,76 @@ export type Database = {
             foreignKeyName: "order_payments_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_refunds: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          order_id: string
+          reason_code: string
+          reference: string | null
+          refunded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          order_id: string
+          reason_code: string
+          reference?: string | null
+          refunded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          order_id?: string
+          reason_code?: string
+          reference?: string | null
+          refunded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -640,6 +727,13 @@ export type Database = {
             foreignKeyName: "order_review_invites_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: true
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_review_invites_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -653,6 +747,7 @@ export type Database = {
           id: string
           order_id: string
           reason: string | null
+          reason_code: string | null
           status: string
         }
         Insert: {
@@ -662,6 +757,7 @@ export type Database = {
           id?: string
           order_id: string
           reason?: string | null
+          reason_code?: string | null
           status: string
         }
         Update: {
@@ -671,9 +767,17 @@ export type Database = {
           id?: string
           order_id?: string
           reason?: string | null
+          reason_code?: string | null
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "order_status_history_order_id_fkey"
             columns: ["order_id"]
@@ -686,6 +790,8 @@ export type Database = {
       orders: {
         Row: {
           amount_paid: number
+          amount_refunded: number
+          carrier: string | null
           city: string | null
           created_at: string
           customer_email: string
@@ -695,8 +801,11 @@ export type Database = {
           customer_phone_digits: string | null
           delivery_address: string | null
           delivery_option: string
+          discount_amount: number
+          discount_reason: string | null
           id: string
           idempotency_key: string | null
+          items_subtotal: number
           note: string | null
           order_number: string
           paid_at: string | null
@@ -711,14 +820,20 @@ export type Database = {
           selected_lga: string | null
           selected_place: string | null
           selected_state: string
+          shipping_amount: number
           shipping_zone_id: string | null
           status: string
           stock_reserved: boolean
+          tax_amount: number
           total_amount: number
+          tracking_number: string | null
+          tracking_url: string | null
           updated_at: string
         }
         Insert: {
           amount_paid?: number
+          amount_refunded?: number
+          carrier?: string | null
           city?: string | null
           created_at?: string
           customer_email: string
@@ -728,8 +843,11 @@ export type Database = {
           customer_phone_digits?: string | null
           delivery_address?: string | null
           delivery_option: string
+          discount_amount?: number
+          discount_reason?: string | null
           id?: string
           idempotency_key?: string | null
+          items_subtotal?: number
           note?: string | null
           order_number: string
           paid_at?: string | null
@@ -744,14 +862,20 @@ export type Database = {
           selected_lga?: string | null
           selected_place?: string | null
           selected_state: string
+          shipping_amount?: number
           shipping_zone_id?: string | null
           status?: string
           stock_reserved?: boolean
+          tax_amount?: number
           total_amount: number
+          tracking_number?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Update: {
           amount_paid?: number
+          amount_refunded?: number
+          carrier?: string | null
           city?: string | null
           created_at?: string
           customer_email?: string
@@ -761,8 +885,11 @@ export type Database = {
           customer_phone_digits?: string | null
           delivery_address?: string | null
           delivery_option?: string
+          discount_amount?: number
+          discount_reason?: string | null
           id?: string
           idempotency_key?: string | null
+          items_subtotal?: number
           note?: string | null
           order_number?: string
           paid_at?: string | null
@@ -777,10 +904,14 @@ export type Database = {
           selected_lga?: string | null
           selected_place?: string | null
           selected_state?: string
+          shipping_amount?: number
           shipping_zone_id?: string | null
           status?: string
           stock_reserved?: boolean
+          tax_amount?: number
           total_amount?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -845,6 +976,13 @@ export type Database = {
           transaction_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "payment_events_order_id_fkey"
             columns: ["order_id"]
@@ -1032,6 +1170,13 @@ export type Database = {
           variant_label?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "product_reviews_order_id_fkey"
             columns: ["order_id"]
@@ -1475,6 +1620,33 @@ export type Database = {
       }
     }
     Views: {
+      customer_addresses: {
+        Row: {
+          city: string | null
+          customer_id: string | null
+          delivery_address: string | null
+          last_used_at: string | null
+          selected_lga: string | null
+          selected_state: string | null
+          times_used: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_stats: {
         Row: {
           customer_id: string | null
@@ -1483,11 +1655,14 @@ export type Database = {
           full_name: string | null
           is_blocked: boolean | null
           last_order_at: string | null
+          lifetime_refunded: number | null
           lifetime_value: number | null
+          net_lifetime_value: number | null
           orders_cancelled: number | null
           orders_revenue: number | null
           orders_total: number | null
           phone_e164: string | null
+          tags: string[] | null
         }
         Relationships: []
       }
@@ -1502,6 +1677,38 @@ export type Database = {
           stock: number | null
         }
         Relationships: []
+      }
+      order_cancellations: {
+        Row: {
+          amount_paid: number | null
+          amount_refunded: number | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          customer_email: string | null
+          customer_id: string | null
+          order_id: string | null
+          order_number: string | null
+          ordered_at: string | null
+          reason: string | null
+          reason_code: string | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_review_stats: {
         Row: {
@@ -1586,6 +1793,16 @@ export type Database = {
           p_subcategory?: string
         }
         Returns: number
+      }
+      edit_order_items: {
+        Args: {
+          p_discount?: number
+          p_discount_reason?: string
+          p_items: Json
+          p_order_id: string
+          p_tax_rate: number
+        }
+        Returns: Json
       }
       is_active_admin: { Args: never; Returns: boolean }
       list_products: {

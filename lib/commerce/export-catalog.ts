@@ -94,8 +94,16 @@ export async function customersDataset(supabase: SupabaseClient): Promise<Datase
       { header: 'orders_cancelled', value: (r) => Number(r.orders_cancelled) || 0 },
       { header: 'orders_revenue', value: (r) => Number(r.orders_revenue) || 0 },
       { header: 'lifetime_value', value: (r) => Number(r.lifetime_value) || 0 },
+      // Gross and net side by side: a buyer who orders constantly and sends
+      // half of it back is not the same customer as one who does not, and one
+      // column cannot say so.
+      { header: 'lifetime_refunded', value: (r) => Number(r.lifetime_refunded) || 0 },
+      { header: 'net_lifetime_value', value: (r) => Number(r.net_lifetime_value) || 0 },
       { header: 'first_order_at', value: (r) => text(r.first_order_at) },
       { header: 'last_order_at', value: (r) => text(r.last_order_at) },
+      // Semicolon-separated: a comma would need quoting in a CSV that a
+      // spreadsheet then splits back into columns.
+      { header: 'tags', value: (r) => text((r.tags ?? []).join('; ')) },
       { header: 'is_blocked', value: (r) => r.is_blocked === true },
     ],
   };

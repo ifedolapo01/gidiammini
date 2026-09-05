@@ -5,6 +5,7 @@
 // shape pushed 'sms' onto a delivered list on the word of a stub that never
 // sent anything.
 import { sendOrderEmail, type EmailSendResult } from '@/lib/email';
+import type { OrderTracking } from '@/lib/commerce/order-tracking';
 import type { DeliveryOutcome, DeliveryFailure } from './delivery';
 import { buildStatusEmail } from './templates/status-email';
 import { buildCustomEmail } from './templates/custom-email';
@@ -20,6 +21,15 @@ export {
   type PaymentOutcomeParams,
 } from './payment-notices';
 
+// Amendments and refunds live in order-notices.ts for the same reason — see
+// the header there.
+export {
+  sendOrderAmendedNotice,
+  sendRefundNotice,
+  type OrderAmendedParams,
+  type RefundNoticeParams,
+} from './order-notices';
+
 interface OrderStatusUpdateParams {
   orderNumber: string;
   customerName: string;
@@ -30,6 +40,9 @@ interface OrderStatusUpdateParams {
   customMessage?: string;
   /** Real, order-specific delivery/pickup timing text — only meaningful for 'confirmed'. */
   estimatedDeliveryText?: string;
+  /** Courier and waybill. Only meaningful for 'shipped'; both channels ignore
+   * it otherwise rather than each deciding for themselves. */
+  tracking?: Partial<OrderTracking> | null;
 }
 
 interface CustomNotificationParams {
@@ -43,7 +56,10 @@ interface CustomNotificationParams {
 }
 
 export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams): Promise<DeliveryOutcome> {
-  const { orderNumber, customerName, customerEmail, customerPhone, newStatus, customMessage, estimatedDeliveryText } = params;
+  const {
+    orderNumber, customerName, customerEmail, customerPhone, newStatus,
+    customMessage, estimatedDeliveryText, tracking,
+  } = params;
 
   const delivered: DeliveryOutcome['delivered'] = [];
   const failed: DeliveryFailure[] = [];
@@ -52,7 +68,7 @@ export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams): Pr
     failed.push({ channel: 'email', reason: 'no_recipient' });
   } else {
     const email = await sendStatusEmailNotification({
-      orderNumber, customerName, customerEmail, newStatus, customMessage, estimatedDeliveryText,
+      orderNumber, customerName, customerEmail, newStatus, customMessage, estimatedDeliveryText, tracking,
     });
     if (email.success) delivered.push('email');
     else failed.push({ channel: 'email', reason: email.reason, detail: email.detail });
@@ -61,7 +77,7 @@ export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams): Pr
   if (!customerPhone) {
     failed.push({ channel: 'sms', reason: 'no_recipient' });
   } else {
-    const sms = await sendStatusSMS({ customerPhone, orderNumber, newStatus, customMessage });
+    const sms = await sendStatusSMS({ customerPhone, orderNumber, newStatus, customMessage, tracking });
     if (sms.success) delivered.push('sms');
     else failed.push({ channel: 'sms', reason: sms.reason, detail: sms.detail });
   }
@@ -132,6 +148,7 @@ async function sendStatusEmailNotification(params: {
   newStatus: string;
   customMessage?: string;
   estimatedDeliveryText?: string;
+  tracking?: Partial<OrderTracking> | null;
 }): Promise<EmailSendResult> {
   const { customerEmail, ...templateParams } = params;
 

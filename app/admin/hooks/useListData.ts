@@ -7,6 +7,11 @@
  * A request whose query string is no longer current is discarded rather than
  * applied: typing into a search box fires several overlapping fetches and the
  * slowest one must not win.
+ *
+ * `extraKey` picks up one more field from the same response — the facet a
+ * filter control needs, such as the tags in use across the customer list.
+ * Reading it here rather than fetching it separately means the filter can
+ * never describe a different result set from the rows underneath it.
  */
 'use client';
 
@@ -22,9 +27,15 @@ export interface ListMeta {
 
 const EMPTY_META: ListMeta = { page: 1, limit: 25, total: 0, totalPages: 0, hasMore: false };
 
-export function useListData<T>(endpoint: string, queryString: string, itemsKey: string) {
+export function useListData<T, Extra = unknown>(
+  endpoint: string,
+  queryString: string,
+  itemsKey: string,
+  extraKey?: string
+) {
   const [items, setItems] = useState<T[]>([]);
   const [meta, setMeta] = useState<ListMeta>(EMPTY_META);
+  const [extra, setExtra] = useState<Extra | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -54,6 +65,7 @@ export function useListData<T>(endpoint: string, queryString: string, itemsKey: 
 
         setItems(result[itemsKey] ?? []);
         setMeta(result.meta ?? EMPTY_META);
+        if (extraKey) setExtra((result[extraKey] ?? null) as Extra | null);
         setError('');
       } catch (caught: any) {
         if (currentQuery.current !== query) return;
@@ -63,7 +75,7 @@ export function useListData<T>(endpoint: string, queryString: string, itemsKey: 
         if (currentQuery.current === query && !options.silent) setLoading(false);
       }
     },
-    [endpoint, queryString, itemsKey]
+    [endpoint, queryString, itemsKey, extraKey]
   );
 
   useEffect(() => {
@@ -72,5 +84,5 @@ export function useListData<T>(endpoint: string, queryString: string, itemsKey: 
 
   const refreshSilently = useCallback(() => load({ silent: true }), [load]);
 
-  return { items, meta, loading, error, refreshSilently };
+  return { items, meta, extra, loading, error, refreshSilently };
 }

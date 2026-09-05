@@ -10,10 +10,8 @@
 import { useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Order } from '@/types/order';
-import { formatOrderStatus } from '@/lib/commerce/order-status';
-import { describeDelivery, anyDelivered } from '@/lib/notifications/delivery';
 import type { AdminOrdersSummary } from '@/lib/commerce/admin-orders-summary';
-import { notifyOrdersChanged } from '../../lib/orderEvents';
+import { useStatusTransition } from './useStatusTransition';
 import { useListParams } from '../../hooks/useListParams';
 import { useListData } from '../../hooks/useListData';
 import { useListSummary } from '../../hooks/useListSummary';
@@ -58,55 +56,10 @@ export function useOrdersList(showToast: ShowToast) {
     await Promise.all([refreshSilently(), reloadSummary()]);
   }, [refreshSilently, reloadSummary]);
 
-  const updateOrderStatus = useCallback(
-    async (orderId: string, newStatus: Order['status']) => {
-      if (newStatus === 'cancelled') {
-        if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
-          return;
-        }
-      }
+  // Cancelling and shipping now ask for something first — a ground, a waybill
+  // — so the transition is a small state machine rather than a fetch. See
+  // useStatusTransition; the dialogs it drives are rendered by the page.
+  const transition = useStatusTransition(showToast, syncOrders);
 
-      try {
-        const response = await fetch(`/api/orders/${orderId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status: newStatus,
-            sendNotification: true,
-            notificationMessage: `Your order status has been updated to: ${formatOrderStatus(newStatus)}`,
-          }),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          console.error('Update failed:', result);
-          showToast(`Failed to update order status: ${result.error || 'Unknown error'}`, 'error');
-          return;
-        }
-
-        notifyOrdersChanged();
-        await syncOrders();
-
-        // Say what actually went out. Claiming "Customer has been notified"
-        // when SMS is unconfigured is how an operator ends up skipping the
-        // follow-up call.
-        const what = result.paymentVerified
-          ? 'Order confirmed and payment verified.'
-          : `Order status updated to ${formatOrderStatus(newStatus)}.`;
-        const how = result.delivery ? describeDelivery(result.delivery) : 'No notification sent';
-
-        showToast(
-          `${what} ${how}.`,
-          result.delivery && !anyDelivered(result.delivery) ? 'error' : 'success'
-        );
-      } catch (caught: any) {
-        console.error('Error updating order:', caught);
-        showToast(`Error updating order: ${caught.message || 'Please check your connection.'}`, 'error');
-      }
-    },
-    [showToast, syncOrders]
-  );
-
-  return { params, orders, meta, loading, error, summary, live, syncOrders, updateOrderStatus };
+  return { params, orders, meta, loading, error, summary, live, syncOrders, ...transition };
 }

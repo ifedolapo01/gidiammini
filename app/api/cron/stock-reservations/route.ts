@@ -66,6 +66,12 @@ export async function GET(req: NextRequest) {
       const result = await applyOrderStatusTransition(supabase, order.id, 'cancelled', {
         sendNotification: true,
         notificationMessage: CANCELLATION_MESSAGE,
+        // A swept reservation is an order nobody ever paid for, so it lands in
+        // the cancellation report under that ground rather than as "no reason
+        // recorded". No actor: the system did this, and attributing it to
+        // whoever last signed in would be a lie on the timeline.
+        reasonCode: 'payment_not_received',
+        reason: `Reservation expired after ${RESERVATION_HOURS}h without a verified payment.`,
       });
 
       if (result.success) {

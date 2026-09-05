@@ -9,7 +9,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes, Star, ReceiptText,
-  CircleQuestionMark, FolderTree, Percent, Truck, History, Users,
+  CircleQuestionMark, FolderTree, Percent, Truck, History, Users, Contact,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/api/admin-roles';
 
@@ -74,6 +74,11 @@ export const adminConfig = {
     // is the first screen anybody opens, and verification is the task the
     // whole shop waits on.
     { href: '/admin/payments', label: 'Verify Payments', icon: ReceiptText, shortLabel: 'Payments', permission: 'orders:read' },
+    // Beside Orders, not down with the catalogue: a customer is looked up
+    // because of an order, almost every time. Behind customers:read, which is
+    // deliberately narrower than orders:read — the customer database holds
+    // every address anybody has ever used, while an order exposes only its own.
+    { href: '/admin/customers', label: 'Customers', icon: Contact, permission: 'customers:read' },
     { href: '/admin/stock', label: 'Stock Management', icon: Boxes, shortLabel: 'Stock', permission: 'store:read' },
     { href: '/admin/reviews', label: 'Reviews', icon: Star, permission: 'store:read' },
     { href: '/admin/questions', label: 'Questions', icon: CircleQuestionMark, permission: 'store:read' },

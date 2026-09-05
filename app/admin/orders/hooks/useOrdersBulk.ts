@@ -21,13 +21,21 @@ export function useOrdersBulk(onApplied: () => void | Promise<void>) {
   });
 
   const applyStatus = useCallback(
-    (ids: string[], status: Order['status']) => {
+    // reasonCode is required by the endpoint for 'cancelled' and ignored
+    // otherwise — the bar collects it before enabling Apply, so a batch never
+    // reaches the server without one.
+    (ids: string[], status: Order['status'], reasonCode?: string) => {
       if (ids.length === 0) return;
 
       bulk.schedule({
         description: `Mark as ${formatOrderStatus(status)}`,
         count: ids.length,
-        run: () => postBulkBatched('/api/orders/bulk', ids, { status, sendNotification: true }),
+        run: () =>
+          postBulkBatched('/api/orders/bulk', ids, {
+            status,
+            sendNotification: true,
+            reason_code: reasonCode,
+          }),
       });
     },
     [bulk]

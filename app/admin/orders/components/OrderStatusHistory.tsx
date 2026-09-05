@@ -1,6 +1,7 @@
 /** ADMIN layer — the status timeline on an order, from order_status_history. */
 import { formatDate } from '@/lib/commerce/format-date';
 import { getStatusIcon, formatOrderStatus } from '@/lib/commerce/order-status';
+import { cancellationLabel } from '@/lib/commerce/cancellation-reasons';
 import { asOrderStatus } from '@/lib/commerce/db-narrowing';
 
 interface StatusHistoryEntry {
@@ -13,6 +14,11 @@ interface StatusHistoryEntry {
   actor_email?: string | null;
   /** Why, where the admin gave one. */
   reason?: string | null;
+  /** The same answer from the fixed vocabulary. Shown as a chip rather than
+   * folded into the free text, because it is the part that is comparable
+   * across orders — the eye should be able to run down a list of cancellations
+   * and see the pattern. */
+  reason_code?: string | null;
 }
 
 /**
@@ -52,6 +58,14 @@ export default function OrderStatusHistory({ entries }: { entries: StatusHistory
                   made by the shop itself, not by somebody unidentified. */}
               by <span className="text-text-primary">{entry.actor_email || 'System'}</span>
             </p>
+
+            {entry.reason_code && (
+              <p className="mt-1.5">
+                <span className="inline-flex rounded-control bg-surface px-2 py-0.5 text-caption-md font-medium text-text-primary">
+                  {cancellationLabel(entry.reason_code)}
+                </span>
+              </p>
+            )}
 
             {entry.reason && (
               <p className="mt-1 break-words text-caption-md text-text-secondary">

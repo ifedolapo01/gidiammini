@@ -61,6 +61,12 @@ export interface OrderStatusHistoryEntry {
   order_id: string;
   status: OrderStatus;
   changed_at: string;
+  /** Who moved it. Null for the transitions nothing human made. */
+  actor_email?: string | null;
+  /** Why, in the admin's own words. */
+  reason?: string | null;
+  /** Why, from the fixed vocabulary — see lib/commerce/cancellation-reasons.ts. */
+  reason_code?: string | null;
 }
 
 export interface Order {
@@ -77,6 +83,31 @@ export interface Order {
   selected_place?: string | null;
   shipping_zone_id?: string | null;
   payment_verified: boolean;
+  /**
+   * The money breakdown behind total_amount.
+   *
+   * total_amount = items_subtotal + tax_amount + shipping_amount - discount_amount,
+   * enforced by a CHECK constraint (migration 20260905190000). Optional on this
+   * type only because a few narrow projections do not select them.
+   */
+  items_subtotal?: number;
+  tax_amount?: number;
+  shipping_amount?: number;
+  /** A manual reduction an admin applied after the order was placed. A
+   * catalogue discount is already inside order_items.price and is not this. */
+  discount_amount?: number;
+  discount_reason?: string | null;
+  /** Sum of non-rejected payments, maintained by trigger. */
+  amount_paid?: number;
+  /** Sum of completed refunds, maintained by trigger. Net received is
+   * amount_paid - amount_refunded. */
+  amount_refunded?: number;
+  /** Courier key from lib/commerce/order-tracking.ts, or free text. */
+  carrier?: string | null;
+  tracking_number?: string | null;
+  /** Stored rather than derived, so a courier changing its URL format cannot
+   * rewrite history. */
+  tracking_url?: string | null;
   /** 'transfer' — a receipt somebody inspects — or 'paystack', verified by the
    *  provider's webhook. Defaulted in the database, so an order that predates
    *  online payment reads as a transfer. */
@@ -103,4 +134,30 @@ export interface Order {
   has_pending_change_request?: boolean;
   /** Embedded via the orders -> order_status_history relation. */
   order_status_history?: OrderStatusHistoryEntry[];
+}
+
+/** One refund on an order — see supabase/migrations/20260905190200. */
+export interface OrderRefund {
+  id: string;
+  /** 'pending' is agreed but not sent; only 'completed' is money returned. */
+  status: 'pending' | 'completed' | 'failed';
+  amount: number;
+  method: string;
+  reference: string | null;
+  /** A RefundCode — see lib/commerce/refund-reasons.ts. */
+  reason_code: string;
+  note: string | null;
+  /** When the money actually moved. Null while pending. */
+  refunded_at: string | null;
+  actor_email: string | null;
+  created_at: string;
+}
+
+/** What the refund panel needs to know before it can offer a figure. */
+export interface OrderRefundTotals {
+  total_amount: number;
+  amount_paid: number;
+  amount_refunded: number;
+  /** What arrived, less what has gone back. The ceiling on a new refund. */
+  refundable: number;
 }

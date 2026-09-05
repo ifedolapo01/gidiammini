@@ -55,6 +55,7 @@ const ACTION_LABELS: Record<string, string> = {
   restore: 'Access restored',
   access_denied: 'Refused',
   export: 'Exported',
+  refund: 'Refunded',
   login: 'Signed in',
   login_failed: 'Sign-in failed',
   login_throttled: 'Sign-in throttled',
@@ -82,6 +83,8 @@ const ACTION_TONES: Record<string, BadgeTone> = {
   // want a second look.
   access_denied: 'warning',
   export: 'info',
+  // Money leaving the business. Not a failure, but never routine.
+  refund: 'warning',
   login: 'success',
   login_failed: 'destructive',
   login_throttled: 'warning',

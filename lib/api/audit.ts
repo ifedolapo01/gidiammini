@@ -63,6 +63,11 @@ export type AuditAction =
   | 'payment_verified'
   | 'payment_short_paid'
   | 'payment_rejected'
+  /** Money going back out: agreed, sent, or failed. One action rather than
+   * three, because unlike a payment decision the question asked afterwards is
+   * always the same — "what did we refund on this order, and why" — and the
+   * status is in the entry's own payload. */
+  | 'refund'
   /** Somebody was given an admin account. */
   | 'invite'
   /** A role was changed — the entry every "who let them do that?" starts from. */

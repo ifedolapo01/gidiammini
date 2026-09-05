@@ -3,14 +3,13 @@
  * Shared by the admin's manual status dropdown (app/api/orders/[id]/route.ts)
  * and the change-request approval flow, so both behave identically. */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { sendOrderStatusUpdate } from '@/lib/notifications';
 import type { DeliveryOutcome } from '@/lib/notifications/delivery';
 import type { OrderStatus } from '@/types/order';
-import { hasStockReserved, formatOrderStatus } from './order-status';
+import { hasStockReserved } from './order-status';
+import { resolveTrackingFields, type OrderTracking } from './order-tracking';
+import { notifyStatusChange } from './order-status-notify';
 import { applyOrderStockChange } from './order-stock';
 import { inviteReviewIfFulfilled } from './review-invite';
-import { resolveOrderShippingZone } from './order-shipping-zone';
-import { formatZoneEta } from './shipping-eta';
 
 /** Who made a change, for the order's own timeline. Deliberately not the full
  * AdminActor: this module is Commerce and has no business importing the admin
@@ -36,6 +35,21 @@ interface ApplyOrderStatusTransitionOptions {
   /** Why, in the admin's words. The answer to "why was this cancelled?", kept
    * on the timeline itself rather than only in the audit trail. */
   reason?: string | null;
+  /**
+   * The same answer from a fixed vocabulary (cancellation-reasons.ts), so it
+   * can be counted. Free text says why this one died; the code is what makes
+   * "why do orders die here" answerable at all.
+   */
+  reasonCode?: string | null;
+  /**
+   * Courier and waybill, collected when an order is marked shipped.
+   *
+   * Written onto the order and carried into the notification, so the "your
+   * order has shipped" message can finally say how to follow the parcel. Any
+   * other status ignores it: a tracking number on a cancellation is a mistake,
+   * not a fact.
+   */
+  tracking?: Partial<OrderTracking> | null;
 }
 
 interface ApplyOrderStatusTransitionResult {
@@ -51,19 +65,6 @@ interface ApplyOrderStatusTransitionResult {
   delivery?: DeliveryOutcome;
 }
 
-/** Resolves the real delivery ETA text for a 'confirmed' notification, using
- * the order's own stored state/LGA/place so it reflects whatever zone/exception
- * actually applied at checkout — never a hardcoded guess. */
-async function resolveEstimatedDeliveryText(supabase: SupabaseClient, order: any): Promise<string | undefined> {
-  if (order.delivery_option === 'pickup') {
-    return "We'll contact you when your order is ready for pickup";
-  }
-
-  const zone = await resolveOrderShippingZone(supabase, order);
-
-  return zone ? `Estimated delivery: ${formatZoneEta(zone)}` : undefined;
-}
-
 export async function applyOrderStatusTransition(
   supabase: SupabaseClient,
   orderId: string,
@@ -72,6 +73,7 @@ export async function applyOrderStatusTransition(
 ): Promise<ApplyOrderStatusTransitionResult> {
   const {
     sendNotification = true, notificationMessage, paymentVerified, actor, reason,
+    reasonCode, tracking,
   } = options;
 
   const { data: currentOrder, error: fetchError } = await supabase
@@ -118,6 +120,17 @@ export async function applyOrderStatusTransition(
     updateData.payment_verified = true;
   }
 
+  // Only on the transition that earns it. Passing tracking with any other
+  // status is a caller bug rather than an instruction, and silently honouring
+  // it would put a waybill on a cancelled order.
+  const shipment = newStatus === 'shipped' && tracking ? resolveTrackingFields(tracking) : null;
+
+  if (shipment) {
+    updateData.carrier = shipment.carrier;
+    updateData.tracking_number = shipment.trackingNumber;
+    updateData.tracking_url = shipment.trackingUrl;
+  }
+
   const { data: updatedOrder, error: updateError } = await supabase
     .from('orders')
     .update(updateData)
@@ -140,33 +153,22 @@ export async function applyOrderStatusTransition(
       actor_id: actor?.id ?? null,
       actor_email: actor?.email ?? null,
       reason: reason ?? null,
+      reason_code: reasonCode ?? null,
     });
   if (historyError) {
     console.error('Error recording status history:', historyError);
   }
 
-  let delivery: DeliveryOutcome | undefined;
-
-  if (sendNotification) {
-    try {
-      const estimatedDeliveryText = newStatus === 'confirmed'
-        ? await resolveEstimatedDeliveryText(supabase, currentOrder)
-        : undefined;
-
-      delivery = await sendOrderStatusUpdate({
-        orderNumber: currentOrder.order_number,
-        customerName: currentOrder.customer_name,
-        customerEmail: currentOrder.customer_email,
-        customerPhone: currentOrder.customer_phone,
-        oldStatus: currentOrder.status,
+  const delivery: DeliveryOutcome | undefined = sendNotification
+    ? await notifyStatusChange(supabase, {
+        order: currentOrder,
         newStatus,
-        customMessage: notificationMessage || `Your order status has been updated to: ${formatOrderStatus(newStatus)}`,
-        estimatedDeliveryText
-      });
-    } catch (notificationError) {
-      console.error('Notification error:', notificationError);
-    }
-  }
+        notificationMessage,
+        reason,
+        reasonCode,
+        shipment,
+      })
+    : undefined;
 
   // The review invitation, on the transition that earns it. A fulfilled order
   // is the only source of a review this shop will ever have, and asking is not

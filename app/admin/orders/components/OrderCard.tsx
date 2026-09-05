@@ -22,7 +22,9 @@ interface OrderCardProps {
   selected: boolean;
   onToggleSelect: (orderId: string) => void;
   onOpenDetails: (order: Order) => void;
-  onUpdateStatus: (orderId: string, newStatus: Order['status']) => void;
+  /** Takes the whole order, not just its id: cancelling opens a dialog that
+   * warns what has been paid, and it cannot do that from an id. */
+  onUpdateStatus: (order: Order, newStatus: Order['status']) => void;
 }
 
 export default function OrderCard({
@@ -156,7 +158,7 @@ export default function OrderCard({
           <div className="flex flex-wrap gap-2">
             <Select
               value={order.status}
-              onChange={(e) => onUpdateStatus(order.id, e.target.value as Order['status'])}
+              onChange={(e) => onUpdateStatus(order, e.target.value as Order['status'])}
               disabled={nextStatuses.length === 0}
               className="w-auto"
             >

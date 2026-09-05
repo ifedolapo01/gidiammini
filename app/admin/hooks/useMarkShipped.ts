@@ -8,7 +8,14 @@
  *
  * Deliberately narrow. A general "set any status from anywhere" helper would
  * be the same three lines and would invite cancelling an order from a
- * dashboard row, where the confirmation and the reason field are not.
+ * dashboard row, where the reason dialog is not.
+ *
+ * It also skips the courier prompt the orders page shows on this transition,
+ * so an order shipped from here carries no waybill and its customer gets the
+ * shipping email without one. That is the trade the shortcut makes: it exists
+ * for the parcel already out of the door and noticed late, and stopping to
+ * open a dialog would defeat it. The waybill can be added afterwards on the
+ * order's Tracking card, which does not re-notify.
  */
 'use client';
 

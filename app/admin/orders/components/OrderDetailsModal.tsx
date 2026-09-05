@@ -1,16 +1,40 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/components/OrderDetailsModal.tsx
-import { Send, Mail, Phone } from 'lucide-react';
-import { Button, Modal, Textarea } from '@/components/ui';
-import { Order } from '@/types/order';
+//
+// The order panel, now a shell over four tabs.
+//
+// It used to be one scroll: customer, history, items, delivery, shipping
+// override, change request, notify. Adding an editor and a refund ledger to
+// that would have made a panel nobody could find anything in — and, worse, put
+// a destructive control (remove line) directly under a read-only one (view
+// items) in a single column.
+//
+// Tabs rather than an accordion because the four sections answer four
+// different questions and an operator arrives knowing which one they have:
+// "what is this order", "change it", "what money went back", "who touched it".
+'use client';
+
+import { useState } from 'react';
+import { FileText, Printer } from 'lucide-react';
+import { Button, Modal } from '@/components/ui';
+import type { Order } from '@/types/order';
 import type { ShippingZone } from '@/types/shipping';
-import { formatCurrency } from '@/lib/commerce/pricing';
-import { formatDate } from '@/lib/commerce/format-date';
-import { getStatusIcon, getStatusColor, formatOrderStatus } from '@/lib/commerce/order-status';
+import { cn } from '@/lib/utils';
 import EntityHistory from '@/app/admin/components/EntityHistory';
 import OrderStatusHistory from './OrderStatusHistory';
-import ShippingOverrideForm from './ShippingOverrideForm';
-import ChangeRequestReviewCard from './ChangeRequestReviewCard';
+import OrderSummaryTab from './OrderSummaryTab';
+import OrderEditPanel from './OrderEditPanel';
+import RefundPanel from './RefundPanel';
+import OrderPrintDocument, { type PrintDocumentKind } from './OrderPrintDocument';
+
+const TABS = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'edit', label: 'Edit items' },
+  { id: 'refunds', label: 'Refunds' },
+  { id: 'history', label: 'History' },
+] as const;
+
+type TabId = (typeof TABS)[number]['id'];
 
 interface OrderDetailsModalProps {
   selectedOrder: Order;
@@ -19,180 +43,113 @@ interface OrderDetailsModalProps {
   shippingZones: ShippingZone[];
   updatingShipping: boolean;
   resolvingRequestId: string | null;
+  showToast: (message: string, type?: 'success' | 'error') => void;
   onClose: () => void;
+  /** Re-read this order and the list behind it, after a mutation made here. */
+  onRefresh: () => Promise<void> | void;
   onNotificationMessageChange: (message: string) => void;
   onSendNotification: (orderId: string) => void;
   onUpdateShipping: (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => void;
   onResolveChangeRequest: (requestId: string, decision: 'approved' | 'rejected', adminResponse?: string) => void;
 }
 
-export default function OrderDetailsModal({
-  selectedOrder,
-  notificationMessage,
-  sendingNotification,
-  shippingZones,
-  updatingShipping,
-  resolvingRequestId,
-  onClose,
-  onNotificationMessageChange,
-  onSendNotification,
-  onUpdateShipping,
-  onResolveChangeRequest,
-}: OrderDetailsModalProps) {
-  const pendingChangeRequest = selectedOrder.order_change_requests?.find((r) => r.status === 'pending');
+export default function OrderDetailsModal(props: OrderDetailsModalProps) {
+  const { selectedOrder, showToast, onClose, onRefresh } = props;
+  const [tab, setTab] = useState<TabId>('summary');
+  const [printing, setPrinting] = useState<PrintDocumentKind | null>(null);
+
+  // A refund count on the tab would need the refunds loaded to show it, which
+  // would defeat loading them on demand. The refunded total is already on the
+  // order, so the dot uses that instead.
+  const hasRefunds = Number(selectedOrder.amount_refunded ?? 0) > 0;
+
   return (
     <Modal
       open
       onClose={onClose}
       title={`Order ${selectedOrder.order_number}`}
-      size="lg"
-      className="max-h-[90vh] overflow-y-auto"
+      size="xl"
+      scrollable
     >
-      {/* Customer Info */}
-      <div className="mb-6">
-        <h3 className="font-semibold text-text-primary mb-3">Customer Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-body-sm text-text-secondary">Name</p>
-            <p className="font-medium text-text-primary">{selectedOrder.customer_name}</p>
-          </div>
-          <div>
-            <p className="text-body-sm text-text-secondary">Email</p>
-            <p className="font-medium text-text-primary">{selectedOrder.customer_email}</p>
-          </div>
-          <div>
-            <p className="text-body-sm text-text-secondary">Phone</p>
-            <p className="font-medium text-text-primary">{selectedOrder.customer_phone}</p>
-          </div>
-          <div>
-            <p className="text-body-sm text-text-secondary">Status</p>
-            <span className={`px-2 py-1 rounded-control text-caption-md font-medium ${getStatusColor(selectedOrder.status)}`}>
-              {formatOrderStatus(selectedOrder.status)}
-            </span>
-          </div>
-        </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-border pb-4">
+        <Button size="sm" variant="outline" onClick={() => setPrinting('packing-slip')}>
+          <Printer className="size-4" aria-hidden="true" />
+          Packing slip
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setPrinting('invoice')}>
+          <FileText className="size-4" aria-hidden="true" />
+          Invoice
+        </Button>
       </div>
 
-      <OrderStatusHistory entries={selectedOrder.order_status_history ?? []} />
-
-      {/* Who changed this order, and why — the question order_status_history
-          cannot answer, since it records only a status and a timestamp. */}
-      <div className="mb-6">
-        <EntityHistory entityType="order" entityId={selectedOrder.id} pageSize={10} />
+      <div role="tablist" aria-label="Order sections" className="mb-5 flex flex-wrap gap-1">
+        {TABS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === entry.id}
+            onClick={() => setTab(entry.id)}
+            className={cn(
+              'rounded-control px-3 py-2 text-body-sm font-medium transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus',
+              tab === entry.id
+                ? 'bg-primary text-primary-foreground'
+                : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+            )}
+          >
+            {entry.label}
+            {entry.id === 'refunds' && hasRefunds && (
+              <span
+                aria-hidden="true"
+                className="ml-1.5 inline-block size-1.5 rounded-full bg-current align-middle"
+              />
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Order Items */}
-      {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
-        <div className="mb-6">
-          <h3 className="font-semibold text-text-primary mb-3">Order Items</h3>
-          <div className="space-y-2">
-            {selectedOrder.order_items.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-background-secondary rounded-surface">
-                <div>
-                  <p className="font-medium text-text-primary">{item.product_name}</p>
-                  <p className="text-body-sm text-text-secondary">
-                    Quantity: {item.quantity}
-                    {item.size && ` • Size/Age: ${item.size}`}
-                    {item.color && ` • Color: ${item.color}`}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-body-sm text-text-secondary">{formatCurrency(item.price)} each</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Delivery Info */}
-      <div className="mb-6">
-        <h3 className="font-semibold text-text-primary mb-3">Delivery Information</h3>
-        <div className="p-3 bg-info-background rounded-surface">
-          <p className="font-medium text-info">
-            {selectedOrder.delivery_option === 'pickup' ? 'Pickup' : 'Delivery'}
-          </p>
-          <p className="text-body-sm text-text-secondary">State: {selectedOrder.selected_state}</p>
-          {selectedOrder.delivery_address && (
-            <p className="text-body-sm text-text-secondary mt-1">
-              Address: {selectedOrder.delivery_address}, {selectedOrder.city}
-            </p>
-          )}
-          {selectedOrder.note && (
-            <div className="mt-2 p-2 bg-warning-background rounded-control">
-              <p className="text-body-sm text-text-primary font-medium">Customer Note:</p>
-              <p className="text-body-sm text-text-secondary">{selectedOrder.note}</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <ShippingOverrideForm
-        order={selectedOrder}
-        zones={shippingZones}
-        isUpdating={updatingShipping}
-        onUpdate={onUpdateShipping}
-      />
-
-      {pendingChangeRequest && (
-        <ChangeRequestReviewCard
-          changeRequest={pendingChangeRequest}
-          isResolving={resolvingRequestId === pendingChangeRequest.id}
-          onApprove={(adminResponse) => onResolveChangeRequest(pendingChangeRequest.id, 'approved', adminResponse)}
-          onReject={(adminResponse) => onResolveChangeRequest(pendingChangeRequest.id, 'rejected', adminResponse)}
+      {tab === 'summary' && (
+        <OrderSummaryTab
+          order={selectedOrder}
+          shippingZones={props.shippingZones}
+          updatingShipping={props.updatingShipping}
+          resolvingRequestId={props.resolvingRequestId}
+          notificationMessage={props.notificationMessage}
+          sendingNotification={props.sendingNotification}
+          showToast={showToast}
+          onRefresh={onRefresh}
+          onNotificationMessageChange={props.onNotificationMessageChange}
+          onSendNotification={props.onSendNotification}
+          onUpdateShipping={props.onUpdateShipping}
+          onResolveChangeRequest={props.onResolveChangeRequest}
         />
       )}
 
-      {/* Send Notification Form */}
-      <div className="mt-6 pt-6 border-t border-border">
-        <h3 className="font-semibold text-text-primary mb-3">Send Notification</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-body-sm font-medium text-text-primary mb-2">
-              Message to Customer
-            </label>
-            <Textarea
-              value={notificationMessage}
-              onChange={(e) => onNotificationMessageChange(e.target.value)}
-              placeholder="Enter your message to the customer..."
-              rows={4}
-            />
-            <p className="text-caption-md text-text-secondary mt-1">
-              This message will be sent via email and SMS (if available)
-            </p>
-          </div>
+      {tab === 'edit' && (
+        <OrderEditPanel order={selectedOrder} showToast={showToast} onSaved={onRefresh} />
+      )}
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-text-secondary" />
-              <span className="text-body-sm text-text-secondary">{selectedOrder.customer_email}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-text-secondary" />
-              <span className="text-body-sm text-text-secondary">{selectedOrder.customer_phone}</span>
-            </div>
-          </div>
+      {tab === 'refunds' && (
+        <RefundPanel orderId={selectedOrder.id} showToast={showToast} onChanged={onRefresh} />
+      )}
 
-          <div className="flex gap-3">
-            <Button
-              onClick={() => onSendNotification(selectedOrder.id)}
-              disabled={!notificationMessage.trim()}
-              loading={sendingNotification === selectedOrder.id}
-              className="flex-1 font-semibold"
-            >
-              <Send className="w-4 h-4" />
-              Send Notification
-            </Button>
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="font-semibold"
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </div>
+      {tab === 'history' && (
+        <>
+          <OrderStatusHistory entries={selectedOrder.order_status_history ?? []} />
+          {/* Who changed what, and why — the question order_status_history
+              cannot answer, since it records only a status and a timestamp. */}
+          <EntityHistory entityType="order" entityId={selectedOrder.id} pageSize={10} />
+        </>
+      )}
+
+      {printing && (
+        <OrderPrintDocument
+          order={selectedOrder}
+          kind={printing}
+          onDone={() => setPrinting(null)}
+        />
+      )}
     </Modal>
   );
 }

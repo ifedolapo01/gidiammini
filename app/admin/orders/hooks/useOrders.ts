@@ -50,5 +50,10 @@ export function useOrders() {
     updatingShipping,
     resolveChangeRequest,
     resolvingRequestId,
+    // Both are handed to the details modal: its tabs mutate the order
+    // themselves (edit, refund, tracking) and each needs to reconcile the row,
+    // the totals and the open order afterwards, and to say so.
+    reconcile,
+    showToast,
   };
 }

@@ -20,7 +20,9 @@ const ORDER_SELECT =
   'order_number, created_at, updated_at, status, payment_verified, payment_method,' +
   ' payment_channel, paid_at, customer_name, customer_email, customer_phone,' +
   ' delivery_option, selected_state, selected_lga, selected_place, city,' +
-  ' delivery_address, note, total_amount,' +
+  ' delivery_address, note, total_amount, items_subtotal, tax_amount,' +
+  ' shipping_amount, discount_amount, amount_paid, amount_refunded,' +
+  ' carrier, tracking_number,' +
   ' order_items ( product_name, size, color, quantity, price )';
 
 export async function ordersDataset(
@@ -80,8 +82,20 @@ export async function ordersDataset(
         header: 'line_total',
         value: (r) => (r.item ? (Number(r.item.price) || 0) * (Number(r.item.quantity) || 0) : ''),
       },
-      // Repeats down every line of the same order — see the note at the top.
+      // Every column below repeats down the lines of one order — see the note
+      // at the top. They are named for it so a spreadsheet total of any of them
+      // is obviously wrong rather than quietly wrong.
       { header: 'order_total_repeated', value: (r) => Number(r.order.total_amount) || 0 },
+      { header: 'order_items_subtotal_repeated', value: (r) => Number(r.order.items_subtotal) || 0 },
+      { header: 'order_tax_repeated', value: (r) => Number(r.order.tax_amount) || 0 },
+      { header: 'order_delivery_fee_repeated', value: (r) => Number(r.order.shipping_amount) || 0 },
+      { header: 'order_discount_repeated', value: (r) => Number(r.order.discount_amount) || 0 },
+      // The two figures that make the file reconcile against a bank statement
+      // rather than only against itself.
+      { header: 'order_amount_paid_repeated', value: (r) => Number(r.order.amount_paid) || 0 },
+      { header: 'order_amount_refunded_repeated', value: (r) => Number(r.order.amount_refunded) || 0 },
+      { header: 'carrier', value: (r) => text(r.order.carrier) },
+      { header: 'tracking_number', value: (r) => text(r.order.tracking_number) },
     ],
   };
 }

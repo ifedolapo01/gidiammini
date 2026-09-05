@@ -1,10 +1,13 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/page.tsx
 //
-// The page is now a view over one server-selected page of orders: the filter,
+// The page is a view over one server-selected page of orders: the filter,
 // search and sort controls write query parameters, and the counts come from
 // the summary endpoint rather than from reducing an array the browser had to
 // hold in full.
+//
+// The transition dialogs are rendered here rather than inside OrderCard — see
+// OrderTransitionDialogs for why.
 'use client';
 import { OrdersSkeleton } from './components/OrdersSkeleton';
 
@@ -15,6 +18,7 @@ import OrderCard from './components/OrderCard';
 import OrderFilters from './components/OrderFilters';
 import OrderStatsSummary from './components/OrderStatsSummary';
 import OrdersBulkBar from './components/OrdersBulkBar';
+import OrderTransitionDialogs from './components/OrderTransitionDialogs';
 import TablePagination from '../components/TablePagination';
 import LiveIndicator from '../components/LiveIndicator';
 import BulkResultSummary from '../components/BulkResultSummary';
@@ -32,7 +36,11 @@ function AdminOrdersContent() {
     error,
     summary,
     live,
-    updateOrderStatus,
+    requestStatusChange,
+    pendingTransition,
+    confirmPending,
+    dismissPending,
+    applyingTransition,
     bulk,
     selectedOrder,
     openOrderDetails,
@@ -45,6 +53,8 @@ function AdminOrdersContent() {
     updatingShipping,
     resolveChangeRequest,
     resolvingRequestId,
+    reconcile,
+    showToast,
   } = useOrders();
 
   const { zones: shippingZones } = useShippingZoneOptions();
@@ -56,10 +66,10 @@ function AdminOrdersContent() {
   return (
     <>
       <div className="p-4 md:p-6 lg:p-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8">
+        <div className="mb-6 flex flex-col justify-between md:mb-8 md:flex-row md:items-center">
           <div>
-            <h1 className="text-h4 md:text-h3 font-bold text-text-primary">Manage Orders</h1>
-            <p className="flex items-center gap-3 text-text-secondary mt-1" aria-live="polite">
+            <h1 className="text-h4 font-bold text-text-primary md:text-h3">Manage Orders</h1>
+            <p className="mt-1 flex items-center gap-3 text-text-secondary" aria-live="polite">
               <span>{meta.total} order{meta.total !== 1 ? 's' : ''} found</span>
               <LiveIndicator live={live} subject="orders" />
             </p>
@@ -83,22 +93,21 @@ function AdminOrdersContent() {
         />
 
         {error && (
-          <div className="mb-6 p-4 bg-destructive-background border border-destructive-border rounded-control">
-            <p className="text-destructive font-medium">Error: {error}</p>
+          <div className="mb-6 rounded-control border border-destructive-border bg-destructive-background p-4">
+            <p className="font-medium text-destructive">Error: {error}</p>
           </div>
         )}
 
         {orders.length === 0 ? (
-          <div className="bg-surface rounded-surface shadow-elevation-1 border border-border p-8 md:p-12 text-center">
-            <Package className="w-16 h-16 text-text-muted mx-auto mb-4" />
-            <h3 className="text-h5 font-semibold text-text-primary mb-2">
+          <div className="rounded-surface border border-border bg-surface p-8 text-center shadow-elevation-1 md:p-12">
+            <Package className="mx-auto mb-4 size-16 text-text-muted" />
+            <h3 className="mb-2 text-h5 font-semibold text-text-primary">
               {params.search ? 'No orders found' : 'No orders yet'}
             </h3>
             <p className="text-text-secondary">
               {params.search
                 ? 'Try a different search term'
-                : 'Orders will appear here when customers place them'
-              }
+                : 'Orders will appear here when customers place them'}
             </p>
           </div>
         ) : (
@@ -112,12 +121,12 @@ function AdminOrdersContent() {
                   selected={selection.isSelected(order.id)}
                   onToggleSelect={selection.toggle}
                   onOpenDetails={openOrderDetails}
-                  onUpdateStatus={updateOrderStatus}
+                  onUpdateStatus={requestStatusChange}
                 />
               ))}
             </div>
 
-            <div className="mt-4 bg-surface rounded-surface border border-border">
+            <div className="mt-4 rounded-surface border border-border bg-surface">
               <TablePagination
                 page={meta.page}
                 pageCount={meta.totalPages}
@@ -156,13 +165,22 @@ function AdminOrdersContent() {
           shippingZones={shippingZones}
           updatingShipping={updatingShipping}
           resolvingRequestId={resolvingRequestId}
+          showToast={showToast}
           onClose={closeOrderDetails}
+          onRefresh={reconcile}
           onNotificationMessageChange={setNotificationMessage}
           onSendNotification={sendCustomNotification}
           onUpdateShipping={updateOrderShipping}
           onResolveChangeRequest={resolveChangeRequest}
         />
       )}
+
+      <OrderTransitionDialogs
+        pending={pendingTransition}
+        saving={applyingTransition}
+        onConfirm={confirmPending}
+        onDismiss={dismissPending}
+      />
     </>
   );
 }

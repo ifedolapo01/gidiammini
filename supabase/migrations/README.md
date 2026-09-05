@@ -200,6 +200,16 @@ keeps them from running again.
 | `20251101003800` | online payments: `orders.payment_method`/`payment_reference`/`paid_at`/`payment_channel` | **not yet — pending `db push`** |
 | `20251101003900` | `payment_events` — the provider's own messages, and what was done about each | **not yet — pending `db push`** |
 | `20251101004000` | `abandoned_carts` — the basket last seen for an email that did not order | **not yet — pending `db push`** |
+| `20260905190000` | orders gain the money breakdown behind `total_amount` | **not yet — pending `db push`** |
+| `20260905190100` | `edit_order_items()` — an order's lines stop being write-once | **not yet — pending `db push`** |
+| `20260905190200` | `order_refunds`, and `orders.amount_refunded` | **not yet — pending `db push`** |
+| `20260905190300` | cancellation reason codes, and the `order_cancellations` view | **not yet — pending `db push`** |
+| `20260905190400` | courier, waybill and tracking link on orders | **not yet — pending `db push`** |
+| `20260905190500` | `customers.tags`, `customer_addresses`, refund-aware `customer_stats` | **not yet — pending `db push`** |
+
+The rows between `20251101004000` and `20260905190000` predate this table being
+kept up to date; `npm run db:status` is the authority on what the remote has
+actually recorded.
 
 ### Failed first push: `uuid_generate_v4()`
 
@@ -880,3 +890,95 @@ The first reminder is due an hour after abandonment, so `vercel.json` schedules
 hourly schedule will not fire, and the sweep needs either Pro or an external
 scheduler (GitHub Actions, cron-job.org) calling the endpoint with the
 `CRON_SECRET` header.
+
+## The order stops being immutable (`20260905190000`–`20260905190400`)
+
+Five migrations that belong to one change: an order can be edited, cancelled
+with a reason, refunded, and tracked. They are separate files because they are
+separate objects with separate rollback stories, and they are listed together
+here because none of them is much use alone.
+
+### `20260905190000` — the money breakdown
+
+`orders.total_amount` was one integer with no record of what produced it. Three
+things were impossible while that was true: printing an invoice, editing the
+order (the second edit cannot tell how much of the total was shipping), and
+recording a goodwill discount.
+
+The invariant is `total_amount = items_subtotal + tax_amount + shipping_amount
+- discount_amount`, enforced by a CHECK. The backfill derives the split from
+the line items and the known tax rate; where a legacy total falls below the sum
+of its parts, the shortfall is recorded as a discount rather than clamped, so
+every existing row satisfies the constraint by construction.
+
+### `20260905190100` — `edit_order_items()`
+
+An edit is four writes that must succeed together: release the old stock, claim
+the new, replace the lines, recompute the total. The Supabase JS client cannot
+open a transaction across statements, so this is one function — an oversell
+raises GM001 out of `adjust_order_stock` and Postgres unwinds the release with
+it.
+
+Stock is released *before* it is claimed, not netted per variant. Netting would
+be fewer row updates and would also make "change quantity from 3 to 4 on the
+last 3 units" fail against a hold the same order already owns.
+
+The tax rate is an argument. `TAX_RATE` lives in `lib/commerce/checkout.ts` and
+is what `priceOrder()` charged; a second copy in SQL would be free to drift
+from it.
+
+### `20260905190200` — `order_refunds`
+
+`order_payments`' mirror image, with one deliberate difference: a row here is
+updated in place. A verification is instantaneous, but a refund is agreed now
+and sent later, so `pending` → `completed` / `failed` is the same event
+reaching its conclusion rather than a revised opinion. A trigger freezes the
+order, the amount and the reason once written, and refuses to reopen a settled
+row — a correction is a new refund, which is the history worth keeping.
+
+`orders.amount_refunded` sums the completed rows, maintained by trigger for the
+same reason `amount_paid` is.
+
+### `20260905190300` — cancellation reasons
+
+`order_status_history` gains `reason_code` beside the free text added in
+`20260905170100`. Free text does not aggregate: "no stock", "out of stock" and
+"oos" are three spellings of one answer. The vocabulary is
+`lib/commerce/cancellation-reasons.ts`; the column is deliberately
+unconstrained, because a code from a newer deployment is data rather than
+corruption and refusing it would fail the cancellation itself.
+
+`order_cancellations` joins each cancelled order to its latest cancelled
+history entry — per-order rather than pre-aggregated, because "how many were
+out of stock" and "which ones" are both asked and only one of those survives a
+rollup.
+
+### `20260905190400` — courier and waybill
+
+Three columns on `orders`. `tracking_url` is stored rather than derived so a
+courier changing its URL format cannot rewrite history, and a CHECK refuses
+anything that is not `http(s)` — the value ends up as an `href` in a customer's
+inbox.
+
+## Customer segments (`20260905190500`)
+
+`customers.tags` as a `text[]` with a GIN index, not a join table: tags are read
+on every row of the customer list, written one customer at a time by a human,
+and have no attributes of their own. A trigger lowercases, trims, deduplicates
+and caps them — a CHECK could only refuse "Wholesale" for not being
+"wholesale", which turns a typo into a failed save instead of fixing it.
+
+`customer_addresses` derives the addresses a buyer has actually used from their
+orders, for the same reason `customer_stats` derives its figures: an address
+book kept beside the orders it came from is one that drifts from them.
+
+`customer_stats` gains `tags`, `lifetime_refunded` and `net_lifetime_value`,
+appended rather than reshaped — `CREATE OR REPLACE VIEW` may add columns to the
+end and may not change the ones already there, so `lifetime_value` keeps its
+exact definition and its type while the net figure arrives beside it.
+
+## After applying these
+
+`types/database.ts` is generated from the linked project. Run `npm run db:push`
+and then `npm run db:types` so the generated types match the schema rather than
+the hand-written stand-ins added alongside these migrations.

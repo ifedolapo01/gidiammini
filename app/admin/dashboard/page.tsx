@@ -85,20 +85,28 @@ export default function AdminDashboard() {
           subtext={`${stats.pendingOrders} pending`}
         />
 
-        {/* Money received, not orders placed. The old "Revenue Confirmed"
-            summed every non-cancelled order's total, so it counted transfers
-            that never arrived — see app/api/admin/dashboard/route.ts. The
-            outstanding balance sits underneath it because the two are only
-            meaningful together. */}
+        {/* Money kept, not orders placed. The old "Revenue Confirmed" summed
+            every non-cancelled order's total, so it counted transfers that
+            never arrived — see app/api/admin/dashboard/route.ts. Refunds come
+            off it now too.
+
+            The subtext carries whichever of the two counterweights is real:
+            money still owed, or money sent back. Refunds win the slot when
+            there are any, because an unexpected refund total is the thing
+            somebody needs to go and look at. */}
         <StatCard
-          title="Money Received"
+          title="Money Kept"
           icon={<FontAwesomeIcon icon={faNairaSign} className="w-5 h-5 text-accent" />}
           iconBgClassName="bg-accent/10"
           value={formatCurrency(stats.totalRevenue)}
           subtext={
-            stats.outstanding > 0
-              ? `${formatCurrency(stats.outstanding)} still owing`
-              : 'Every live order paid in full'
+            stats.totalRefunded > 0
+              ? `${formatCurrency(stats.totalRefunded)} refunded${
+                  stats.outstanding > 0 ? ` · ${formatCurrency(stats.outstanding)} owing` : ''
+                }`
+              : stats.outstanding > 0
+                ? `${formatCurrency(stats.outstanding)} still owing`
+                : 'Every live order paid in full'
           }
         />
 

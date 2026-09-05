@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { ORDER_STATUSES, formatOrderStatus } from '@/lib/commerce/order-status';
+import { isCancellationCode, cancellationLabel } from '@/lib/commerce/cancellation-reasons';
 import { applyOrderStatusTransition } from '@/lib/commerce/order-status-transition';
 import { parseBulkIds, runBulk, MAX_BULK_ROWS } from '@/lib/api/bulk';
 import type { OrderStatus } from '@/types/order';
@@ -37,6 +38,18 @@ export const POST = withAdminAuth(async (request, { supabase, actor, audit }) =>
     );
   }
 
+  // A bulk cancellation is still a cancellation, and the whole point of the
+  // fixed vocabulary is that there is no route to 'cancelled' that skips it.
+  // Twenty orders killed in one click with no ground would be the largest hole
+  // in the report, not the smallest.
+  const reasonCode = body?.reason_code;
+  if (status === 'cancelled' && !isCancellationCode(reasonCode)) {
+    return NextResponse.json(
+      { success: false, error: 'Choose why these orders are being cancelled.' },
+      { status: 400 }
+    );
+  }
+
   const sendNotification = body?.sendNotification !== false;
   const reason = typeof body?.reason === 'string' ? body.reason : null;
 
@@ -53,11 +66,18 @@ export const POST = withAdminAuth(async (request, { supabase, actor, audit }) =>
 
     const result = await applyOrderStatusTransition(supabase, id, status as OrderStatus, {
       sendNotification,
-      notificationMessage: `Your order status has been updated to: ${formatOrderStatus(status)}`,
+      // Left unset for a cancellation so the transition writes the ground's own
+      // sentence — "we could not fulfil it" rather than "your order status has
+      // been updated to: Cancelled", which is not a message to send someone
+      // who has paid.
+      notificationMessage: status === 'cancelled'
+        ? undefined
+        : `Your order status has been updated to: ${formatOrderStatus(status)}`,
       // Every order in the batch names the same admin and carries the same
       // reason — which is exactly what happened.
       actor: { id: actor.id, email: actor.email },
       reason,
+      reasonCode: status === 'cancelled' ? reasonCode : null,
     });
 
     if (!result.success) return { ok: false, label, error: result.error };
@@ -67,8 +87,14 @@ export const POST = withAdminAuth(async (request, { supabase, actor, audit }) =>
       entityId: id,
       action: 'status_change',
       before: { status: result.previousStatus },
-      after: { status, payment_verified: result.order?.payment_verified },
-      reason: reason ?? `Bulk status change to ${formatOrderStatus(status)}`,
+      after: {
+        status,
+        payment_verified: result.order?.payment_verified,
+        ...(status === 'cancelled' ? { reason_code: reasonCode } : {}),
+      },
+      reason: status === 'cancelled'
+        ? [cancellationLabel(reasonCode), reason].filter(Boolean).join(' — ')
+        : reason ?? `Bulk status change to ${formatOrderStatus(status)}`,
     });
 
     return { ok: true, label };
