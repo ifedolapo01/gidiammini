@@ -6,6 +6,12 @@
 // this route only does what a cron route should: find candidates, ask what
 // each one has earned, send, stamp.
 //
+// SCHEDULED FROM POSTGRES, NOT vercel.json. Deliberately: Vercel's Hobby plan
+// rejects any sub-daily cron expression at deploy time, so an hourly entry
+// there is a failed deployment rather than a slower job. pg_cron calls this
+// endpoint instead — see supabase/scheduled-jobs/abandoned-carts.sql. Every
+// other cron in this directory is daily and still lives in vercel.json.
+//
 // Not failClosed. Like the other promotional jobs, the worst an
 // unauthenticated call achieves is sending mail that was going out anyway —
 // and it cannot send twice, because the stamps are the guard.

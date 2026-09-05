@@ -21,10 +21,6 @@
       "schedule": "45 3 * * *"
     },
     {
-      "path": "/api/cron/abandoned-carts",
-      "schedule": "0 * * * *"
-    },
-    {
       "path": "/api/cron/wishlist-alerts",
       "schedule": "15 8 * * *"
     }
