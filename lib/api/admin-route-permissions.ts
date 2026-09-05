@@ -39,6 +39,13 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/orders/*/notify', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/admin/orders/*/receipt', read: 'orders:read' },
 
+  // Payment verification. Confirming that money arrived is part of working an
+  // order, not a separate privilege: whoever can move an order to 'confirmed'
+  // by hand can already do the thing this replaces, and doing it through the
+  // queue is strictly better recorded.
+  { pattern: '/api/admin/payments', read: 'orders:read', write: 'orders:write' },
+  { pattern: '/api/admin/payments/queue', read: 'orders:read' },
+
   // Catalogue. Stock is carved out of it on purpose: adjusting a count is a
   // warehouse job, changing a price or deleting a product is not.
   { pattern: '/api/admin/products', read: 'store:read', write: 'catalog:write' },
@@ -70,6 +77,10 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/admin/dashboard', read: 'store:read' },
   { pattern: '/api/admin/dashboard/charts', read: 'store:read' },
   { pattern: '/api/admin/alerts/*', read: 'store:read' },
+  // The rows behind a worklist count. Same reach as the dashboard it is part
+  // of: it shows customer names and order numbers, which orders:read and
+  // store:read both already expose.
+  { pattern: '/api/admin/worklist/*', read: 'store:read' },
   { pattern: '/api/admin/wishlist', read: 'store:read' },
   { pattern: '/api/admin/realtime-token', read: 'store:read' },
 

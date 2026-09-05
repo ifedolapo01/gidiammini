@@ -9,6 +9,14 @@ export default defineConfig({
   test: {
     // The commerce layer is pure by design — no DOM, no Supabase, no React.
     environment: 'node',
-    include: ['lib/**/*.test.ts'],
+    //
+    // `app/**` is included for the same kind of module, in the places where a
+    // pure helper genuinely belongs to a layer above Commerce: the Admin
+    // worklist's grouping rules, for instance, are Admin vocabulary and cannot
+    // move into lib/ without breaking the layering — but they are ordinary
+    // functions over ordinary data and were going untested purely because of
+    // where they sit. Only `.test.ts` matches, so nothing with JSX in it is
+    // picked up by a node-environment run.
+    include: ['lib/**/*.test.ts', 'app/**/*.test.ts'],
   },
 });

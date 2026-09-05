@@ -17,11 +17,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { onOrdersChanged } from "../lib/orderEvents";
 import { ALERT_SOURCES } from "../lib/alert-sources";
-import type { AlertItem, AlertTone } from "../lib/alert-item";
+import type { AlertGroup, AlertItem, AlertTone } from "../lib/alert-item";
 
-// Re-exported: the ticker and the pill import these types from the hook, and
-// where the shapes live is not their business.
-export type { AlertItem, AlertTone };
+// Re-exported: the worklist, the ticker and the pill import these types from
+// the hook, and where the shapes live is not their business.
+export type { AlertGroup, AlertItem, AlertTone };
 
 export function useAdminAlerts() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -49,6 +49,9 @@ export function useAdminAlerts() {
           link: "/admin/dashboard",
           tone: "destructive",
           priority: 1,
+          // 'store' rather than a work group, and no task: this is the panel
+          // reporting on itself, not a job anybody can clear.
+          group: "store",
         },
       ]);
     } finally {

@@ -16,6 +16,7 @@ import { RecentOrdersPanel } from './components/RecentOrdersPanel';
 import { LowStockPanel } from './components/LowStockPanel';
 import { WishlistDemandPanel } from './components/WishlistDemandPanel';
 import { QuickActionsGrid } from './components/QuickActionsGrid';
+import { TodayPanel } from './components/today/TodayPanel';
 import ExportButton from '../components/ExportButton';
 import { formatCurrency } from './format-currency';
 
@@ -57,6 +58,12 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* The worklist, above the stats on purpose: the numbers below say how
+          the shop is doing, this says what has to be done. Anything that
+          answers "what do I do now?" outranks anything that answers "how are
+          we doing?". */}
+      <TodayPanel />
+
       {/* Stats Grid */}
       {/* Five cards: 2-up on tablet, 3-up on laptop, all five in one row on a
           wide screen. Four columns would leave the fifth stranded alone on
@@ -78,12 +85,21 @@ export default function AdminDashboard() {
           subtext={`${stats.pendingOrders} pending`}
         />
 
+        {/* Money received, not orders placed. The old "Revenue Confirmed"
+            summed every non-cancelled order's total, so it counted transfers
+            that never arrived — see app/api/admin/dashboard/route.ts. The
+            outstanding balance sits underneath it because the two are only
+            meaningful together. */}
         <StatCard
-          title="Revenue Confirmed"
+          title="Money Received"
           icon={<FontAwesomeIcon icon={faNairaSign} className="w-5 h-5 text-accent" />}
           iconBgClassName="bg-accent/10"
           value={formatCurrency(stats.totalRevenue)}
-          subtext="All time"
+          subtext={
+            stats.outstanding > 0
+              ? `${formatCurrency(stats.outstanding)} still owing`
+              : 'Every live order paid in full'
+          }
         />
 
         <MarginStatCard margin={stats.margin} />

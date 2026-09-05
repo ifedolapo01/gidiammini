@@ -1,10 +1,28 @@
 /**
- * ADMIN layer — operational alerts ticker for the Commerce Admin shell.
- * Token-based via semantic status tones; no business branding.
+ * ADMIN layer — the compact alerts indicator, for every page that is not the
+ * dashboard.
+ *
+ * This used to be the only place operational alerts appeared, which made a
+ * rotating one-at-a-time ticker the whole information architecture: the count
+ * you needed was whichever one was currently scrolled off. The worklist on the
+ * dashboard is now where the work is read and done (see
+ * dashboard/components/today/TodayPanel.tsx), and this is demoted to what a
+ * ticker is actually good at — telling you, while you are somewhere else,
+ * that something has come in.
+ *
+ * So it is slimmer, it says how many there are in total, and its count is a
+ * link to the panel that lists them. It renders nothing at all when there is
+ * nothing to say: a permanent "all systems normal" strip is a row of pixels
+ * that has never once changed anybody's next action.
+ *
+ * The parts worth keeping are kept: it pauses on hover, it respects
+ * prefers-reduced-motion, and an item can still be dismissed.
  */
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ListChecks } from "lucide-react";
 import { useAdminAlerts, type AlertItem } from "@/app/admin/hooks/useAdminAlerts";
 import { useAlertCycle } from "@/app/admin/hooks/useAlertCycle";
 import { AlertPill } from "@/app/admin/components/AlertPill";
@@ -52,57 +70,37 @@ export function MarqueeAlertBar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeAlert]);
 
-  if (loading) {
-    return (
-      <div className="relative z-50 h-10 bg-background-secondary border-b border-border">
-        <div className="container mx-auto px-4 h-full flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse"></div>
-            <span className="text-body-sm text-text-muted font-medium">Checking systems...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Nothing to say, or nothing known yet. Either way, no strip: this sits
+  // above every admin page, and a bar that appears and disappears on load
+  // shifts the whole layout under the pointer.
+  if (loading || alerts.length === 0 || !current) return null;
 
-  if (alerts.length === 0) {
-    return (
-      <div className="relative z-50 h-10 bg-success-background border-b border-success-border text-success">
-        <div className="container mx-auto px-4 h-full flex items-center justify-center">
-          <span className="text-body-sm font-medium flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-success"></div>
-            All systems normal - No alerts
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!current) return null;
+  // Only the workable items count here. "3 things waiting" must mean the same
+  // number the dashboard's Today panel shows, or the link is a lie.
+  const work = alerts.filter((alert) => alert.task).length;
 
   return (
     <div
-      className="relative z-50 h-10 overflow-hidden bg-surface border-b border-border shadow-elevation-1"
+      className="relative z-50 h-9 overflow-hidden border-b border-border bg-surface"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Control indicators */}
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20">
-        <div className="text-caption-md bg-background-tertiary text-text-secondary px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-border font-medium shadow-elevation-1">
-          {isPaused ? (
-            <span className="w-2 h-2 rounded-sm bg-text-muted"></span>
-          ) : (
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-          )}
-          <span className="hidden sm:inline">
-            {alerts.length} Alert{alerts.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-      </div>
+      {/* The count, and the way to the worklist. The one thing this bar owes
+          the operator is a route to the whole picture. */}
+      <Link
+        href="/admin/dashboard"
+        className="absolute left-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-full border border-border bg-background-tertiary px-2.5 py-0.5 text-caption-md font-medium text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-focus"
+      >
+        <ListChecks className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className="hidden sm:inline">
+          {work > 0 ? `${work} to do` : `${alerts.length} update${alerts.length === 1 ? "" : "s"}`}
+        </span>
+        <span className="sm:hidden">{work > 0 ? work : alerts.length}</span>
+      </Link>
 
-      {/* Current alert, one at a time - the next one rises up from below as the
-          previous one slides up and out, like a vertical carousel. */}
-      <div className="absolute inset-0 overflow-hidden pl-32 pr-6">
+      {/* One alert at a time — the next rises up from below as the previous
+          slides up and out, like a vertical carousel. */}
+      <div className="absolute inset-0 overflow-hidden pl-24 pr-4 sm:pl-32">
         {previous && (
           <div
             key={`prev-${previous.id}`}
@@ -113,7 +111,10 @@ export function MarqueeAlertBar() {
         )}
         <div
           key={`current-${current.id}`}
-          className={cn("absolute inset-0 flex items-center justify-center", !reduceMotion && "animate-tickerPushUp")}
+          className={cn(
+            "absolute inset-0 flex items-center justify-center",
+            !reduceMotion && "animate-tickerPushUp",
+          )}
         >
           <AlertPill alert={current} onDismiss={dismissAlert} />
         </div>

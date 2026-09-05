@@ -557,6 +557,62 @@ export type Database = {
         }
         Relationships: []
       }
+      order_payments: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          order_id: string
+          reason_code: string | null
+          receipt_path: string | null
+          received_at: string
+          reference: string | null
+          status: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          order_id: string
+          reason_code?: string | null
+          receipt_path?: string | null
+          received_at?: string
+          reference?: string | null
+          status: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          order_id?: string
+          reason_code?: string | null
+          receipt_path?: string | null
+          received_at?: string
+          reference?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_review_invites: {
         Row: {
           created_at: string
@@ -629,6 +685,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          amount_paid: number
           city: string | null
           created_at: string
           customer_email: string
@@ -661,6 +718,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_paid?: number
           city?: string | null
           created_at?: string
           customer_email: string
@@ -693,6 +751,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_paid?: number
           city?: string | null
           created_at?: string
           customer_email?: string

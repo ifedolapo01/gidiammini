@@ -32,6 +32,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // no polling that would only 401.
   const isLoginPage = pathname === '/admin/login';
   const isStandalone = isLoginPage || pathname === '/admin/accept-invite';
+  // The dashboard renders the same alerts as a persistent, grouped worklist
+  // (dashboard/components/today/TodayPanel.tsx). A ticker above it would be
+  // the same six counts, rotating, in less detail — so the compact indicator
+  // is for every page except the one that already shows the whole thing.
+  const showAlertTicker = pathname !== '/admin/dashboard';
 
   const [navOpen, setNavOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -86,7 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="theme-admin min-h-screen bg-background-tertiary">
-      <MarqueeAlertBar />
+      {showAlertTicker && <MarqueeAlertBar />}
       <CommandPalette />
 
       <div className="flex">

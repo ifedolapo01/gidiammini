@@ -9,7 +9,13 @@ export interface DashboardStats {
   totalProducts: number;
   totalOrders: number;
   pendingOrders: number;
+  /** Money actually received, across every non-cancelled order. Not the value
+   *  of orders placed — see app/api/admin/dashboard/route.ts. */
   totalRevenue: number;
+  /** Still owed on orders the shop intends to fulfil. */
+  outstanding: number;
+  /** Orders holding some money, but not enough. */
+  partPaidOrders: number;
   /** null until loaded, or when the dashboard query failed. */
   margin: MarginTotals | null;
   recentOrders: any[];
@@ -22,6 +28,8 @@ export function useDashboardStats() {
     totalOrders: 0,
     pendingOrders: 0,
     totalRevenue: 0,
+    outstanding: 0,
+    partPaidOrders: 0,
     margin: null,
     recentOrders: [],
     lowStockProducts: []

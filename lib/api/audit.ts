@@ -56,6 +56,13 @@ export type AuditAction =
   | 'unblock'
   | 'approve'
   | 'reject'
+  /** A payment-verification decision: money confirmed, money confirmed short,
+   * or a receipt refused. Distinct actions rather than one 'payment' because
+   * the question asked of this table afterwards is always "who confirmed that
+   * this arrived?" — and a refusal is not an answer to it. */
+  | 'payment_verified'
+  | 'payment_short_paid'
+  | 'payment_rejected'
   /** Somebody was given an admin account. */
   | 'invite'
   /** A role was changed — the entry every "who let them do that?" starts from. */

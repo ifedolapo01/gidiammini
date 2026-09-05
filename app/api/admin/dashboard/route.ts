@@ -24,13 +24,41 @@ async function getDashboardStats(supabase: SupabaseClient) {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending');
 
-    // Fetch total revenue from completed/delivered orders
-    const { data: revenueOrders } = await supabase
+    // Revenue is money received, not orders placed.
+    //
+    // It used to be the sum of every non-cancelled order's total, which
+    // counted the full value of orders whose transfer never arrived or arrived
+    // short — the figure a shopkeeper checks against their bank was the one
+    // number on this page that could not be checked against anything.
+    // orders.amount_paid is the trigger-maintained sum of that order's
+    // non-rejected payments (migration 20260905180000), so this is one pass
+    // over the same rows and gives the outstanding balance for free.
+    //
+    // Cancelled orders are left out of both figures. Money received against a
+    // cancelled order is a refund waiting to happen, not revenue, and its
+    // balance is not owed to the shop.
+    const { data: paymentRows } = await supabase
       .from('orders')
-      .select('total_amount, status')
-      .in('status', REVENUE_STATUSES);
+      .select('total_amount, amount_paid, status')
+      .neq('status', 'cancelled');
 
-    const totalRevenue = revenueOrders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+    // Number() rather than a bare read: amount_paid is a Postgres `numeric`,
+    // and a numeric that ever arrives as a string would turn this sum into
+    // string concatenation rather than an error anybody would notice.
+    const paid = (order: { amount_paid: number | null }) => Number(order.amount_paid ?? 0);
+
+    const totalRevenue = paymentRows?.reduce((sum, order) => sum + paid(order), 0) || 0;
+
+    // What customers still owe on orders the shop intends to fulfil. The
+    // counterpart to revenue: together they are the value of every live order.
+    const outstanding =
+      paymentRows?.reduce((sum, order) => sum + Math.max(0, order.total_amount - paid(order)), 0) || 0;
+
+    // Orders with money against them that does not cover the total. These are
+    // a balance to chase rather than a receipt to verify, which is why the
+    // verification queue counts them separately too.
+    const partPaidOrders =
+      paymentRows?.filter((order) => paid(order) > 0 && paid(order) < order.total_amount).length || 0;
 
     // Gross margin, from what was actually sold rather than from the order
     // totals: order_items carries the price paid per line and points at the
@@ -83,6 +111,8 @@ async function getDashboardStats(supabase: SupabaseClient) {
       totalOrders: totalOrders || 0,
       pendingOrders: pendingOrders || 0,
       totalRevenue,
+      outstanding,
+      partPaidOrders,
       margin,
       recentOrders: recentOrders || [],
       lowStockProducts: lowStockProducts || [],
@@ -98,6 +128,8 @@ async function getDashboardStats(supabase: SupabaseClient) {
         totalOrders: 0,
         pendingOrders: 0,
         totalRevenue: 0,
+        outstanding: 0,
+        partPaidOrders: 0,
         margin: null,
         recentOrders: [],
         lowStockProducts: [],

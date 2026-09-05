@@ -11,6 +11,15 @@ import { buildCustomEmail } from './templates/custom-email';
 import { buildOrderReceivedEmail } from './templates/order-received-email';
 import { sendStatusSMS, sendCustomSMS } from './sms';
 
+// Verification outcomes live in their own module — see payment-notices.ts.
+// Re-exported here so callers still have one place to import a notification
+// from, which is what this barrel is for.
+export {
+  sendPaymentShortfallNotice,
+  sendPaymentRejectedNotice,
+  type PaymentOutcomeParams,
+} from './payment-notices';
+
 interface OrderStatusUpdateParams {
   orderNumber: string;
   customerName: string;

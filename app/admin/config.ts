@@ -8,7 +8,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import {
-  LayoutDashboard, Package, ShoppingCart, Boxes, Star,
+  LayoutDashboard, Package, ShoppingCart, Boxes, Star, ReceiptText,
   CircleQuestionMark, FolderTree, Percent, Truck, History, Users,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/api/admin-roles';
@@ -70,6 +70,10 @@ export const adminConfig = {
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'store:read' },
     { href: '/admin/products', label: 'Products', icon: Package, permission: 'store:read' },
     { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, permission: 'orders:read' },
+    // Directly under Orders, and above everything else: on most mornings this
+    // is the first screen anybody opens, and verification is the task the
+    // whole shop waits on.
+    { href: '/admin/payments', label: 'Verify Payments', icon: ReceiptText, shortLabel: 'Payments', permission: 'orders:read' },
     { href: '/admin/stock', label: 'Stock Management', icon: Boxes, shortLabel: 'Stock', permission: 'store:read' },
     { href: '/admin/reviews', label: 'Reviews', icon: Star, permission: 'store:read' },
     { href: '/admin/questions', label: 'Questions', icon: CircleQuestionMark, permission: 'store:read' },
