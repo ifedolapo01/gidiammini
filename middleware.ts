@@ -27,8 +27,13 @@ export async function middleware(request: NextRequest) {
   // The white-label favicon (app/admin/icon.tsx) must be publicly fetchable —
   // browsers request it unauthenticated, including from the login page itself.
   const isPublicAdminAsset = request.nextUrl.pathname === '/admin/icon';
+  // Where an invited admin sets their password. They have no session yet —
+  // that is what the page is for — so bouncing them to the login form would
+  // make every invitation a dead end. The token in the URL is the credential,
+  // and it is checked by /api/admin/accept-invite, not here.
+  const isInvitePage = request.nextUrl.pathname === '/admin/accept-invite';
 
-  if (isPublicAdminAsset) return NextResponse.next();
+  if (isPublicAdminAsset || isInvitePage) return NextResponse.next();
 
   // Created up front because the Supabase client writes refreshed cookies onto
   // it as a side effect of getUser().

@@ -18,7 +18,7 @@ import type { OrderStatus } from '@/types/order';
 
 export const maxDuration = 60;
 
-export const POST = withAdminAuth(async (request, { supabase, audit }) => {
+export const POST = withAdminAuth(async (request, { supabase, actor, audit }) => {
   const body = await request.json().catch(() => null);
 
   const ids = parseBulkIds(body?.ids);
@@ -54,6 +54,10 @@ export const POST = withAdminAuth(async (request, { supabase, audit }) => {
     const result = await applyOrderStatusTransition(supabase, id, status as OrderStatus, {
       sendNotification,
       notificationMessage: `Your order status has been updated to: ${formatOrderStatus(status)}`,
+      // Every order in the batch names the same admin and carries the same
+      // reason — which is exactly what happened.
+      actor: { id: actor.id, email: actor.email },
+      reason,
     });
 
     if (!result.success) return { ok: false, label, error: result.error };

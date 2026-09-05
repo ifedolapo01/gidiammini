@@ -49,6 +49,12 @@ const ACTION_LABELS: Record<string, string> = {
   unblock: 'Unblocked',
   approve: 'Approved',
   reject: 'Rejected',
+  invite: 'Invited',
+  role_change: 'Role changed',
+  revoke: 'Access revoked',
+  restore: 'Access restored',
+  access_denied: 'Refused',
+  export: 'Exported',
   login: 'Signed in',
   login_failed: 'Sign-in failed',
   login_throttled: 'Sign-in throttled',
@@ -68,6 +74,14 @@ const ACTION_TONES: Record<string, BadgeTone> = {
   unblock: 'success',
   approve: 'success',
   reject: 'destructive',
+  invite: 'info',
+  role_change: 'warning',
+  revoke: 'destructive',
+  restore: 'success',
+  // Not a failure of the system, but the thing in the feed most likely to
+  // want a second look.
+  access_denied: 'warning',
+  export: 'info',
   login: 'success',
   login_failed: 'destructive',
   login_throttled: 'warning',
@@ -86,6 +100,7 @@ const ENTITY_LABELS: Record<string, string> = {
   subcategory: 'Subcategory',
   customer: 'Customer',
   subscriber: 'Subscriber',
+  admin_user: 'Admin account',
   admin_session: 'Admin session',
   request: 'Admin request',
 };
@@ -102,9 +117,16 @@ export function entityLabel(entityType: string): string {
   return ENTITY_LABELS[entityType] ?? humanise(entityType);
 }
 
-/** Who did it. A single shared admin login means this is usually one address. */
+/**
+ * Who did it.
+ *
+ * Now that admins are named, this is a person rather than a shared mailbox.
+ * 'System' rather than 'Unknown admin' where there is no address: an entry
+ * with no actor was written by something automatic (a sweep, a webhook), not
+ * by somebody the trail failed to identify.
+ */
 export function actorLabel(entry: Pick<AuditLogEntry, 'actor_email'>): string {
-  return entry.actor_email || 'Unknown admin';
+  return entry.actor_email || 'System';
 }
 
 /**

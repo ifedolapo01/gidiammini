@@ -6,12 +6,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { AdminRole } from '@/lib/api/admin-roles';
 
 export interface AdminIdentity {
   id: string;
   email: string | null;
   name: string | null;
-  role: string;
+  /** What this admin may do. Ask through `can()` rather than comparing the
+   * value -- see lib/api/admin-roles.ts. */
+  role: AdminRole;
 }
 
 export function useAdminIdentity(enabled: boolean = true) {

@@ -3,6 +3,7 @@
 
 import { Input, Select, Button } from '@/components/ui';
 import { actionLabel, entityLabel } from '@/lib/commerce/audit-format';
+import { useAdminDirectory } from '@/app/admin/hooks/useAdminDirectory';
 import type { ActivityFilters as Filters } from '../hooks/useActivityFeed';
 
 /** Offered in the dropdowns. Kept in step with lib/api/audit.ts by hand, since
@@ -18,6 +19,7 @@ const ENTITY_TYPES = [
   'category',
   'subcategory',
   'customer',
+  'admin_user',
   'admin_session',
 ];
 
@@ -32,6 +34,12 @@ const ACTIONS = [
   'unblock',
   'approve',
   'reject',
+  'invite',
+  'role_change',
+  'revoke',
+  'restore',
+  'access_denied',
+  'export',
   'login',
   'login_failed',
   'login_throttled',
@@ -46,14 +54,44 @@ interface ActivityFiltersProps {
 const LABEL = 'block text-caption-md font-medium text-text-secondary mb-1';
 
 export default function ActivityFilters({ filters, onChange }: ActivityFiltersProps) {
+  const { admins } = useAdminDirectory();
+
   const set = (field: keyof Filters) => (value: string) =>
     onChange({ ...filters, [field]: value || undefined });
 
   const hasAny = Object.values(filters).some(Boolean);
 
+  // An address the directory does not know — somebody whose account was
+  // deleted outright, or a filter carried in from a link — is added as an
+  // option so the select can still show what is actually being filtered on
+  // rather than silently resetting itself to "Anyone".
+  const selectedActor = filters.actor_email ?? '';
+  const actorOptions =
+    selectedActor && !admins.some((admin) => admin.email === selectedActor)
+      ? [...admins, { email: selectedActor, label: selectedActor, is_active: false }]
+      : admins;
+
   return (
     <div className="bg-surface border border-border rounded-surface p-3 sm:p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {/* First, because "who changed this" is the question the trail is
+            opened to answer more often than any other. */}
+        <div>
+          <label htmlFor="filter-actor" className={LABEL}>Who</label>
+          <Select
+            id="filter-actor"
+            value={selectedActor}
+            onChange={(e) => set('actor_email')(e.target.value)}
+          >
+            <option value="">Anyone</option>
+            {actorOptions.map((admin) => (
+              <option key={admin.email} value={admin.email}>
+                {admin.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+
         <div>
           <label htmlFor="filter-entity" className={LABEL}>Type</label>
           <Select

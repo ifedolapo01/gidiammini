@@ -28,14 +28,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // an unauthenticated request never reaches this component — so a gate would
   // guard nothing and cost a flash on every navigation.
   const pathname = usePathname();
+  // Pages that stand on their own: no session yet, so no nav, no alert bar and
+  // no polling that would only 401.
   const isLoginPage = pathname === '/admin/login';
+  const isStandalone = isLoginPage || pathname === '/admin/accept-invite';
 
   const [navOpen, setNavOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
 
   useAdminSessionGuard();
-  const { label: adminLabel } = useAdminIdentity(!isLoginPage);
+  const { admin, label: adminLabel } = useAdminIdentity(!isStandalone);
   const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
 
   // Close the drawer on navigation, or it stays open over the page just
@@ -75,9 +78,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
-  // The login page gets the theme scope and nothing else — no nav to a place
-  // you cannot go yet.
-  if (isLoginPage) {
+  // A standalone page gets the theme scope and nothing else — no nav to a
+  // place you cannot go yet.
+  if (isStandalone) {
     return <div className="theme-admin min-h-screen bg-background-tertiary">{children}</div>;
   }
 
@@ -100,6 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             pathname={pathname}
             collapsed={collapsed}
             onToggleCollapsed={toggleCollapsed}
+            role={admin?.role ?? null}
           />
         </aside>
 
@@ -124,6 +128,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 collapsed={false}
                 onToggleCollapsed={toggleCollapsed}
                 onClose={() => setNavOpen(false)}
+                role={admin?.role ?? null}
               />
             </div>
           </div>

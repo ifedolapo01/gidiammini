@@ -62,10 +62,14 @@ describe('labels', () => {
     expect(actionTone('something_new')).toBe('neutral');
   });
 
-  it('says who, and does not render an empty byline', () => {
+  it('says who, and names the shop itself when nobody did it', () => {
     expect(actorLabel(entry())).toBe('admin@example.com');
-    expect(actorLabel(entry({ actor_email: null }))).toBe('Unknown admin');
-    expect(actorLabel(entry({ actor_email: '' }))).toBe('Unknown admin');
+    // Not 'Unknown admin': an entry with no actor was written by something
+    // automatic, not by somebody the trail failed to identify. Now that admins
+    // are named, a missing address means the system, and saying so stops an
+    // operator hunting for a person who was never there.
+    expect(actorLabel(entry({ actor_email: null }))).toBe('System');
+    expect(actorLabel(entry({ actor_email: '' }))).toBe('System');
   });
 });
 

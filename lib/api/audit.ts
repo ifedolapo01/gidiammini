@@ -37,6 +37,8 @@ export type AuditEntityType =
   | 'subcategory'
   | 'customer'
   | 'subscriber'
+  /** A person's admin account: invited, re-roled, revoked, restored. */
+  | 'admin_user'
   /** An admin sign-in or sign-out. Not a row in any table — the entity is the
    * session itself. */
   | 'admin_session'
@@ -54,12 +56,23 @@ export type AuditAction =
   | 'unblock'
   | 'approve'
   | 'reject'
+  /** Somebody was given an admin account. */
+  | 'invite'
+  /** A role was changed — the entry every "who let them do that?" starts from. */
+  | 'role_change'
+  /** Admin access taken away, and given back. */
+  | 'revoke'
+  | 'restore'
   | 'login'
   /** A rejected sign-in. The most security-relevant thing this table holds:
    * a run of these is what an attempted break-in looks like. */
   | 'login_failed'
   | 'login_throttled'
   | 'logout'
+  /** An authenticated admin asked for something their role does not allow.
+   * Rare and worth seeing: a run of these is either a permission that needs
+   * widening or somebody probing what they can reach. */
+  | 'access_denied'
   /** A dataset left the building as a file. Not a mutation, but the one read
    * worth recording — see app/api/admin/export. */
   | 'export'

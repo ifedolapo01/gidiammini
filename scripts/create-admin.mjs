@@ -5,8 +5,14 @@
  * self-service sign-up and no public route that creates one — an admin account
  * is created here, with the service-role key, or not at all.
  *
+ * The first owner is made here. Everybody after that is invited from the Team
+ * screen, which does the same work through the API and sends them a link.
+ *
  * Usage:
- *   node scripts/create-admin.mjs <email> <password> [--name "Ada Lovelace"] [--role owner|staff]
+ *   node scripts/create-admin.mjs <email> <password> [--name "Ada Lovelace"] [--role <role>]
+ *
+ * Roles: owner | manager | fulfilment | read_only. What each grants is defined
+ * in lib/api/admin-roles.ts.
  *   npm run admin:create -- <email> <password> --name "Ada Lovelace"
  *
  * Idempotent. Run it again for an existing address to reset that admin's
@@ -59,14 +65,19 @@ const password = deactivate ? null : positional[1];
 const name = typeof flags.name === 'string' ? flags.name : null;
 const role = typeof flags.role === 'string' ? flags.role : 'owner';
 
+/** Mirrors ADMIN_ROLES in lib/api/admin-roles.ts. Duplicated rather than
+ * imported because this is a plain .mjs script with no TypeScript pipeline;
+ * the database's CHECK constraint is the backstop if the two ever drift. */
+const ROLES = ['owner', 'manager', 'fulfilment', 'read_only'];
+
 if (!email || (!deactivate && !password)) {
-  console.error('Usage: node scripts/create-admin.mjs <email> <password> [--name "Full Name"] [--role owner|staff]');
+  console.error(`Usage: node scripts/create-admin.mjs <email> <password> [--name "Full Name"] [--role ${ROLES.join('|')}]`);
   console.error('       node scripts/create-admin.mjs <email> --deactivate');
   process.exit(1);
 }
 
-if (!['owner', 'staff'].includes(role)) {
-  console.error(`--role must be "owner" or "staff", not "${role}".`);
+if (!ROLES.includes(role)) {
+  console.error(`--role must be one of ${ROLES.join(', ')} — not "${role}".`);
   process.exit(1);
 }
 
@@ -104,7 +115,7 @@ if (deactivate) {
 
   const { error } = await supabase
     .from('admin_users')
-    .update({ is_active: false })
+    .update({ is_active: false, deactivated_at: new Date().toISOString() })
     .eq('user_id', existing.id);
 
   if (error) {

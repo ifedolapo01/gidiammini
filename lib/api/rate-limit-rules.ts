@@ -153,4 +153,12 @@ export const RATE_LIMITS = {
    * so a legitimate admin who mistypes a few times isn't punished.
    */
   loginPerAccount: { bucket: 'login-account', limit: 8, windowSeconds: 15 * MINUTE, failClosed: true },
+
+  /**
+   * Redeeming an admin invitation. The token is Supabase's own, so guessing it
+   * is not the threat; this caps how fast somebody can throw attempts at the
+   * endpoint that turns a token into an admin session. Fails closed for the
+   * same reason the login rules do — an invitation can wait for the database.
+   */
+  adminInviteAccept: { bucket: 'admin-invite-accept', limit: 10, windowSeconds: 15 * MINUTE, failClosed: true },
 } satisfies Record<string, RateLimitRule>;

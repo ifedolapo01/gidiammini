@@ -41,7 +41,7 @@ export const GET = withAdminAuth(async (_request, { supabase, params }) => {
   return NextResponse.json({ success: true, order: data });
 });
 
-export const PUT = withAdminAuth(async (request, { supabase, params, audit }) => {
+export const PUT = withAdminAuth(async (request, { supabase, params, actor, audit }) => {
   const { id } = await params;
 
   const body = await request.json();
@@ -68,6 +68,11 @@ export const PUT = withAdminAuth(async (request, { supabase, params, audit }) =>
     sendNotification,
     notificationMessage,
     paymentVerified: payment_verified,
+    // The order's own timeline gets the name and the reason too, so the
+    // question "who cancelled this, and why" is answered on the order rather
+    // than only by cross-referencing the activity feed.
+    actor: { id: actor.id, email: actor.email },
+    reason: typeof reason === 'string' ? reason : notificationMessage ?? null,
   });
 
   if (!result.success) {

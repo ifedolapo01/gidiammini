@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, CornerDownLeft } from 'lucide-react';
 import { Spinner } from '@/components/ui';
+import { useAdminIdentity } from '../hooks/useAdminIdentity';
 import { useCommandSearch, type CommandItem } from '../hooks/useCommandSearch';
 
 const GROUP_ORDER: CommandItem['group'][] = ['Orders', 'Products', 'Pages', 'Actions'];
@@ -26,7 +27,8 @@ export default function CommandPalette() {
 
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { items, searching } = useCommandSearch(query, open);
+  const { admin } = useAdminIdentity();
+  const { items, searching } = useCommandSearch(query, open, admin?.role ?? null);
 
   // Grouped for display, but flat for keyboard navigation — the index the
   // arrow keys move through has to match what is on screen.

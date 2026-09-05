@@ -9,6 +9,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { can, type AdminPermission, type AdminRole } from '@/lib/api/admin-roles';
 import { adminConfig } from '../config';
 
 export interface CommandItem {
@@ -17,15 +18,19 @@ export interface CommandItem {
   label: string;
   hint?: string;
   href: string;
+  /** Hidden from a role that does not hold it, the same way the sidebar hides
+   * a section. A palette that offers "Add a product" to somebody who cannot
+   * add one is a worse discovery tool than one that offers less. */
+  permission?: AdminPermission;
 }
 
 /** Things to do, as opposed to places to go. */
 const ACTIONS: CommandItem[] = [
-  { id: 'action:new-product', group: 'Actions', label: 'Add a product', href: '/admin/products/new' },
-  { id: 'action:import', group: 'Actions', label: 'Import products from CSV', href: '/admin/products/import' },
-  { id: 'action:pending', group: 'Actions', label: 'Show pending orders', href: '/admin/orders?filter=pending' },
-  { id: 'action:overdue', group: 'Actions', label: 'Show overdue shipments', href: '/admin/orders?filter=overdue' },
-  { id: 'action:low-stock', group: 'Actions', label: 'Show low stock', href: '/admin/stock?stock=low' },
+  { id: 'action:new-product', group: 'Actions', label: 'Add a product', href: '/admin/products/new', permission: 'catalog:write' },
+  { id: 'action:import', group: 'Actions', label: 'Import products from CSV', href: '/admin/products/import', permission: 'catalog:write' },
+  { id: 'action:pending', group: 'Actions', label: 'Show pending orders', href: '/admin/orders?filter=pending', permission: 'orders:read' },
+  { id: 'action:overdue', group: 'Actions', label: 'Show overdue shipments', href: '/admin/orders?filter=overdue', permission: 'orders:read' },
+  { id: 'action:low-stock', group: 'Actions', label: 'Show low stock', href: '/admin/stock?stock=low', permission: 'store:read' },
 ];
 
 const PAGES: CommandItem[] = adminConfig.navigation.map((item) => ({
@@ -33,6 +38,7 @@ const PAGES: CommandItem[] = adminConfig.navigation.map((item) => ({
   group: 'Pages',
   label: item.label,
   href: item.href,
+  permission: item.permission,
 }));
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -41,7 +47,7 @@ const REMOTE_LIMIT = 5;
 const matches = (item: CommandItem, query: string) =>
   item.label.toLowerCase().includes(query) || item.href.toLowerCase().includes(query);
 
-export function useCommandSearch(query: string, enabled: boolean) {
+export function useCommandSearch(query: string, enabled: boolean, role?: AdminRole | null) {
   const [remote, setRemote] = useState<CommandItem[]>([]);
   const [searching, setSearching] = useState(false);
 
@@ -49,9 +55,11 @@ export function useCommandSearch(query: string, enabled: boolean) {
 
   const local = useMemo(() => {
     const needle = trimmed.toLowerCase();
-    const pool = [...PAGES, ...ACTIONS];
+    const pool = [...PAGES, ...ACTIONS].filter(
+      (item) => !item.permission || can(role ?? null, item.permission)
+    );
     return needle ? pool.filter((item) => matches(item, needle)) : pool;
-  }, [trimmed]);
+  }, [trimmed, role]);
 
   useEffect(() => {
     // One character matches everything and is never what someone meant.

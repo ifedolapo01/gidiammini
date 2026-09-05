@@ -12,10 +12,30 @@ import { inviteReviewIfFulfilled } from './review-invite';
 import { resolveOrderShippingZone } from './order-shipping-zone';
 import { formatZoneEta } from './shipping-eta';
 
+/** Who made a change, for the order's own timeline. Deliberately not the full
+ * AdminActor: this module is Commerce and has no business importing the admin
+ * session, and the two fields below are all order_status_history records. */
+export interface StatusChangeActor {
+  id: string;
+  email: string | null;
+}
+
 interface ApplyOrderStatusTransitionOptions {
   sendNotification?: boolean;
   notificationMessage?: string;
   paymentVerified?: boolean;
+  /**
+   * The admin behind this transition, when there is one.
+   *
+   * Left out by every system path — checkout, the reservation sweep, a payment
+   * webhook — so those entries read as "System" rather than being attributed
+   * to whoever happened to be signed in. A wrong name on a cancellation is
+   * worse than no name.
+   */
+  actor?: StatusChangeActor | null;
+  /** Why, in the admin's words. The answer to "why was this cancelled?", kept
+   * on the timeline itself rather than only in the audit trail. */
+  reason?: string | null;
 }
 
 interface ApplyOrderStatusTransitionResult {
@@ -50,7 +70,9 @@ export async function applyOrderStatusTransition(
   newStatus: OrderStatus,
   options: ApplyOrderStatusTransitionOptions = {}
 ): Promise<ApplyOrderStatusTransitionResult> {
-  const { sendNotification = true, notificationMessage, paymentVerified } = options;
+  const {
+    sendNotification = true, notificationMessage, paymentVerified, actor, reason,
+  } = options;
 
   const { data: currentOrder, error: fetchError } = await supabase
     .from('orders')
@@ -111,7 +133,14 @@ export async function applyOrderStatusTransition(
   // Best-effort: a missed history row never blocks the actual status change.
   const { error: historyError } = await supabase
     .from('order_status_history')
-    .insert({ order_id: orderId, status: newStatus, changed_at: updateData.updated_at });
+    .insert({
+      order_id: orderId,
+      status: newStatus,
+      changed_at: updateData.updated_at,
+      actor_id: actor?.id ?? null,
+      actor_email: actor?.email ?? null,
+      reason: reason ?? null,
+    });
   if (historyError) {
     console.error('Error recording status history:', historyError);
   }

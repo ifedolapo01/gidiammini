@@ -9,8 +9,9 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes, Star,
-  CircleQuestionMark, FolderTree, Percent, Truck, History,
+  CircleQuestionMark, FolderTree, Percent, Truck, History, Users,
 } from 'lucide-react';
+import type { AdminPermission } from '@/lib/api/admin-roles';
 
 export interface AdminNavItem {
   href: string;
@@ -21,6 +22,15 @@ export interface AdminNavItem {
   /** A shorter label for the collapsed rail's tooltip and for narrow screens.
    * Defaults to `label`. */
   shortLabel?: string;
+  /**
+   * Hidden from anyone whose role does not hold this.
+   *
+   * Presentation only — the API enforces the same permission on every request,
+   * so a hidden link is a courtesy rather than a control. What it prevents is
+   * a fulfilment assistant clicking Activity and being told no; what it does
+   * not prevent is anything at all.
+   */
+  permission?: AdminPermission;
 }
 
 /**
@@ -57,15 +67,16 @@ export const adminConfig = {
    */
   primaryColorHex: '#2563eb',
   navigation: [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/admin/products', label: 'Products', icon: Package },
-    { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-    { href: '/admin/stock', label: 'Stock Management', icon: Boxes, shortLabel: 'Stock' },
-    { href: '/admin/reviews', label: 'Reviews', icon: Star },
-    { href: '/admin/questions', label: 'Questions', icon: CircleQuestionMark },
-    { href: '/admin/categories', label: 'Categories', icon: FolderTree },
-    { href: '/admin/discounts', label: 'Discounts', icon: Percent },
-    { href: '/admin/shipping', label: 'Shipping', icon: Truck },
-    { href: '/admin/activity', label: 'Activity', icon: History },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'store:read' },
+    { href: '/admin/products', label: 'Products', icon: Package, permission: 'store:read' },
+    { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, permission: 'orders:read' },
+    { href: '/admin/stock', label: 'Stock Management', icon: Boxes, shortLabel: 'Stock', permission: 'store:read' },
+    { href: '/admin/reviews', label: 'Reviews', icon: Star, permission: 'store:read' },
+    { href: '/admin/questions', label: 'Questions', icon: CircleQuestionMark, permission: 'store:read' },
+    { href: '/admin/categories', label: 'Categories', icon: FolderTree, permission: 'store:read' },
+    { href: '/admin/discounts', label: 'Discounts', icon: Percent, permission: 'store:read' },
+    { href: '/admin/shipping', label: 'Shipping', icon: Truck, permission: 'store:read' },
+    { href: '/admin/activity', label: 'Activity', icon: History, permission: 'audit:read' },
+    { href: '/admin/team', label: 'Team', icon: Users, permission: 'team:read' },
   ] satisfies AdminNavItem[],
 };

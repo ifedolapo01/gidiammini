@@ -80,12 +80,14 @@ describe('the configured rules', () => {
     }
   });
 
-  it('fails closed only on the login rules', () => {
+  it('fails closed only on the rules that hand out admin access', () => {
     // Everything else needs the database anyway, so refusing on a limiter
-    // failure would turn an outage into a worse outage. An unthrottled password
-    // guesser is the one case where that trade flips.
+    // failure would turn an outage into a worse outage. Getting into the admin
+    // is the one case where that trade flips: an unthrottled password guesser,
+    // or an unthrottled run at an invitation token, is worse than a sign-in
+    // page that is briefly unavailable.
     const failClosed = rules.filter(([, r]) => r.failClosed).map(([name]) => name).sort();
-    expect(failClosed).toEqual(['loginPerAccount', 'loginPerIp']);
+    expect(failClosed).toEqual(['adminInviteAccept', 'loginPerAccount', 'loginPerIp']);
   });
 
   it('limits the email-sending endpoints most tightly', () => {

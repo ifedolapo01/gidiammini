@@ -83,7 +83,10 @@ export type Database = {
       admin_users: {
         Row: {
           created_at: string
+          deactivated_at: string | null
           email: string
+          invited_at: string | null
+          invited_by: string | null
           is_active: boolean
           last_seen_at: string | null
           name: string | null
@@ -93,7 +96,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deactivated_at?: string | null
           email: string
+          invited_at?: string | null
+          invited_by?: string | null
           is_active?: boolean
           last_seen_at?: string | null
           name?: string | null
@@ -103,7 +109,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deactivated_at?: string | null
           email?: string
+          invited_at?: string | null
+          invited_by?: string | null
           is_active?: boolean
           last_seen_at?: string | null
           name?: string | null
@@ -582,21 +591,30 @@ export type Database = {
       }
       order_status_history: {
         Row: {
+          actor_email: string | null
+          actor_id: string | null
           changed_at: string | null
           id: string
           order_id: string
+          reason: string | null
           status: string
         }
         Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
           changed_at?: string | null
           id?: string
           order_id: string
+          reason?: string | null
           status: string
         }
         Update: {
+          actor_email?: string | null
+          actor_id?: string | null
           changed_at?: string | null
           id?: string
           order_id?: string
+          reason?: string | null
           status?: string
         }
         Relationships: [

@@ -15,6 +15,7 @@
 import Link from 'next/link';
 import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { can, type AdminRole } from '@/lib/api/admin-roles';
 import { adminConfig } from '../config';
 
 interface AdminSidebarProps {
@@ -24,6 +25,9 @@ interface AdminSidebarProps {
   onToggleCollapsed: () => void;
   /** Present in the mobile drawer, absent in the desktop rail. */
   onClose?: () => void;
+  /** The signed-in admin's role, or null while the session is still being
+   * read. Sections the role cannot use are left out of the list. */
+  role?: AdminRole | null;
 }
 
 function isActive(pathname: string, href: string): boolean {
@@ -35,8 +39,16 @@ export default function AdminSidebar({
   collapsed,
   onToggleCollapsed,
   onClose,
+  role,
 }: AdminSidebarProps) {
   const isDrawer = Boolean(onClose);
+
+  // Until the role is known, only the sections everyone has are shown. The
+  // alternative -- showing everything and removing what does not apply --
+  // makes links appear and then vanish under the pointer on every page load.
+  const sections = adminConfig.navigation.filter(
+    (item) => !item.permission || can(role ?? null, item.permission)
+  );
   // The drawer is never collapsed: it is already hidden when not wanted, and an
   // icon-only overlay would be a puzzle rather than a shortcut.
   const iconsOnly = collapsed && !isDrawer;
@@ -86,7 +98,7 @@ export default function AdminSidebar({
 
       <nav aria-label="Admin sections" className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-1">
-          {adminConfig.navigation.map((item) => {
+          {sections.map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;
 

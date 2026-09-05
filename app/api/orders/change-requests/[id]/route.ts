@@ -6,16 +6,30 @@ import { NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { sendCustomNotification } from '@/lib/notifications';
 import type { DeliveryOutcome } from '@/lib/notifications/delivery';
-import { applyOrderStatusTransition } from '@/lib/commerce/order-status-transition';
+import {
+  applyOrderStatusTransition, type StatusChangeActor,
+} from '@/lib/commerce/order-status-transition';
 import { applyOrderShippingTransition } from '@/lib/commerce/order-shipping-transition';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
 import type { DeliveryMethodChangeDetails, RescheduleDetails } from '@/types/orderChangeRequest';
 
-async function applyApprovedChange(supabase: any, order: any, changeRequest: any) {
+// The admin who approved it, and the fact that the customer asked. Without
+// both, a cancellation approved here is indistinguishable on the timeline from
+// one an admin decided on alone.
+async function applyApprovedChange(
+  supabase: any,
+  order: any,
+  changeRequest: any,
+  actor: StatusChangeActor
+) {
+  const reason = `Approved the customer's ${changeRequest.request_type} request.`;
+
   if (changeRequest.request_type === 'reschedule') {
     const { preferredDate } = changeRequest.details as RescheduleDetails;
     const result = await applyOrderStatusTransition(supabase, order.id, 'rescheduled', {
       notificationMessage: `Your delivery reschedule request has been approved — new date: ${preferredDate}.`,
+      actor,
+      reason,
     });
     return { success: result.success, error: result.error, status: result.status, delivery: result.delivery };
   }
@@ -23,6 +37,8 @@ async function applyApprovedChange(supabase: any, order: any, changeRequest: any
   if (changeRequest.request_type === 'cancel') {
     const result = await applyOrderStatusTransition(supabase, order.id, 'cancelled', {
       notificationMessage: 'Your cancellation request has been approved — your order has been cancelled.',
+      actor,
+      reason,
     });
     return { success: result.success, error: result.error, status: result.status, delivery: result.delivery };
   }
@@ -46,7 +62,7 @@ async function applyApprovedChange(supabase: any, order: any, changeRequest: any
 // Goes through withAdminAuth so an approval or rejection is attributable.
 // Approving a change request runs the same stock and notification work as a
 // manual admin edit, so it belongs in the trail for the same reasons.
-export const PUT = withAdminAuth(async (request, { supabase, params, audit }) => {
+export const PUT = withAdminAuth(async (request, { supabase, params, actor, audit }) => {
   try {
     const { id } = await params;
     const { decision, adminResponse } = await request.json();
@@ -80,7 +96,10 @@ export const PUT = withAdminAuth(async (request, { supabase, params, audit }) =>
     let delivery: DeliveryOutcome | undefined;
 
     if (decision === 'approved') {
-      const applyResult = await applyApprovedChange(supabase, order, changeRequest);
+      const applyResult = await applyApprovedChange(supabase, order, changeRequest, {
+        id: actor.id,
+        email: actor.email,
+      });
       if (!applyResult.success) {
         return NextResponse.json({ success: false, error: applyResult.error }, { status: applyResult.status || 500 });
       }

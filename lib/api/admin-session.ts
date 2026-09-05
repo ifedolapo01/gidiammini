@@ -29,6 +29,10 @@ import 'server-only';
 import { createAdminAuthClient } from '@/lib/supabase/admin-auth-server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifySupabaseAccessToken } from './verify-supabase-jwt';
+import {
+  DEFAULT_ADMIN_ROLE, can, isAdminRole,
+  type AdminPermission, type AdminRole,
+} from './admin-roles';
 
 /** Who is making the request. */
 export interface AdminActor {
@@ -37,8 +41,12 @@ export interface AdminActor {
   email: string | null;
   /** Display name, when one was recorded. */
   name: string | null;
-  /** 'owner' | 'staff'. */
-  role: string;
+  /** What this admin is allowed to do — see lib/api/admin-roles.ts. */
+  role: AdminRole;
+  /** Whether this admin holds a permission. Handlers that vary their output by
+   * role (a narrower column list, a hidden action) ask through this rather
+   * than comparing role names, so the rules stay in one file. */
+  can: (permission: AdminPermission) => boolean;
 }
 
 /**
@@ -89,11 +97,26 @@ export async function getAdminActor(): Promise<AdminActor | null> {
 
   if (!admin || !admin.is_active) return null;
 
+  // A role this build has no rules for is treated as the least privileged one
+  // rather than trusted. It means the database is ahead of the code — a
+  // half-finished deploy, or a role added by a newer version — and granting
+  // access on the strength of a name nobody here understands is exactly the
+  // failure mode the roles exist to prevent.
+  let role: AdminRole = DEFAULT_ADMIN_ROLE;
+  if (isAdminRole(admin.role)) {
+    role = admin.role;
+  } else {
+    console.error(
+      `Admin ${admin.email} holds unknown role '${admin.role}'; treating as '${DEFAULT_ADMIN_ROLE}'.`
+    );
+  }
+
   return {
     id: admin.user_id,
     email: admin.email ?? null,
     name: admin.name ?? null,
-    role: admin.role,
+    role,
+    can: (permission: AdminPermission) => can(role, permission),
   };
 }
 
