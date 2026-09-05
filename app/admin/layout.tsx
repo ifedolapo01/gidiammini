@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { Spinner, ThemeToggle } from '@/components/ui';
 import { MarqueeAlertBar } from './components/marquee-alert-bar';
 import { useAdminSessionGuard } from './hooks/useAdminSessionGuard';
+import { useAdminIdentity } from './hooks/useAdminIdentity';
+import { clearAdminRealtimeToken } from '@/lib/supabase/realtime-client';
 import { adminConfig } from './config';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -29,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   useAdminSessionGuard();
+  const { label: adminLabel } = useAdminIdentity();
 
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(`${path}/`);
@@ -43,6 +46,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setLoggingOut(true);
     try {
       await fetch('/api/admin/logout', { method: 'POST' });
+      // The realtime client caches the access token in memory; without this,
+      // the next admin to sign in on this tab would open a socket with the
+      // previous one's credentials until it expired.
+      clearAdminRealtimeToken();
       router.push('/admin/login');
     } finally {
       setLoggingOut(false);
@@ -99,6 +106,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
 
               <div className="flex items-center gap-2 ml-4">
+                {/* Which account is acting. Worth the space now that admins are
+                    named: this is the identity every audit entry is recorded
+                    against, and on a shared machine it is the only way to tell
+                    whose it is. */}
+                {adminLabel && (
+                  <span
+                    className="hidden lg:inline max-w-[14rem] truncate text-body-sm text-text-secondary"
+                    title={adminLabel}
+                  >
+                    {adminLabel}
+                  </span>
+                )}
                 <ThemeToggle />
                 <button
                   onClick={handleLogout}
@@ -114,6 +133,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Mobile Navigation Menu */}
             {mobileMenuOpen && (
               <div className="md:hidden mt-4 pb-4 border-t border-divider pt-4">
+                {adminLabel && (
+                  <p className="px-4 pb-3 text-body-sm text-text-secondary truncate">
+                    Signed in as <span className="text-text-primary font-medium">{adminLabel}</span>
+                  </p>
+                )}
                 <nav className="flex flex-col space-y-2">
                   {adminConfig.navigation.map((item) => (
                     <Link

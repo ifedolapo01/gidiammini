@@ -1,6 +1,6 @@
 // lib/api/with-admin-auth.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminActor, type AdminActor } from '@/lib/auth';
+import { getAdminActor, type AdminActor } from '@/lib/api/admin-session';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { clientIdentifier } from '@/lib/api/rate-limit';
 import { recordAudit, type AuditEntry, type AuditContext } from '@/lib/api/audit';
@@ -16,8 +16,9 @@ export type AuditRecorder = (entry: AuditEntry) => void;
 export interface AdminRouteContext {
   supabase: SupabaseClient<Database>;
   params: any;
-  /** Who is making the request. Available for handlers that need to attribute
-   * something themselves, e.g. a note on an order. */
+  /** Who is making the request — a named admin now, not a shared login.
+   * Available for handlers that need to attribute something themselves, e.g. a
+   * note on an order. */
   actor: AdminActor;
   /** Describe what this request changed. See AuditRecorder. */
   audit: AuditRecorder;
@@ -70,7 +71,7 @@ async function peekBody(request: NextRequest): Promise<unknown> {
  */
 export function withAdminAuth(handler: AdminRouteHandler) {
   return async (request: NextRequest, routeCtx?: { params: any }) => {
-    const actor = await getAdminActor(request);
+    const actor = await getAdminActor();
     if (!actor) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
@@ -97,6 +98,7 @@ export function withAdminAuth(handler: AdminRouteHandler) {
 
     if (shouldAudit) {
       const context: AuditContext = {
+        actorId: actor.id,
         actorEmail: actor.email,
         method: request.method.toUpperCase(),
         path: new URL(request.url).pathname,

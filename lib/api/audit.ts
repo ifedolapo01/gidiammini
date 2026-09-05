@@ -73,6 +73,9 @@ export interface AuditEntry {
 }
 
 export interface AuditContext {
+  /** auth.users.id of the admin who did it. Null only when the session was
+   * already invalid — see the logout route. */
+  actorId?: string | null;
   actorEmail: string | null;
   method: string;
   path: string;
@@ -121,6 +124,7 @@ export async function recordAudit(
 ): Promise<void> {
   try {
     const { error } = await supabase.from('audit_log').insert({
+      actor_id: context.actorId ?? null,
       actor_email: context.actorEmail,
       entity_type: entry.entityType,
       entity_id: entry.entityId ?? null,

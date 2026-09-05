@@ -8,26 +8,36 @@ import {
   buildProductCreatePayload,
   buildProductUpdatePayload,
 } from '@/lib/commerce/product-payload';
+import { fetchAdminProducts } from '@/lib/commerce/admin-products-query';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-async function listProducts(supabase: SupabaseClient) {
-  console.log('📱 Fetching all products');
-
-  const { data, error } = await supabase
-    .from('products')
-    // Variants embedded: flattenProducts renders one row per variant from
-    // these, and without them it falls back to the legacy pricing_config maps.
-    .select('*, product_variants(*)')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-
-  return NextResponse.json({ success: true, products: data }, { headers: JSON_HEADERS });
+/**
+ * GET — the admin products list, one page at a time.
+ *
+ * Accepts ?page, ?limit, ?search, ?category, ?subCategory, ?status, ?stock,
+ * ?lowStockThreshold, ?sort and ?direction. It used to select every active
+ * product with every variant embedded and no limit, and the client filtered
+ * and searched that in JavaScript on a 60-second loop.
+ *
+ * Variants stay embedded: flattenProducts renders one row per variant from
+ * them, so they are the table's content rather than a detail fetched on
+ * expansion. Only the columns the tables read are selected.
+ */
+async function listProducts(supabase: SupabaseClient, request: NextRequest) {
+  try {
+    const { products, meta } = await fetchAdminProducts(supabase, new URL(request.url));
+    return NextResponse.json({ success: true, products, meta }, { headers: JSON_HEADERS });
+  } catch (error: any) {
+    console.error('Error fetching products:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to load products', products: [] },
+      { status: 500, headers: JSON_HEADERS }
+    );
+  }
 }
 
 async function createProduct(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
@@ -171,7 +181,7 @@ async function deleteProduct(supabase: SupabaseClient, request: NextRequest, aud
   );
 }
 
-export const GET = withAdminAuth((_request, { supabase }) => listProducts(supabase));
+export const GET = withAdminAuth((request, { supabase }) => listProducts(supabase, request));
 export const POST = withAdminAuth((request, { supabase, audit }) => createProduct(supabase, request, audit));
 export const PUT = withAdminAuth((request, { supabase, audit }) => updateProduct(supabase, request, audit));
 export const DELETE = withAdminAuth((request, { supabase, audit }) => deleteProduct(supabase, request, audit));

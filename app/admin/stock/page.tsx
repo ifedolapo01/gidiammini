@@ -1,26 +1,45 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/stock/page.tsx
+//
+// One server-selected page of stock rows. The summary cards are counted in the
+// database, the low-stock threshold travels with the query so the filter and
+// the card always agree, and the checkbox column turns a shelf count into one
+// action instead of one modal per variant.
 'use client';
 import { StockSkeleton } from './components/StockSkeleton';
 
-import { Input } from '@/components/ui';
 import { useStock } from './hooks/useStock';
+import { useStockBulk } from './hooks/useStockBulk';
 import { useStockEditing } from './hooks/useStockEditing';
+import { useProductCategories } from '../products/hooks/useProductCategories';
+import { useTableSelection } from '../hooks/useTableSelection';
+import TablePagination from '../components/TablePagination';
+import LiveIndicator from '../components/LiveIndicator';
+import BulkResultSummary from '../components/BulkResultSummary';
 import { StockSummaryCards } from './components/StockSummaryCards';
+import { StockFilters } from './components/StockFilters';
 import { StockTable } from './components/StockTable';
+import { StockBulkBar } from './components/StockBulkBar';
 import { StockEditModal } from './components/StockEditModal';
+import { variantRef } from '@/lib/commerce/product-flatten';
 
 export default function StockManagementPage() {
   const {
+    params,
     products,
+    meta,
+    summary,
     loading,
-    loadStockSilently,
+    error,
+    live,
+    reconcile,
     lowStockThreshold,
     setLowStockThreshold,
-    lowStockProducts,
-    outOfStockProducts,
-    mainProductsCount,
   } = useStock();
+
+  const { categories } = useProductCategories();
+  const selection = useTableSelection(products.map(variantRef));
+  const bulk = useStockBulk(reconcile);
 
   const {
     editingProduct,
@@ -30,44 +49,64 @@ export default function StockManagementPage() {
     saveChanges,
     cancelEditing,
     isSaving,
-  } = useStockEditing(loadStockSilently);
+  } = useStockEditing(reconcile);
 
-  if (loading) return <StockSkeleton />;
+  const isFiltered = Boolean(params.search) || params.filters.category !== '' || params.filters.stock !== 'all';
+
+  if (loading && products.length === 0) return <StockSkeleton />;
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8">
-        <div>
-          <h1 className="text-h4 md:text-h3 font-bold text-text-primary">Stock Management</h1>
-          <p className="text-text-secondary mt-1">
-            Manage product stock quantities
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <div className="flex items-center gap-2">
-            <label className="text-body-sm text-text-secondary">Low Stock Threshold:</label>
-            <Input
-              type="number" onFocus={(e) => e.target.select()}
-              value={lowStockThreshold}
-              onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 5)}
-              size="sm"
-              className="w-20"
-              min="1"
-            />
-          </div>
-        </div>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-h4 md:text-h3 font-bold text-text-primary">Stock Management</h1>
+        <p className="flex items-center gap-3 text-text-secondary mt-1" aria-live="polite">
+          <span>{meta.total} product{meta.total !== 1 ? 's' : ''} match these filters</span>
+          <LiveIndicator live={live} subject="stock levels" />
+        </p>
       </div>
 
-      <StockSummaryCards
-        mainProductsCount={mainProductsCount}
-        totalVariations={products.length}
-        lowStockCount={lowStockProducts.length}
+      <StockSummaryCards summary={summary} />
+
+      <StockFilters
+        search={params.search}
+        onSearchChange={params.setSearch}
+        filters={params.filters}
+        onFilterChange={params.setFilter}
+        sort={params.sort}
+        direction={params.direction}
+        onSortChange={params.setSort}
+        categories={categories}
         lowStockThreshold={lowStockThreshold}
-        outOfStockCount={outOfStockProducts.length}
+        onLowStockThresholdChange={setLowStockThreshold}
       />
 
-      <StockTable products={products} lowStockThreshold={lowStockThreshold} onEdit={startEditing} />
+      {error && (
+        <div className="mb-6 p-4 bg-destructive-background border border-destructive-border rounded-control">
+          <p className="text-destructive font-medium">Error: {error}</p>
+        </div>
+      )}
+
+      <StockTable
+        products={products}
+        lowStockThreshold={lowStockThreshold}
+        selection={selection}
+        onEdit={startEditing}
+        filtered={isFiltered}
+      >
+        <TablePagination
+          page={meta.page}
+          pageCount={meta.totalPages}
+          total={meta.total}
+          loading={loading}
+          onPageChange={params.setPage}
+          limit={params.limit}
+          onLimitChange={params.setLimit}
+          itemNoun="products"
+          label="Stock pages"
+        />
+      </StockTable>
+
+      <BulkResultSummary outcome={bulk.outcome} onDismiss={bulk.dismissOutcome} />
 
       {/* Instructions */}
       <div className="mt-8 p-4 bg-info-background border border-info-border rounded-surface">
@@ -76,9 +115,19 @@ export default function StockManagementPage() {
           <li>• <strong>Stock automatically reduces</strong> when orders are confirmed</li>
           <li>• <strong>Stock automatically restores</strong> when confirmed orders are cancelled</li>
           <li>• <strong>Products with 0 stock are hidden</strong> from customer view</li>
-          <li>• Click <strong>Update Stock</strong> to modify inventory numbers. To add completely new sizes or colors, use the main Edit Product page.</li>
+          <li>• Click <strong>Update Stock</strong> to modify one variant, or tick several and use the bar at the bottom to set them all at once. To add completely new sizes or colors, use the main Edit Product page.</li>
         </ul>
       </div>
+
+      <StockBulkBar
+        selectedIds={selection.selectedIds}
+        pending={bulk.pending}
+        running={bulk.running}
+        onSetStock={bulk.setStock}
+        onUndo={bulk.undo}
+        onApplyNow={bulk.applyNow}
+        onClear={selection.clear}
+      />
 
       {editingProduct && (
         <StockEditModal

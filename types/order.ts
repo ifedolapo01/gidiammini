@@ -95,8 +95,12 @@ export interface Order {
   city?: string | null;
   note?: string | null;
   order_items?: OrderItem[];
-  /** Embedded via the orders -> order_change_requests relation. */
+  /** Embedded via the orders -> order_change_requests relation. Present only
+   * on the single-order detail fetch — the paged list sends the boolean below
+   * instead, since the card only needs to know whether a badge is due. */
   order_change_requests?: OrderChangeRequest[];
+  /** Set by the admin orders list. See order_change_requests above. */
+  has_pending_change_request?: boolean;
   /** Embedded via the orders -> order_status_history relation. */
   order_status_history?: OrderStatusHistoryEntry[];
 }

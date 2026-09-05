@@ -1,26 +1,27 @@
 /** ADMIN layer — depends only on Core (tokens + primitives). No storefront branding. */
-// Matches app/admin/stock/page.tsx: header with the low-stock threshold input,
-// the four summary cards, then StockTable's five columns.
+// Matches app/admin/stock/page.tsx: heading, the four summary cards, the
+// filter row, then StockTable's six columns (a selection column plus five).
 import { Skeleton } from '@/components/ui';
 import { AdminSummaryCardsSkeleton, AdminTableSkeleton } from '@/app/admin/components/AdminSkeletons';
 
 export function StockSkeleton() {
   return (
     <div className="p-4 md:p-6 lg:p-8" aria-busy="true" aria-label="Loading stock">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8">
-        <div>
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="mt-2 h-5 w-56" />
-        </div>
-        {/* "Low Stock Threshold:" label plus its narrow number input. */}
-        <div className="mt-4 flex items-center gap-2 md:mt-0">
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-9 w-20" />
-        </div>
+      <div className="mb-6 md:mb-8">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="mt-2 h-5 w-56" />
       </div>
 
       <AdminSummaryCardsSkeleton count={4} />
-      <AdminTableSkeleton columns={5} rows={8} leadingThumbnail />
+
+      {/* The search box, three selects and the low-stock threshold input. */}
+      <div className="mb-6 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+        {[0, 1, 2, 3, 4].map((index) => (
+          <Skeleton key={index} className="h-11" />
+        ))}
+      </div>
+
+      <AdminTableSkeleton columns={6} rows={8} leadingThumbnail />
     </div>
   );
 }

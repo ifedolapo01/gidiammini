@@ -13,6 +13,7 @@ import {
   ORDER_STATUSES, INITIAL_ORDER_STATUS, REVENUE_STATUSES,
   formatOrderStatus, formatCustomerStatusLabel, getStatusOptions,
   hasStockReserved, canRequestOrderChange, canCancelOrder, getStatusColorToken,
+  commonStatusOptions,
 } from './order-status';
 import type { OrderStatus } from '@/types/order';
 
@@ -147,5 +148,49 @@ describe('getStatusColorToken', () => {
   it('groups related outcomes into the same hue family', () => {
     expect(getStatusColorToken('picked_up')).toBe(getStatusColorToken('delivered'));
     expect(getStatusColorToken('cancelled')).toBe('destructive');
+  });
+});
+
+describe('commonStatusOptions', () => {
+  it('offers what a whole delivery batch can move to', () => {
+    expect(
+      commonStatusOptions([
+        { status: 'confirmed', delivery_option: 'delivery' },
+        { status: 'confirmed', delivery_option: 'delivery' },
+      ])
+    ).toContain('shipped');
+  });
+
+  it('drops anything one of the orders has already passed', () => {
+    // A batch mixing confirmed and shipped orders cannot go back to shipped.
+    const options = commonStatusOptions([
+      { status: 'confirmed', delivery_option: 'delivery' },
+      { status: 'shipped', delivery_option: 'delivery' },
+    ]);
+
+    expect(options).not.toContain('shipped');
+    expect(options).toContain('delivered');
+  });
+
+  it('offers nothing for a mix of pickup and delivery beyond cancelling', () => {
+    expect(
+      commonStatusOptions([
+        { status: 'confirmed', delivery_option: 'delivery' },
+        { status: 'confirmed', delivery_option: 'pickup' },
+      ])
+    ).toEqual(['rescheduled', 'cancelled']);
+  });
+
+  it('offers nothing once any selected order is finished', () => {
+    expect(
+      commonStatusOptions([
+        { status: 'confirmed', delivery_option: 'delivery' },
+        { status: 'delivered', delivery_option: 'delivery' },
+      ])
+    ).toEqual([]);
+  });
+
+  it('offers nothing for an empty selection', () => {
+    expect(commonStatusOptions([])).toEqual([]);
   });
 });

@@ -1,4 +1,8 @@
-/** ADMIN layer — child-row renderers (combination / simple variants) for the products list table. */
+/** ADMIN layer — child-row renderers (combination / simple variants) for the products list table.
+ *
+ * Every row starts with an empty cell under the selection column: bulk actions
+ * apply to products, not to individual variants, so a variant row has no
+ * checkbox of its own but still has to line up with the header. */
 import { Fragment } from 'react';
 import { Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui';
@@ -17,6 +21,7 @@ function variantImageCount(product: FlattenedProduct & { extractedColor?: string
 function CombinationSingleRow({ product }: { product: SizeGroupedVariant }) {
   return (
     <tr className="hover:bg-primary/10 transition-colors border-l-[8px] border-primary/60 bg-surface">
+      <td className="px-4 py-3 w-10" />
       <td className="px-6 py-3 whitespace-nowrap pl-12 text-body-sm font-bold text-text-primary text-center">
         Size: {product.extractedSize}
       </td>
@@ -47,6 +52,7 @@ function CombinationGroupRows({ size, sizeVariants }: { size: string; sizeVarian
   return (
     <>
       <tr className="bg-accent/5 border-l-4 border-accent/30">
+        <td className="px-4 py-2 w-10" />
         <td className="px-6 py-2 whitespace-nowrap pl-12 text-body-sm font-bold text-text-primary text-center">
           Size: {size}
         </td>
@@ -54,6 +60,7 @@ function CombinationGroupRows({ size, sizeVariants }: { size: string; sizeVarian
       </tr>
       {sizeVariants.map(product => (
         <tr key={product.id} className="hover:bg-primary/10 transition-colors border-l-[12px] border-primary/60 bg-surface">
+          <td className="px-4 py-3 w-10" />
           <td className="px-6 py-3 whitespace-nowrap text-center"></td>
           <td className="px-6 py-3 whitespace-nowrap pl-8 text-center">
             <Badge tone="primary" className="font-bold">
@@ -83,6 +90,7 @@ function CombinationGroupRows({ size, sizeVariants }: { size: string; sizeVarian
 function SimpleVariantRow({ product }: { product: FlattenedProduct }) {
   return (
     <tr className="hover:bg-primary/10 transition-colors border-l-4 border-primary/60 bg-surface">
+      <td className="px-4 py-3 w-10" />
       <td className="px-6 py-3 whitespace-nowrap text-center"></td>
       <td className="px-6 py-3 whitespace-nowrap text-center">
         <span className="px-2 inline-flex text-caption-md leading-5 font-bold rounded-full bg-accent/10 text-accent border border-accent/30">

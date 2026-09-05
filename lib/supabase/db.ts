@@ -15,7 +15,7 @@
 // NOTE: verifyAdmin (a stubbed email/password check against
 // ADMIN_EMAIL/ADMIN_PASSWORD env vars) previously lived in this file. It had
 // zero call sites anywhere in the repo - the real admin-auth path is
-// lib/auth.ts's verifyAdminAuth + JWT cookie - so it was removed as dead code.
+// the admin session in lib/api/admin-session.ts - so it was removed as dead code.
 
 export type { Product } from '@/types/product'
 export type { Order, OrderItem } from '@/types/order'

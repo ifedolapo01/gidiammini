@@ -1,25 +1,27 @@
 // app/api/admin/logout/route.ts
 //
-// Records the sign-out before clearing the cookie, so the trail shows a session
+// Records the sign-out before ending the session, so the trail shows a session
 // ending as well as beginning. Deliberately not wrapped in withAdminAuth: an
-// expired or already-invalid token must still be able to log out, and returning
-// 401 here would leave a stale cookie in the browser.
+// expired or already-invalid session must still be able to log out, and
+// returning 401 here would leave stale cookies in the browser.
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminActor } from '@/lib/auth';
+import { getAdminActor } from '@/lib/api/admin-session';
+import { createAdminAuthClient } from '@/lib/supabase/admin-auth-server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { recordAudit } from '@/lib/api/audit';
 import { clientIdentifier } from '@/lib/api/rate-limit';
 
 export async function POST(request: NextRequest) {
-  // Read the actor before the cookie goes, or there is nobody to attribute it
-  // to. A null actor means the cookie was already invalid; the sign-out is
+  // Read the actor before the session goes, or there is nobody to attribute it
+  // to. A null actor means the session was already invalid; the sign-out is
   // still recorded, just unattributed.
-  const actor = await getAdminActor(request);
+  const actor = await getAdminActor();
 
   await recordAudit(
     createAdminClient(),
     { entityType: 'admin_session', entityId: actor?.email ?? null, action: 'logout' },
     {
+      actorId: actor?.id ?? null,
       actorEmail: actor?.email ?? null,
       method: 'POST',
       path: '/api/admin/logout',
@@ -28,10 +30,11 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const response = NextResponse.json({ success: true });
+  // signOut revokes the refresh token at Supabase and clears the session
+  // cookies through the adapter — deleting the cookies alone would leave a
+  // usable refresh token behind.
+  const supabase = await createAdminAuthClient();
+  await supabase.auth.signOut();
 
-  // Clear the admin cookie
-  response.cookies.delete('admin-token');
-
-  return response;
+  return NextResponse.json({ success: true });
 }

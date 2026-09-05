@@ -1,12 +1,12 @@
-/** ADMIN layer — discount CRUD state: fetches discounts/categories/products and talks to /api/admin/discounts. */
+/** ADMIN layer — the discount form and modal, and the writes behind them.
+ * The reads live in useDiscountData.ts. */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Discount } from '@/lib/commerce/discounts';
-import type { Category, Product } from '@/types/product';
-import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
+import { useDiscountData } from './useDiscountData';
 
 export interface DiscountFormData {
   name: string;
@@ -31,12 +31,7 @@ const emptyFormData: DiscountFormData = {
 };
 
 export function useDiscounts() {
-  const [discounts, setDiscounts] = useState<Discount[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { discounts, categories, products, loading, error, setError, refresh } = useDiscountData();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -44,43 +39,6 @@ export function useDiscounts() {
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<DiscountFormData>(emptyFormData);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async (opts: { silent?: boolean } = {}) => {
-    if (!opts.silent) setLoading(true);
-    try {
-      // Fetch discounts
-      const discRes = await fetch('/api/admin/discounts');
-      const discData = await discRes.json();
-      if (discData.success) setDiscounts(discData.discounts);
-
-      // Fetch categories for the target dropdown
-      const catRes = await fetch('/api/admin/categories');
-      const catData = await catRes.json();
-      if (catData.success) setCategories(catData.categories);
-
-      // Fetch products for the target dropdown
-      const prodRes = await fetch('/api/admin/products');
-      const prodData = await prodRes.json();
-      if (prodData.success) setProducts(prodData.products);
-
-    } catch (err) {
-      if (opts.silent) console.error('Error syncing discounts:', err);
-      else setError('Failed to load data');
-    } finally {
-      if (!opts.silent) setLoading(false);
-    }
-  };
-
-  // Background poll — keeps the list fresh without a manual Refresh button.
-  useEffect(() => {
-    const interval = setInterval(() => fetchData({ silent: true }), ADMIN_POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const openModal = (discount?: Discount, isReuse: boolean = false) => {
     if (discount) {
@@ -146,7 +104,7 @@ export function useDiscounts() {
 
       const data = await res.json();
       if (data.success) {
-        fetchData();
+        refresh();
         closeModal();
       } else {
         setError(data.error || 'Failed to save discount');
@@ -171,7 +129,7 @@ export function useDiscounts() {
       const data = await res.json();
 
       if (data.success) {
-        fetchData();
+        refresh();
       } else {
         toast.error(data.error || 'Failed to delete discount');
       }
@@ -192,7 +150,7 @@ export function useDiscounts() {
       });
       const data = await res.json();
       if (data.success) {
-        fetchData();
+        refresh();
       }
     } catch (err) {
       toast.error('Failed to toggle status');

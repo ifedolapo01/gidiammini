@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { isAdminRequest } from '@/lib/api/require-admin';
+import { isAdminRequest } from '@/lib/api/admin-session';
 import { magicBytesMatch } from '@/lib/commerce/receipt-file';
 
 export async function uploadProductImage(formData: FormData) {

@@ -88,6 +88,18 @@ function buildFromVariantRow(p: any, variant: ProductVariant): FlattenedProduct 
   };
 }
 
+/**
+ * How a variant is addressed across the API boundary: "productId:variantKey".
+ *
+ * FlattenedProduct.id uses a hyphen, which is also legal inside a uuid and
+ * inside a variant key, so it cannot be split back apart. This form can:
+ * the first colon is the separator, and everything after it is the key
+ * (which may itself contain "size|color").
+ */
+export function variantRef(product: Pick<FlattenedProduct, 'productId' | 'variantKey'>): string {
+  return `${product.productId}:${product.variantKey}`;
+}
+
 export function flattenProducts(products: any[]): FlattenedProduct[] {
   const flattened: FlattenedProduct[] = [];
 

@@ -1,7 +1,14 @@
 // app/api/admin/login/route.ts
 //
-// Throttled on two independent keys, because there is exactly one admin
-// credential in this deployment and it is the whole of the admin's security:
+// Signs an admin in against Supabase Auth and leaves a real session in
+// httpOnly cookies. It used to compare against ADMIN_EMAIL /
+// ADMIN_PASSWORD_HASH and mint a custom HS256 cookie; that could only ever
+// describe one shared login, and gave the browser no identity Realtime or RLS
+// could act on.
+//
+// The throttling and the audit entries are unchanged. Supabase Auth has its
+// own rate limits, but they are not ours to tune and they do not distinguish
+// the two keys below, so this keeps its own:
 //
 //   * per IP      — the usual flood control
 //   * per account — so rotating through IPs (trivial and cheap) doesn't
@@ -15,14 +22,13 @@
 // refused. An unthrottled password guesser does real damage, and with the
 // database down the admin can't do anything useful anyway.
 import { NextRequest, NextResponse } from 'next/server';
-import { signJWT } from '@/lib/auth';
-import bcryptjs from 'bcryptjs';
 import {
   checkRateLimit, resetRateLimit, rateLimitKey, clientIdentifier, tooManyRequests,
 } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { recordAudit, type AuditAction } from '@/lib/api/audit';
+import { createAdminAuthClient } from '@/lib/supabase/admin-auth-server';
 
 /**
  * Sign-in attempts go in the audit trail.
@@ -92,23 +98,33 @@ export async function POST(request: NextRequest) {
       return tooManyRequests(byAccount, THROTTLED_MESSAGE);
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
-    const jwtSecret = process.env.JWT_SECRET;
+    // Supabase verifies the password. The session cookies are written through
+    // the adapter in createAdminAuthClient, which sets them via next/headers —
+    // Next attaches them to whatever this handler returns.
+    const supabase = await createAdminAuthClient();
 
-    if (!adminEmail || !adminPasswordHash || !jwtSecret) {
-      console.error('Admin configuration missing in environment variables');
-      return NextResponse.json(
-        { success: false, error: 'Server configuration error' },
-        { status: 500 }
-      );
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: String(email ?? '').trim(),
+      password: String(password ?? ''),
+    });
 
-    // bcrypt.compare is run even when the email is wrong, so the response time
-    // doesn't reveal whether the address matched.
-    const isPasswordValid = await bcryptjs.compare(String(password ?? ''), adminPasswordHash);
+    // An account that authenticates but is not on the allowlist is not an
+    // admin. Signing it straight back out matters: leaving the session in
+    // place would hand a non-admin a token the realtime endpoint would then be
+    // asked to vouch for.
+    const adminRow = data?.user
+      ? await createAdminClient()
+          .from('admin_users')
+          .select('user_id, is_active')
+          .eq('user_id', data.user.id)
+          .maybeSingle()
+      : null;
 
-    if (email !== adminEmail || !isPasswordValid) {
+    const isActiveAdmin = Boolean(adminRow?.data?.is_active);
+
+    if (error || !data?.user || !isActiveAdmin) {
+      if (data?.user && !isActiveAdmin) await supabase.auth.signOut();
+
       // Only now spend a slot from the per-account budget.
       await checkRateLimit(accountLimitKey, RATE_LIMITS.loginPerAccount);
       await recordSignIn(request, 'login_failed', email, 401);
@@ -117,29 +133,16 @@ export async function POST(request: NextRequest) {
 
     // Success: forget the earlier fumbles.
     await resetRateLimit(accountLimitKey);
-
-    const token = await signJWT(
-      {
-        role: 'admin',
-        email,
-        exp: Date.now() + 60 * 60 * 24 * 7 * 1000, // 7 days
-      },
-      jwtSecret
-    );
-
     await recordSignIn(request, 'login', email, 200);
 
-    const response = NextResponse.json({ success: true, message: 'Login successful' });
+    // Last seen, so an admin list can show who is actually still using the
+    // store. Best-effort — a failed timestamp must not fail a sign-in.
+    await createAdminClient()
+      .from('admin_users')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('user_id', data.user.id);
 
-    response.cookies.set('admin-token', token, {
-      httpOnly: true,
-      secure: true,
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-      sameSite: 'lax',
-    });
-
-    return response;
+    return NextResponse.json({ success: true, message: 'Login successful' });
   } catch (error) {
     console.error('Login failed:', error);
     return NextResponse.json({ success: false, error: 'Login failed' }, { status: 500 });

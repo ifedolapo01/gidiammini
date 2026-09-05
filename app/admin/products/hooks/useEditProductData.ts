@@ -31,35 +31,25 @@ export function useEditProductData(args: UseEditProductDataArgs) {
     setLoadError('');
 
     try {
-      let productData: Product | null = null;
-
-      const allProductsResponse = await fetch('/api/admin/products', {
+      // Straight to the single-product endpoint. This used to pull the whole
+      // products list first and find the row in it, which is now a paged
+      // query — the product being edited is usually not on page 1, and even
+      // when it was, downloading the catalogue to read one row was never the
+      // cheap path it looked like.
+      const response = await fetch(`/api/admin/products/${id}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      if (allProductsResponse.ok) {
-        const allProductsResult = await allProductsResponse.json();
-        if (allProductsResult.success) {
-          productData = allProductsResult.products.find((p: Product) => p.id === id);
-        }
+      if (!response.ok) {
+        if (response.status === 404) throw new Error('Product not found. It may have been deleted.');
+        throw new Error(`Failed to load product (Status: ${response.status})`);
       }
 
-      if (!productData) {
-        const response = await fetch(`/api/admin/products/${id}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error || 'Failed to load product');
 
-        if (!response.ok) {
-          if (response.status === 404) throw new Error('Product not found. It may have been deleted.');
-          throw new Error(`Failed to load product (Status: ${response.status})`);
-        }
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Failed to load product');
-        productData = result.product;
-      }
+      const productData: Product | null = result.product ?? null;
 
       if (productData) {
         setProduct(productData);

@@ -9,7 +9,7 @@
 import { ActivityListSkeleton } from './ActivityListSkeleton';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui';
+import TablePagination from '@/app/admin/components/TablePagination';
 import type { AuditLogEntry } from '@/lib/commerce/audit-format';
 import ActivityEntry from './ActivityEntry';
 import ActivityTable from './ActivityTable';
@@ -88,34 +88,17 @@ export default function ActivityList({
 
       <ActivityDetailModal entry={reviewing} onClose={() => setReviewing(null)} />
 
-      {pageCount > 1 && (
-        <nav
-          aria-label="Activity pages"
-          className="flex items-center justify-between gap-3 p-3 border-t border-divider"
-        >
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 0 || loading}
-            onClick={() => onPageChange(page - 1)}
-          >
-            Previous
-          </Button>
-
-          <span className="text-caption-md text-text-secondary" aria-live="polite">
-            Page {page + 1} of {pageCount} · {total} entries
-          </span>
-
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page + 1 >= pageCount || loading}
-            onClick={() => onPageChange(page + 1)}
-          >
-            Next
-          </Button>
-        </nav>
-      )}
+      {/* The feed's pages are 0-indexed internally; TablePagination speaks the
+          1-indexed `?page=` every admin list endpoint takes. */}
+      <TablePagination
+        page={page + 1}
+        pageCount={pageCount}
+        total={total}
+        loading={loading}
+        onPageChange={(next) => onPageChange(next - 1)}
+        itemNoun="entries"
+        label="Activity pages"
+      />
     </>
   );
 }

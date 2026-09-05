@@ -8,41 +8,26 @@ import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createOrderSchema } from '@/lib/api/schemas/public-orders';
+import { fetchAdminOrders } from '@/lib/commerce/admin-orders-query';
 
-// GET method - fetch orders (for admin dashboard)
+/**
+ * GET — the admin orders list, one page at a time.
+ *
+ * Accepts ?page, ?limit, ?status, ?search, ?sort and ?direction. The whole
+ * query lives in lib/commerce/admin-orders-query.ts; this handler exists to
+ * turn a thrown Postgres error into the response shape the client expects.
+ */
 async function listOrders(supabase: SupabaseClient, request: NextRequest) {
-  // Get status filter from query params
-  const url = new URL(request.url);
-  const status = url.searchParams.get('status');
-
-  console.log('Fetching orders with status:', status || 'all');
-
-  let query = supabase
-    .from('orders')
-    .select(`*, order_items (*), order_change_requests (*), order_status_history (*)`)
-    .order('created_at', { ascending: false });
-
-  // Apply status filter if provided
-  if (status && status !== 'all') {
-    query = query.eq('status', status);
-  }
-
-  const { data: orders, error } = await query;
-
-  if (error) {
+  try {
+    const { orders, meta } = await fetchAdminOrders(supabase, new URL(request.url));
+    return NextResponse.json({ success: true, orders, meta });
+  } catch (error: any) {
     console.error('Error fetching orders:', error);
     return NextResponse.json(
       { success: false, error: `Failed to fetch orders: ${error.message}`, orders: [] },
       { status: 500 }
     );
   }
-
-  console.log(`✅ Found ${orders?.length || 0} orders`);
-
-  return NextResponse.json({
-    success: true,
-    orders: orders || []
-  });
 }
 
 export const GET = withAdminAuth((request, { supabase }) => listOrders(supabase, request));

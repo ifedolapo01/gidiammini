@@ -122,6 +122,26 @@ export function getStatusOptions(currentStatus: OrderStatus, deliveryOption: 'pi
   return relevantStatuses.filter((status, index) => index !== currentIndex && (currentIndex === -1 || index > currentIndex));
 }
 
+/**
+ * Statuses that EVERY one of these orders can move to.
+ *
+ * A bulk status change has to respect the same forward-only, delivery-method-
+ * aware rule a single dropdown does, or "mark this courier batch shipped"
+ * quietly un-delivers whatever was already delivered. Intersecting each
+ * order's own options is the rule applied once per selection instead of once
+ * per row — an empty result means the selection has nothing in common and the
+ * control stays disabled.
+ */
+export function commonStatusOptions(
+  orders: Array<{ status: OrderStatus; delivery_option: 'pickup' | 'delivery' }>
+): OrderStatus[] {
+  if (orders.length === 0) return [];
+
+  return orders
+    .map((order) => getStatusOptions(order.status, order.delivery_option))
+    .reduce((shared, options) => shared.filter((status) => options.includes(status)));
+}
+
 /** Whether an order in this status should be holding inventory.
  *
  * 'pending' counts: stock is claimed atomically at order creation (see

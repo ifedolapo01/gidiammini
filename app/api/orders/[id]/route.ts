@@ -12,6 +12,35 @@ import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { ORDER_STATUSES, formatOrderStatus } from '@/lib/commerce/order-status';
 import { applyOrderStatusTransition } from '@/lib/commerce/order-status-transition';
 
+/**
+ * GET — one order with the relations the list deliberately leaves behind.
+ *
+ * order_status_history and the full change-request rows are only ever read
+ * inside the details modal. Embedding them on every row of the list meant
+ * every order ever placed carried its whole history on every poll; fetching
+ * them for the single order somebody actually opened costs one small query.
+ */
+export const GET = withAdminAuth(async (_request, { supabase, params }) => {
+  const { id } = await params;
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, order_items (*), order_change_requests (*), order_status_history (*)')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error loading order:', error);
+    return NextResponse.json({ success: false, error: 'Failed to load order' }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true, order: data });
+});
+
 export const PUT = withAdminAuth(async (request, { supabase, params, audit }) => {
   const { id } = await params;
 

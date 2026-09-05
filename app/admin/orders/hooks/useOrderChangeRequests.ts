@@ -11,11 +11,12 @@ import { notifyOrdersChanged } from '../../lib/orderEvents';
 import { describeDelivery } from '@/lib/notifications/delivery';
 
 interface UseOrderChangeRequestsParams {
-  syncOrdersSilently: () => Promise<void>;
+  /** Re-reads the list, the totals and the open order from the server. */
+  onResolved: () => void | Promise<void>;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
-export function useOrderChangeRequests({ syncOrdersSilently, showToast }: UseOrderChangeRequestsParams) {
+export function useOrderChangeRequests({ onResolved, showToast }: UseOrderChangeRequestsParams) {
   const [resolvingRequestId, setResolvingRequestId] = useState<string | null>(null);
 
   const resolveChangeRequest = async (
@@ -35,7 +36,7 @@ export function useOrderChangeRequests({ syncOrdersSilently, showToast }: UseOrd
 
       if (response.ok && result.success) {
         notifyOrdersChanged();
-        await syncOrdersSilently();
+        await onResolved();
         const how = result.delivery ? describeDelivery(result.delivery) : 'No notification sent';
         showToast(
           `${decision === 'approved' ? 'Request approved' : 'Request rejected'}. ${how}.`,

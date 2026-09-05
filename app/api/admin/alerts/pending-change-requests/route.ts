@@ -1,10 +1,10 @@
 // app/api/admin/alerts/pending-change-requests/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
-import { verifyAdminAuth } from '@/lib/auth';
+import { isAdminRequest } from '@/lib/api/admin-session';
 
 export async function GET(request: NextRequest) {
-  if (!(await verifyAdminAuth(request))) {
+  if (!(await isAdminRequest())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

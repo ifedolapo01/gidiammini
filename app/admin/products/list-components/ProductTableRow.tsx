@@ -7,6 +7,34 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
 import ProductImage from '@/components/commerce/ProductImage';
+import { RowCheckbox } from '@/app/admin/components/SelectionCheckbox';
+
+/** The leading selection cell. Bulk actions apply to products, so both the
+ * single row and the grouped parent row carry one and variant child rows do
+ * not. */
+function SelectionCell({
+  productId,
+  name,
+  selected,
+  onToggleSelect,
+  padded,
+}: {
+  productId: string;
+  name: string;
+  selected: boolean;
+  onToggleSelect: (productId: string) => void;
+  padded: string;
+}) {
+  return (
+    <td className={`${padded} w-10`}>
+      <RowCheckbox
+        checked={selected}
+        onChange={() => onToggleSelect(productId)}
+        rowLabel={name}
+      />
+    </td>
+  );
+}
 
 interface RowActionsProps {
   productId: string;
@@ -36,12 +64,21 @@ function RowActions({ productId, onDelete }: RowActionsProps) {
 
 interface SingleProductRowProps {
   product: FlattenedProduct;
+  selected: boolean;
+  onToggleSelect: (productId: string) => void;
   onDelete: (productId: string) => void;
 }
 
-export function SingleProductRow({ product, onDelete }: SingleProductRowProps) {
+export function SingleProductRow({ product, selected, onToggleSelect, onDelete }: SingleProductRowProps) {
   return (
-    <tr className="hover:bg-surface-hover transition-colors">
+    <tr className={`transition-colors ${selected ? 'bg-primary/5' : 'hover:bg-surface-hover'}`}>
+      <SelectionCell
+        productId={product.productId}
+        name={product.name}
+        selected={selected}
+        onToggleSelect={onToggleSelect}
+        padded="px-4 py-4"
+      />
       <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
         <div className="flex items-center justify-start">
           <ProductImage
@@ -91,12 +128,27 @@ export function SingleProductRow({ product, onDelete }: SingleProductRowProps) {
 interface GroupedParentRowProps {
   parent: FlattenedProduct;
   variantsCount: number;
+  selected: boolean;
+  onToggleSelect: (productId: string) => void;
   onDelete: (productId: string) => void;
 }
 
-export function GroupedParentRow({ parent, variantsCount, onDelete }: GroupedParentRowProps) {
+export function GroupedParentRow({
+  parent,
+  variantsCount,
+  selected,
+  onToggleSelect,
+  onDelete,
+}: GroupedParentRowProps) {
   return (
-    <tr className="bg-background-secondary border-t-2 border-border">
+    <tr className={`border-t-2 border-border ${selected ? 'bg-primary/5' : 'bg-background-secondary'}`}>
+      <SelectionCell
+        productId={parent.productId}
+        name={parent.name}
+        selected={selected}
+        onToggleSelect={onToggleSelect}
+        padded="px-4 py-3"
+      />
       <td className="px-6 py-3 whitespace-nowrap text-left pl-16">
         <div className="flex items-center justify-start">
           <ProductImage

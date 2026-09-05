@@ -1,64 +1,57 @@
 /** ADMIN layer — depends only on Core (tokens + primitives) and Commerce. No storefront branding. */
 // app/admin/orders/components/OrderCard.tsx
 import { useState } from 'react';
-import { Eye, Send, Truck } from 'lucide-react';
+import { Eye, Send } from 'lucide-react';
 import { Badge, Button, Select } from '@/components/ui';
 import { Order, OrderItem } from '@/types/order';
 import type { ShippingZone } from '@/types/shipping';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatDate } from '@/lib/commerce/format-date';
-import { getStatusIcon, getStatusColor, getStatusOptions, formatOrderStatus } from '@/lib/commerce/order-status';
+import { getStatusOptions, formatOrderStatus } from '@/lib/commerce/order-status';
 import { getShippingOverdueInfo } from '@/lib/commerce/shipping-overdue';
 import { ReceiptPreviewModal } from './ReceiptPreviewModal';
+import OrderCardBadges from './OrderCardBadges';
 
 const calculateSubtotal = (items: OrderItem[] = []) => {
   return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 };
 
-/** e.g. 30 -> "1d 6h overdue"; 5 -> "5h overdue". */
-function formatOverdue(hoursOverdue: number): string {
-  const days = Math.floor(hoursOverdue / 24);
-  const hours = hoursOverdue % 24;
-  return days > 0 ? `${days}d ${hours}h overdue` : `${hours}h overdue`;
-}
-
 interface OrderCardProps {
   order: Order;
   shippingZones?: ShippingZone[];
+  selected: boolean;
+  onToggleSelect: (orderId: string) => void;
   onOpenDetails: (order: Order) => void;
   onUpdateStatus: (orderId: string, newStatus: Order['status']) => void;
 }
 
-export default function OrderCard({ order, shippingZones = [], onOpenDetails, onUpdateStatus }: OrderCardProps) {
+export default function OrderCard({
+  order,
+  shippingZones = [],
+  selected,
+  onToggleSelect,
+  onOpenDetails,
+  onUpdateStatus,
+}: OrderCardProps) {
   const [showReceipt, setShowReceipt] = useState(false);
-  const hasPendingChangeRequest = order.order_change_requests?.some((r) => r.status === 'pending');
   const overdueInfo = getShippingOverdueInfo(order, shippingZones);
   const nextStatuses = getStatusOptions(order.status, order.delivery_option);
 
   return (
-    <div className="bg-surface rounded-surface shadow-elevation-1 border border-border overflow-hidden hover:shadow-elevation-2 transition-shadow">
+    <div
+      className={`bg-surface rounded-surface shadow-elevation-1 border overflow-hidden hover:shadow-elevation-2 transition-shadow ${
+        selected ? 'border-primary ring-1 ring-primary' : 'border-border'
+      }`}
+    >
       <div className="p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 md:mb-6">
           <div className="flex-1 mb-4 md:mb-0">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              {getStatusIcon(order.status)}
-              <span className="font-bold text-body-lg text-text-primary">{order.order_number}</span>
-              <span className={`px-3 py-1 rounded-full text-caption-md font-medium ${getStatusColor(order.status)}`}>
-                {formatOrderStatus(order.status)}
-              </span>
-              <Badge tone={order.payment_verified ? 'success' : 'destructive'}>
-                {order.payment_verified ? 'Paid' : 'Unpaid'}
-              </Badge>
-              {hasPendingChangeRequest && (
-                <Badge tone="warning">Pending Request</Badge>
-              )}
-              {overdueInfo && (
-                <Badge tone="destructive">
-                  <Truck className="w-3 h-3" />
-                  {formatOverdue(overdueInfo.hoursOverdue)}
-                </Badge>
-              )}
-            </div>
+            <OrderCardBadges
+              order={order}
+              selected={selected}
+              onToggleSelect={onToggleSelect}
+              overdueInfo={overdueInfo}
+            />
 
             <div className="space-y-1">
               <p className="font-medium text-text-primary">

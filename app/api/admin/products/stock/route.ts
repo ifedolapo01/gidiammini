@@ -1,42 +1,34 @@
-// app/api/admin/products/stock/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin-server';
-import { verifyAdminAuth } from '@/lib/auth';
+// app/api/admin/products/stock/route.ts - the admin stock table's list, one
+// page at a time.
+//
+// Shares lib/commerce/admin-products-query.ts with the products list: the two
+// tables render the same grouped rows and differ only in default sort (lowest
+// stock first here) and which columns they show. It previously selected every
+// active product with every variant embedded, unpaginated, on a 60-second
+// poll.
+//
+// Goes through withAdminAuth rather than checking the cookie itself, so it
+// picks up the shared service-role client and error shape like every other
+// admin route.
+import { NextResponse } from 'next/server';
+import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { fetchAdminProducts } from '@/lib/commerce/admin-products-query';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
-  if (!(await verifyAdminAuth(request))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export const GET = withAdminAuth(async (request, { supabase }) => {
   try {
-    const supabase = createAdminClient();
-    
-    const { data: products, error } = await supabase
-      .from('products')
-      .select(`id, name, category, sub_category, stock, colors, sizes, price, main_image, images, pricing_config, product_variants(*)`)
-      .eq('is_active', true)
-      .order('stock', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching stock:', error);
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch stock data', products: [] },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      products: products || []
+    const { products, meta } = await fetchAdminProducts(supabase, new URL(request.url), {
+      defaultSort: 'stock',
+      defaultDirection: 'asc',
     });
-    
+
+    return NextResponse.json({ success: true, products, meta });
   } catch (error: any) {
     console.error('Stock API error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error', products: [] },
+      { success: false, error: 'Failed to fetch stock data', products: [] },
       { status: 500 }
     );
   }
-}
+});

@@ -80,6 +80,39 @@ export type Database = {
           },
         ]
       }
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          is_active: boolean
+          last_seen_at: string | null
+          name: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          name?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          name?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -1473,6 +1506,10 @@ export type Database = {
           p_subcategory?: string
         }
         Returns: number
+      }
+      is_active_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       list_products: {
         Args: {

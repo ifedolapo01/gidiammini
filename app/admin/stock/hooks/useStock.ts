@@ -1,66 +1,77 @@
-/** ADMIN layer — stock data loading + derived summary counts for the stock management page. */
-import { useState, useEffect } from 'react';
-import { flattenProducts, FlattenedProduct } from '@/lib/commerce/product-flatten';
-import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
+/** ADMIN layer — one page of stock rows, its filters, and the catalogue-wide
+ * counts above them.
+ *
+ * This used to fetch every active product with every variant embedded and poll
+ * that every 60 seconds, then derive the summary cards by filtering the array.
+ * Both jobs are the server's now: the low-stock threshold travels with the
+ * query so "Low stock" means the same thing in the filter and on the card.
+ */
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { flattenProducts, type FlattenedProduct } from '@/lib/commerce/product-flatten';
+import type { AdminProductsSummary } from '@/lib/commerce/admin-products-summary';
+import { useListParams } from '../../hooks/useListParams';
+import { useListData } from '../../hooks/useListData';
+import { useListSummary } from '../../hooks/useListSummary';
+import { useAdminRealtime } from '../../hooks/useAdminRealtime';
+
+const DEFAULT_LOW_STOCK_THRESHOLD = 5;
 
 export function useStock() {
-  const [products, setProducts] = useState<FlattenedProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lowStockThreshold, setLowStockThreshold] = useState(5);
+  const [lowStockThreshold, setLowStockThreshold] = useState(DEFAULT_LOW_STOCK_THRESHOLD);
 
+  const params = useListParams({
+    sort: 'stock',
+    direction: 'asc',
+    filters: {
+      stock: 'all',
+      category: '',
+      lowStockThreshold: String(DEFAULT_LOW_STOCK_THRESHOLD),
+    },
+  });
+
+  const { setFilter } = params;
+
+  // The threshold is a control on this page but a filter parameter to the
+  // server, so it has to travel in both directions.
   useEffect(() => {
-    loadStock();
-  }, []);
+    setFilter('lowStockThreshold', String(lowStockThreshold));
+  }, [lowStockThreshold, setFilter]);
 
-  const loadStock = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/admin/products/stock');
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(flattenProducts(data.products || []));
-      }
-    } catch (error) {
-      console.error('Error loading stock:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { items: rows, meta, loading, error, refreshSilently } = useListData<any>(
+    '/api/admin/products/stock',
+    params.queryString,
+    'products'
+  );
 
-  /** Reconciles with the server without toggling `loading` — used after
-   * saving a stock change, and on a background poll, so the table stays
-   * accurate without flashing the full-page loading state. */
-  const loadStockSilently = async () => {
-    try {
-      const response = await fetch('/api/admin/products/stock');
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(flattenProducts(data.products || []));
-      }
-    } catch (error) {
-      console.error('Error syncing stock:', error);
-    }
-  };
+  // The one page where a live figure matters most: stock moves without anybody
+  // on this screen doing anything, every time an order is confirmed.
+  const { connected: live } = useAdminRealtime(['product_variants'], refreshSilently);
 
-  useEffect(() => {
-    const interval = setInterval(loadStockSilently, ADMIN_POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { summary, reloadSummary } = useListSummary<AdminProductsSummary>(
+    '/api/admin/products/summary',
+    `lowStockThreshold=${lowStockThreshold}`,
+    refreshSilently,
+    live
+  );
 
-  const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= lowStockThreshold);
-  const outOfStockProducts = products.filter(p => p.stock <= 0);
-  const mainProductsCount = new Set(products.map(p => p.productId)).size;
+  const reconcile = useCallback(async () => {
+    await Promise.all([refreshSilently(), reloadSummary()]);
+  }, [refreshSilently, reloadSummary]);
+
+  const products: FlattenedProduct[] = flattenProducts(rows);
 
   return {
+    params,
     products,
+    meta,
+    summary,
     loading,
-    loadStock,
-    loadStockSilently,
+    error,
+    live,
+    reconcile,
     lowStockThreshold,
     setLowStockThreshold,
-    lowStockProducts,
-    outOfStockProducts,
-    mainProductsCount,
   };
 }

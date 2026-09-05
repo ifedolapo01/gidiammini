@@ -6,14 +6,15 @@
  * Read-only. It loads pages and opens drawers and forms; it submits nothing, so
  * it writes no rows to whatever database the dev server is pointed at.
  *
- * It mints an admin session token from JWT_SECRET so the admin pages can be
- * photographed without a password. That is why it refuses any host but
- * localhost — a minted token belongs nowhere near a deployed environment.
+ * It signs in through the real admin login form so the admin pages can be
+ * photographed, using ADMIN_EMAIL / ADMIN_DIAGNOSTIC_PASSWORD from the local
+ * environment. That is why it refuses any host but localhost — driving a login
+ * with credentials from a .env file belongs nowhere near a deployed
+ * environment. Without those variables it photographs the storefront only.
  *
  * Usage:  SHOT_DIR=/tmp/shots node scripts/diagnostics/visual-check.mjs <product-id>
  */
 import { chromium } from 'playwright';
-import { createHmac } from 'node:crypto';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: ['.env.local', '.env'], quiet: true });
@@ -22,7 +23,7 @@ const BASE = process.env.BASE_URL ?? 'http://localhost:3000';
 const OUT = process.env.SHOT_DIR;
 
 if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) {
-  console.error(`Refusing to run against ${BASE}. This script mints an admin token, so it only talks to localhost.`);
+  console.error(`Refusing to run against ${BASE}. This script signs in as an admin, so it only talks to localhost.`);
   process.exit(1);
 }
 
@@ -31,24 +32,29 @@ if (!OUT) {
   process.exit(1);
 }
 
-const b64 = (obj) =>
-  Buffer.from(JSON.stringify(obj)).toString('base64url');
+/**
+ * Signs the browser context in the way a person would.
+ *
+ * The admin session is a Supabase Auth session in httpOnly cookies now, so
+ * there is no token to forge from the outside — and that is the point. Posting
+ * the login form leaves the context holding exactly the cookies a real admin
+ * would have.
+ */
+async function signInAsAdmin(context) {
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_DIAGNOSTIC_PASSWORD;
+  if (!email || !password) return false;
 
-/** The same HS256 token the login route issues, minted locally so the admin
- *  pages can be viewed without a password. */
-function adminToken() {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) return null;
-  const header = b64({ alg: 'HS256', typ: 'JWT' });
-  const payload = b64({
-    role: 'admin',
-    email: process.env.ADMIN_EMAIL ?? 'admin@example.com',
-    exp: Date.now() + 60 * 60 * 1000,
+  const response = await context.request.post(`${BASE}/api/admin/login`, {
+    data: { email, password },
   });
-  const signature = createHmac('sha256', secret)
-    .update(`${header}.${payload}`)
-    .digest('base64url');
-  return `${header}.${payload}.${signature}`;
+
+  if (!response.ok()) {
+    problems.push(`admin sign-in failed (${response.status()}) — admin pages were skipped`);
+    return false;
+  }
+
+  return true;
 }
 
 const productId = process.argv[2];
@@ -69,12 +75,7 @@ for (const [label, viewport] of [
   ['mobile', { width: 390, height: 844 }],
 ]) {
   const context = await browser.newContext({ viewport });
-  const token = adminToken();
-  if (token) {
-    await context.addCookies([
-      { name: 'admin-token', value: token, domain: 'localhost', path: '/' },
-    ]);
-  }
+  const signedIn = await signInAsAdmin(context);
 
   const page = await context.newPage();
   page.on('console', (msg) => {
@@ -120,13 +121,14 @@ for (const [label, viewport] of [
     await shoot(page, `${label}-${name}`);
   }
 
-  // Admin surfaces.
-  for (const [name, path] of [
+  // Admin surfaces. Skipped rather than photographed as a row of login pages
+  // when no diagnostic credentials are configured.
+  for (const [name, path] of (signedIn ? [
     ['admin-reviews', '/admin/reviews'],
     ['admin-questions', '/admin/questions'],
     ['admin-categories', '/admin/categories'],
     ['admin-product-new', '/admin/products/new'],
-  ]) {
+  ] : [])) {
     await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded', timeout: 120000 });
     // Not networkidle: the admin polls its alert ticker, so it never idles.
     await page.waitForSelector('h1', { timeout: 60000 }).catch(() =>
