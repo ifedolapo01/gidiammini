@@ -9,7 +9,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes, Star, ReceiptText,
-  CircleQuestionMark, FolderTree, Percent, Truck, History, Users, Contact,
+  CircleQuestionMark, FolderTree, Percent, Truck, History, Users, Contact, Settings,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/api/admin-roles';
 
@@ -87,5 +87,10 @@ export const adminConfig = {
     { href: '/admin/shipping', label: 'Shipping', icon: Truck, permission: 'store:read' },
     { href: '/admin/activity', label: 'Activity', icon: History, permission: 'audit:read' },
     { href: '/admin/team', label: 'Team', icon: Users, permission: 'team:read' },
+    // Last, and behind store:read rather than settings:write. The page itself
+    // is read-only for anyone who cannot write — "what tax rate are we
+    // charging" is a fair question for a manager, and hiding the link answers
+    // it by making them ask someone.
+    { href: '/admin/settings', label: 'Settings', icon: Settings, permission: 'store:read' },
   ] satisfies AdminNavItem[],
 };

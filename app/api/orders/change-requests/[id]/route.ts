@@ -116,6 +116,8 @@ export const PUT = withAdminAuth(async (request, { supabase, params, actor, audi
           ? 'cancellation'
           : 'delivery method change';
         delivery = await sendCustomNotification({
+          orderId: order.id ?? null,
+          customerId: order.customer_id ?? null,
           orderNumber: order.order_number,
           customerName: order.customer_name,
           customerEmail: order.customer_email,

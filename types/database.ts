@@ -388,14 +388,85 @@ export type Database = {
         }
         Relationships: []
       }
+      discount_redemptions: {
+        Row: {
+          amount_saved: number
+          created_at: string
+          customer_id: string | null
+          discount_id: string
+          email: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          amount_saved?: number
+          created_at?: string
+          customer_id?: string | null
+          discount_id: string
+          email: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          amount_saved?: number
+          created_at?: string
+          customer_id?: string | null
+          discount_id?: string
+          email?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "discount_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_redemptions_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "discount_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discounts: {
         Row: {
+          code: string | null
           created_at: string | null
           end_date: string | null
           id: string
           is_active: boolean | null
+          max_redemptions: number | null
+          min_order_value: number
           name: string
           notified_phases: Json | null
+          per_customer_limit: number | null
+          redemption_count: number
           scope: string
           start_date: string | null
           target_id: string | null
@@ -403,12 +474,17 @@ export type Database = {
           value: number
         }
         Insert: {
+          code?: string | null
           created_at?: string | null
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          max_redemptions?: number | null
+          min_order_value?: number
           name: string
           notified_phases?: Json | null
+          per_customer_limit?: number | null
+          redemption_count?: number
           scope: string
           start_date?: string | null
           target_id?: string | null
@@ -416,12 +492,17 @@ export type Database = {
           value: number
         }
         Update: {
+          code?: string | null
           created_at?: string | null
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          max_redemptions?: number | null
+          min_order_value?: number
           name?: string
           notified_phases?: Json | null
+          per_customer_limit?: number | null
+          redemption_count?: number
           scope?: string
           start_date?: string | null
           target_id?: string | null
@@ -429,6 +510,160 @@ export type Database = {
           value?: number
         }
         Relationships: []
+      }
+      inventory_movements: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          delta: number
+          id: string
+          note: string | null
+          product_id: string
+          reason: string
+          reference_id: string | null
+          reference_type: string | null
+          stock_after: number
+          variant_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          delta: number
+          id?: string
+          note?: string | null
+          product_id: string
+          reason?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          stock_after: number
+          variant_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          delta?: number
+          id?: string
+          note?: string | null
+          product_id?: string
+          reason?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          stock_after?: number
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "most_wishlisted"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          channel: string
+          created_at: string
+          customer_id: string | null
+          failure_detail: string | null
+          failure_reason: string | null
+          id: string
+          kind: string
+          order_id: string | null
+          provider_message_id: string | null
+          recipient: string
+          resend_of: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          actor_id?: string | null
+          channel: string
+          created_at?: string
+          customer_id?: string | null
+          failure_detail?: string | null
+          failure_reason?: string | null
+          id?: string
+          kind: string
+          order_id?: string | null
+          provider_message_id?: string | null
+          recipient: string
+          resend_of?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actor_id?: string | null
+          channel?: string
+          created_at?: string
+          customer_id?: string | null
+          failure_detail?: string | null
+          failure_reason?: string | null
+          id?: string
+          kind?: string
+          order_id?: string | null
+          provider_message_id?: string | null
+          recipient?: string
+          resend_of?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_resend_of_fkey"
+            columns: ["resend_of"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_change_requests: {
         Row: {
@@ -483,8 +718,10 @@ export type Database = {
       }
       order_items: {
         Row: {
+          base_price: number | null
           color: string | null
           created_at: string
+          discount_id: string | null
           id: string
           order_id: string | null
           price: number
@@ -495,8 +732,10 @@ export type Database = {
           variant_id: string | null
         }
         Insert: {
+          base_price?: number | null
           color?: string | null
           created_at?: string
+          discount_id?: string | null
           id?: string
           order_id?: string | null
           price: number
@@ -507,8 +746,10 @@ export type Database = {
           variant_id?: string | null
         }
         Update: {
+          base_price?: number | null
           color?: string | null
           created_at?: string
+          discount_id?: string | null
           id?: string
           order_id?: string | null
           price?: number
@@ -519,6 +760,13 @@ export type Database = {
           variant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "discounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
@@ -1535,6 +1783,75 @@ export type Database = {
           },
         ]
       }
+      store_settings: {
+        Row: {
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          bank_sort_code: string | null
+          contact_phone: string | null
+          free_shipping_threshold: number
+          id: number
+          low_stock_threshold: number
+          notify_marketing: boolean
+          notify_order_received: boolean
+          notify_sms: boolean
+          notify_status_change: boolean
+          order_number_prefix: string
+          reorder_cover_days: number
+          reorder_lead_days: number
+          store_name: string
+          support_email: string | null
+          tax_rate: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_sort_code?: string | null
+          contact_phone?: string | null
+          free_shipping_threshold?: number
+          id?: number
+          low_stock_threshold?: number
+          notify_marketing?: boolean
+          notify_order_received?: boolean
+          notify_sms?: boolean
+          notify_status_change?: boolean
+          order_number_prefix?: string
+          reorder_cover_days?: number
+          reorder_lead_days?: number
+          store_name?: string
+          support_email?: string | null
+          tax_rate?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_sort_code?: string | null
+          contact_phone?: string | null
+          free_shipping_threshold?: number
+          id?: number
+          low_stock_threshold?: number
+          notify_marketing?: boolean
+          notify_order_received?: boolean
+          notify_sms?: boolean
+          notify_status_change?: boolean
+          order_number_prefix?: string
+          reorder_cover_days?: number
+          reorder_lead_days?: number
+          store_name?: string
+          support_email?: string | null
+          tax_rate?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       subcategories: {
         Row: {
           category_slug: string
@@ -1574,6 +1891,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string | null
+          unsubscribe_source: string | null
+          unsubscribed_at: string | null
         }
         Insert: {
           created_at?: string
@@ -1581,6 +1900,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string | null
+          unsubscribe_source?: string | null
+          unsubscribed_at?: string | null
         }
         Update: {
           created_at?: string
@@ -1588,6 +1909,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string | null
+          unsubscribe_source?: string | null
+          unsubscribed_at?: string | null
         }
         Relationships: []
       }
@@ -1761,10 +2084,54 @@ export type Database = {
           },
         ]
       }
+      store_settings_public: {
+        Row: {
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          bank_sort_code: string | null
+          contact_phone: string | null
+          free_shipping_threshold: number | null
+          low_stock_threshold: number | null
+          store_name: string | null
+          support_email: string | null
+          tax_rate: number | null
+        }
+        Insert: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_sort_code?: string | null
+          contact_phone?: string | null
+          free_shipping_threshold?: number | null
+          low_stock_threshold?: number | null
+          store_name?: string | null
+          support_email?: string | null
+          tax_rate?: number | null
+        }
+        Update: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_sort_code?: string | null
+          contact_phone?: string | null
+          free_shipping_threshold?: number | null
+          low_stock_threshold?: number | null
+          store_name?: string | null
+          support_email?: string | null
+          tax_rate?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       adjust_order_stock: {
-        Args: { p_items: Json; p_reserve: boolean }
+        Args: {
+          p_actor_id?: string
+          p_items: Json
+          p_reference_id?: string
+          p_reserve: boolean
+        }
         Returns: Json
       }
       check_rate_limit: {
@@ -1804,6 +2171,7 @@ export type Database = {
         }
         Returns: Json
       }
+      inventory_context: { Args: { p_key: string }; Returns: string }
       is_active_admin: { Args: never; Returns: boolean }
       list_products: {
         Args: {
@@ -1920,10 +2288,23 @@ export type Database = {
           sub_category: string
         }[]
       }
+      set_inventory_context: {
+        Args: {
+          p_actor_id?: string
+          p_note?: string
+          p_reason: string
+          p_reference_id?: string
+          p_reference_type?: string
+        }
+        Returns: undefined
+      }
       set_variant_stock: {
         Args: {
+          p_actor_id?: string
           p_new_stock: number
+          p_note?: string
           p_product_id: string
+          p_reason?: string
           p_variant_key: string
         }
         Returns: Json

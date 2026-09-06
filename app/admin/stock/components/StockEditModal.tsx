@@ -3,18 +3,35 @@ import { Package, Save } from 'lucide-react';
 import { Button, Input, Modal } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
+import type { StockEditReason } from '@/lib/commerce/inventory-movements';
 import ProductImage from '@/components/commerce/ProductImage';
+import { StockMovementReason } from './StockMovementReason';
 
 interface StockEditModalProps {
   editingProduct: FlattenedProduct;
   stockValue: number;
   onStockChange: (value: number) => void;
+  reason: StockEditReason;
+  onReasonChange: (reason: StockEditReason) => void;
+  note: string;
+  onNoteChange: (note: string) => void;
   onCancel: () => void;
   onSave: () => void;
   isSaving: boolean;
 }
 
-export function StockEditModal({ editingProduct, stockValue, onStockChange, onCancel, onSave, isSaving }: StockEditModalProps) {
+export function StockEditModal({
+  editingProduct,
+  stockValue,
+  onStockChange,
+  reason,
+  onReasonChange,
+  note,
+  onNoteChange,
+  onCancel,
+  onSave,
+  isSaving,
+}: StockEditModalProps) {
   return (
     <Modal open onClose={onCancel} title="Update Stock" size="md" padded={false}>
       <div className="p-6">
@@ -47,10 +64,11 @@ export function StockEditModal({ editingProduct, stockValue, onStockChange, onCa
           </div>
 
           <div className="pt-4 border-t border-border-light">
-            <label className="block text-body-sm font-semibold text-text-primary mb-2">
-              New Stock Quantity
+            <label htmlFor="stock-quantity" className="block text-body-sm font-semibold text-text-primary mb-2">
+              {reason === 'stock_take' ? 'Counted quantity' : 'New stock quantity'}
             </label>
             <Input
+              id="stock-quantity"
               type="number" onFocus={(e) => e.target.select()}
               value={stockValue}
               onChange={(e) => onStockChange(parseInt(e.target.value) || 0)}
@@ -62,6 +80,15 @@ export function StockEditModal({ editingProduct, stockValue, onStockChange, onCa
               Current stock is {editingProduct.stock}. Updating this only affects the <strong>{editingProduct.variantLabel}</strong> variant.
             </p>
           </div>
+
+          <StockMovementReason
+            reason={reason}
+            onReasonChange={onReasonChange}
+            note={note}
+            onNoteChange={onNoteChange}
+            expectedStock={editingProduct.stock}
+            newStock={stockValue}
+          />
         </div>
       </div>
 

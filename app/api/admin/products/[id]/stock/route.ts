@@ -14,16 +14,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth, type AuditRecorder } from '@/lib/api/with-admin-auth';
 import { notifyIfRestocked } from '@/lib/commerce/stock-alerts';
+import { parseStockEditReason } from '@/lib/commerce/inventory-movements';
 
 /** Raised by set_variant_stock() for input it won't accept. The message is
  * already written for a person. */
 const INVALID_STOCK_SQLSTATE = 'GM003';
 
+/** Postgres/PostgREST codes for "no function with those arguments" — what a
+ * deploy that has outrun its migration looks like from here. */
+const MISSING_LEDGER_CODES = ['42883', 'PGRST202'];
+
 async function updateProductStock(
   supabase: SupabaseClient,
   request: NextRequest,
   productId: string,
-  audit: AuditRecorder
+  audit: AuditRecorder,
+  actorId: string | null
 ) {
   const body = await request.json();
   const { variantKey, stock } = body;
@@ -61,11 +67,38 @@ async function updateProductStock(
     .eq('id', productId)
     .maybeSingle();
 
-  const { data, error } = await supabase.rpc('set_variant_stock', {
+  // Why the number changed. Without it the ledger cannot tell a delivery from
+  // a correction, and every reorder point built on it is guesswork. Falls back
+  // to 'adjustment' rather than refusing a save that did not send one.
+  const movementReason = parseStockEditReason(body.movementReason);
+  // The same sentence the audit entry carries. A stock take is worth very
+  // little without one.
+  const note = typeof body.reason === 'string' && body.reason.trim() ? body.reason.trim() : null;
+
+  let { data, error } = await supabase.rpc('set_variant_stock', {
     p_product_id: productId,
     p_variant_key: String(variantKey),
     p_new_stock: parsed,
+    p_reason: movementReason,
+    p_note: note,
+    p_actor_id: actorId,
   });
+
+  // Retried without the ledger arguments, for the window between deploying
+  // this code and applying 20260906120000_inventory_movements.sql. The same
+  // trade as in order-stock.ts: an unlabelled movement is a worse report, a
+  // refused save is an admin who cannot correct their stock.
+  if (error && MISSING_LEDGER_CODES.includes(error.code ?? '')) {
+    console.error(
+      'set_variant_stock() did not accept the ledger arguments — apply ' +
+      '20260906120000_inventory_movements.sql. Retrying without them.'
+    );
+    ({ data, error } = await supabase.rpc('set_variant_stock', {
+      p_product_id: productId,
+      p_variant_key: String(variantKey),
+      p_new_stock: parsed,
+    } as any));
+  }
 
   if (error) {
     if (error.code === INVALID_STOCK_SQLSTATE) {
@@ -90,7 +123,7 @@ async function updateProductStock(
     action: 'stock_change',
     before: { stock: previousVariant?.stock ?? null },
     after: { stock: parsed },
-    reason: typeof body.reason === 'string' ? body.reason : null,
+    reason: note,
   });
 
   // Awaited so a restock is mailed before the admin is told the save worked —
@@ -118,7 +151,7 @@ async function updateProductStock(
   });
 }
 
-export const PUT = withAdminAuth(async (request, { supabase, params, audit }) => {
+export const PUT = withAdminAuth(async (request, { supabase, params, audit, actor }) => {
   const { id } = await params;
-  return updateProductStock(supabase, request, id, audit);
+  return updateProductStock(supabase, request, id, audit, actor.id);
 });

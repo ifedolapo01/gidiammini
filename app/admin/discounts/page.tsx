@@ -9,6 +9,7 @@ import { Button } from '@/components/ui';
 import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
 import { parseVariantTargets } from '@/lib/commerce/discount-target';
 import { useDiscounts } from './hooks/useDiscounts';
+import { useDiscountPerformance } from './hooks/useDiscountPerformance';
 import { useDiscountVariantTargeting } from './hooks/useDiscountVariantTargeting';
 import { DiscountTable } from './components/DiscountTable';
 import { DiscountFormModal } from './components/DiscountFormModal';
@@ -23,6 +24,9 @@ export default function DiscountsPage() {
     openModal: openDiscountModal, closeModal,
     handleSubmit, handleDelete, toggleStatus,
   } = useDiscounts();
+  // What each of these earned. A second request, so the tables render the
+  // moment the discounts do.
+  const { performance, unavailable: performanceUnavailable } = useDiscountPerformance();
 
   const variantTargeting = useDiscountVariantTargeting(formData.scope, setFormData, products);
 
@@ -99,6 +103,8 @@ export default function DiscountsPage() {
         categories={categories}
         products={products}
         pendingId={pendingId}
+        performance={performance}
+        performanceUnavailable={performanceUnavailable}
         onToggleStatus={toggleStatus}
         onReuse={(discount) => openModal(discount, true)}
         onEdit={(discount) => openModal(discount)}
@@ -111,6 +117,8 @@ export default function DiscountsPage() {
         categories={categories}
         products={products}
         pendingId={pendingId}
+        performance={performance}
+        performanceUnavailable={performanceUnavailable}
         onToggleStatus={toggleStatus}
         onReuse={(discount) => openModal(discount, true)}
         onEdit={(discount) => openModal(discount)}

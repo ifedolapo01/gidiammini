@@ -15,6 +15,8 @@ import { CartDrawerProvider } from '@/components/cart/CartDrawerProvider';
 import ServiceWorkerRegistrar from '@/components/pwa/ServiceWorkerRegistrar';
 import OfflineBanner from '@/components/pwa/OfflineBanner';
 import { loadCategoryNav } from '@/lib/commerce/category-nav';
+import { loadPublicStoreSettings } from '@/lib/commerce/store-settings-server';
+import { StoreSettingsProvider } from '@/components/StoreSettingsProvider';
 
 /**
  * Inter, self-hosted.
@@ -125,13 +127,22 @@ export const viewport = {
  * to the product cards, which are rendered too far down to be passed a prop.
  * Before this, all three hardcoded Babies / Kids / Maternity, so the admin's
  * Categories page changed nothing a shopper could see.
+ *
+ * The store settings are read the same way and for the same reason: the tax
+ * rate on the cart summary and the bank details at checkout used to be a
+ * constant and three environment variables, so changing either was a deploy.
+ * Both reads are cached and tag-invalidated, so this costs one query per hour
+ * rather than one per page.
  */
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const categories = await loadCategoryNav();
+  const [categories, storeSettings] = await Promise.all([
+    loadCategoryNav(),
+    loadPublicStoreSettings(),
+  ]);
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -145,6 +156,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${inter.className} theme-storefront`} suppressHydrationWarning>
+        <StoreSettingsProvider settings={storeSettings}>
         <CartProvider>
         <WishlistProvider>
         <CategoryProvider categories={categories}>
@@ -162,6 +174,7 @@ export default async function RootLayout({
         </CategoryProvider>
         </WishlistProvider>
         </CartProvider>
+        </StoreSettingsProvider>
         <Toaster />
         <ServiceWorkerRegistrar />
       </body>

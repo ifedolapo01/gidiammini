@@ -44,18 +44,31 @@ export type AdminPermission =
   /** Seeing who the admins are — needed to filter the activity feed by person. */
   | 'team:read'
   /** Inviting, re-roling and revoking admins. */
-  | 'team:manage';
+  | 'team:manage'
+  /** Changing the store settings: the bank account customers transfer to, the
+   * tax rate, the order-number prefix. Owner-only, alongside team:manage and
+   * for the same reason — both are ways to take the shop's money out of the
+   * shop's hands, and neither is part of running it day to day. Reading them
+   * is store:read, because half the Admin has to agree with the storefront
+   * about the tax rate. */
+  | 'settings:write';
 
 const OWNER: AdminPermission[] = [
   'store:read', 'catalog:write', 'stock:write',
   'orders:read', 'orders:write',
   'customers:read', 'customers:write',
   'moderation:write', 'audit:read', 'export:read',
-  'team:read', 'team:manage',
+  'team:read', 'team:manage', 'settings:write',
 ];
 
-/** Everything an owner can do except change who the admins are. */
-const MANAGER: AdminPermission[] = OWNER.filter((p) => p !== 'team:manage');
+/**
+ * The two things that stay with the owner: who the admins are, and where the
+ * money is sent. A manager runs the shop; neither of these is running the shop.
+ */
+const OWNER_ONLY: AdminPermission[] = ['team:manage', 'settings:write'];
+
+/** Everything an owner can do except the two above. */
+const MANAGER: AdminPermission[] = OWNER.filter((p) => !OWNER_ONLY.includes(p));
 
 export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   owner: OWNER,

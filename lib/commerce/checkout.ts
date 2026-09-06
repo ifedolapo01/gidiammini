@@ -11,13 +11,24 @@ import { formatZoneEta } from './shipping-eta';
  * that zone's own exceptions (fee/ETA-only carve-outs) already applied. */
 export { findShippingZone, getDistrictOptions, getAvailableStates };
 
-export const TAX_RATE = 0.075;
-
-/** Rounded to the nearest whole Naira — orders.total_amount and order_items.price
+/**
+ * The VAT on a subtotal, at the rate the shop is currently charging.
+ *
+ * The rate is a parameter, not a constant. It used to be `TAX_RATE = 0.075`
+ * here, which meant a VAT change was a code change; it now lives in
+ * store_settings and reaches this function from
+ * lib/commerce/store-settings-server.ts on the server and from
+ * StoreSettingsProvider in the browser. Deliberately required rather than
+ * defaulted — a caller that has not been given a rate is a caller that would
+ * quietly charge 7.5% forever, and the compiler is better placed to find those
+ * than anybody reading a receipt.
+ *
+ * Rounded to the nearest whole Naira — orders.total_amount and order_items.price
  * are integer columns, and an unrounded rate (e.g. 7.5% of ₦236,500 = ₦17,737.5)
- * would fail the insert. */
-export function calculateTax(subtotal: number): number {
-  return Math.round(subtotal * TAX_RATE);
+ * would fail the insert.
+ */
+export function calculateTax(subtotal: number, rate: number): number {
+  return Math.round(subtotal * rate);
 }
 
 export type DeliveryOption = 'pickup' | 'delivery';

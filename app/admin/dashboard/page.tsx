@@ -128,7 +128,7 @@ export default function AdminDashboard() {
       {/* Recent Orders & Low Stock */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <RecentOrdersPanel orders={stats.recentOrders} />
-        <LowStockPanel products={stats.lowStockProducts} />
+        <LowStockPanel products={stats.lowStockProducts} lowStockThreshold={stats.lowStockThreshold} />
       </div>
 
       {/* Beside low stock on purpose: one says what is running out, the other

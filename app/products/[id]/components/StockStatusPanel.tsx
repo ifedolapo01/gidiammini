@@ -3,6 +3,7 @@
 
 import { Check, AlertTriangle, Package } from 'lucide-react';
 import { getStockStatus } from '@/lib/commerce/stock';
+import { useStoreSettings } from '@/components/StoreSettingsProvider';
 
 interface StockStatusPanelProps {
   stock: number;
@@ -23,6 +24,11 @@ export default function StockStatusPanel({ stock }: StockStatusPanelProps) {
 }
 
 function StockStatus({ stock }: { stock: number }) {
+  // The shop's own threshold, not a literal 5. A shop that restocks weekly and
+  // one that restocks quarterly do not agree about what "only a few left"
+  // means, and this is the sentence a shopper acts on.
+  const { lowStockThreshold } = useStoreSettings();
+
   // Defensive edge case preserved from the original inline component: negative
   // stock shouldn't happen, but is handled distinctly from "out of stock" (0).
   if (stock < 0) {
@@ -34,7 +40,7 @@ function StockStatus({ stock }: { stock: number }) {
     );
   }
 
-  const status = getStockStatus(stock, 5);
+  const status = getStockStatus(stock, lowStockThreshold);
 
   if (status.level === 'in') {
     return (

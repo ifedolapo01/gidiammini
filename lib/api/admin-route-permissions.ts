@@ -37,6 +37,10 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/orders/*', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/orders/*/shipping', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/orders/*/notify', read: 'orders:read', write: 'orders:write' },
+  // The order's notification timeline, and re-sending one of it. Same
+  // permission as sending a message in the first place, because that is what a
+  // resend is.
+  { pattern: '/api/orders/*/notifications', read: 'orders:read', write: 'orders:write' },
   // Editing an order's lines moves stock and changes what the customer owes,
   // which is what orders:write already means. Deliberately not a permission of
   // its own: whoever can cancel an order can already destroy more value than
@@ -105,6 +109,23 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/admin/export/*', read: 'export:read' },
   { pattern: '/api/admin/team', read: 'team:read', write: 'team:manage' },
   { pattern: '/api/admin/team/*', read: 'team:read', write: 'team:manage' },
+
+  // What each discount earned. Read-only, and store:read like the discounts
+  // screen it decorates.
+  { pattern: '/api/admin/discounts/performance', read: 'store:read' },
+
+  // The inventory ledger's reports. store:read, like the stock table they
+  // decorate — these are the same numbers read a different way, and a
+  // fulfilment assistant deciding what to pick benefits from knowing what is
+  // about to run out.
+  { pattern: '/api/admin/stock/insights', read: 'store:read' },
+  { pattern: '/api/admin/stock/aging', read: 'store:read' },
+
+  // Read and write deliberately far apart. The order editor's tax preview and
+  // the stock page's threshold both read this, so anyone who can see those
+  // screens can read the row; writing it sets the bank account customers
+  // transfer money to, which is owner-only.
+  { pattern: '/api/admin/settings', read: 'store:read', write: 'settings:write' },
 ];
 
 /**

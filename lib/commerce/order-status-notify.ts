@@ -108,6 +108,11 @@ export async function notifyStatusChange(
       : undefined;
 
     return await sendOrderStatusUpdate({
+      // Both ids so the send lands on this order's timeline and on the
+      // customer's history. Without them the notifications row is orphaned and
+      // the Admin cannot answer "did we tell them?".
+      orderId: order.id ?? null,
+      customerId: order.customer_id ?? null,
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,

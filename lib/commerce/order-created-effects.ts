@@ -33,7 +33,7 @@ export async function runOrderCreatedEffects(
   }
 
   try {
-    await sendOrderReceivedEmail({ orderNumber, customerName, customerEmail });
+    await sendOrderReceivedEmail({ orderId, orderNumber, customerName, customerEmail });
   } catch (notificationError) {
     console.error('Order-received email error:', notificationError);
   }

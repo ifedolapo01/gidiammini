@@ -1,9 +1,13 @@
 /** COMMERCE layer — shared stock-status badge. Used by Storefront and Admin. */
 import { Badge, type BadgeVariant } from '@/components/ui';
 import { getStockStatus } from '@/lib/commerce/stock';
+import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
 
 interface StockBadgeProps {
   stock: number;
+  /** The shop's setting. Callers inside the storefront read it from
+   *  useStoreSettings(); admin callers from useAdminStoreSettings(). Omitted
+   *  falls back to the same value the settings row defaults to. */
   lowStockThreshold?: number;
   variant?: BadgeVariant;
   /** Hide the badge entirely when stock is healthy (default true). */
@@ -16,7 +20,7 @@ interface StockBadgeProps {
 
 export function StockBadge({
   stock,
-  lowStockThreshold = 5,
+  lowStockThreshold = DEFAULT_STORE_SETTINGS.lowStockThreshold,
   variant = 'solid',
   hideWhenInStock = true,
   labels,

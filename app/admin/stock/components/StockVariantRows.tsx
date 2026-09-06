@@ -10,7 +10,9 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
 import { RowCheckbox, SelectAllCheckbox } from '@/app/admin/components/SelectionCheckbox';
+import type { VariantInsight } from '@/lib/commerce/inventory-analytics';
 import { UpdateStockButton, StockThumbnail } from './StockRowParts';
+import { StockCoverHint } from './StockCoverHint';
 
 interface ParentStockRowProps {
   parent: FlattenedProduct;
@@ -62,6 +64,8 @@ export function ParentStockRow({
 interface ChildStockRowProps {
   product: FlattenedProduct;
   lowStockThreshold: number;
+  /** See SingleStockRow. */
+  insight?: VariantInsight;
   selected: boolean;
   onToggleSelect: () => void;
   onEdit: (product: FlattenedProduct) => void;
@@ -70,6 +74,7 @@ interface ChildStockRowProps {
 export function ChildStockRow({
   product,
   lowStockThreshold,
+  insight,
   selected,
   onToggleSelect,
   onEdit,
@@ -104,7 +109,7 @@ export function ChildStockRow({
         {/* Empty Category column */}
       </td>
       <td className="px-6 py-3 whitespace-nowrap text-center">
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center">
           <StockBadge
             stock={product.stock}
             lowStockThreshold={lowStockThreshold}
@@ -112,6 +117,7 @@ export function ChildStockRow({
             countFormat="parens"
             className="px-3 py-1.5 font-bold"
           />
+          <StockCoverHint insight={insight} />
         </div>
       </td>
       <td className="px-6 py-3 whitespace-nowrap text-body-sm font-medium text-center">

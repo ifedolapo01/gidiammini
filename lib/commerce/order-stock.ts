@@ -29,7 +29,20 @@ interface OrderItemForStockChange {
 }
 
 interface OrderForStockChange {
+  id?: string | null;
   order_items?: OrderItemForStockChange[];
+}
+
+/** Who and what to attribute the movement to in inventory_movements.
+ *
+ * Optional throughout: the reservation sweep has no actor and edit_order_items
+ * calls the function inline with neither. A movement with no reference is still
+ * a movement, and recording it unattributed is better than not recording it. */
+export interface StockChangeContext {
+  /** orders.id, so the ledger can answer "what did this order do to stock". */
+  orderId?: string | null;
+  /** auth.users.id of the admin who caused it, where one did. */
+  actorId?: string | null;
 }
 
 /** Raised by adjust_order_stock() when a claim would oversell. Its message is
@@ -66,14 +79,36 @@ export function toStockChangeItems(items: OrderItemForStockChange[] = []): Stock
 export async function adjustStock(
   supabase: SupabaseClient,
   items: StockChangeItem[],
-  isReserving: boolean
+  isReserving: boolean,
+  context: StockChangeContext = {}
 ): Promise<{ error?: string }> {
   if (items.length === 0) return {};
 
-  const { error } = await supabase.rpc('adjust_order_stock', {
+  // The function labels the movement 'sale' or 'release' from p_reserve on its
+  // own — these two only say which order and which person to attribute it to.
+  let { error } = await supabase.rpc('adjust_order_stock', {
     p_items: items,
     p_reserve: isReserving,
+    p_reference_id: context.orderId ?? null,
+    p_actor_id: context.actorId ?? null,
   });
+
+  // Retried without the ledger arguments, for the window between deploying
+  // this code and applying 20260906120000_inventory_movements.sql — which
+  // widened this function's signature, so PostgREST answers PGRST202 until it
+  // has run. Losing the attribution on a movement costs a line in a report;
+  // losing this call costs every checkout, because stock could not be claimed.
+  // Deliberately not applied to a genuine oversell (GM001), which must fail.
+  if (error && MISSING_FUNCTION_CODES.includes(error.code ?? '')) {
+    console.error(
+      'adjust_order_stock() did not accept the ledger arguments — apply ' +
+      '20260906120000_inventory_movements.sql. Retrying without them.'
+    );
+    ({ error } = await supabase.rpc('adjust_order_stock', {
+      p_items: items,
+      p_reserve: isReserving,
+    } as any));
+  }
 
   if (!error) return {};
 
@@ -96,11 +131,17 @@ export async function adjustStock(
   };
 }
 
-/** Convenience wrapper for callers that already hold a full order row. */
+/** Convenience wrapper for callers that already hold a full order row. Takes
+ *  the order's own id as the ledger reference, so a status transition does not
+ *  have to be told what it is working on twice. */
 export async function applyOrderStockChange(
   supabase: SupabaseClient,
   order: OrderForStockChange,
-  isReserving: boolean
+  isReserving: boolean,
+  context: Omit<StockChangeContext, 'orderId'> = {}
 ): Promise<{ error?: string }> {
-  return adjustStock(supabase, toStockChangeItems(order.order_items), isReserving);
+  return adjustStock(supabase, toStockChangeItems(order.order_items), isReserving, {
+    ...context,
+    orderId: order.id ?? null,
+  });
 }

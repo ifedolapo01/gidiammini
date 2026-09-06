@@ -6,6 +6,8 @@
 // the card always agree, and the checkbox column turns a shelf count into one
 // action instead of one modal per variant.
 'use client';
+import Link from 'next/link';
+import { LineChart } from 'lucide-react';
 import { StockSkeleton } from './components/StockSkeleton';
 
 import { useStock } from './hooks/useStock';
@@ -36,6 +38,7 @@ export default function StockManagementPage() {
     reconcile,
     lowStockThreshold,
     setLowStockThreshold,
+    insights,
   } = useStock();
 
   const { categories } = useProductCategories();
@@ -46,6 +49,10 @@ export default function StockManagementPage() {
     editingProduct,
     stockUpdates,
     setStockUpdates,
+    reason,
+    setReason,
+    note,
+    setNote,
     startEditing,
     saveChanges,
     cancelEditing,
@@ -66,9 +73,22 @@ export default function StockManagementPage() {
           <LiveIndicator live={live} subject="stock levels" />
         </p>
         </div>
-        {/* Exports the same variant_ref the bulk stock endpoint accepts, so a
-            counted sheet can come back in. */}
-        <ExportButton dataset="stock" label="Export stock" />
+        <div className="flex items-center gap-2">
+          {/* Beside the export rather than in the sidebar: the reports answer
+              questions that come up while looking at this table, and a nav
+              entry of its own would put "what should I buy" three clicks from
+              "what have I got". */}
+          <Link
+            href="/admin/stock/reports"
+            className="inline-flex items-center gap-2 rounded-control border border-border px-4 py-2 text-body-sm font-medium text-text-primary hover:bg-surface-hover transition-colors"
+          >
+            <LineChart size={18} aria-hidden />
+            Reorder &amp; aging
+          </Link>
+          {/* Exports the same variant_ref the bulk stock endpoint accepts, so a
+              counted sheet can come back in. */}
+          <ExportButton dataset="stock" label="Export stock" />
+        </div>
       </div>
 
       <StockSummaryCards summary={summary} />
@@ -95,6 +115,7 @@ export default function StockManagementPage() {
       <StockTable
         products={products}
         lowStockThreshold={lowStockThreshold}
+        insights={insights}
         selection={selection}
         onEdit={startEditing}
         filtered={isFiltered}
@@ -140,6 +161,10 @@ export default function StockManagementPage() {
           editingProduct={editingProduct}
           stockValue={stockUpdates[editingProduct.id] ?? editingProduct.stock}
           onStockChange={(value) => setStockUpdates({ ...stockUpdates, [editingProduct.id]: value })}
+          reason={reason}
+          onReasonChange={setReason}
+          note={note}
+          onNoteChange={setNote}
           onCancel={cancelEditing}
           onSave={saveChanges}
           isSaving={isSaving}

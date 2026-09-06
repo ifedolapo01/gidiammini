@@ -6,29 +6,10 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Discount } from '@/lib/commerce/discounts';
+import { emptyFormData, type DiscountFormData } from './useDiscounts.types';
+
+export type { DiscountFormData };
 import { useDiscountData } from './useDiscountData';
-
-export interface DiscountFormData {
-  name: string;
-  type: 'PERCENTAGE' | 'FIXED';
-  value: string;
-  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT' | 'VARIANT';
-  target_id: string;
-  is_active: boolean;
-  start_date: string;
-  end_date: string;
-}
-
-const emptyFormData: DiscountFormData = {
-  name: '',
-  type: 'PERCENTAGE',
-  value: '',
-  scope: 'SITEWIDE',
-  target_id: '',
-  is_active: true,
-  start_date: '',
-  end_date: '',
-};
 
 export function useDiscounts() {
   const { discounts, categories, products, loading, error, setError, refresh } = useDiscountData();
@@ -52,7 +33,16 @@ export function useDiscounts() {
           target_id: discount.target_id || '',
           is_active: true,
           start_date: '',
-          end_date: ''
+          end_date: '',
+          // Deliberately not copied: a code is unique, so reusing a discount
+          // that has one has to mint a new code rather than collide with the
+          // original. Limits are left blank for the same reason — a reused
+          // campaign is a new campaign, and inheriting "47 of 50 used" would
+          // make it expire on its third order.
+          code: '',
+          max_redemptions: '',
+          per_customer_limit: '',
+          min_order_value: discount.min_order_value ? String(discount.min_order_value) : '',
         });
       } else {
         setEditingId(discount.id);
@@ -63,6 +53,10 @@ export function useDiscounts() {
           scope: discount.scope,
           target_id: discount.target_id || '',
           is_active: discount.is_active,
+          code: discount.code ?? '',
+          max_redemptions: discount.max_redemptions ? String(discount.max_redemptions) : '',
+          per_customer_limit: discount.per_customer_limit ? String(discount.per_customer_limit) : '',
+          min_order_value: discount.min_order_value ? String(discount.min_order_value) : '',
           start_date: discount.start_date ? format(new Date(discount.start_date), "yyyy-MM-dd'T'HH:mm") : '',
           end_date: discount.end_date ? format(new Date(discount.end_date), "yyyy-MM-dd'T'HH:mm") : ''
         });

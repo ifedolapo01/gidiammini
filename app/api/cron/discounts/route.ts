@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin-server';
 import { authorizeCron } from '@/lib/api/cron-auth';
 import { computeDiscountPhase } from '@/lib/commerce/discount-phase';
 import { asNotifiedPhases } from '@/lib/commerce/db-narrowing';
-import { sendBulkEmail } from '@/lib/email';
+import { sendMarketingCampaign } from '@/lib/notifications/marketing';
 import { escapeHtml, sanitizeHeader } from '@/lib/notifications/escape-html';
 import { SITE_URL } from '@/lib/site-url';
 
@@ -72,7 +72,10 @@ export async function GET(req: NextRequest) {
         if (!subscribers) {
           const { data, error: subError } = await supabase
             .from('subscribers')
-            .select('name, email')
+            // id, because the unsubscribe link is derived from it. Without
+            // this the campaign has no way to build a per-recipient opt-out
+            // and sendMarketingCampaign refuses to send.
+            .select('id, name, email')
             .eq('is_active', true);
           if (subError) throw subError;
           subscribers = data || [];
@@ -98,7 +101,7 @@ export async function GET(req: NextRequest) {
             bodyText = `Time is running out! Grab your favorites with <strong>${discountVal}</strong> before the ${escapeHtml(discount.name)} expires tonight.`;
           }
 
-          const html = `
+          const buildCampaignHtml = (unsubscribeFooterHtml: string) => `
               <div style="font-family: Arial, sans-serif; max-w: 600px; margin: 0 auto; padding: 20px;">
                 <h1 style="color: #2563eb; text-align: center;">${storeName}</h1>
                 <h2 style="color: #1f2937;">${title}</h2>
@@ -108,16 +111,28 @@ export async function GET(req: NextRequest) {
                 <div style="text-align: center; margin: 30px 0;">
                   <a href="${siteUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Shop Now</a>
                 </div>
-                <p style="color: #6b7280; font-size: 12px; text-align: center;">
-                  You received this email because you subscribed to exclusive offers.
-                </p>
+                ${unsubscribeFooterHtml}
               </div>
             `;
 
-          const result = await sendBulkEmail(subscribers.map(s => s.email), sanitizeHeader(`${title} ${discount.name} - ${discountVal}!`), html);
-          if (result.success) {
-            emailsSent += subscribers.length;
+          // One message per subscriber, each carrying its own opt-out link.
+          // This was a single BCC to the whole list, which is cheaper and makes
+          // a lawful unsubscribe impossible — one body cannot carry a link that
+          // says which recipient clicked it. See lib/notifications/marketing.ts.
+          const result = await sendMarketingCampaign({
+            recipients: subscribers.map((s) => ({ id: s.id, email: s.email, name: s.name })),
+            subject: sanitizeHeader(`${title} ${discount.name} - ${discountVal}!`),
+            buildHtml: ({ unsubscribeFooterHtml }) => buildCampaignHtml(unsubscribeFooterHtml),
+          });
+
+          if (result.refused) {
+            // Nothing went out and nothing should be marked as notified, or the
+            // phase is silently skipped forever once the secret is configured.
+            console.error(`Campaign for "${discount.name}" not sent: ${result.refused}`);
+            continue;
           }
+
+          emailsSent += result.sent;
           discountsProcessed++;
 
           // Update notified_phases in DB

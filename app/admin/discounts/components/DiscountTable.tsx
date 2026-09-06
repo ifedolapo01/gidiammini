@@ -4,7 +4,10 @@
 import { Percent, Tag, Calendar, Send, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge, Spinner } from '@/components/ui';
-import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
+import { Discount } from '@/lib/commerce/discounts';
+import type { DiscountPerformance } from '@/lib/commerce/discount-performance';
+import DiscountPerformanceCell from './DiscountPerformanceCell';
+import DiscountNameCell from './DiscountNameCell';
 import { formatTarget } from '@/lib/commerce/discount-target';
 import type { Category, Product } from '@/types/product';
 
@@ -19,6 +22,11 @@ interface DiscountTableProps {
   onEdit: (discount: Discount) => void;
   onDelete: (id: string) => void;
   onNotify: (discount: Discount) => void;
+  /** Keyed by discount id. Empty until the second request lands. */
+  performance: Record<string, DiscountPerformance>;
+  /** The figures could not be read at all — distinct from a discount nobody
+   *  has used, which reads identically as a row of zeroes. */
+  performanceUnavailable: boolean;
 }
 
 export function DiscountTable({
@@ -27,6 +35,8 @@ export function DiscountTable({
   categories,
   products,
   pendingId,
+  performance,
+  performanceUnavailable,
   onToggleStatus,
   onReuse,
   onEdit,
@@ -60,6 +70,7 @@ export function DiscountTable({
                 <th className="px-6 py-4 font-semibold">Scope</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold">Dates</th>
+                <th className="px-6 py-4 font-semibold">Performance</th>
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
@@ -67,17 +78,7 @@ export function DiscountTable({
               {tableDiscounts.map((discount) => (
                 <tr key={discount.id} className="hover:bg-surface-hover transition-colors">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-control flex items-center justify-center ${discount.type === 'PERCENTAGE' ? 'bg-accent/10 text-accent' : 'bg-success-background text-success'}`}>
-                        {discount.type === 'PERCENTAGE' ? <Percent size={20} /> : <span className="font-bold">₦</span>}
-                      </div>
-                      <div>
-                        <p className="font-bold text-text-primary">{discount.name}</p>
-                        <p className="text-body-sm text-text-secondary font-medium">
-                          {formatDiscountValue(discount)}
-                        </p>
-                      </div>
-                    </div>
+                    <DiscountNameCell discount={discount} />
                   </td>
                   <td className="px-6 py-4">
                     <Badge tone="info" variant="subtle" className="font-semibold uppercase tracking-wider">
@@ -128,6 +129,12 @@ export function DiscountTable({
                     ) : (
                       <span className="text-body-sm text-text-secondary italic">No expiry</span>
                     )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <DiscountPerformanceCell
+                      performance={performance[discount.id]}
+                      unavailable={performanceUnavailable}
+                    />
                   </td>
                   <td className="px-6 py-4 text-right">
                     {isHistory ? (

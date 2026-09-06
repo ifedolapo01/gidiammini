@@ -34,7 +34,7 @@ function productIdOf(rowId: string): string {
   return separator < 1 ? rowId : rowId.slice(0, separator);
 }
 
-export const POST = withAdminAuth(async (request, { supabase, audit }) => {
+export const POST = withAdminAuth(async (request, { supabase, audit, actor }) => {
   const body = await request.json().catch(() => null);
 
   const action = body?.action as BulkAction | undefined;
@@ -82,7 +82,7 @@ export const POST = withAdminAuth(async (request, { supabase, audit }) => {
       if (!Number.isFinite(stock) || stock < 0) {
         return bad('Stock must be a whole number of zero or more.');
       }
-      handle = (rowId) => setVariantStock(supabase, rowId, stock, names, audit);
+      handle = (rowId) => setVariantStock(supabase, rowId, stock, names, audit, actor.id);
       break;
     }
   }

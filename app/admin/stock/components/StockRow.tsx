@@ -9,11 +9,16 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
 import { RowCheckbox } from '@/app/admin/components/SelectionCheckbox';
+import type { VariantInsight } from '@/lib/commerce/inventory-analytics';
 import { UpdateStockButton, StockThumbnail } from './StockRowParts';
+import { StockCoverHint } from './StockCoverHint';
 
 interface SingleStockRowProps {
   product: FlattenedProduct;
   lowStockThreshold: number;
+  /** The ledger's reading for this variant. Absent until the second request
+   *  lands, and for rows that predate product_variants. */
+  insight?: VariantInsight;
   selected: boolean;
   onToggleSelect: () => void;
   onEdit: (product: FlattenedProduct) => void;
@@ -22,6 +27,7 @@ interface SingleStockRowProps {
 export function SingleStockRow({
   product,
   lowStockThreshold,
+  insight,
   selected,
   onToggleSelect,
   onEdit,
@@ -59,7 +65,7 @@ export function SingleStockRow({
           pushed a single-variant product's badge out of line with every other
           row in the table. */}
       <td className="px-6 py-4 whitespace-nowrap text-center">
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center">
           <StockBadge
             stock={product.stock}
             lowStockThreshold={lowStockThreshold}
@@ -67,6 +73,7 @@ export function SingleStockRow({
             countFormat="parens"
             className="px-3 py-1.5 font-bold"
           />
+          <StockCoverHint insight={insight} />
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-body-sm font-medium text-center">

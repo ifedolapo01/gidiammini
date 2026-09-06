@@ -46,6 +46,16 @@ const destinationFields = {
   selected_state: z.unknown().optional(),
   selected_lga: z.unknown().optional(),
   selected_place: z.unknown().optional(),
+  /**
+   * A redemption code the customer typed.
+   *
+   * Deliberately not shape-checked here. normaliseCode() in
+   * lib/commerce/discount-code.ts owns what a code looks like, and rejecting a
+   * mistyped one with a 400 would blank the whole quote — including the total
+   * the customer is waiting for — over a field they can fix. An unusable code
+   * comes back as `code_error` beside a valid price instead.
+   */
+  discount_code: optionalText('Discount code', 40),
 };
 
 export const checkoutQuoteSchema = z.object({

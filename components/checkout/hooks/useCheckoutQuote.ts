@@ -14,6 +14,13 @@ import { useCart, type PricedCartLine } from '@/components/CartProvider';
 import { CartItem } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
 
+export interface AppliedCode {
+  code: string;
+  discount_id: string;
+  saved_on_items: number;
+  saved_on_shipping: number;
+}
+
 export interface CheckoutQuote {
   items: PricedCartLine[];
   subtotal: number;
@@ -22,6 +29,12 @@ export interface CheckoutQuote {
   total: number;
   /** Server-issued, and stable for this checkout attempt. */
   orderNumber: string;
+  /** The code the server accepted, and what it was worth. Null when none was
+   *  sent or it was refused. */
+  applied_code: AppliedCode | null;
+  /** Why a code was refused, in the customer's words. The quote itself is
+   *  still valid — a bad code must not cost somebody their total. */
+  code_error: string | null;
 }
 
 interface QuoteRequest {
@@ -36,6 +49,9 @@ interface QuoteRequest {
   /** Sent so the server can refuse a barred buyer before the payment screen,
    * rather than after they have transferred. Never used for pricing. */
   customerEmail: string;
+  /** What the customer typed in the code box. Validated server-side against
+   *  the live discount row; nothing about it is trusted here. */
+  discountCode?: string;
 }
 
 export function useCheckoutQuote() {
@@ -61,6 +77,7 @@ export function useCheckoutQuote() {
           selected_state: request.selectedState,
           selected_lga: request.selectedLga || null,
           selected_place: request.selectedPlace || null,
+          discount_code: request.discountCode?.trim() || null,
           items: request.items.map((item) => ({
             product_id: item.productId,
             size: item.size ?? null,
@@ -83,6 +100,23 @@ export function useCheckoutQuote() {
         toast.info(`Prices have changed since you added these items. Your new total is ${formatCurrency(quote.total)}.`, {
           duration: 8000,
         });
+      }
+
+      // A refused code is surfaced here rather than left to the caller: every
+      // caller would have to remember, and a code that silently does nothing
+      // is the single most common complaint about checkout discount fields.
+      if (quote.code_error) {
+        toast.error(quote.code_error, { duration: 8000 });
+      } else if (quote.applied_code) {
+        const saved = quote.applied_code.saved_on_items + quote.applied_code.saved_on_shipping;
+        toast.success(
+          saved > 0
+            ? `${quote.applied_code.code} applied — you saved ${formatCurrency(saved)}.`
+            : // A code that lost to a better sale on every line. Saying
+              // "applied" and showing no change is worse than explaining.
+              `${quote.applied_code.code} is valid, but the prices you already have are better.`,
+          { duration: 8000 }
+        );
       }
 
       return quote;

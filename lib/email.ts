@@ -8,7 +8,25 @@ import { classifyEmailError, isEmailConfigured } from './email-failure';
 import type { DeliveryFailureReason } from './notifications/delivery';
 
 export type EmailSendResult =
-  | { success: true; messageId?: string }
+  | {
+      success: true;
+      messageId?: string;
+      /**
+       * Recipients the receiving server refused during the SMTP conversation.
+       *
+       * The only bounce this transport can report, and it reports it
+       * synchronously: a hard rejection at handshake, before the message is
+       * queued. Everything that goes wrong afterwards — a mailbox that fills
+       * up, a deferral that gives up at 3am, a spam complaint — is invisible
+       * to SMTP and needs a provider with webhooks. See migration
+       * 20260906140000.
+       *
+       * `success` stays true when some recipients were accepted and others
+       * refused, which is what nodemailer reports and what actually happened.
+       * The caller decides whether a partial send counts.
+       */
+      rejected?: string[];
+    }
   | { success: false; reason: DeliveryFailureReason; detail: string };
 
 // Create a reusable transporter
@@ -44,8 +62,13 @@ export async function sendOrderEmail(to: string, subject: string, html: string):
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to ${to}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    const rejected = (info.rejected ?? []).map(String);
+    if (rejected.length > 0) {
+      console.warn(`⚠️  Email to ${to} refused by the receiving server: ${rejected.join(', ')}`);
+    } else {
+      console.log(`✅ Email sent to ${to}: ${info.messageId}`);
+    }
+    return { success: true, messageId: info.messageId, rejected };
   } catch (error) {
     const failure = classifyEmailError(error);
     console.error(`Email to ${to} failed (${failure.reason}): ${failure.detail}`);
@@ -85,8 +108,11 @@ export async function sendBulkEmail(recipients: string[], subject: string, html:
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Bulk email sent to ${recipients.length} recipients: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    const rejected = (info.rejected ?? []).map(String);
+    console.log(
+      `✅ Bulk email accepted for ${recipients.length - rejected.length} of ${recipients.length} recipients: ${info.messageId}`
+    );
+    return { success: true, messageId: info.messageId, rejected };
   } catch (error) {
     const failure = classifyEmailError(error);
     console.error(`Bulk email to ${recipients.length} recipients failed (${failure.reason}): ${failure.detail}`);

@@ -27,6 +27,15 @@ describe('the role vocabulary', () => {
 describe('can', () => {
   it('gives an owner everything and only an owner the team', () => {
     expect(can('owner', 'team:manage')).toBe(true);
+    // Where the shop's money is sent stays with the owner, alongside who the
+    // admins are.
+    expect(can('owner', 'settings:write')).toBe(true);
+    expect(can('manager', 'settings:write')).toBe(false);
+    expect(can('fulfilment', 'settings:write')).toBe(false);
+    expect(can('read_only', 'settings:write')).toBe(false);
+    // Reading them is not restricted: half the Admin has to agree with the
+    // storefront about the tax rate.
+    expect(can('manager', 'store:read')).toBe(true);
     expect(can('manager', 'team:manage')).toBe(false);
     expect(can('fulfilment', 'team:manage')).toBe(false);
     expect(can('read_only', 'team:manage')).toBe(false);
@@ -45,7 +54,7 @@ describe('can', () => {
   });
 
   it('lets read-only change nothing at all', () => {
-    const writes = ['catalog:write', 'stock:write', 'orders:write', 'customers:write', 'moderation:write', 'team:manage'] as const;
+    const writes = ['catalog:write', 'stock:write', 'orders:write', 'customers:write', 'moderation:write', 'team:manage', 'settings:write'] as const;
     for (const permission of writes) {
       expect(can('read_only', permission), permission).toBe(false);
     }

@@ -2,11 +2,12 @@
 'use client';
 
 import { Dispatch, SetStateAction } from 'react';
-import { Button, Input, Modal, Select, Checkbox } from '@/components/ui';
+import { Button, Input, Modal, Checkbox } from '@/components/ui';
 import type { Category, Product } from '@/types/product';
 import type { VariantTarget } from '@/lib/commerce/discount-target';
 import type { DiscountFormData } from '../hooks/useDiscounts';
-import { DiscountTargetField } from './DiscountTargetField';
+import DiscountRedemptionFields from './DiscountRedemptionFields';
+import DiscountShapeFields from './DiscountShapeFields';
 import MarginFloorWarning from './MarginFloorWarning';
 
 interface VariantTargetingProps {
@@ -69,63 +70,17 @@ export function DiscountFormModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-body-sm font-semibold text-text-primary mb-1.5">Discount Type</label>
-              <Select
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value as any})}
-              >
-                <option value="PERCENTAGE">Percentage (%)</option>
-                <option value="FIXED">Fixed Amount (₦)</option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-body-sm font-semibold text-text-primary mb-1.5">Value</label>
-              <div className="relative">
-                {formData.type === 'FIXED' && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">₦</span>}
-                <Input
-                  type="number" onFocus={(e) => e.target.select()}
-                  value={formData.value}
-                  onChange={(e) => setFormData({...formData, value: e.target.value})}
-                  className={formData.type === 'FIXED' ? 'pl-7 pr-3' : undefined}
-                  placeholder={formData.type === 'PERCENTAGE' ? 'e.g. 20' : 'e.g. 5000'}
-                  min="0"
-                  max={formData.type === 'PERCENTAGE' ? "100" : undefined}
-                  required
-                />
-                {formData.type === 'PERCENTAGE' && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">%</span>}
-              </div>
-            </div>
-          </div>
+          <DiscountShapeFields
+            formData={formData}
+            setFormData={setFormData}
+            categories={categories}
+            products={products}
+            variantTargeting={variantTargeting}
+          />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-body-sm font-semibold text-text-primary mb-1.5">Scope</label>
-              <Select
-                value={formData.scope}
-                onChange={(e) => setFormData({...formData, scope: e.target.value as any, target_id: ''})}
-              >
-                <option value="SITEWIDE">Sitewide</option>
-                <option value="CATEGORY">Category</option>
-                <option value="SUBCATEGORY">Subcategory</option>
-                <option value="PRODUCT">Specific Product</option>
-                <option value="VARIANT">Product Variant</option>
-              </Select>
-            </div>
-
-            {/* Placed after scope and target because the answer depends on
-                both: the same percentage is safe on one category and a loss on
-                another. */}
-            <DiscountTargetField
-              scope={formData.scope}
-              targetId={formData.target_id}
-              onTargetIdChange={(value) => setFormData({...formData, target_id: value})}
-              categories={categories}
-              products={products}
-              variantTargeting={variantTargeting}
-            />
-          </div>
+          {/* After targeting, before the schedule: what it applies to, then who
+              may use it, then when. */}
+          <DiscountRedemptionFields formData={formData} setFormData={setFormData} />
 
           <MarginFloorWarning
             products={products}

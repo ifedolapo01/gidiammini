@@ -8,18 +8,41 @@
  */
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { flattenProducts, type FlattenedProduct } from '@/lib/commerce/product-flatten';
 import type { AdminProductsSummary } from '@/lib/commerce/admin-products-summary';
 import { useListParams } from '../../hooks/useListParams';
 import { useListData } from '../../hooks/useListData';
 import { useListSummary } from '../../hooks/useListSummary';
 import { useAdminRealtime } from '../../hooks/useAdminRealtime';
+import { useAdminStoreSettings } from '../../hooks/useAdminStoreSettings';
+import { useStockInsights } from './useStockInsights';
+import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
 
-const DEFAULT_LOW_STOCK_THRESHOLD = 5;
+/** Only until the settings arrive. The page used to define its own 5 here,
+ *  which is how it came to disagree with the dashboard's 10. */
+const SEED_THRESHOLD = DEFAULT_STORE_SETTINGS.lowStockThreshold;
 
 export function useStock() {
-  const [lowStockThreshold, setLowStockThreshold] = useState(DEFAULT_LOW_STOCK_THRESHOLD);
+  const [lowStockThreshold, setLowStockThreshold] = useState(SEED_THRESHOLD);
+
+  // The shop's setting seeds the control; the control still overrides it for
+  // this session. Both are wanted: "low stock" should mean what the shop says
+  // it means by default, and somebody doing a reorder round should still be
+  // able to ask "what is down to 20 or fewer" without changing it for everyone.
+  const { lowStockThreshold: savedThreshold } = useAdminStoreSettings();
+  const thresholdTouched = useRef(false);
+
+  useEffect(() => {
+    // Once, when the settings land, and never over a value the operator typed.
+    if (thresholdTouched.current) return;
+    setLowStockThreshold(savedThreshold);
+  }, [savedThreshold]);
+
+  const changeThreshold = useCallback((value: number) => {
+    thresholdTouched.current = true;
+    setLowStockThreshold(value);
+  }, []);
 
   const params = useListParams({
     sort: 'stock',
@@ -27,7 +50,7 @@ export function useStock() {
     filters: {
       stock: 'all',
       category: '',
-      lowStockThreshold: String(DEFAULT_LOW_STOCK_THRESHOLD),
+      lowStockThreshold: String(SEED_THRESHOLD),
     },
   });
 
@@ -62,6 +85,11 @@ export function useStock() {
 
   const products: FlattenedProduct[] = flattenProducts(rows);
 
+  // A second, slower question over the rows already on screen: how fast each
+  // variant is selling and how long it will last. Deliberately not part of the
+  // list query — see useStockInsights.
+  const insights = useStockInsights(products.map((product) => product.variantId));
+
   return {
     params,
     products,
@@ -72,6 +100,7 @@ export function useStock() {
     live,
     reconcile,
     lowStockThreshold,
-    setLowStockThreshold,
+    setLowStockThreshold: changeThreshold,
+    insights: insights.byVariant,
   };
 }

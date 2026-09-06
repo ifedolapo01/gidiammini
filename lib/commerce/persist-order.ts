@@ -13,6 +13,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { adjustStock, toStockChangeItems } from './order-stock';
+import { recordDiscountRedemption } from './record-redemption';
 import { INITIAL_ORDER_STATUS } from './order-status';
 import type { PricedOrder } from './price-order.types';
 
@@ -63,6 +64,9 @@ export async function persistOrderWithReservedStock(
   // 1. Claim the stock. This is the whole point of the exercise: from here the
   //    units are off the shelf, so a second checkout for the last one fails
   //    rather than succeeding and being sorted out by refund later.
+  // No order reference: the row does not exist yet, and inventing one here
+  // would point the ledger at an order that may never be inserted. The 'sale'
+  // reason is set by the function regardless, which is what velocity needs.
   const claim = await adjustStock(supabase, stockItems, true);
   if (claim.error) {
     return { ok: false, status: 409, error: claim.error };
@@ -151,6 +155,11 @@ export async function persistOrderWithReservedStock(
       quantity: item.quantity,
       size: item.size,
       color: item.color,
+      // Both of these priceOrder has always worked out and this insert has
+      // always dropped, which is why "what did the Easter sale cost us" has
+      // never been answerable. Columns added in 20260906150000.
+      discount_id: item.discount_id,
+      base_price: item.base_price,
     }))
   );
 
@@ -162,6 +171,16 @@ export async function persistOrderWithReservedStock(
     await releaseClaim('the order items insert failed');
     return { ok: false, status: 500, error: 'We could not save your order items. Please try again.' };
   }
+
+  // 4. Record the redemption, if a code was used. Deliberately not fatal —
+  //    see recordDiscountRedemption.
+  await recordDiscountRedemption(supabase, {
+    priced,
+    orderId: order.id,
+    orderNumber: fields.order_number,
+    customerId: fields.customer_id ?? null,
+    customerEmail: fields.customer_email,
+  });
 
   return { ok: true, order: { id: order.id, order_number: order.order_number } };
 }

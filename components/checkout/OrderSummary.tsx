@@ -7,6 +7,9 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { getDeliveryLabel } from '@/lib/commerce/checkout';
 import type { ShippingZone } from '@/types/shipping';
 import ProductImage from '@/components/commerce/ProductImage';
+import { useStoreSettings } from '@/components/StoreSettingsProvider';
+import DiscountCodeField from './DiscountCodeField';
+import type { AppliedCode } from './hooks/useCheckoutQuote';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -19,6 +22,18 @@ interface OrderSummaryProps {
   selectedLga: string;
   selectedPlace: string;
   zones: ShippingZone[];
+  /** The code box. Rendered in both the desktop sidebar and the mobile
+   *  dialog — most of this shop's traffic is a phone, and a discount field
+   *  only a desktop can reach is a discount field most customers do not have.
+   *  `fieldId` keeps the two inputs distinct. */
+  discountCode?: {
+    fieldId: string;
+    value: string;
+    onChange: (value: string) => void;
+    applied: AppliedCode | null;
+    error: string | null;
+    disabled?: boolean;
+  };
 }
 
 /** Mirrors the payment step's own check — see useCheckoutPayment. */
@@ -34,8 +49,12 @@ export default function OrderSummary({
   selectedState,
   selectedLga,
   selectedPlace,
-  zones
+  zones,
+  discountCode
 }: OrderSummaryProps) {
+  // The rate the shop is actually charging. This line said "Tax (7.5%)" as a
+  // literal, which stopped being true the moment the rate became a setting.
+  const { taxRate } = useStoreSettings();
 
   return (
     <div className="bg-surface rounded-surface shadow-elevation-2 border border-border p-4 md:p-6">
@@ -86,10 +105,25 @@ export default function OrderSummary({
         </div>
 
         <div className="flex justify-between">
-          <span className="text-text-secondary text-body-sm md:text-body-md">Tax (7.5%)</span>
+          <span className="text-text-secondary text-body-sm md:text-body-md">
+            {/* Trailing zeros trimmed: 7.5% reads as a rate, 7.50000% reads as
+                a bug. Same treatment as the cart summary. */}
+            Tax ({Number((taxRate * 100).toFixed(3))}%)
+          </span>
           <span className="font-medium text-text-primary text-body-sm md:text-body-md">{formatCurrency(tax)}</span>
         </div>
       </div>
+
+      {discountCode && (
+        <DiscountCodeField
+          id={discountCode.fieldId}
+          value={discountCode.value}
+          onChange={discountCode.onChange}
+          applied={discountCode.applied}
+          error={discountCode.error}
+          disabled={discountCode.disabled}
+        />
+      )}
 
       <div className="border-t border-border pt-3 md:pt-4">
         <div className="flex justify-between text-body-lg md:text-h5 font-bold">

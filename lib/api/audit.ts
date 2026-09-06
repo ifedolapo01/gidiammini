@@ -42,6 +42,11 @@ export type AuditEntityType =
   /** An admin sign-in or sign-out. Not a row in any table — the entity is the
    * session itself. */
   | 'admin_session'
+  /** The store_settings singleton. Its own entity type rather than 'request'
+   * because "when did the bank account change, and to what" is a question this
+   * table will be asked, and a diff of two named columns answers it while a
+   * dump of the submitted body does not. */
+  | 'store_settings'
   | 'request';
 
 export type AuditAction =

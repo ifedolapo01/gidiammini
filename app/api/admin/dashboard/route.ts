@@ -4,6 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { REVENUE_STATUSES } from '@/lib/commerce/order-status';
 import { marginTotals } from '@/lib/commerce/margin';
+import { loadPublicStoreSettings } from '@/lib/commerce/store-settings-server';
+import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
 
 async function getDashboardStats(supabase: SupabaseClient) {
   try {
@@ -106,13 +108,22 @@ async function getDashboardStats(supabase: SupabaseClient) {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    // Fetch low stock products (stock > 0 AND <= 10)
+    // Low stock, at the shop's own threshold.
+    //
+    // This query used to say `lte('stock', 10)` while the stock page it links
+    // to said 5 and the alert bar above it said 5 — so the dashboard counted
+    // products the next screen did not, and neither number could be trusted.
+    // One setting now (store_settings.low_stock_threshold), read here and
+    // returned to the client so the panel labels itself with the same figure
+    // it filtered on.
+    const { lowStockThreshold } = await loadPublicStoreSettings();
+
     const { data: lowStockProducts } = await supabase
       .from('products')
       .select('*')
       .eq('is_active', true)
       .gt('stock', 0)  // Only products with stock > 0
-      .lte('stock', 10)
+      .lte('stock', lowStockThreshold)
       .order('stock', { ascending: true })
       .limit(5);
 
@@ -133,6 +144,7 @@ async function getDashboardStats(supabase: SupabaseClient) {
       outstanding,
       partPaidOrders,
       margin,
+      lowStockThreshold,
       recentOrders: recentOrders || [],
       lowStockProducts: lowStockProducts || [],
       outOfStockProducts: outOfStockProducts || []
@@ -151,6 +163,9 @@ async function getDashboardStats(supabase: SupabaseClient) {
         outstanding: 0,
         partPaidOrders: 0,
         margin: null,
+        // The value the rest of the product falls back to, so a failed
+        // dashboard read does not relabel the panel with a zero.
+        lowStockThreshold: DEFAULT_STORE_SETTINGS.lowStockThreshold,
         recentOrders: [],
         lowStockProducts: [],
         outOfStockProducts: []

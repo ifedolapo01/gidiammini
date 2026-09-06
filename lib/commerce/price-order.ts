@@ -16,23 +16,17 @@
  * case callers are expected to surface to the customer.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Product } from '@/types/product';
-import type { ShippingZone } from '@/types/shipping';
-import { getVariantPrice, getVariantStock } from './pricing';
 import { describeStockShortage } from './cart-stock';
-import { ADMIN_VARIANTS_SELECT } from './product-variants';
-import { getBestDiscount, calculateDiscountedPrice, type Discount } from './discounts';
+import { automaticLineDiscounts, findFreeShippingDiscount, type Discount } from './discounts';
+import { resolveDiscountCode } from './price-order-code';
+import { priceCartLines, sumOf } from './price-lines';
+import { loadPricingContext } from './price-order-context';
 import { calculateTax } from './checkout';
-import { resolveEffectiveZone } from './shipping-match';
+import { applyFreeShipping } from './store-settings';
 import type { PricedLine, PriceOrderInput, PriceOrderResult } from './price-order.types';
-import {
-  asTrimmedString,
-  mergeCartLines,
-  parseCartLines,
-  parseDeliveryOption,
-} from './cart-input';
 
 export type {
+  AppliedCode,
   PricedLine,
   PricedOrder,
   PriceOrderInput,
@@ -74,88 +68,76 @@ export async function priceOrder(
   supabase: SupabaseClient,
   input: PriceOrderInput
 ): Promise<PriceOrderResult> {
-  const parsed = parseCartLines(input.items);
-  if (typeof parsed === 'string') {
-    return fail(parsed);
-  }
+  const context = await loadPricingContext(supabase, input);
+  if (!context.ok) return context;
 
-  const deliveryOption = parseDeliveryOption(input.deliveryOption);
-  if (!deliveryOption) {
-    return fail('Choose either pickup or delivery.');
-  }
+  const { lines, byId, products, discounts, zone, deliveryOption, selectedState, selectedLga, selectedPlace, settings } =
+    context;
 
-  const selectedState = asTrimmedString(input.selectedState);
-  if (!selectedState) {
-    return fail('Choose the state your order is going to.');
-  }
+  const priceLines = (candidates: Discount[]) =>
+    priceCartLines({ lines, productsById: byId, candidates });
 
-  const selectedLga = asTrimmedString(input.selectedLga);
-  const selectedPlace = asTrimmedString(input.selectedPlace);
-  const lines = mergeCartLines(parsed);
-  const productIds = [...new Set(lines.map((line) => line.product_id))];
 
-  const [productsResult, discountsResult, zonesResult] = await Promise.all([
-    // Variants must be embedded: getVariantPrice/getVariantStock below read
-    // them, and without the embed they would silently fall back to the stale
-    // pricing_config maps and price against the wrong numbers.
-    supabase.from('products').select(`*, ${ADMIN_VARIANTS_SELECT}`).in('id', productIds).eq('is_active', true),
-    supabase.from('discounts').select('*').eq('is_active', true),
-    supabase.from('shipping_zones').select('*, shipping_zone_exceptions(*)').eq('is_active', true),
-  ]);
+  // Pass one: what this basket costs with no code. Codes are excluded here by
+  // automaticLineDiscounts — leaving them in would apply every influencer code
+  // to every shopper, which is the opposite of what a code is for.
+  const automatic = automaticLineDiscounts(discounts);
+  const withoutCode = priceLines(automatic);
 
-  if (productsResult.error) {
-    return fail('We could not load the latest prices. Please try again.', 503);
-  }
-
-  const products = (productsResult.data || []) as Product[];
-  const byId = new Map(products.map((product) => [product.id, product]));
-
-  if (productIds.some((id) => !byId.has(id))) {
-    return fail('One or more items in your cart are no longer available. Please review your cart.');
-  }
-
-  // A failed discounts read is survivable — nobody gets a markdown. A failed
-  // zones read is not, because the delivery fee would be unknowable; that is
-  // caught by the no-matching-zone check below.
-  const discounts = (discountsResult.data || []) as Discount[];
-  const zones = (zonesResult.data || []) as ShippingZone[];
-
-  const zone = resolveEffectiveZone(zones, selectedState, selectedLga ?? undefined, selectedPlace ?? undefined);
-  if (!zone) {
-    return fail(`We don't deliver to ${selectedState} yet. Please pick another location.`);
-  }
-
-  if (deliveryOption === 'pickup' && !zone.pickup_available) {
-    return fail(`Pickup isn't available for ${zone.name}. Please choose delivery.`);
-  }
-
-  const items: PricedLine[] = lines.map((line) => {
-    const product = byId.get(line.product_id)!;
-    const basePrice = getVariantPrice(product, line.size, line.color);
-    const discount = getBestDiscount(
-      product,
-      discounts,
-      basePrice,
-      line.size ?? undefined,
-      line.color ?? undefined
-    );
-
-    return {
-      product_id: product.id,
-      product_name: product.name,
-      size: line.size,
-      color: line.color,
-      quantity: line.quantity,
-      base_price: basePrice,
-      price: calculateDiscountedPrice(basePrice, discount),
-      discount_id: discount?.id ?? null,
-      available_stock: getVariantStock(product, line.size, line.color),
-    };
+  const resolvedCode = await resolveDiscountCode(supabase, {
+    rawCode: input.discountCode,
+    activeDiscounts: discounts,
+    // The minimum is judged on what the basket costs before the code, which is
+    // the figure the customer was shown when they typed it.
+    subtotal: sumOf(withoutCode),
+    customerEmail: typeof input.customerEmail === 'string' ? input.customerEmail : null,
   });
 
-  const subtotal = items.reduce((sum, line) => sum + line.price * line.quantity, 0);
-  const tax = calculateTax(subtotal);
-  const shipping = deliveryOption === 'pickup' ? 0 : zone.delivery_fee;
+  const codeDiscount = resolvedCode.discount;
+  // A FREE_SHIPPING code never touches a line, so it is not a pricing
+  // candidate — it is applied to the delivery fee below.
+  const items =
+    codeDiscount && codeDiscount.type !== 'FREE_SHIPPING'
+      ? priceLines([...automatic, codeDiscount])
+      : withoutCode;
+
+  const subtotal = sumOf(items);
+  const tax = calculateTax(subtotal, settings.taxRate);
+
+  // Free delivery is applied to the zone's fee rather than replacing it, so an
+  // order that qualifies still records which zone it went to and what that
+  // zone would have cost — the shop needs both to know what the offer is
+  // actually costing it per zone.
+  const shippingBeforeOffers = deliveryOption === 'pickup' ? 0 : zone.delivery_fee;
+  const afterThreshold = applyFreeShipping(
+    shippingBeforeOffers,
+    subtotal,
+    settings.freeShippingThreshold
+  );
+
+  // A standing free-delivery campaign, if one covers this basket. Without
+  // this a codeless FREE_SHIPPING discount would be a row nothing ever applied.
+  const freeShippingOffer = findFreeShippingDiscount(discounts, subtotal);
+
+  // A FREE_SHIPPING code waives whatever is left. Applied after the standing
+  // threshold rather than instead of it, so a customer who already qualified
+  // is not told their code saved them something it did not.
+  const freeShippingCode = codeDiscount?.type === 'FREE_SHIPPING';
+  const shipping = freeShippingCode || freeShippingOffer ? 0 : afterThreshold;
+
+  const appliedCode = codeDiscount
+    ? {
+        code: resolvedCode.code!,
+        discount_id: codeDiscount.id,
+        // What the code itself was worth, not what every discount was worth:
+        // the difference between the two passes is exactly the code's doing.
+        saved_on_items: Math.max(0, sumOf(withoutCode) - subtotal),
+        // Zero when a standing campaign had already made delivery free. The
+        // code did not save them that, and claiming it did is the sort of
+        // double-count that makes a performance report useless.
+        saved_on_shipping: freeShippingCode && !freeShippingOffer ? afterThreshold : 0,
+      }
+    : null;
 
   return {
     ok: true,
@@ -172,6 +154,8 @@ export async function priceOrder(
       selected_lga: selectedLga,
       selected_place: selectedPlace,
       requires_address: deliveryOption === 'delivery' && zone.is_door_delivery,
+      applied_code: appliedCode,
+      code_error: resolvedCode.error,
     },
   };
 }

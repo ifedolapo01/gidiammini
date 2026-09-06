@@ -25,6 +25,18 @@ export interface PricedLine {
   available_stock: number;
 }
 
+/** A redemption code that was accepted, and what it was worth. */
+export interface AppliedCode {
+  code: string;
+  discount_id: string;
+  /** Naira taken off the items by this code specifically — 0 for a
+   *  FREE_SHIPPING code, and 0 for a code that lost to a better sale on every
+   *  line. The checkout says so rather than leaving the customer guessing. */
+  saved_on_items: number;
+  /** Delivery fee waived by this code. */
+  saved_on_shipping: number;
+}
+
 export interface PricedOrder {
   items: PricedLine[];
   subtotal: number;
@@ -39,6 +51,12 @@ export interface PricedOrder {
   selected_place: string | null;
   /** True when the resolved zone expects a street address (drop-off zones don't). */
   requires_address: boolean;
+  /** The code that was accepted, or null. */
+  applied_code: AppliedCode | null;
+  /** Why a supplied code was not applied. Null when none was supplied or it
+   *  was accepted. Not an error status: the rest of the quote is valid and the
+   *  customer should still see their total. */
+  code_error: string | null;
 }
 
 export interface PriceOrderInput {
@@ -47,6 +65,12 @@ export interface PriceOrderInput {
   selectedState: unknown;
   selectedLga?: unknown;
   selectedPlace?: unknown;
+  /** A redemption code the customer typed. Untrusted, like everything else
+   *  here — validated server-side against the live discount row. */
+  discountCode?: unknown;
+  /** Needed only for a code's per-customer limit, which is counted by email
+   *  because a guest checkout has no customer row yet. */
+  customerEmail?: unknown;
 }
 
 export type PriceOrderResult =

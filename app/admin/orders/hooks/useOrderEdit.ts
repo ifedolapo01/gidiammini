@@ -13,7 +13,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Order, OrderItem } from '@/types/order';
-import { TAX_RATE } from '@/lib/commerce/checkout';
+import { calculateTax } from '@/lib/commerce/checkout';
+import { useAdminStoreSettings } from '../../hooks/useAdminStoreSettings';
 
 type ShowToast = (message: string, type?: 'success' | 'error') => void;
 
@@ -52,6 +53,11 @@ export function useOrderEdit(order: Order, showToast: ShowToast, onSaved: () => 
   const [notify, setNotify] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // The rate the checkout is charging today. The preview below has to agree
+  // with what edit_order_items() will compute, and both now read the settings
+  // row rather than a constant.
+  const { taxRate } = useAdminStoreSettings();
+
   // Re-seed when the panel is pointed at a different order, or when a save has
   // been reconciled from the server. Keyed on the order id and its updated_at
   // so an unrelated re-render does not throw away work in progress.
@@ -74,7 +80,7 @@ export function useOrderEdit(order: Order, showToast: ShowToast, onSaved: () => 
    */
   const preview = useMemo(() => {
     const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
-    const tax = Math.round(subtotal * TAX_RATE);
+    const tax = calculateTax(subtotal, taxRate);
     const shipping = order.shipping_amount ?? 0;
     return {
       subtotal,
@@ -83,7 +89,7 @@ export function useOrderEdit(order: Order, showToast: ShowToast, onSaved: () => 
       discount,
       total: subtotal + tax + shipping - discount,
     };
-  }, [lines, discount, order.shipping_amount]);
+  }, [lines, discount, order.shipping_amount, taxRate]);
 
   const dirty = useMemo(() => {
     const before = toDraft(order.order_items ?? []);

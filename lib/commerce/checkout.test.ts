@@ -2,7 +2,8 @@
  * Tax and the fee/pickup lookups the checkout and priceOrder() both use.
  */
 import { describe, it, expect } from 'vitest';
-import { calculateTax, TAX_RATE, getDeliveryFee, isPickupAvailable, getDeliveryLabel } from './checkout';
+import { calculateTax, getDeliveryFee, isPickupAvailable, getDeliveryLabel } from './checkout';
+import { DEFAULT_STORE_SETTINGS } from './store-settings';
 import type { ShippingZone } from '@/types/shipping';
 
 const zone = (over: Partial<ShippingZone>): ShippingZone => ({
@@ -14,25 +15,34 @@ const zone = (over: Partial<ShippingZone>): ShippingZone => ({
 });
 
 describe('calculateTax', () => {
-  it('applies 7.5%', () => {
-    expect(TAX_RATE).toBe(0.075);
-    expect(calculateTax(20000)).toBe(1500);
+  // The rate the shop starts on, and the one every fallback path uses.
+  const VAT = DEFAULT_STORE_SETTINGS.taxRate;
+
+  it('defaults to 7.5% — the rate the settings row ships with', () => {
+    expect(VAT).toBe(0.075);
+    expect(calculateTax(20000, VAT)).toBe(1500);
+  });
+
+  it('charges whatever rate it is given', () => {
+    // The point of the settings row: a VAT change is a value, not a deploy.
+    expect(calculateTax(20000, 0.1)).toBe(2000);
+    expect(calculateTax(20000, 0)).toBe(0);
   });
 
   it('always returns a whole number — total_amount is an integer column', () => {
     // 7.5% of 236,500 is 17,737.5, which would fail the insert unrounded.
-    const tax = calculateTax(236500);
+    const tax = calculateTax(236500, VAT);
     expect(Number.isInteger(tax)).toBe(true);
     expect(tax).toBe(17738);
   });
 
   it('rounds rather than truncates', () => {
-    expect(calculateTax(10000)).toBe(750);
-    expect(calculateTax(13)).toBe(1); // 0.975 -> 1
+    expect(calculateTax(10000, VAT)).toBe(750);
+    expect(calculateTax(13, VAT)).toBe(1); // 0.975 -> 1
   });
 
   it('is zero on an empty subtotal', () => {
-    expect(calculateTax(0)).toBe(0);
+    expect(calculateTax(0, VAT)).toBe(0);
   });
 });
 

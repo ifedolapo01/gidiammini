@@ -26,6 +26,7 @@ import OrderSummaryTab from './OrderSummaryTab';
 import OrderEditPanel from './OrderEditPanel';
 import RefundPanel from './RefundPanel';
 import OrderPrintDocument, { type PrintDocumentKind } from './OrderPrintDocument';
+import OrderNotificationsTab from './OrderNotificationsTab';
 
 const TABS = [
   { id: 'summary', label: 'Summary' },
@@ -137,6 +138,11 @@ export default function OrderDetailsModal(props: OrderDetailsModalProps) {
       {tab === 'history' && (
         <>
           <OrderStatusHistory entries={selectedOrder.order_status_history ?? []} />
+          {/* Three timelines, three questions. What the order passed through
+              (above), what the customer was told about it (here), and who
+              changed what (below). The middle one is the only place that can
+              answer "I never got the email". */}
+          <OrderNotificationsTab order={selectedOrder} showToast={showToast} />
           {/* Who changed what, and why — the question order_status_history
               cannot answer, since it records only a status and a timestamp. */}
           <EntityHistory entityType="order" entityId={selectedOrder.id} pageSize={10} />

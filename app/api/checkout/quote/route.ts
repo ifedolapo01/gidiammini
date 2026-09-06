@@ -54,6 +54,12 @@ async function quoteCheckout(request: NextRequest) {
       selectedState: body.selected_state,
       selectedLga: body.selected_lga,
       selectedPlace: body.selected_place,
+      // Untrusted, like everything else here: validated against the live
+      // discount row, never against anything the browser claims about it.
+      discountCode: body.discount_code,
+      // Only for a code's per-customer limit, which is counted by email
+      // because a guest checkout has no customer row yet.
+      customerEmail: body.customer_email,
     });
 
     if (!result.ok) {

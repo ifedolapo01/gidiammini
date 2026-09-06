@@ -10,6 +10,7 @@ import { groupFlattenedByProduct } from '@/lib/commerce/group-variants';
 import { variantRef, type FlattenedProduct } from '@/lib/commerce/product-flatten';
 import { SelectAllCheckbox } from '@/app/admin/components/SelectionCheckbox';
 import type { TableSelection } from '@/app/admin/hooks/useTableSelection';
+import type { VariantInsight } from '@/lib/commerce/inventory-analytics';
 import { SingleStockRow } from './StockRow';
 import { ParentStockRow, ChildStockRow } from './StockVariantRows';
 
@@ -18,6 +19,9 @@ const HEADINGS = ['Product', 'Variant', 'Category', 'Stock Status', 'Actions'];
 interface StockTableProps {
   products: FlattenedProduct[];
   lowStockThreshold: number;
+  /** The ledger's reading per variant id, empty until the second request
+   *  lands. Passed down the same path lowStockThreshold already takes. */
+  insights: Map<string, VariantInsight>;
   selection: TableSelection;
   onEdit: (product: FlattenedProduct) => void;
   filtered: boolean;
@@ -52,6 +56,7 @@ function EmptyStock({ filtered }: { filtered: boolean }) {
 export function StockTable({
   products,
   lowStockThreshold,
+  insights,
   selection,
   onEdit,
   filtered,
@@ -98,6 +103,7 @@ export function StockTable({
                       key={variants[0].id}
                       product={variants[0]}
                       lowStockThreshold={lowStockThreshold}
+                      insight={variants[0].variantId ? insights.get(variants[0].variantId) : undefined}
                       selected={selection.isSelected(ref)}
                       onToggleSelect={() => selection.toggle(ref)}
                       onEdit={onEdit}
@@ -124,6 +130,7 @@ export function StockTable({
                           key={product.id}
                           product={product}
                           lowStockThreshold={lowStockThreshold}
+                          insight={product.variantId ? insights.get(product.variantId) : undefined}
                           selected={selection.isSelected(ref)}
                           onToggleSelect={() => selection.toggle(ref)}
                           onEdit={onEdit}

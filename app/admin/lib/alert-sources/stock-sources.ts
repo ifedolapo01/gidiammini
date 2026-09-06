@@ -7,6 +7,7 @@
  * losing sales it has already earned.
  */
 import { id, plural, read, type AlertItem, type AlertSource } from '../alert-item';
+import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
 
 export const stockAlerts: AlertSource = async () => {
   const data = await read('/api/admin/products/negative-stock');
@@ -29,10 +30,15 @@ export const stockAlerts: AlertSource = async () => {
   }
 
   if (data.lowStockCount > 0) {
+    // The threshold the endpoint actually filtered on. This sentence used to
+    // say "5 or fewer" as a literal, which stayed wrong for as long as anybody
+    // had changed the query it describes.
+    const threshold = data.lowStockThreshold ?? DEFAULT_STORE_SETTINGS.lowStockThreshold;
+
     alerts.push({
       id: id('low-stock'),
       type: 'low-stock',
-      message: `⚠️ ${data.lowStockCount} product${plural(data.lowStockCount, ' is', 's are')} down to 5 or fewer`,
+      message: `⚠️ ${data.lowStockCount} product${plural(data.lowStockCount, ' is', 's are')} down to ${threshold} or fewer`,
       link: '/admin/stock',
       tone: 'warning',
       count: data.lowStockCount,

@@ -6,13 +6,22 @@ import ProductImage from '@/components/commerce/ProductImage';
 
 interface LowStockPanelProps {
   products: any[];
+  /** The threshold the dashboard route filtered on. Passed in rather than
+   *  re-derived, so the heading cannot describe a different query from the one
+   *  that produced these rows. */
+  lowStockThreshold: number;
 }
 
-export function LowStockPanel({ products }: LowStockPanelProps) {
+export function LowStockPanel({ products, lowStockThreshold }: LowStockPanelProps) {
   return (
     <div className="bg-surface p-6 rounded-surface shadow-elevation-1 border border-border">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-h5 font-bold text-text-primary">Low Stock</h2>
+        <div>
+          <h2 className="text-h5 font-bold text-text-primary">Low Stock</h2>
+          <p className="text-caption-md text-text-secondary">
+            {lowStockThreshold} or fewer left
+          </p>
+        </div>
         <Link
           href="/admin/stock"
           className="text-primary hover:text-primary-hover text-body-sm font-medium"
@@ -29,7 +38,7 @@ export function LowStockPanel({ products }: LowStockPanelProps) {
       ) : (
         <div className="space-y-4">
           {products.map((product) => {
-            const status = getStockStatus(product.stock);
+            const status = getStockStatus(product.stock, lowStockThreshold);
             const isCritical = status.level === 'low' || status.level === 'out';
 
             return (

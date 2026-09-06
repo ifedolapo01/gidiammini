@@ -23,7 +23,7 @@
  */
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { TAX_RATE } from './checkout';
+import { loadPublicStoreSettings } from './store-settings-server';
 import { diffOrderLines, describeLineChange, type LineChange, type OrderLine } from './order-edit-diff';
 import { sendOrderAmendedNotice } from '@/lib/notifications';
 
@@ -131,7 +131,11 @@ export async function editOrderItems(
       size: line.size ?? null,
       color: line.color ?? null,
     })),
-    p_tax_rate: TAX_RATE,
+    // The rate the shop is charging now, not the one it was charging when
+    // this file was written. An order edited after a VAT change has to be
+    // re-taxed at the rate that applies to the edit, which is the same rate
+    // the checkout is quoting — both read this row.
+    p_tax_rate: (await loadPublicStoreSettings()).taxRate,
     // undefined and null mean different things to the function — null leaves
     // the discount alone — so the distinction is preserved rather than
     // collapsed by JSON serialisation.

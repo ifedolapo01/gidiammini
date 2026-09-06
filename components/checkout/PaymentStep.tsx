@@ -4,6 +4,8 @@
 import { ArrowLeft, MessageCircle } from 'lucide-react';
 import { Badge, Spinner } from '@/components/ui';
 import { getDeliveryLabel } from '@/lib/commerce/checkout';
+import { resolveBankDetails } from '@/lib/commerce/bank-details';
+import { useStoreSettings } from '@/components/StoreSettingsProvider';
 import type { ShippingZone } from '@/types/shipping';
 import type { CheckoutPayment } from './hooks/useCheckoutPayment';
 import BankDetails from './BankDetails';
@@ -48,14 +50,14 @@ export default function PaymentStep({
     handlePayOnline,
   } = payment;
 
+  const storeSettings = useStoreSettings();
   const payingOnline = onlineAvailable && paymentMethod === 'online';
 
-  const bankDetails = {
-    bankName: process.env.NEXT_PUBLIC_BANK_NAME || 'OPAY',
-    accountName: process.env.NEXT_PUBLIC_ACCOUNT_NAME || 'Ifedolapo Ajayi',
-    accountNumber: process.env.NEXT_PUBLIC_ACCOUNT_NUMBER || '8096539067',
-    sortCode: process.env.NEXT_PUBLIC_SORT_CODE || '011'
-  };
+  // The account the shop is actually using today. Was four NEXT_PUBLIC_*
+  // reads, which meant changing bank was a redeploy; now the Settings page,
+  // falling back to those same env vars until somebody fills it in. See
+  // lib/commerce/bank-details.ts.
+  const bankDetails = resolveBankDetails(storeSettings);
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4">

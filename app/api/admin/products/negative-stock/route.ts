@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { isAdminRequest } from '@/lib/api/admin-session';
+import { loadPublicStoreSettings } from '@/lib/commerce/store-settings-server';
+import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminRequest())) {
@@ -10,12 +12,17 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    
-    // Get products with low or no stock
+
+    // The shop's threshold, not a literal. This endpoint feeds the alert bar
+    // at the top of every admin page, and it used to say 5 while the dashboard
+    // said 10 — so the ticker and the card underneath it disagreed about how
+    // many products were low.
+    const { lowStockThreshold } = await loadPublicStoreSettings();
+
     const { data: lowStockProducts, error: lowStockError } = await supabase
       .from('products')
       .select('id, name, stock')
-      .lte('stock', 5) // Products with 5 or less stock
+      .lte('stock', lowStockThreshold)
       .eq('is_active', true)
       .order('stock', { ascending: true });
 
@@ -25,13 +32,14 @@ export async function GET(request: NextRequest) {
         success: false,
         lowStock: [],
         outOfStock: [],
+        lowStockThreshold,
         count: 0
       });
     }
 
     // Separate low stock and out of stock
     const outOfStock = lowStockProducts?.filter(p => p.stock <= 0) || [];
-    const lowStock = lowStockProducts?.filter(p => p.stock > 0 && p.stock <= 5) || [];
+    const lowStock = lowStockProducts?.filter(p => p.stock > 0 && p.stock <= lowStockThreshold) || [];
 
     return NextResponse.json({
       success: true,
@@ -39,6 +47,9 @@ export async function GET(request: NextRequest) {
       outOfStock,
       lowStockCount: lowStock.length,
       outOfStockCount: outOfStock.length,
+      // Returned so the alert can name the threshold it filtered on rather
+      // than repeating a number of its own.
+      lowStockThreshold,
       totalCount: lowStockProducts?.length || 0
     });
     
@@ -51,6 +62,7 @@ export async function GET(request: NextRequest) {
         outOfStock: [],
         lowStockCount: 0,
         outOfStockCount: 0,
+        lowStockThreshold: DEFAULT_STORE_SETTINGS.lowStockThreshold,
         totalCount: 0,
         error: error.message 
       },

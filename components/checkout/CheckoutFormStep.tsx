@@ -8,6 +8,17 @@ import StateDeliveryForm from './StateDeliveryForm';
 import ProceedToPaymentButton from './ProceedToPaymentButton';
 import CustomerInformation from './CustomerInformation';
 import OrderSummary from './OrderSummary';
+import type { AppliedCode } from './hooks/useCheckoutQuote';
+
+/** The code box's state, owned by useCheckoutFlow and rendered by the desktop
+ *  order summary. */
+export interface DiscountCodeControl {
+  value: string;
+  onChange: (value: string) => void;
+  applied: AppliedCode | null;
+  error: string | null;
+  disabled?: boolean;
+}
 import MobileOrderSummary from './MobileOrderSummary';
 
 interface CheckoutFormStepProps {
@@ -33,6 +44,8 @@ interface CheckoutFormStepProps {
   subtotal: number;
   tax: number;
   shippingCost: number;
+  /** The redemption code box, rendered in the desktop order summary. */
+  discountCode: DiscountCodeControl;
   total: number;
   onOpenMobileOrderSummary: () => void;
   onCloseMobileOrderSummary: () => void;
@@ -62,6 +75,7 @@ export default function CheckoutFormStep({
   subtotal,
   tax,
   shippingCost,
+  discountCode,
   total,
   onOpenMobileOrderSummary,
   onCloseMobileOrderSummary,
@@ -122,6 +136,7 @@ export default function CheckoutFormStep({
             tax={tax}
             shippingCost={shippingCost}
             total={total}
+            discountCode={{ ...discountCode, fieldId: 'discount-code-desktop' }}
             deliveryOption={deliveryOption}
             selectedState={selectedState}
             selectedLga={selectedLga}
@@ -160,6 +175,7 @@ export default function CheckoutFormStep({
                 tax={tax}
                 shippingCost={shippingCost}
                 total={total}
+                discountCode={{ ...discountCode, fieldId: 'discount-code-mobile' }}
                 deliveryOption={deliveryOption}
                 selectedState={selectedState}
                 selectedLga={selectedLga}

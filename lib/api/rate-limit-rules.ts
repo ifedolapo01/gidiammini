@@ -54,6 +54,15 @@ export const RATE_LIMITS = {
   subscribe: { bucket: 'subscribe', limit: 5, windowSeconds: HOUR },
 
   /**
+   * Unsubscribing. Deliberately the loosest write budget here: the token in
+   * the link is the real gate, the only outcome is one address leaving the
+   * list, and somebody who cannot get off the list files a spam complaint
+   * instead — which costs the shop's ability to reach everybody else. A
+   * household on one IP clearing out several newsletters must not be blocked.
+   */
+  unsubscribe: { bucket: 'unsubscribe', limit: 30, windowSeconds: HOUR },
+
+  /**
    * Search. Typeahead fires as the visitor types, so this has to be generous —
    * a debounced input still sends a request every few keystrokes, and a
    * browsing session can easily run several searches. Costs one indexed read

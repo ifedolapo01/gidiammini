@@ -42,6 +42,8 @@ async function notifyOrderCustomer(
     }
 
     const result = await sendCustomNotification({
+      orderId: order.id ?? null,
+      customerId: order.customer_id ?? null,
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,

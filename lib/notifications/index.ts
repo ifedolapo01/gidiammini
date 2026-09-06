@@ -4,13 +4,16 @@
 // delivered and why the others didn't, rather than a bare success flag. The old
 // shape pushed 'sms' onto a delivered list on the word of a stub that never
 // sent anything.
-import { sendOrderEmail, type EmailSendResult } from '@/lib/email';
+import type { EmailSendResult } from '@/lib/email';
 import type { OrderTracking } from '@/lib/commerce/order-tracking';
 import type { DeliveryOutcome, DeliveryFailure } from './delivery';
-import { buildStatusEmail } from './templates/status-email';
-import { buildCustomEmail } from './templates/custom-email';
+import type { NotificationContext } from './context';
 import { buildOrderReceivedEmail } from './templates/order-received-email';
+import { sendEmailAndLog, recordSkippedEmail } from './send';
+import { sendStatusEmailNotification, sendCustomEmailNotification } from './order-emails';
 import { sendStatusSMS, sendCustomSMS } from './sms';
+
+export type { NotificationContext };
 
 // Verification outcomes live in their own module — see payment-notices.ts.
 // Re-exported here so callers still have one place to import a notification
@@ -30,7 +33,7 @@ export {
   type RefundNoticeParams,
 } from './order-notices';
 
-interface OrderStatusUpdateParams {
+interface OrderStatusUpdateParams extends NotificationContext {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
@@ -45,7 +48,7 @@ interface OrderStatusUpdateParams {
   tracking?: Partial<OrderTracking> | null;
 }
 
-interface CustomNotificationParams {
+interface CustomNotificationParams extends NotificationContext {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
@@ -59,16 +62,24 @@ export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams): Pr
   const {
     orderNumber, customerName, customerEmail, customerPhone, newStatus,
     customMessage, estimatedDeliveryText, tracking,
+    orderId, customerId, actorId, resendOf,
   } = params;
+
+  const context = { orderId, customerId, actorId, resendOf };
 
   const delivered: DeliveryOutcome['delivered'] = [];
   const failed: DeliveryFailure[] = [];
 
   if (!customerEmail) {
     failed.push({ channel: 'email', reason: 'no_recipient' });
+    // Recorded, not merely skipped. "There was no address on the order" is the
+    // most common answer to "why did they never hear from us", and it is the
+    // one a system that only logs attempts can never give.
+    await recordSkippedEmail({ kind: 'status_change', reason: 'no_recipient', orderId, customerId });
   } else {
     const email = await sendStatusEmailNotification({
       orderNumber, customerName, customerEmail, newStatus, customMessage, estimatedDeliveryText, tracking,
+      ...context,
     });
     if (email.success) delivered.push('email');
     else failed.push({ channel: 'email', reason: email.reason, detail: email.detail });
@@ -86,17 +97,26 @@ export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams): Pr
 }
 
 export async function sendCustomNotification(params: CustomNotificationParams): Promise<DeliveryOutcome> {
-  const { orderNumber, customerName, customerEmail, customerPhone, message, viaEmail, viaSMS } = params;
+  const {
+    orderNumber, customerName, customerEmail, customerPhone, message, viaEmail, viaSMS,
+    orderId, customerId, actorId, resendOf,
+  } = params;
+
+  const context = { orderId, customerId, actorId, resendOf };
 
   const delivered: DeliveryOutcome['delivered'] = [];
   const failed: DeliveryFailure[] = [];
 
   if (!viaEmail) {
+    // Not logged: the admin deliberately did not tick email, and a timeline
+    // full of "you chose not to send this" is noise over the sends that
+    // happened.
     failed.push({ channel: 'email', reason: 'not_requested' });
   } else if (!customerEmail) {
     failed.push({ channel: 'email', reason: 'no_recipient' });
+    await recordSkippedEmail({ kind: 'custom', reason: 'no_recipient', orderId, customerId });
   } else {
-    const email = await sendCustomEmailNotification({ orderNumber, customerName, customerEmail, message });
+    const email = await sendCustomEmailNotification({ orderNumber, customerName, customerEmail, message, ...context });
     if (email.success) delivered.push('email');
     else failed.push({ channel: 'email', reason: email.reason, detail: email.detail });
   }
@@ -114,7 +134,7 @@ export async function sendCustomNotification(params: CustomNotificationParams): 
   return { delivered, failed };
 }
 
-interface OrderReceivedParams {
+interface OrderReceivedParams extends NotificationContext {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
@@ -125,56 +145,21 @@ interface OrderReceivedParams {
  * until an admin confirms/updates the order. Email-only, matching how
  * customers reach the tracker without an account. */
 export async function sendOrderReceivedEmail(params: OrderReceivedParams): Promise<EmailSendResult> {
-  const { customerEmail, ...templateParams } = params;
+  const { customerEmail, orderId, customerId, actorId, resendOf, ...templateParams } = params;
 
   if (!customerEmail) {
+    await recordSkippedEmail({ kind: 'order_received', reason: 'no_recipient', orderId, customerId });
     return { success: false, reason: 'no_recipient', detail: 'No customer email on the order.' };
   }
 
   try {
     const { subject, html } = buildOrderReceivedEmail(templateParams);
-    return await sendOrderEmail(customerEmail, subject, html);
+    return await sendEmailAndLog({
+      to: customerEmail, subject, html,
+      kind: 'order_received', orderId, customerId, actorId, resendOf,
+    });
   } catch (error) {
     console.error('Order-received email template error:', error);
-    return { success: false, reason: 'provider_error', detail: 'Could not build the email.' };
-  }
-}
-
-// Email senders - build the template, then send via lib/email.ts's shared transporter
-async function sendStatusEmailNotification(params: {
-  orderNumber: string;
-  customerName: string;
-  customerEmail: string;
-  newStatus: string;
-  customMessage?: string;
-  estimatedDeliveryText?: string;
-  tracking?: Partial<OrderTracking> | null;
-}): Promise<EmailSendResult> {
-  const { customerEmail, ...templateParams } = params;
-
-  try {
-    const { subject, html } = buildStatusEmail(templateParams);
-    return await sendOrderEmail(customerEmail, subject, html);
-  } catch (error) {
-    // A template that throws is our bug, not the mail server's.
-    console.error('Status email template error:', error);
-    return { success: false, reason: 'provider_error', detail: 'Could not build the email.' };
-  }
-}
-
-async function sendCustomEmailNotification(params: {
-  orderNumber: string;
-  customerName: string;
-  customerEmail: string;
-  message: string;
-}): Promise<EmailSendResult> {
-  const { customerEmail, ...templateParams } = params;
-
-  try {
-    const { subject, html } = buildCustomEmail(templateParams);
-    return await sendOrderEmail(customerEmail, subject, html);
-  } catch (error) {
-    console.error('Custom email template error:', error);
     return { success: false, reason: 'provider_error', detail: 'Could not build the email.' };
   }
 }

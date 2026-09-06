@@ -35,7 +35,9 @@ export default function CheckoutFlow() {
     shipping,
     subtotal,
     tax,
+    shippingCost,
     total,
+    discountCode,
     payment,
     handleFormSubmit,
     isSubmitting,
@@ -50,7 +52,6 @@ export default function CheckoutFlow() {
     selectedLga, setSelectedLga,
     selectedPlace, setSelectedPlace,
     pickupAvailable,
-    shippingCost,
     pickupAddress,
   } = shipping;
 
@@ -98,6 +99,7 @@ export default function CheckoutFlow() {
             tax={tax}
             shippingCost={shippingCost}
             total={total}
+            discountCode={discountCode}
             onOpenMobileOrderSummary={mobileOrderSummary.open}
             onCloseMobileOrderSummary={mobileOrderSummary.close}
           />

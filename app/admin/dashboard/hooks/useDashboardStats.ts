@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import type { MarginTotals } from '@/lib/commerce/margin';
+import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -23,6 +24,10 @@ export interface DashboardStats {
   partPaidOrders: number;
   /** null until loaded, or when the dashboard query failed. */
   margin: MarginTotals | null;
+  /** store_settings.low_stock_threshold, as the route applied it. Carried in
+   *  the payload rather than fetched separately so the panel and the query it
+   *  describes can never disagree. */
+  lowStockThreshold: number;
   recentOrders: any[];
   lowStockProducts: any[];
 }
@@ -37,6 +42,7 @@ export function useDashboardStats() {
     outstanding: 0,
     partPaidOrders: 0,
     margin: null,
+    lowStockThreshold: DEFAULT_STORE_SETTINGS.lowStockThreshold,
     recentOrders: [],
     lowStockProducts: []
   });

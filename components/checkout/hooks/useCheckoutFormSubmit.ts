@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import type { ShippingZone } from '@/types/shipping';
 import { CartItem } from '@/types/order';
 import { useCheckoutStockValidation } from './useCheckoutStockValidation';
-import { useCheckoutQuote } from './useCheckoutQuote';
+import { useCheckoutQuote, type AppliedCode } from './useCheckoutQuote';
 
 interface UseCheckoutFormSubmitParams {
   items: CartItem[];
@@ -25,9 +25,17 @@ interface UseCheckoutFormSubmitParams {
   customerEmail: string;
   /** Identifies this checkout attempt. */
   idempotencyKey: string;
+  /** The code the customer typed, if any. */
+  discountCode?: string;
   /** Receives the server-confirmed total and the server-issued order number for
    * the order about to be paid. */
-  onReady: (confirmed: { total: number; orderNumber: string }) => void;
+  onReady: (confirmed: {
+    total: number;
+    orderNumber: string;
+    /** What the server made of the code, so the summary can say so. */
+    appliedCode: AppliedCode | null;
+    codeError: string | null;
+  }) => void;
 }
 
 export function useCheckoutFormSubmit({
@@ -40,6 +48,7 @@ export function useCheckoutFormSubmit({
   address,
   customerEmail,
   idempotencyKey,
+  discountCode,
   onReady,
 }: UseCheckoutFormSubmitParams) {
   const { validateStock, isValidating } = useCheckoutStockValidation();
@@ -60,11 +69,20 @@ export function useCheckoutFormSubmit({
     // told — rather than after they have already transferred money.
     const quote = await fetchQuote({
       items, deliveryOption, selectedState, selectedLga, selectedPlace, idempotencyKey,
-      customerEmail,
+      customerEmail, discountCode,
     });
     if (!quote) return;
 
-    onReady({ total: quote.total, orderNumber: quote.orderNumber });
+    // A refused code does not block checkout — the quote it came back with is
+    // a valid price for the basket without it, and stopping here would strand
+    // a customer over a typo they may not care about. useCheckoutQuote has
+    // already told them why it did not apply.
+    onReady({
+      total: quote.total,
+      orderNumber: quote.orderNumber,
+      appliedCode: quote.applied_code,
+      codeError: quote.code_error,
+    });
   };
 
   return { handleSubmit, isSubmitting: isValidating || isQuoting };

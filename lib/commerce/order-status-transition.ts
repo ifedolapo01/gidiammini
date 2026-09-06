@@ -100,7 +100,15 @@ export async function applyOrderStatusTransition(
   };
 
   if (willHaveStockReserved !== hadStockReserved) {
-    const { error: stockErrorMessage } = await applyOrderStockChange(supabase, currentOrder, willHaveStockReserved);
+    // The actor travels with the movement: "who put those 3 back on the
+    // shelf" is the same question as "who cancelled that order", and the
+    // ledger should not send somebody to the activity feed to answer it.
+    const { error: stockErrorMessage } = await applyOrderStockChange(
+      supabase,
+      currentOrder,
+      willHaveStockReserved,
+      { actorId: actor?.id ?? null }
+    );
     if (stockErrorMessage) {
       return { success: false, error: stockErrorMessage, status: 400 };
     }
