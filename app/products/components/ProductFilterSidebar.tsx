@@ -1,28 +1,23 @@
 /**
- * STOREFRONT layer — the filter rail.
+ * STOREFRONT layer — the filter rail, in its two forms.
  *
- * Replaces CategoryFilterSidebar, which was titled "Filters" and offered only
- * category and subcategory. It now composes one panel per facet and does no
- * filtering itself: every change goes up to the hook, which writes it to the
- * URL and lets it come back down. Nothing here holds filter state.
+ * On a laptop it is a sticky column beside the grid. On a phone it is a
+ * dialog, and that is the part that changed: it used to be the same <aside>
+ * with `hidden` swapped for `block`, which meant an overlay covering the page
+ * that trapped no focus, ignored Escape, left the grid behind it in the tab
+ * order, and told assistive technology nothing about being a layer at all.
  *
- * Panel order is deliberate — category first because it is how most people
- * start, then price, then the attributes, then availability. Sizes are sorted
- * by size-order.ts rather than alphabetically, which is what stops "12-18
- * months" appearing above "3-6 months".
+ * Both forms render FilterFacets, so there is one definition of the controls.
+ * Core's Modal supplies the focus trap, Escape, focus restoration and
+ * body-scroll lock — the same primitive the cart drawer is built on.
  */
 'use client';
 
-import { Filter, X } from 'lucide-react';
-import { Button } from '@/components/ui';
-import { sortSizes } from '@/lib/commerce/size-order';
-import { toggleFacetValue, type ProductFilters } from '@/lib/commerce/product-filters';
+import { Filter } from 'lucide-react';
+import { Button, Modal } from '@/components/ui';
+import type { ProductFilters } from '@/lib/commerce/product-filters';
 import type { CategoryWithSubcategories, FacetOptions } from '../types';
-import FacetSection from './facets/FacetSection';
-import CategoryFacet from './facets/CategoryFacet';
-import CheckboxFacet from './facets/CheckboxFacet';
-import PriceFacet from './facets/PriceFacet';
-import AvailabilityFacet from './facets/AvailabilityFacet';
+import FilterFacets from './facets/FilterFacets';
 
 interface ProductFilterSidebarProps {
   categories: CategoryWithSubcategories[];
@@ -36,19 +31,14 @@ interface ProductFilterSidebarProps {
   onNavigateCategory: (categorySlug: string, subCategorySlug?: string) => void;
 }
 
-/**
- * A dot of the colour itself. An admin types these freely, so the value is fed
- * straight to CSS and anything unrecognised ("Multicolour") simply resolves to
- * nothing — which is why the swatch keeps a border and never carries the
- * meaning on its own. The name is always spelled out beside it.
- */
-function ColorSwatch({ value }: { value: string }) {
+/** "Clear all", shown only when there is something to clear. */
+function ClearAllButton({ count, onClearAll }: { count: number; onClearAll: () => void }) {
+  if (count === 0) return null;
   return (
-    <span
-      aria-hidden="true"
-      className="size-4 shrink-0 rounded-full border border-border-strong"
-      style={{ backgroundColor: value.toLowerCase().replace(/\s+/g, '') }}
-    />
+    <Button variant="ghost" size="sm" onClick={onClearAll}>
+      Clear all
+      <span className="sr-only"> — {count} filter{count === 1 ? '' : 's'}</span>
+    </Button>
   );
 }
 
@@ -63,73 +53,50 @@ export default function ProductFilterSidebar({
   onClearAll,
   onNavigateCategory,
 }: ProductFilterSidebarProps) {
-  return (
-    <aside className={`md:w-64 md:shrink-0 ${showFilters ? 'block' : 'hidden md:block'}`}>
-      <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-surface border border-primary/10 bg-surface p-6 shadow-elevation-1">
-        <div className="mb-6 flex items-center justify-between gap-2">
-          <h2 className="flex items-center text-body-lg font-semibold text-text-primary">
-            <Filter className="mr-2 size-5 text-primary" aria-hidden="true" />
-            Filters
-          </h2>
+  const facetProps = { categories, facets, filters, onChange, onNavigateCategory };
 
-          <div className="flex items-center gap-1">
-            {activeFilterCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={onClearAll}>
-                Clear all
-              </Button>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowFilters(false)}
-              className="rounded-control p-1 text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus md:hidden"
-            >
-              <X className="size-5" aria-hidden="true" />
-              <span className="sr-only">Close filters</span>
-            </button>
+  return (
+    <>
+      {/* Desktop rail. Never the mobile panel now, so it carries no close
+          control and no visibility toggle — it is simply absent below md. */}
+      <aside className="hidden md:block md:w-64 md:shrink-0">
+        <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-surface border border-primary/10 bg-surface p-6 shadow-elevation-1">
+          <div className="mb-6 flex items-center justify-between gap-2">
+            <h2 className="flex items-center text-body-lg font-semibold text-text-primary">
+              <Filter className="mr-2 size-5 text-primary" aria-hidden="true" />
+              Filters
+            </h2>
+            <ClearAllButton count={activeFilterCount} onClearAll={onClearAll} />
+          </div>
+
+          <FilterFacets {...facetProps} />
+        </div>
+      </aside>
+
+      {/* Mobile dialog. Only ever opened by the "Filters" button, which is
+          itself md:hidden, so this stays closed on a laptop. */}
+      <Modal
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        placement="right"
+        title="Filters"
+        padded={false}
+      >
+        <div className="flex h-full flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+            <FilterFacets {...facetProps} />
+          </div>
+
+          {/* Pinned, because on a phone the two things you want after changing
+              a filter are both at the bottom of a long scroll otherwise. */}
+          <div className="flex shrink-0 items-center gap-2 border-t border-border bg-surface px-6 py-4">
+            <ClearAllButton count={activeFilterCount} onClearAll={onClearAll} />
+            <Button className="flex-1" onClick={() => setShowFilters(false)}>
+              Show results
+            </Button>
           </div>
         </div>
-
-        <div className="space-y-4">
-          <FacetSection title="Category">
-            <CategoryFacet
-              categories={categories}
-              selectedCategory={filters.category}
-              selectedSubCategory={filters.subcategory}
-              onSelectAll={() => onNavigateCategory('all', 'all')}
-              onNavigate={onNavigateCategory}
-            />
-          </FacetSection>
-
-          <PriceFacet
-            minPrice={facets.minPrice}
-            maxPrice={facets.maxPrice}
-            selectedMin={filters.minPrice}
-            selectedMax={filters.maxPrice}
-            onSelect={(min, max) => onChange({ minPrice: min, maxPrice: max })}
-          />
-
-          <CheckboxFacet
-            title="Size & age"
-            options={sortSizes(facets.sizes)}
-            selected={filters.sizes}
-            onToggle={(value) => onChange({ sizes: toggleFacetValue(filters.sizes, value) })}
-          />
-
-          <CheckboxFacet
-            title="Colour"
-            options={facets.colors}
-            selected={filters.colors}
-            onToggle={(value) => onChange({ colors: toggleFacetValue(filters.colors, value) })}
-            renderAdornment={(value) => <ColorSwatch value={value} />}
-          />
-
-          <AvailabilityFacet
-            onSale={filters.onSale}
-            inStockOnly={filters.inStockOnly}
-            onChange={onChange}
-          />
-        </div>
-      </div>
-    </aside>
+      </Modal>
+    </>
   );
 }

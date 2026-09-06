@@ -2,6 +2,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { announce } from '@/lib/announce';
 
 interface QuantitySelectorProps {
   quantity: number;
@@ -10,16 +11,43 @@ interface QuantitySelectorProps {
   min?: number;
   /** Ceiling for increment; when set, the increment button disables at this value. */
   max?: number;
+  /**
+   * Names what is being counted, for the announcement only ("Quantity 3 —
+   * Ribbed Bodysuit"). Optional; without it the announcement is just the
+   * number, which is still better than the silence this had before.
+   */
+  announceLabel?: string;
   size?: 'sm' | 'md';
   className?: string;
 }
 
-export function QuantitySelector({ quantity, onChange, min, max, size = 'md', className }: QuantitySelectorProps) {
+export function QuantitySelector({
+  quantity,
+  onChange,
+  min,
+  max,
+  size = 'md',
+  className,
+  announceLabel,
+}: QuantitySelectorProps) {
   const atMin = min !== undefined && quantity <= min;
   const atMax = max !== undefined && quantity >= max;
 
-  const decrement = () => onChange(min !== undefined ? Math.max(min, quantity - 1) : quantity - 1);
-  const increment = () => onChange(max !== undefined ? Math.min(max, quantity + 1) : quantity + 1);
+  /**
+   * The buttons are labelled "Increase quantity" / "Decrease quantity", so a
+   * screen reader says what the control does and then nothing at all about
+   * what happened — the number beside it changes silently. This is the only
+   * feedback there is for the press.
+   */
+  const applyAndAnnounce = (next: number) => {
+    onChange(next);
+    announce(announceLabel ? `Quantity ${next} — ${announceLabel}` : `Quantity ${next}`);
+  };
+
+  const decrement = () =>
+    applyAndAnnounce(min !== undefined ? Math.max(min, quantity - 1) : quantity - 1);
+  const increment = () =>
+    applyAndAnnounce(max !== undefined ? Math.min(max, quantity + 1) : quantity + 1);
 
   if (size === 'sm') {
     return (

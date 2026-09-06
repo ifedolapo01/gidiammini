@@ -2,12 +2,14 @@
 'use client';
 
 import { Percent, Tag, Calendar, Send, Edit2, Trash2 } from 'lucide-react';
+import { STICKY_HEAD, TABLE_SCROLL } from '../../components/table';
 import { format } from 'date-fns';
 import { Badge, Spinner } from '@/components/ui';
 import { Discount } from '@/lib/commerce/discounts';
 import type { DiscountPerformance } from '@/lib/commerce/discount-performance';
 import DiscountPerformanceCell from './DiscountPerformanceCell';
 import DiscountNameCell from './DiscountNameCell';
+import RowActionsMenu from '@/app/admin/components/RowActionsMenu';
 import { formatTarget } from '@/lib/commerce/discount-target';
 import type { Category, Product } from '@/types/product';
 
@@ -62,25 +64,29 @@ export function DiscountTable({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className={TABLE_SCROLL} tabIndex={0} role="region" aria-label="Discounts table">
           <table className="w-full text-left">
-            <thead>
-              <tr className="bg-background-secondary border-b border-border-light text-body-sm text-text-secondary uppercase tracking-wider">
-                <th className="px-6 py-4 font-semibold">Name & Value</th>
-                <th className="px-6 py-4 font-semibold">Scope</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold">Dates</th>
-                <th className="px-6 py-4 font-semibold">Performance</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+            {/* Sticky, so the six column labels are still there at the bottom
+                of a long history list. */}
+            <thead className={STICKY_HEAD}>
+              <tr className="border-b border-border-light text-body-sm text-text-secondary uppercase tracking-wider">
+                <th className="px-4 py-3 font-semibold">Name &amp; value</th>
+                <th className="px-4 py-3 font-semibold">Scope</th>
+                <th className="px-4 py-3 font-semibold w-24">Status</th>
+                <th className="px-4 py-3 font-semibold w-32">Dates</th>
+                <th className="px-4 py-3 font-semibold">Performance</th>
+                <th className="px-4 py-3 font-semibold text-right w-16">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-divider">
               {tableDiscounts.map((discount) => (
                 <tr key={discount.id} className="hover:bg-surface-hover transition-colors">
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 align-top">
                     <DiscountNameCell discount={discount} />
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 align-top">
                     <Badge tone="info" variant="subtle" className="font-semibold uppercase tracking-wider">
                       <Tag size={12} />
                       {discount.scope}
@@ -91,7 +97,7 @@ export function DiscountTable({
                       </p>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 align-top">
                     {!isHistory ? (
                       <button
                         onClick={() => onToggleStatus(discount)}
@@ -110,7 +116,7 @@ export function DiscountTable({
                       </Badge>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 align-top">
                     {(discount.start_date || discount.end_date) ? (
                       <div className="text-body-sm text-text-secondary space-y-1 flex flex-col justify-center">
                         {discount.start_date && (
@@ -130,53 +136,51 @@ export function DiscountTable({
                       <span className="text-body-sm text-text-secondary italic">No expiry</span>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 align-top">
                     <DiscountPerformanceCell
                       performance={performance[discount.id]}
                       unavailable={performanceUnavailable}
                     />
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    {isHistory ? (
-                      <div className="flex justify-end items-center gap-2">
-                        <button
-                          onClick={() => onReuse(discount)}
-                          className="text-text-secondary hover:text-primary p-2 transition-colors flex items-center gap-1 text-body-sm font-medium border border-border rounded-control hover:border-primary/30 bg-surface shadow-elevation-1"
-                          title="Reuse Discount"
-                        >
-                          <Calendar size={16} /> Reuse
-                        </button>
-                        <button
-                          onClick={() => onDelete(discount.id)}
-                          disabled={pendingId === discount.id}
-                          className="text-text-muted hover:text-destructive p-2 transition-colors disabled:opacity-60 disabled:pointer-events-none"
-                          title="Delete Discount"
-                        >
-                          {pendingId === discount.id ? <Spinner size="xs" /> : <Trash2 size={18} />}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end items-center">
-                        <button
-                          onClick={() => onNotify(discount)}
-                          className="text-text-muted hover:text-success p-2 transition-colors"
-                          title="Notify Subscribers"
-                        >
-                          <Send size={18} />
-                        </button>
-                        <button onClick={() => onEdit(discount)} className="text-text-muted hover:text-primary p-2 transition-colors" title="Edit Discount">
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(discount.id)}
-                          disabled={pendingId === discount.id}
-                          className="text-text-muted hover:text-destructive p-2 transition-colors disabled:opacity-60 disabled:pointer-events-none"
-                          title="Delete Discount"
-                        >
-                          {pendingId === discount.id ? <Spinner size="xs" /> : <Trash2 size={18} />}
-                        </button>
-                      </div>
-                    )}
+                  <td className="px-4 py-4 text-right">
+                    <RowActionsMenu
+                      rowLabel={discount.name}
+                      busy={pendingId === discount.id}
+                      actions={
+                        isHistory
+                          ? [
+                              {
+                                label: 'Reuse',
+                                icon: <Calendar size={15} aria-hidden />,
+                                onClick: () => onReuse(discount),
+                              },
+                              {
+                                label: 'Delete',
+                                icon: <Trash2 size={15} aria-hidden />,
+                                onClick: () => onDelete(discount.id),
+                                destructive: true,
+                              },
+                            ]
+                          : [
+                              {
+                                label: 'Notify subscribers',
+                                icon: <Send size={15} aria-hidden />,
+                                onClick: () => onNotify(discount),
+                              },
+                              {
+                                label: 'Edit',
+                                icon: <Edit2 size={15} aria-hidden />,
+                                onClick: () => onEdit(discount),
+                              },
+                              {
+                                label: 'Delete',
+                                icon: <Trash2 size={15} aria-hidden />,
+                                onClick: () => onDelete(discount.id),
+                                destructive: true,
+                              },
+                            ]
+                      }
+                    />
                   </td>
                 </tr>
               ))}

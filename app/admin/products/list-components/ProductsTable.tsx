@@ -3,7 +3,14 @@
  * The rows shown are the page the server returned; the footer counts come from
  * the summary endpoint, because a count derived from what is on screen would
  * report the page rather than the catalogue.
+ *
+ * Name, price and stock sort on the server — the query has accepted those
+ * three since it was written (ADMIN_PRODUCT_SORTABLE), and the headings simply
+ * never offered them. Category is not among them and is therefore not
+ * presented as a control.
  */
+'use client';
+
 import { Fragment } from 'react';
 import { flattenProducts } from '@/lib/commerce/product-flatten';
 import { groupFlattenedByProduct } from '@/lib/commerce/group-variants';
@@ -13,48 +20,66 @@ import { SelectAllCheckbox } from '@/app/admin/components/SelectionCheckbox';
 import type { TableSelection } from '@/app/admin/hooks/useTableSelection';
 import { SingleProductRow, GroupedParentRow } from './ProductTableRow';
 import { VariantChildRows } from './VariantChildRows';
+import { SortableHeaderRow, STICKY_HEAD, TABLE_SCROLL, TH, type TableColumn, type TableDensity } from '../../components/table';
+import type { SortDirection } from '../../hooks/useListParams';
 
-const HEADINGS = ['Variant', 'Category', 'Price', 'Stock', 'Images', 'Actions'];
+const COLUMNS: TableColumn[] = [
+  { key: 'name', label: 'Product', sortable: true, className: 'pl-16' },
+  { key: 'variant', label: 'Variant' },
+  { key: 'category', label: 'Category' },
+  { key: 'price', label: 'Price', numeric: true, sortable: true },
+  { key: 'stock', label: 'Stock', numeric: true, sortable: true },
+  { key: 'images', label: 'Images', numeric: true },
+  { key: 'actions', label: 'Actions', srOnlyLabel: true },
+];
 
 interface ProductsTableProps {
   products: Product[];
   selection: TableSelection;
   summary: AdminProductsSummary | null;
   onDelete: (productId: string) => void;
+  sort: string;
+  direction: SortDirection;
+  onSortChange: (sort: string, direction: SortDirection) => void;
+  density: TableDensity;
   children?: React.ReactNode;
 }
 
-export function ProductsTable({ products, selection, summary, onDelete, children }: ProductsTableProps) {
+export function ProductsTable({
+  products,
+  selection,
+  summary,
+  onDelete,
+  sort,
+  direction,
+  onSortChange,
+  density,
+  children,
+}: ProductsTableProps) {
   const flattened = flattenProducts(products);
   const groupedProducts = groupFlattenedByProduct(flattened);
 
   return (
     <div className="bg-surface rounded-surface border border-border overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className={TABLE_SCROLL} tabIndex={0} role="region" aria-label="Products table">
         <table className="w-full">
-          <thead className="bg-background-secondary">
-            <tr>
-              <th scope="col" className="px-4 py-3 w-10">
-                <SelectAllCheckbox
-                  checked={selection.allVisibleSelected}
-                  indeterminate={selection.someVisibleSelected}
-                  onChange={selection.toggleAll}
-                  disabled={products.length === 0}
-                />
-              </th>
-              <th scope="col" className="px-6 py-3 text-left pl-16 text-caption-md font-medium text-text-secondary uppercase tracking-wider">
-                Product
-              </th>
-              {HEADINGS.map((heading) => (
-                <th
-                  key={heading}
-                  scope="col"
-                  className="px-6 py-3 text-center text-caption-md font-medium text-text-secondary uppercase tracking-wider"
-                >
-                  {heading}
+          <thead className={STICKY_HEAD}>
+            <SortableHeaderRow
+              columns={COLUMNS}
+              sort={sort}
+              direction={direction}
+              onSortChange={onSortChange}
+              leading={
+                <th scope="col" className={`${TH} w-10`}>
+                  <SelectAllCheckbox
+                    checked={selection.allVisibleSelected}
+                    indeterminate={selection.someVisibleSelected}
+                    onChange={selection.toggleAll}
+                    disabled={products.length === 0}
+                  />
                 </th>
-              ))}
-            </tr>
+              }
+            />
           </thead>
           <tbody className="divide-y divide-divider bg-surface">
             {Object.entries(groupedProducts).map(([productId, variants]) => {
@@ -71,6 +96,7 @@ export function ProductsTable({ products, selection, summary, onDelete, children
                     selected={selected}
                     onToggleSelect={selection.toggle}
                     onDelete={onDelete}
+                    density={density}
                   />
                 );
               }
@@ -84,6 +110,7 @@ export function ProductsTable({ products, selection, summary, onDelete, children
                     selected={selected}
                     onToggleSelect={selection.toggle}
                     onDelete={onDelete}
+                    density={density}
                   />
                   <VariantChildRows productId={productId} variants={variants} />
                 </Fragment>

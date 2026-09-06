@@ -7,7 +7,7 @@ import type { DailyPoint } from '@/lib/commerce/dashboard-analytics';
 import type { SemanticChartColors } from '@/components/ui/charts/useSemanticChartColors';
 import { ChartCard } from './ChartCard';
 import { ChartTooltip } from './ChartTooltip';
-import { formatCurrency } from '../../format-currency';
+import { formatCurrency } from '@/lib/commerce/pricing';
 
 function formatCompactCurrency(value: number): string {
   if (value >= 1_000_000) return `₦${(value / 1_000_000).toFixed(1)}M`;

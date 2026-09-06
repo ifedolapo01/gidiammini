@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
 import { formatDate } from '@/lib/commerce/format-date';
-import { formatCurrency } from '../format-currency';
+import { formatCurrency } from '@/lib/commerce/pricing';
 
 interface RecentOrdersPanelProps {
   orders: any[];

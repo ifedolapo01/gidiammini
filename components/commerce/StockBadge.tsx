@@ -31,10 +31,14 @@ export function StockBadge({
 
   if (status.level === 'in' && hideWhenInStock) return null;
 
+  // tabular-nums on the count wherever it appears, so a column of these
+  // badges lines its digits up down the page. Applied here rather than in each
+  // table's cell, because the badge is the only thing that knows where the
+  // number is.
   if (countFormat === 'units') {
     return (
       <Badge tone={status.tone} variant={variant} className={className}>
-        {stock} units
+        <span className="tabular-nums">{stock}</span> units
       </Badge>
     );
   }
@@ -52,7 +56,7 @@ export function StockBadge({
   return (
     <Badge tone={status.tone} variant={variant} className={className}>
       {label}
-      {suffix}
+      {suffix && <span className="tabular-nums">{suffix}</span>}
     </Badge>
   );
 }

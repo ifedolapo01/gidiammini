@@ -21,6 +21,7 @@
  */
 import type { Discount } from './discounts';
 import { calculateSavings, requiresCode } from './discounts';
+import { formatCurrency } from './pricing';
 
 export type CodeRejection =
   | 'unknown'
@@ -44,9 +45,10 @@ export type CodeCheckResult =
   | { ok: true; discount: Discount }
   | { ok: false; reason: CodeRejection; message: string };
 
-/** The naira figure in a rejection message, so a customer knows what to do. */
+/** The naira figure in a rejection message, so a customer knows what to do.
+ *  Rounded first: a threshold is quoted to the customer as a whole naira. */
 function naira(amount: number): string {
-  return `₦${Math.round(amount).toLocaleString()}`;
+  return formatCurrency(Math.round(amount));
 }
 
 export function checkDiscountCode(input: CodeCheckInput): CodeCheckResult {

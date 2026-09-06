@@ -9,7 +9,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes, Star, ReceiptText,
-  CircleQuestionMark, FolderTree, Percent, Truck, History, Users, Contact, Settings,
+  CircleQuestionMark, FolderTree, Percent, Truck, History, Users, Contact, Settings, Zap,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/api/admin-roles';
 
@@ -91,6 +91,11 @@ export const adminConfig = {
     // is read-only for anyone who cannot write — "what tax rate are we
     // charging" is a fair question for a manager, and hiding the link answers
     // it by making them ask someone.
+    // Beside Settings, because both are things the shop is configured to do
+    // rather than work to get through. Behind store:read for the same reason
+    // Settings is: everyone who works here should be able to see what the
+    // software does on its own, even if only an owner can change it.
+    { href: '/admin/automation', label: 'Automation', icon: Zap, permission: 'store:read' },
     { href: '/admin/settings', label: 'Settings', icon: Settings, permission: 'store:read' },
   ] satisfies AdminNavItem[],
 };

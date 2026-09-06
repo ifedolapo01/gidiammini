@@ -83,6 +83,13 @@ async function pendingChangeRequestIds(supabase: SupabaseClient, orderIds: strin
   return new Set((data ?? []).map((row: any) => row.order_id));
 }
 
+/** An ISO timestamp from an untrusted query string, or null. */
+function asTimestamp(value: string | null): string | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : new Date(parsed).toISOString();
+}
+
 export async function fetchAdminOrders(supabase: SupabaseClient, url: URL): Promise<AdminOrdersPage> {
   const params = parseListParams(url, {
     sortable: ADMIN_ORDER_SORTABLE,
@@ -109,6 +116,20 @@ export async function fetchAdminOrders(supabase: SupabaseClient, url: URL): Prom
   } else if (status && status !== 'all' && (ORDER_STATUSES as string[]).includes(status)) {
     query = query.eq('status', status);
   }
+
+  // The dashboard's drill-through. Without a date filter, clicking "42 orders"
+  // on a 30-day dashboard would land on every order ever placed — which is
+  // worse than not linking at all, because the number and the list it claims
+  // to explain would disagree.
+  //
+  // Validated as timestamps before use: an unparseable value is ignored rather
+  // than passed to PostgREST, which would answer a hand-edited URL with a 500.
+  const from = asTimestamp(url.searchParams.get('from'));
+  const to = asTimestamp(url.searchParams.get('to'));
+  if (from) query = query.gte('created_at', from);
+  // Exclusive, matching how lib/commerce/date-range.ts builds a window, so a
+  // range never double-counts the boundary day.
+  if (to) query = query.lt('created_at', to);
 
   if (params.search) {
     // A number typed in any format also matches the normalised column, so

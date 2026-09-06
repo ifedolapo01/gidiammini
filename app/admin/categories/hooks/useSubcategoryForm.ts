@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui';
 import { slugify } from '@/lib/commerce/format-text';
 
 interface UseSubcategoryFormArgs {
@@ -23,6 +24,7 @@ interface UseSubcategoryFormArgs {
 }
 
 export function useSubcategoryForm({ refresh, setPendingDeleteId }: UseSubcategoryFormArgs) {
+  const confirm = useConfirm();
   const [selectedCategoryForSub, setSelectedCategoryForSub] = useState<string>('');
   const [newSubName, setNewSubName] = useState('');
   const [newSubSlug, setNewSubSlug] = useState('');
@@ -75,8 +77,17 @@ export function useSubcategoryForm({ refresh, setPendingDeleteId }: UseSubcatego
     }
   };
 
-  const handleDeleteSubcategory = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this subcategory?')) return;
+  const handleDeleteSubcategory = async (id: string, name?: string) => {
+    const confirmed = await confirm({
+      title: name ? `Delete ${name}?` : 'Delete this subcategory?',
+      consequences: [
+        'Removes it from the storefront nav and the products filter',
+        'Products stay, but stop being reachable through this subcategory',
+        'Cannot be undone',
+      ],
+      confirmLabel: 'Delete subcategory',
+    });
+    if (!confirmed) return;
 
     setPendingDeleteId(id);
     try {

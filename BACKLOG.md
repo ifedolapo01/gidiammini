@@ -1,8 +1,10 @@
 # Backlog
 
-Work that was deliberately deferred, with enough context to pick it up cold.
-Each entry says what is missing, why it was left, and what "done" means — a
-backlog line that only names a feature is one nobody can act on later.
+Work the owner has expressly said to keep for later. Each entry says what is
+missing, why it was left, and what "done" means — a backlog line that only
+names a feature is one nobody can act on later.
+
+Anything else found along the way is raised in conversation, not filed here.
 
 ---
 
@@ -63,20 +65,3 @@ changes what the segment query means and who is in it.
 - Honest reporting of what went out, rather than the size of the list.
 
 ---
-
-## Delivery and bounce feedback
-
-**Status:** blocked on a provider change, not on code.
-
-`notifications.status` carries `'delivered'` and `'complained'`, and
-`markNotificationStatus()` is ready to receive them. Nothing sets them, because
-the transport is SMTP through nodemailer and SMTP has no callback: it reports
-that a mail server accepted a message and nothing after that.
-
-Hard rejections at handshake *are* captured (nodemailer's `rejected`), and land
-as `'bounced'`.
-
-**Done means:** a provider with webhooks (Resend, Postmark, SES via SNS) or an
-IMAP reader watching the sending mailbox, plus one route that calls
-`markNotificationStatus`. Until then the Admin says "Accepted by mail server"
-rather than "Delivered", which is the true statement.

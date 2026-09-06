@@ -17,6 +17,9 @@ import SearchBox from '@/components/search/SearchBox';
 import StorefrontNav from '@/components/header/StorefrontNav';
 import type { CategoryNavItem } from '@/lib/commerce/storefront-nav';
 
+/** Wrapper the burger button's aria-controls points at. */
+const MOBILE_NAV_ID = 'mobile-nav';
+
 function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -48,10 +51,16 @@ function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
       <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4">
+            {/* aria-expanded carries the state the swapped icon carries
+                visually and nothing carried otherwise. The admin sidebar's
+                toggle has had it since it was written; this one had not. */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden text-text-secondary"
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls={MOBILE_NAV_ID}
             >
               {mobileMenuOpen ? (
                 <X className="w-5 h-5 sm:w-6 sm:h-6 text-text-primary" />
@@ -124,9 +133,15 @@ function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
           <SearchBox />
         </div>
 
-        {/* Mobile Navigation Menu */}
+        {/* Mobile Navigation Menu.
+
+            Rendered only while open rather than hidden with a class, so the
+            links are out of the tab order when the menu is closed. That is why
+            aria-controls above points at a wrapper that is always present: a
+            control may not reference an id that does not exist. */}
+        <div id={MOBILE_NAV_ID} className="md:hidden">
         {mobileMenuOpen && (
-          <div className="md:hidden mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-primary/10">
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-primary/10">
             <StorefrontNav
               categories={categories}
               variant="mobile"
@@ -135,6 +150,7 @@ function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
             />
           </div>
         )}
+        </div>
       </div>
     </header>
   );

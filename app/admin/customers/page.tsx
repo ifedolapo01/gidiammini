@@ -23,6 +23,8 @@ import { useToast } from '../hooks/useToast';
 import { useCustomers } from './hooks/useCustomers';
 import CustomerFilters from './components/CustomerFilters';
 import CustomerTable from './components/CustomerTable';
+import { DensityToggle } from '../components/table';
+import { useTableDensity } from '../hooks/useTableDensity';
 import CustomerCard from './components/CustomerCard';
 import SegmentCampaignDialog from './components/SegmentCampaignDialog';
 import { CustomersSkeleton } from './components/CustomersSkeleton';
@@ -33,6 +35,7 @@ export default function AdminCustomers() {
   const [messagingTag, setMessagingTag] = useState<string | null>(null);
 
   const activeTag = params.filters.tag ?? '';
+  const { density, setDensity } = useTableDensity();
 
   if (loading && customers.length === 0) return <CustomersSkeleton />;
 
@@ -58,6 +61,10 @@ export default function AdminCustomers() {
                 Message this segment
               </Button>
             )}
+            {/* Beside the export, because both are about the table below
+                rather than about any one row in it. Hidden on mobile, where
+                the list renders as cards and density means nothing. */}
+            <DensityToggle density={density} onChange={setDensity} className="hidden md:inline-flex" />
             <ExportButton dataset="customers" label="Export customers" />
           </div>
         </div>
@@ -97,6 +104,7 @@ export default function AdminCustomers() {
               sort={params.sort}
               direction={params.direction}
               onSortChange={params.setSort}
+              density={density}
             />
 
             <div className="space-y-2 p-3 md:hidden">

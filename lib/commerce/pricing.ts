@@ -7,11 +7,34 @@
  * these to decide what to show and lib/commerce/price-order.ts uses them to
  * decide what to charge and whether stock exists.
  */
-import { Product, PricingConfig } from '@/types/product';
+import { Product } from '@/types/product';
 import { findVariant, hasVariantRows, variantsOf } from './product-variants';
 
+/**
+ * The one naira formatter. Built on Intl rather than a hand-written ₦ in front
+ * of toLocaleString() for three reasons: the sign and the grouping come from
+ * the same locale data instead of being assembled by hand, a negative renders
+ * as -₦1,000 rather than ₦-1,000, and the minor units are stated explicitly
+ * so a price never silently gains or loses kobo.
+ *
+ * The formatter is built once at module scope. Intl.NumberFormat construction
+ * is the expensive part, and an admin table calls this a few hundred times per
+ * render.
+ */
+const NAIRA = new Intl.NumberFormat('en-NG', {
+  style: 'currency',
+  currency: 'NGN',
+  // Prices in this store are whole naira. Stating both bounds stops Intl
+  // applying NGN's default of two, which would render every price as ₦1,000.00.
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
 export function formatCurrency(amount: number): string {
-  return `₦${amount.toLocaleString()}`;
+  // A total arriving as NaN from a bad sum should read as an obvious gap, not
+  // as "₦NaN" sitting in a column of real figures.
+  if (!Number.isFinite(amount)) return '—';
+  return NAIRA.format(amount);
 }
 
 export function formatPriceRange(min: number, max: number): string {

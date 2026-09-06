@@ -8,7 +8,7 @@ import { CartProvider } from '@/components/CartProvider';
 import { WishlistProvider } from '@/components/WishlistProvider';
 import { Analytics } from "@vercel/analytics/next";
 import StorefrontDiscountManager from '@/components/StorefrontDiscountManager';
-import { Toaster } from '@/components/ui';
+import { Toaster, SkipLink, LiveAnnouncer, MAIN_CONTENT_ID } from '@/components/ui';
 import { SITE_URL } from '@/lib/site-url';
 import { CategoryProvider } from '@/components/CategoryProvider';
 import { CartDrawerProvider } from '@/components/cart/CartDrawerProvider';
@@ -166,8 +166,15 @@ export default async function RootLayout({
           {/* Above the header, because a dropped connection explains
               everything else on the page. */}
           <OfflineBanner />
+          {/* First in the tab order, before the header's logo, nav, search box
+              and four icon links. */}
+          <SkipLink />
           <Header categories={categories} />
-          <main className="min-h-screen overflow-x-hidden">{children}</main>
+          {/* tabIndex={-1} so the skip link moves focus here and not just the
+              scroll position — without it the next Tab goes back to the header. */}
+          <main id={MAIN_CONTENT_ID} tabIndex={-1} className="min-h-screen overflow-x-hidden focus:outline-none">
+            {children}
+          </main>
           <Analytics />
           <Footer categories={categories} />
         </CartDrawerProvider>
@@ -176,6 +183,7 @@ export default async function RootLayout({
         </CartProvider>
         </StoreSettingsProvider>
         <Toaster />
+        <LiveAnnouncer />
         <ServiceWorkerRegistrar />
       </body>
     </html>

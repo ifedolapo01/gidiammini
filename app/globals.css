@@ -481,6 +481,27 @@ img, video, canvas {
   animation: drawerIn var(--duration-slow) ease-out;
 }
 
+/* A row-actions menu opening from its trigger. Deliberately faster and
+   shallower than modalIn: this appears under the cursor and is dismissed in
+   about a second, so anything more than a hint of motion reads as lag. The
+   transform origin is set per-instance, so a menu that opened upwards grows
+   from its bottom edge rather than appearing to fall out of the row above.
+   Global prefers-reduced-motion handling above neutralises it. */
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-menuIn {
+  animation: menuIn var(--duration-fast) ease-out;
+}
+
 /* Payment Gateway Animations */
 @keyframes gatewaySwitch {
   from {

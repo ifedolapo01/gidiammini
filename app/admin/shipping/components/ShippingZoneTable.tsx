@@ -6,7 +6,9 @@
 
 import { Fragment } from 'react';
 import { MapPin, Store, Phone, Edit2, Trash2, Star } from 'lucide-react';
+import { STICKY_HEAD, TABLE_SCROLL } from '../../components/table';
 import { Badge, Spinner } from '@/components/ui';
+import RowActionsMenu from '@/app/admin/components/RowActionsMenu';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatZoneEta, formatEtaRange } from '@/lib/commerce/shipping-eta';
 import { formatZoneLocation } from '@/lib/commerce/shipping-match';
@@ -67,10 +69,10 @@ export function ShippingZoneTable({ zones, pendingId, onToggleStatus, onEdit, on
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className={TABLE_SCROLL} tabIndex={0} role="region" aria-label="Shipping zones table">
           <table className="w-full text-left">
-            <thead>
-              <tr className="bg-background-secondary border-b border-border-light text-body-sm text-text-secondary uppercase tracking-wider">
+            <thead className={STICKY_HEAD}>
+              <tr className="border-b border-border-light text-body-sm text-text-secondary uppercase tracking-wider">
                 <th className="px-6 py-4 font-semibold">Zone</th>
                 <th className="px-6 py-4 font-semibold">Delivery</th>
                 <th className="px-6 py-4 font-semibold">Pickup</th>
@@ -97,7 +99,7 @@ export function ShippingZoneTable({ zones, pendingId, onToggleStatus, onEdit, on
                       </p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-medium text-text-primary">{formatCurrency(zone.delivery_fee)}</p>
+                      <p className="font-medium tabular-nums text-text-primary">{formatCurrency(zone.delivery_fee)}</p>
                       <p className="text-caption-md text-text-secondary">{zone.delivery_label} • {formatZoneEta(zone)}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -143,19 +145,23 @@ export function ShippingZoneTable({ zones, pendingId, onToggleStatus, onEdit, on
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end items-center">
-                        <button onClick={() => onEdit(zone)} className="text-text-muted hover:text-primary p-2 transition-colors" title="Edit Zone">
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(zone.id)}
-                          disabled={pendingId === zone.id}
-                          className="text-text-muted hover:text-destructive p-2 transition-colors disabled:opacity-60 disabled:pointer-events-none"
-                          title="Delete Zone"
-                        >
-                          {pendingId === zone.id ? <Spinner size="xs" /> : <Trash2 size={18} />}
-                        </button>
-                      </div>
+                      <RowActionsMenu
+                        rowLabel={zone.name}
+                        busy={pendingId === zone.id}
+                        actions={[
+                          {
+                            label: 'Edit zone',
+                            icon: <Edit2 size={15} aria-hidden />,
+                            onClick: () => onEdit(zone),
+                          },
+                          {
+                            label: 'Delete zone',
+                            icon: <Trash2 size={15} aria-hidden />,
+                            onClick: () => onDelete(zone.id),
+                            destructive: true,
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                   {(zone.shipping_zone_exceptions ?? []).map((exception) => (

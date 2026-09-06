@@ -14,7 +14,7 @@
 import { ExternalLink, MailCheck, Trash2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import ProductImage from '@/components/commerce/ProductImage';
-import { Badge, Button } from '@/components/ui';
+import { Badge, Button, useConfirm } from '@/components/ui';
 import { formatDate } from '@/lib/commerce/format-date';
 import { questionStatusLabel, type AdminQuestion } from '@/lib/commerce/questions';
 // The route's own input type, so the card cannot invent a field the API would
@@ -41,6 +41,7 @@ export default function QuestionModerationCard({
   onModerate,
   onDelete,
 }: QuestionModerationCardProps) {
+  const confirm = useConfirm();
   const published = question.status === 'published';
 
   return (
@@ -150,8 +151,18 @@ export default function QuestionModerationCard({
             size="sm"
             disabled={saving}
             className="text-destructive"
-            onClick={() => {
-              if (!confirm('Delete this question permanently? Rejecting is usually the better option — it keeps the record.')) return;
+            onClick={async () => {
+              const confirmed = await confirm({
+                title: 'Delete this question permanently?',
+                message: 'Rejecting is usually the better option — it hides the question and keeps the record.',
+                consequences: [
+                  'Removes the question and any answer given to it',
+                  'Cannot be undone',
+                ],
+                confirmLabel: 'Delete question',
+                typeToConfirm: 'delete',
+              });
+              if (!confirmed) return;
               onDelete();
             }}
           >

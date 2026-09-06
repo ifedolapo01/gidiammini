@@ -15,3 +15,8 @@ export { Checkbox, type CheckboxProps } from './Checkbox';
 export { FieldError, fieldErrorId, type FieldErrorProps } from './FieldError';
 export { ThemeToggle } from './ThemeToggle';
 export { Toaster } from './Toaster';
+export { NairaSign } from './icons/NairaSign';
+export { SkipLink, MAIN_CONTENT_ID } from './SkipLink';
+export { LiveAnnouncer } from './LiveAnnouncer';
+export { ConfirmProvider, useConfirm } from './confirm/ConfirmProvider';
+export type { ConfirmOptions, ConfirmFn } from './confirm/types';

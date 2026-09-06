@@ -15,6 +15,8 @@ import { useStockBulk } from './hooks/useStockBulk';
 import { useStockEditing } from './hooks/useStockEditing';
 import { useProductCategories } from '../products/hooks/useProductCategories';
 import { useTableSelection } from '../hooks/useTableSelection';
+import { useTableDensity } from '../hooks/useTableDensity';
+import { DensityToggle } from '../components/table';
 import TablePagination from '../components/TablePagination';
 import LiveIndicator from '../components/LiveIndicator';
 import BulkResultSummary from '../components/BulkResultSummary';
@@ -44,6 +46,7 @@ export default function StockManagementPage() {
   const { categories } = useProductCategories();
   const selection = useTableSelection(products.map(variantRef));
   const bulk = useStockBulk(reconcile);
+  const { density, setDensity } = useTableDensity();
 
   const {
     editingProduct,
@@ -88,6 +91,7 @@ export default function StockManagementPage() {
           {/* Exports the same variant_ref the bulk stock endpoint accepts, so a
               counted sheet can come back in. */}
           <ExportButton dataset="stock" label="Export stock" />
+          <DensityToggle density={density} onChange={setDensity} className="hidden md:inline-flex" />
         </div>
       </div>
 
@@ -115,6 +119,10 @@ export default function StockManagementPage() {
       <StockTable
         products={products}
         lowStockThreshold={lowStockThreshold}
+        sort={params.sort}
+        direction={params.direction}
+        onSortChange={params.setSort}
+        density={density}
         insights={insights}
         selection={selection}
         onEdit={startEditing}

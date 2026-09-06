@@ -15,7 +15,8 @@ interface CategoryListProps {
   /** Which category's storefront name is being saved, if any. */
   savingDisplayNameId: string | null;
   onDeleteCategory: (id: string) => void;
-  onDeleteSubcategory: (id: string) => void;
+  /** The name is passed so the confirmation can say which one. */
+  onDeleteSubcategory: (id: string, name: string) => void;
   onSaveGuidance: (id: string, guidance: string) => void;
   onSaveDisplayName: (id: string, displayName: string) => void;
 }
@@ -56,8 +57,10 @@ export function CategoryList({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => onDeleteCategory(category.id)}
                   disabled={pendingDeleteId === category.id}
+                  aria-label={`Delete ${category.name}`}
                   className="text-text-muted hover:text-destructive p-2 rounded-control hover:bg-destructive-background transition-colors disabled:opacity-60 disabled:pointer-events-none"
                   title="Delete Category"
                 >
@@ -96,8 +99,10 @@ export function CategoryList({
                           <span className="text-caption-md text-text-muted font-mono ml-2">/{sub.slug}</span>
                         </div>
                         <button
-                          onClick={() => onDeleteSubcategory(sub.id)}
+                          type="button"
+                          onClick={() => onDeleteSubcategory(sub.id, sub.name)}
                           disabled={pendingDeleteId === sub.id}
+                          aria-label={`Delete ${sub.name}`}
                           className="text-text-muted hover:text-destructive p-1 disabled:opacity-60 disabled:pointer-events-none"
                         >
                           {pendingDeleteId === sub.id ? <Spinner size="xs" /> : <Trash2 size={16} />}

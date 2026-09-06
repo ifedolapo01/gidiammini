@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui';
 import { slugify } from '@/lib/commerce/format-text';
 import type { Category } from '@/types/product';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
@@ -10,6 +11,7 @@ import { useSubcategoryForm } from './useSubcategoryForm';
 import { useCategoryPatch } from './useCategoryPatch';
 
 export function useCategories() {
+  const confirm = useConfirm();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -109,7 +111,29 @@ export function useCategories() {
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category? All its subcategories will also be deleted.')) return;
+    // The list is already in hand, so the dialog can say what deleting this
+    // one actually costs instead of the generic warning window.confirm had
+    // room for. A category with nine subcategories under it and one with none
+    // are not the same decision.
+    const category = categories.find((candidate) => candidate.id === id);
+    const subcategoryCount = category?.subcategories?.length ?? 0;
+
+    const confirmed = await confirm({
+      title: category ? `Delete ${category.name}?` : 'Delete this category?',
+      message: 'Products in it keep their own category field, but nothing will link to them from the storefront nav.',
+      consequences: [
+        subcategoryCount > 0
+          ? `Deletes ${subcategoryCount} subcategor${subcategoryCount === 1 ? 'y' : 'ies'} with it`
+          : 'This category has no subcategories',
+        'Removes it from the storefront navigation and filters',
+        'Cannot be undone',
+      ],
+      confirmLabel: 'Delete category',
+      // A category is the top of the tree and there is no restore: worth the
+      // extra beat. Subcategories and discounts are not typed.
+      typeToConfirm: category?.name,
+    });
+    if (!confirmed) return;
 
     setPendingDeleteId(id);
     try {

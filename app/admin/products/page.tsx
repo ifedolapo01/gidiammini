@@ -21,6 +21,8 @@ import LiveIndicator from '../components/LiveIndicator';
 import BulkResultSummary from '../components/BulkResultSummary';
 import ExportButton from '../components/ExportButton';
 import { useTableSelection } from '../hooks/useTableSelection';
+import { useTableDensity } from '../hooks/useTableDensity';
+import { DensityToggle } from '../components/table';
 
 function EmptyProducts({ filtered }: { filtered: boolean }) {
   return (
@@ -66,6 +68,7 @@ export default function AdminProducts() {
 
   const { categories } = useProductCategories();
   const selection = useTableSelection(products.map((product) => product.id));
+  const { density, setDensity } = useTableDensity();
 
   const isFiltered = Boolean(params.search) || params.filters.category !== '' || params.filters.stock !== 'all';
 
@@ -80,6 +83,7 @@ export default function AdminProducts() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <DensityToggle density={density} onChange={setDensity} className="hidden md:inline-flex" />
           <ExportButton dataset="products" label="Export" />
           <Link
             href="/admin/products/import"
@@ -125,6 +129,10 @@ export default function AdminProducts() {
           selection={selection}
           summary={summary}
           onDelete={setDeletingProduct}
+          sort={params.sort}
+          direction={params.direction}
+          onSortChange={params.setSort}
+          density={density}
         >
           <TablePagination
             page={meta.page}

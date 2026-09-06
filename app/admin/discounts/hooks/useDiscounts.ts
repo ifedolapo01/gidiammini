@@ -5,6 +5,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui';
+import { useDiscountStatus } from './useDiscountStatus';
 import { Discount } from '@/lib/commerce/discounts';
 import { emptyFormData, type DiscountFormData } from './useDiscounts.types';
 
@@ -12,12 +14,17 @@ export type { DiscountFormData };
 import { useDiscountData } from './useDiscountData';
 
 export function useDiscounts() {
+  const confirm = useConfirm();
   const { discounts, categories, products, loading, error, setError, refresh } = useDiscountData();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  // Activating and pausing is its own hook: the write and the undo that
+  // reverses it belong together and to nothing else here.
+  const { toggleStatus } = useDiscountStatus({ refresh, setPendingId });
 
   const [formData, setFormData] = useState<DiscountFormData>(emptyFormData);
 
@@ -111,7 +118,24 @@ export function useDiscounts() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this discount?')) return;
+    const discount = discounts.find((candidate) => candidate.id === id);
+    const isLive = discount?.is_active;
+
+    const confirmed = await confirm({
+      title: discount ? `Delete ${discount.name}?` : 'Delete this discount?',
+      message: isLive
+        ? 'This discount is live. Deleting it stops it applying to new carts immediately.'
+        : undefined,
+      consequences: [
+        discount?.code
+          ? `The code ${discount.code} stops working at checkout`
+          : 'It stops applying to any product it currently prices',
+        'Orders already placed with it keep the price they were given',
+        'Cannot be undone — deactivating instead keeps the record',
+      ],
+      confirmLabel: 'Delete discount',
+    });
+    if (!confirmed) return;
 
     setPendingId(id);
     try {
@@ -129,25 +153,6 @@ export function useDiscounts() {
       }
     } catch (err) {
       toast.error('Network error');
-    } finally {
-      setPendingId(null);
-    }
-  };
-
-  const toggleStatus = async (discount: Discount) => {
-    setPendingId(discount.id);
-    try {
-      const res = await fetch('/api/admin/discounts', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...discount, is_active: !discount.is_active })
-      });
-      const data = await res.json();
-      if (data.success) {
-        refresh();
-      }
-    } catch (err) {
-      toast.error('Failed to toggle status');
     } finally {
       setPendingId(null);
     }

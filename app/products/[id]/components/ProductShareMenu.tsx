@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Share2, Check, Copy } from 'lucide-react';
 import { Product } from '@/types/product';
 import { useCopyToClipboard } from '@/lib/hooks/useCopyToClipboard';
+import { formatCurrency } from '@/lib/commerce/pricing';
 
 interface ProductShareMenuProps {
   product: Product;
@@ -23,7 +24,7 @@ export default function ProductShareMenu({ product, currentBasePrice, currentSto
     setIsSharing(true);
     const url = window.location.href;
     const title = `Check out ${product.name} on GidiamMini`;
-    const text = `${product.name} - ₦${currentBasePrice.toLocaleString()}\n${product.description || ''}`;
+    const text = `${product.name} - ${formatCurrency(currentBasePrice)}\n${product.description || ''}`;
 
     try {
       if (platform === 'whatsapp') {

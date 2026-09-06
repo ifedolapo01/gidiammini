@@ -18,6 +18,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { readStoredWishlist, WISHLIST_STORAGE_KEY } from '@/lib/commerce/wishlist-storage';
 import { useWishlistSync } from './hooks/useWishlistSync';
+import { announce } from '@/lib/announce';
 
 interface WishlistContextType {
   /** Product ids, in the order they were saved. */
@@ -69,10 +70,16 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     mirror('DELETE', productId);
   };
 
+  /**
+   * Announced here rather than at each heart button, so every caller gets it
+   * and none of them can forget. The button's own accessible name describes
+   * what pressing it will do next; nothing described what it just did.
+   */
   const toggleWishlist = (productId: string) => {
     const has = ids.includes(productId);
     setIds((current) => (has ? current.filter((id) => id !== productId) : [...current, productId]));
     mirror(has ? 'DELETE' : 'PUT', productId);
+    announce(has ? 'Removed from your wishlist' : 'Saved to your wishlist');
   };
 
   const clearWishlist = () => {

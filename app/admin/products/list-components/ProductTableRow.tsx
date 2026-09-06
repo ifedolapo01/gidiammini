@@ -1,85 +1,41 @@
 /** ADMIN layer — single-row and grouped-parent-row renderers for the products list table. */
-import { Edit, Trash2, Image as ImageIcon } from 'lucide-react';
-import Link from 'next/link';
+'use client';
+
+import { Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { formatCategoryStr } from '@/lib/commerce/format-text';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
 import ProductImage from '@/components/commerce/ProductImage';
-import { RowCheckbox } from '@/app/admin/components/SelectionCheckbox';
-
-/** The leading selection cell. Bulk actions apply to products, so both the
- * single row and the grouped parent row carry one and variant child rows do
- * not. */
-function SelectionCell({
-  productId,
-  name,
-  selected,
-  onToggleSelect,
-  padded,
-}: {
-  productId: string;
-  name: string;
-  selected: boolean;
-  onToggleSelect: (productId: string) => void;
-  padded: string;
-}) {
-  return (
-    <td className={`${padded} w-10`}>
-      <RowCheckbox
-        checked={selected}
-        onChange={() => onToggleSelect(productId)}
-        rowLabel={name}
-      />
-    </td>
-  );
-}
-
-interface RowActionsProps {
-  productId: string;
-  onDelete: (productId: string) => void;
-}
-
-function RowActions({ productId, onDelete }: RowActionsProps) {
-  return (
-    <div className="flex justify-center gap-2">
-      <Link
-        href={`/admin/products/edit/${productId}`}
-        className="text-primary hover:text-primary-hover transition-colors p-1 hover:bg-primary/10 rounded-control"
-        title="Edit product"
-      >
-        <Edit size={18} />
-      </Link>
-      <button
-        onClick={() => onDelete(productId)}
-        className="text-destructive transition-colors p-1 hover:bg-destructive-background rounded-control"
-        title="Delete product"
-      >
-        <Trash2 size={18} />
-      </button>
-    </div>
-  );
-}
+import { ROW_HOVER, cell, numericCell, type TableDensity } from '@/app/admin/components/table';
+import { SelectionCell, RowActions } from './ProductRowParts';
 
 interface SingleProductRowProps {
   product: FlattenedProduct;
   selected: boolean;
   onToggleSelect: (productId: string) => void;
   onDelete: (productId: string) => void;
+  density: TableDensity;
 }
 
-export function SingleProductRow({ product, selected, onToggleSelect, onDelete }: SingleProductRowProps) {
+export function SingleProductRow({
+  product,
+  selected,
+  onToggleSelect,
+  onDelete,
+  density,
+}: SingleProductRowProps) {
   return (
-    <tr className={`transition-colors ${selected ? 'bg-primary/5' : 'hover:bg-surface-hover'}`}>
+    <tr className={selected ? 'bg-primary/5 transition-colors' : ROW_HOVER}>
       <SelectionCell
         productId={product.productId}
         name={product.name}
         selected={selected}
         onToggleSelect={onToggleSelect}
-        padded="px-4 py-4"
+        padded={cell(density)}
       />
-      <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
+      <td className={cell(density, 'whitespace-nowrap text-left pl-16')}>
         <div className="flex items-center justify-start">
           <ProductImage
             src={product.main_image}
@@ -92,7 +48,7 @@ export function SingleProductRow({ product, selected, onToggleSelect, onDelete }
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-center">
+      <td className={cell(density, 'whitespace-nowrap text-center')}>
         {product.variantLabel && product.variantLabel !== 'Standard' ? (
           <span className="px-3 py-1 text-caption-md rounded-full bg-accent/10 text-accent font-bold border border-accent/30">
             {product.variantLabel}
@@ -101,25 +57,27 @@ export function SingleProductRow({ product, selected, onToggleSelect, onDelete }
           <span className="text-text-muted text-body-sm italic">No variants</span>
         )}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-center">
+      <td className={cell(density, 'whitespace-nowrap text-center')}>
         <Badge tone="primary" className="font-semibold capitalize">
           {formatCategoryStr(product.category, product.sub_category)}
         </Badge>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-body-sm text-text-primary text-center">
+      {/* Right-aligned and tabular: a column of prices in proportional digits
+          cannot be compared by shape, only by reading each one. */}
+      <td className={numericCell(density, 'whitespace-nowrap text-body-sm text-text-primary')}>
         {formatCurrency(product.price)}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-body-sm text-center">
+      <td className={numericCell(density, 'whitespace-nowrap text-body-sm')}>
         <StockBadge stock={product.stock} hideWhenInStock={false} countFormat="units" className="font-semibold" />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-body-sm text-center">
-        <div className="flex items-center justify-center gap-1">
-          <ImageIcon size={16} className="text-text-muted" />
+      <td className={numericCell(density, 'whitespace-nowrap text-body-sm')}>
+        <span className="inline-flex items-center justify-end gap-1">
+          <ImageIcon size={16} className="text-text-muted" aria-hidden="true" />
           <span className="text-text-secondary">{1 + (product.images?.length || 0)}</span>
-        </div>
+        </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-body-sm font-medium text-center">
-        <RowActions productId={product.productId} onDelete={onDelete} />
+      <td className={cell(density, 'whitespace-nowrap text-body-sm font-medium text-center')}>
+        <RowActions productId={product.productId} productName={product.name} onDelete={onDelete} />
       </td>
     </tr>
   );
@@ -131,6 +89,7 @@ interface GroupedParentRowProps {
   selected: boolean;
   onToggleSelect: (productId: string) => void;
   onDelete: (productId: string) => void;
+  density: TableDensity;
 }
 
 export function GroupedParentRow({
@@ -139,6 +98,7 @@ export function GroupedParentRow({
   selected,
   onToggleSelect,
   onDelete,
+  density,
 }: GroupedParentRowProps) {
   return (
     <tr className={`border-t-2 border-border ${selected ? 'bg-primary/5' : 'bg-background-secondary'}`}>
@@ -147,9 +107,9 @@ export function GroupedParentRow({
         name={parent.name}
         selected={selected}
         onToggleSelect={onToggleSelect}
-        padded="px-4 py-3"
+        padded={cell(density)}
       />
-      <td className="px-6 py-3 whitespace-nowrap text-left pl-16">
+      <td className={cell(density, 'whitespace-nowrap text-left pl-16')}>
         <div className="flex items-center justify-start">
           <ProductImage
             src={parent.main_image}
@@ -163,17 +123,19 @@ export function GroupedParentRow({
           </div>
         </div>
       </td>
-      <td className="px-6 py-3 whitespace-nowrap text-center"></td>
-      <td className="px-6 py-3 whitespace-nowrap text-center">
+      <td className={cell(density)}></td>
+      <td className={cell(density, 'whitespace-nowrap text-center')}>
         <Badge tone="primary" className="font-semibold">
           {formatCategoryStr(parent.category, parent.sub_category)}
         </Badge>
       </td>
-      <td className="px-6 py-3 whitespace-nowrap text-center"></td>
-      <td className="px-6 py-3 whitespace-nowrap text-center"></td>
-      <td className="px-6 py-3 whitespace-nowrap text-center"></td>
-      <td className="px-6 py-3 whitespace-nowrap text-body-sm font-medium text-center">
-        <RowActions productId={parent.productId} onDelete={onDelete} />
+      {/* Price and stock are per-variant on a grouped product, so the parent
+          row leaves them empty rather than inventing an aggregate. */}
+      <td className={cell(density)}></td>
+      <td className={cell(density)}></td>
+      <td className={cell(density)}></td>
+      <td className={cell(density, 'whitespace-nowrap text-body-sm font-medium text-center')}>
+        <RowActions productId={parent.productId} productName={parent.name} onDelete={onDelete} />
       </td>
     </tr>
   );

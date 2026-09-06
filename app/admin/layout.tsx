@@ -22,6 +22,7 @@ import { useAdminIdentity } from './hooks/useAdminIdentity';
 import { useSidebarCollapsed } from './hooks/useSidebarCollapsed';
 import { clearAdminRealtimeToken } from '@/lib/supabase/realtime-client';
 import { cn } from '@/lib/utils';
+import { SkipLink, LiveAnnouncer, ConfirmProvider, MAIN_CONTENT_ID } from '@/components/ui';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   // There is deliberately no `loading` gate here. Auth is middleware's job —
@@ -86,13 +87,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // A standalone page gets the theme scope and nothing else — no nav to a
   // place you cannot go yet.
   if (isStandalone) {
-    return <div className="theme-admin min-h-screen bg-background-tertiary">{children}</div>;
+    return (
+      <ConfirmProvider>
+        <div className="theme-admin min-h-screen bg-background-tertiary">{children}</div>
+      </ConfirmProvider>
+    );
   }
 
   return (
+    <ConfirmProvider>
     <div className="theme-admin min-h-screen bg-background-tertiary">
+      {/* Before the ticker and the sidebar's dozen section links. */}
+      <SkipLink />
       {showAlertTicker && <MarqueeAlertBar />}
       <CommandPalette />
+      <LiveAnnouncer />
 
       <div className="flex">
         {/* Desktop rail. Sticky rather than fixed so it cannot overlap the
@@ -149,12 +158,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             loggingOut={loggingOut}
           />
 
-          <main className="flex-1 px-4 py-6 sm:px-6 md:py-8">
+          {/* tabIndex={-1} so the skip link moves focus, not just scroll. */}
+          <main
+            id={MAIN_CONTENT_ID}
+            tabIndex={-1}
+            className="flex-1 px-4 py-6 focus:outline-none sm:px-6 md:py-8"
+          >
             <MobileViewNotice />
             {children}
           </main>
         </div>
       </div>
     </div>
+    </ConfirmProvider>
   );
 }

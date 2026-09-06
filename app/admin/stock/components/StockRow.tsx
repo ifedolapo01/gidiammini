@@ -12,6 +12,7 @@ import { RowCheckbox } from '@/app/admin/components/SelectionCheckbox';
 import type { VariantInsight } from '@/lib/commerce/inventory-analytics';
 import { UpdateStockButton, StockThumbnail } from './StockRowParts';
 import { StockCoverHint } from './StockCoverHint';
+import { ROW_HOVER, cell, type TableDensity } from '@/app/admin/components/table';
 
 interface SingleStockRowProps {
   product: FlattenedProduct;
@@ -22,6 +23,7 @@ interface SingleStockRowProps {
   selected: boolean;
   onToggleSelect: () => void;
   onEdit: (product: FlattenedProduct) => void;
+  density: TableDensity;
 }
 
 export function SingleStockRow({
@@ -31,22 +33,23 @@ export function SingleStockRow({
   selected,
   onToggleSelect,
   onEdit,
+  density,
 }: SingleStockRowProps) {
   return (
-    <tr className={selected ? 'bg-primary/5' : 'hover:bg-surface-hover'}>
-      <td className="px-4 py-4 w-10">
+    <tr className={selected ? 'bg-primary/5 transition-colors' : ROW_HOVER}>
+      <td className={cell(density, 'w-10')}>
         <RowCheckbox checked={selected} onChange={onToggleSelect} rowLabel={product.name} />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-left pl-16">
+      <td className={cell(density, 'whitespace-nowrap text-left pl-16')}>
         <div className="flex items-center justify-start gap-4">
           <StockThumbnail src={product.main_image} alt={product.name} />
           <div className="text-left">
             <p className="font-bold text-text-primary">{product.name}</p>
-            <p className="text-body-sm text-text-secondary">{formatCurrency(product.price)}</p>
+            <p className="text-body-sm tabular-nums text-text-secondary">{formatCurrency(product.price)}</p>
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-center">
+      <td className={cell(density, 'whitespace-nowrap text-center')}>
         {product.variantLabel && product.variantLabel !== 'Standard' ? (
           <span className="px-3 py-1 text-caption-md rounded-full bg-accent/10 text-accent font-bold border border-accent/30">
             {product.variantLabel}
@@ -55,7 +58,7 @@ export function SingleStockRow({
           <span className="text-text-muted text-body-sm italic">No variants</span>
         )}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-center">
+      <td className={cell(density, 'whitespace-nowrap text-center')}>
         <span className="px-2 py-1 text-caption-md rounded-full bg-background-tertiary text-text-primary font-medium capitalize">
           {formatCategoryStr(product.category, product.sub_category)}
         </span>
@@ -64,7 +67,7 @@ export function SingleStockRow({
           This cell had text-left/pl-16 copied from the product-name cell, which
           pushed a single-variant product's badge out of line with every other
           row in the table. */}
-      <td className="px-6 py-4 whitespace-nowrap text-center">
+      <td className={cell(density, 'whitespace-nowrap text-center')}>
         <div className="flex flex-col items-center justify-center">
           <StockBadge
             stock={product.stock}
@@ -76,7 +79,7 @@ export function SingleStockRow({
           <StockCoverHint insight={insight} />
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-body-sm font-medium text-center">
+      <td className={cell(density, 'whitespace-nowrap text-body-sm font-medium text-center')}>
         <UpdateStockButton onClick={() => onEdit(product)} />
       </td>
     </tr>

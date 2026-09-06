@@ -12,14 +12,13 @@
  */
 'use client';
 
-import { ExternalLink, ShieldCheck, Trash2, XCircle } from 'lucide-react';
-import Link from 'next/link';
+import { ShieldCheck } from 'lucide-react';
 import ProductImage from '@/components/commerce/ProductImage';
 import StarRating from '@/components/commerce/StarRating';
-import { Badge, Button } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import { formatDate } from '@/lib/commerce/format-date';
 import { reviewPhotoUrl, reviewStatusLabel, type AdminReview } from '@/lib/commerce/reviews';
-import ReviewReplyForm from './ReviewReplyForm';
+import ReviewModerationActions from './ReviewModerationActions';
 // The route's own input type, so the card cannot invent a field the API would
 // strip. Type-only, so nothing server-side is pulled into the bundle.
 import type { ModerationInput } from '@/lib/commerce/review-moderation';
@@ -123,77 +122,13 @@ export default function ReviewModerationCard({
           {review.author_name} · {review.author_email}
         </p>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {review.status !== 'published' && (
-            <Button
-              size="sm"
-              loading={saving}
-              onClick={() => onModerate({ status: 'published' }, 'Published — it is on the product page now.')}
-            >
-              Publish
-            </Button>
-          )}
-
-          {review.status === 'published' && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={saving}
-              onClick={() => onModerate({ status: 'pending' }, 'Pulled from the product page.')}
-            >
-              Unpublish
-            </Button>
-          )}
-
-          {review.status !== 'rejected' && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={saving}
-              onClick={() => {
-                // Named in the confirmation because it is not reversible: the
-                // objects go, not just the reference to them.
-                if (photos.length > 0 && !confirm(`Reject this review? Its ${photos.length} photo(s) will be deleted permanently.`)) return;
-                onModerate({ status: 'rejected' }, 'Rejected. It will not appear on the site.');
-              }}
-            >
-              <XCircle className="h-4 w-4" aria-hidden="true" />
-              Reject
-            </Button>
-          )}
-
-          <ReviewReplyForm
-            reviewId={review.id}
-            current={review.admin_response}
-            saving={saving}
-            onSave={(response) =>
-              onModerate({ adminResponse: response }, response ? 'Reply saved.' : 'Reply removed.')
-            }
-          />
-
-          <Link
-            href={`/products/${review.product_id}#reviews`}
-            target="_blank"
-            className="inline-flex h-9 items-center gap-1.5 px-2 text-body-sm text-text-secondary hover:text-text-primary"
-          >
-            <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            View on site
-          </Link>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={saving}
-            className="text-destructive"
-            onClick={() => {
-              if (!confirm('Delete this review permanently, including its photos? Rejecting is usually the better option — it keeps the record.')) return;
-              onDelete();
-            }}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Delete
-          </Button>
-        </div>
+        <ReviewModerationActions
+          review={review}
+          photos={photos}
+          saving={saving}
+          onModerate={onModerate}
+          onDelete={onDelete}
+        />
       </div>
     </li>
   );

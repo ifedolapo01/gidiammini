@@ -110,16 +110,18 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/admin/team', read: 'team:read', write: 'team:manage' },
   { pattern: '/api/admin/team/*', read: 'team:read', write: 'team:manage' },
 
-  // What each discount earned. Read-only, and store:read like the discounts
-  // screen it decorates.
+  // Reporting surfaces. All store:read, because each is the same data the
+  // screen beside it already shows, read a different way — and a fulfilment
+  // assistant deciding what to pick benefits from knowing what is running out.
+  { pattern: '/api/admin/dashboard/period', read: 'store:read' },
   { pattern: '/api/admin/discounts/performance', read: 'store:read' },
-
-  // The inventory ledger's reports. store:read, like the stock table they
-  // decorate — these are the same numbers read a different way, and a
-  // fulfilment assistant deciding what to pick benefits from knowing what is
-  // about to run out.
   { pattern: '/api/admin/stock/insights', read: 'store:read' },
   { pattern: '/api/admin/stock/aging', read: 'store:read' },
+
+  // Automation. Readable by everyone who works here; switching a rule on is
+  // owner-only, because a rule that cancels orders is a standing instruction
+  // to the business rather than a screen preference.
+  { pattern: '/api/admin/automation', read: 'store:read', write: 'settings:write' },
 
   // Read and write deliberately far apart. The order editor's tax preview and
   // the stock page's threshold both read this, so anyone who can see those

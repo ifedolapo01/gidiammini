@@ -27,7 +27,15 @@ export function useOrdersList(showToast: ShowToast) {
   const params = useListParams({
     sort: 'created_at',
     direction: 'desc',
-    filters: { status: searchParams?.get('filter') || 'all' },
+    filters: {
+      status: searchParams?.get('filter') || 'all',
+      // The dashboard's drill-through arrives as ?from=&to=, so a card that
+      // says "42 orders in the last 30 days" opens exactly those 42. Empty
+      // when nothing linked here, and useListParams drops empty filters from
+      // the query string.
+      from: searchParams?.get('from') || '',
+      to: searchParams?.get('to') || '',
+    },
   });
 
   const { items: orders, meta, loading, error, refreshSilently } = useListData<Order>(

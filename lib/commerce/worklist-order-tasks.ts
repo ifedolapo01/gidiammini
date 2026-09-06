@@ -14,6 +14,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { WorklistEntry, WorklistResult } from '@/types/worklist';
 import { findOverdueOrders } from './overdue-orders';
 import { daysWaiting, settlement } from './payment-outcome';
+import { formatCurrency } from './pricing';
 
 const ORDER_COLUMNS =
   'id, order_number, customer_name, total_amount, amount_paid, created_at, receipt_path';
@@ -93,7 +94,7 @@ export async function partPaidOrders(
         id: order.id,
         title: order.customer_name,
         subtitle: order.order_number,
-        meta: `${waited(order.created_at) ?? 'today'} · paid ${order.amount_paid.toLocaleString('en-NG')}`,
+        meta: `${waited(order.created_at) ?? 'today'} · paid ${formatCurrency(order.amount_paid)}`,
         // The balance, not the total: that is the figure this row is about.
         amount: balance.outstanding,
         href: `/admin/payments?order=${order.id}`,

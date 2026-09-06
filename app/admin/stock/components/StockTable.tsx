@@ -3,7 +3,15 @@
  * Rows are the page the server returned. Selection addresses variants
  * ("productId:variantKey") because that is what a stock figure belongs to;
  * see lib/commerce/product-flatten.ts#variantRef.
+ *
+ * Product and stock sort on the server through the same query the products
+ * list uses. The stock column stays centred rather than right-aligned because
+ * what sits in it is a badge and a cover hint, not a bare figure — the digits
+ * inside it are tabular (see StockBadge), which is the part that makes a
+ * column of them comparable.
  */
+'use client';
+
 import { Fragment } from 'react';
 import { Package, Plus } from 'lucide-react';
 import { groupFlattenedByProduct } from '@/lib/commerce/group-variants';
@@ -13,12 +21,24 @@ import type { TableSelection } from '@/app/admin/hooks/useTableSelection';
 import type { VariantInsight } from '@/lib/commerce/inventory-analytics';
 import { SingleStockRow } from './StockRow';
 import { ParentStockRow, ChildStockRow } from './StockVariantRows';
+import { SortableHeaderRow, STICKY_HEAD, TABLE_SCROLL, TH, type TableColumn, type TableDensity } from '@/app/admin/components/table';
+import type { SortDirection } from '@/app/admin/hooks/useListParams';
 
-const HEADINGS = ['Product', 'Variant', 'Category', 'Stock Status', 'Actions'];
+const COLUMNS: TableColumn[] = [
+  { key: 'name', label: 'Product', sortable: true, className: 'pl-16' },
+  { key: 'variant', label: 'Variant', className: 'text-center' },
+  { key: 'category', label: 'Category', className: 'text-center' },
+  { key: 'stock', label: 'Stock status', sortable: true, className: 'text-center' },
+  { key: 'actions', label: 'Actions', srOnlyLabel: true, className: 'text-center' },
+];
 
 interface StockTableProps {
   products: FlattenedProduct[];
   lowStockThreshold: number;
+  sort: string;
+  direction: SortDirection;
+  onSortChange: (sort: string, direction: SortDirection) => void;
+  density: TableDensity;
   /** The ledger's reading per variant id, empty until the second request
    *  lands. Passed down the same path lowStockThreshold already takes. */
   insights: Map<string, VariantInsight>;
@@ -56,6 +76,10 @@ function EmptyStock({ filtered }: { filtered: boolean }) {
 export function StockTable({
   products,
   lowStockThreshold,
+  sort,
+  direction,
+  onSortChange,
+  density,
   insights,
   selection,
   onEdit,
@@ -67,29 +91,24 @@ export function StockTable({
       {products.length === 0 ? (
         <EmptyStock filtered={filtered} />
       ) : (
-        <div className="overflow-x-auto">
+        <div className={TABLE_SCROLL} tabIndex={0} role="region" aria-label="Stock table">
           <table className="min-w-full divide-y divide-divider">
-            <thead className="bg-background-secondary">
-              <tr>
-                <th scope="col" className="px-4 py-3 w-10">
-                  <SelectAllCheckbox
-                    checked={selection.allVisibleSelected}
-                    indeterminate={selection.someVisibleSelected}
-                    onChange={selection.toggleAll}
-                  />
-                </th>
-                {HEADINGS.map((heading) => (
-                  <th
-                    key={heading}
-                    scope="col"
-                    className={`px-6 py-3 text-caption-md font-medium text-text-secondary uppercase tracking-wider ${
-                      heading === 'Product' ? 'text-left pl-16' : 'text-center'
-                    }`}
-                  >
-                    {heading}
+            <thead className={STICKY_HEAD}>
+              <SortableHeaderRow
+                columns={COLUMNS}
+                sort={sort}
+                direction={direction}
+                onSortChange={onSortChange}
+                leading={
+                  <th scope="col" className={`${TH} w-10`}>
+                    <SelectAllCheckbox
+                      checked={selection.allVisibleSelected}
+                      indeterminate={selection.someVisibleSelected}
+                      onChange={selection.toggleAll}
+                    />
                   </th>
-                ))}
-              </tr>
+                }
+              />
             </thead>
             <tbody className="bg-surface divide-y divide-divider">
               {Object.entries(groupFlattenedByProduct(products)).map(([productId, variants]) => {
@@ -107,6 +126,7 @@ export function StockTable({
                       selected={selection.isSelected(ref)}
                       onToggleSelect={() => selection.toggle(ref)}
                       onEdit={onEdit}
+                      density={density}
                     />
                   );
                 }

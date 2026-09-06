@@ -1,5 +1,6 @@
 /** COMMERCE layer — shared discount logic. Used by Storefront and Admin. */
 import { parseVariantTargets } from './discount-target';
+import { formatCurrency } from './pricing';
 
 export type DiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE_SHIPPING';
 
@@ -103,7 +104,7 @@ export function formatDiscountValue(
 ): string {
   if (discount.type === 'FREE_SHIPPING') return 'FREE DELIVERY';
   if (discount.type === 'PERCENTAGE') return `${discount.value}% OFF`;
-  const amount = `₦${discount.value.toLocaleString()}`;
+  const amount = formatCurrency(discount.value);
   return fixedStyle === 'save' ? `Save ${amount}` : `${amount} OFF`;
 }
 

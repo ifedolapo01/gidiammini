@@ -3,6 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui';
+import { useShippingZoneStatus } from './useShippingZoneStatus';
 import type { ShippingZone } from '@/types/shipping';
 import type { ZoneExceptionFormRow } from './useZoneExceptions';
 import { type ShippingZoneFormData, emptyFormData } from './useShippingZones.types';
@@ -11,6 +13,7 @@ import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 export type { ShippingZoneFormData };
 
 export function useShippingZones() {
+  const confirm = useConfirm();
   const [zones, setZones] = useState<ShippingZone[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,6 +22,13 @@ export function useShippingZones() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  // Same split as the discounts hook: the status write and its undo together,
+  // away from the list, the form and the delete flow.
+  const { toggleStatus } = useShippingZoneStatus({
+    refresh: () => fetchZones(),
+    setPendingId,
+  });
 
   const [formData, setFormData] = useState<ShippingZoneFormData>(emptyFormData);
 
@@ -130,7 +140,19 @@ export function useShippingZones() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this shipping zone?')) return;
+    const zone = zones.find((candidate) => candidate.id === id);
+
+    const confirmed = await confirm({
+      title: zone ? `Delete the ${zone.name} zone?` : 'Delete this shipping zone?',
+      message: 'Checkout quotes delivery from these zones. An address with no zone cannot be quoted.',
+      consequences: [
+        'Customers in this zone lose their delivery option at checkout',
+        'Orders already placed keep the delivery they were charged for',
+        'Cannot be undone — deactivating instead keeps the rates',
+      ],
+      confirmLabel: 'Delete zone',
+    });
+    if (!confirmed) return;
 
     setPendingId(id);
     try {
@@ -148,23 +170,6 @@ export function useShippingZones() {
       }
     } catch (err) {
       toast.error('Network error');
-    } finally {
-      setPendingId(null);
-    }
-  };
-
-  const toggleStatus = async (zone: ShippingZone) => {
-    setPendingId(zone.id);
-    try {
-      const res = await fetch('/api/admin/shipping-zones', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...zone, is_active: !zone.is_active })
-      });
-      const data = await res.json();
-      if (data.success) fetchZones();
-    } catch (err) {
-      toast.error('Failed to toggle status');
     } finally {
       setPendingId(null);
     }

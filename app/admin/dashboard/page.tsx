@@ -4,21 +4,20 @@
 
 import Link from 'next/link';
 import { Package, ShoppingBag } from 'lucide-react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faNairaSign } from '@fortawesome/free-solid-svg-icons';
-import { Button } from '@/components/ui';
+import { Button, NairaSign } from '@/components/ui';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { StatCard } from './components/StatCard';
 import { DashboardSkeleton } from './components/DashboardSkeleton';
 import MarginStatCard from './components/MarginStatCard';
 import { AnalyticsSection } from './components/AnalyticsSection';
+import { PeriodSection } from './components/period/PeriodSection';
 import { RecentOrdersPanel } from './components/RecentOrdersPanel';
 import { LowStockPanel } from './components/LowStockPanel';
 import { WishlistDemandPanel } from './components/WishlistDemandPanel';
 import { QuickActionsGrid } from './components/QuickActionsGrid';
 import { TodayPanel } from './components/today/TodayPanel';
 import ExportButton from '../components/ExportButton';
-import { formatCurrency } from './format-currency';
+import { formatCurrency } from '@/lib/commerce/pricing';
 
 export default function AdminDashboard() {
   const { stats, loading, error, fetchDashboardStats } = useDashboardStats();
@@ -96,7 +95,7 @@ export default function AdminDashboard() {
             somebody needs to go and look at. */}
         <StatCard
           title="Money Kept"
-          icon={<FontAwesomeIcon icon={faNairaSign} className="w-5 h-5 text-accent" />}
+          icon={<NairaSign className="w-5 h-5 text-accent" />}
           iconBgClassName="bg-accent/10"
           value={formatCurrency(stats.totalRevenue)}
           subtext={
@@ -121,6 +120,12 @@ export default function AdminDashboard() {
           subtext="Need attention"
         />
       </div>
+
+      {/* The period view, between the all-time cards and the trend charts.
+          Above the charts because a shopkeeper reads the totals first and the
+          shape of them second, and below the all-time grid because "how much
+          have we ever taken" is the question the top of a dashboard answers. */}
+      <PeriodSection />
 
       {/* Analytics */}
       <AnalyticsSection />

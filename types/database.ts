@@ -173,6 +173,104 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_rule_runs: {
+        Row: {
+          detail: string | null
+          first_run_at: string
+          id: string
+          outcome: string
+          ran_at: string
+          rule_id: string
+          subject_id: string
+          subject_label: string | null
+          subject_type: string
+          times_run: number
+        }
+        Insert: {
+          detail?: string | null
+          first_run_at?: string
+          id?: string
+          outcome?: string
+          ran_at?: string
+          rule_id: string
+          subject_id: string
+          subject_label?: string | null
+          subject_type: string
+          times_run?: number
+        }
+        Update: {
+          detail?: string | null
+          first_run_at?: string
+          id?: string
+          outcome?: string
+          ran_at?: string
+          rule_id?: string
+          subject_id?: string
+          subject_label?: string | null
+          subject_type?: string
+          times_run?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rule_runs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          action: string
+          action_config: Json
+          cooldown_hours: number | null
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          key: string | null
+          last_run_at: string | null
+          last_run_note: string | null
+          name: string
+          trigger: string
+          trigger_config: Json
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          action_config?: Json
+          cooldown_hours?: number | null
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          key?: string | null
+          last_run_at?: string | null
+          last_run_note?: string | null
+          name: string
+          trigger: string
+          trigger_config?: Json
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          action_config?: Json
+          cooldown_hours?: number | null
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          key?: string | null
+          last_run_at?: string | null
+          last_run_note?: string | null
+          name?: string
+          trigger?: string
+          trigger_config?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           color: string | null
