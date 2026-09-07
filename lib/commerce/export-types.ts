@@ -18,6 +18,13 @@ export interface DatasetResult<T> {
 export interface ExportRange {
   from?: string;
   to?: string;
+  /** Only meaningful to ordersDataset — the other datasets ignore fields they
+   *  don't recognise, the same way they already ignore from/to. Mirrors the
+   *  ?status/?zone/?category params admin-orders-query.ts reads, so an export
+   *  taken from a filtered orders list contains exactly what was on screen. */
+  status?: string;
+  zone?: string;
+  category?: string;
 }
 
 /** Shared by the dataset builders: an absent value is an empty cell, never

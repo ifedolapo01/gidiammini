@@ -12,7 +12,8 @@ import {
   CHECKOUT_FIELD_MAP,
   CHANGE_REQUEST_FIELD_MAP,
 } from './field-errors';
-import { createOrderSchema, orderChangeRequestSchema } from './schemas/public-orders';
+import { createOrderSchema } from './schemas/public-orders';
+import { orderChangeRequestSchema } from './schemas/order-change-request';
 
 describe('readFieldErrors', () => {
   it('reads a well-formed fieldErrors object', () => {

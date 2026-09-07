@@ -11,7 +11,7 @@
  */
 'use client';
 
-import { RotateCcw, ShoppingBag, Users, XCircle } from 'lucide-react';
+import { ShoppingBag, Users, XCircle } from 'lucide-react';
 import { Button, NairaSign, Select } from '@/components/ui';
 import {
   RANGE_PRESETS,
@@ -22,7 +22,9 @@ import {
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { usePeriodMetrics } from '../../hooks/usePeriodMetrics';
 import { PeriodStatCard } from './PeriodStatCard';
-import { RevenueByCategoryPanel, RevenueByZonePanel, DeliveryPerformancePanel } from './RevenueBreakdownPanels';
+import { RevenueByCategoryPanel } from './RevenueByCategoryPanel';
+import { RevenueByZonePanel } from './RevenueByZonePanel';
+import { DeliveryPerformancePanel } from './DeliveryPerformancePanel';
 import { PeriodSkeleton } from './PeriodSkeleton';
 
 /** A rate as a whole percent, or an em dash when it is undefined — an average
@@ -100,6 +102,7 @@ export function PeriodSection() {
               comparison={comparison}
               subtext={`from ${formatCurrency(data.previous.revenue)}`}
               href={ordersHref}
+              tooltip="Amount paid minus amount refunded, on every order except cancelled ones."
             />
 
             <PeriodStatCard
@@ -111,6 +114,7 @@ export function PeriodSection() {
               comparison={comparison}
               subtext={`${data.current.paidOrders} paid`}
               href={ordersHref}
+              tooltip="Every order placed in this window, cancellations included."
             />
 
             <PeriodStatCard
@@ -121,6 +125,7 @@ export function PeriodSection() {
               delta={data.deltas.averageOrderValue}
               comparison={comparison}
               subtext="revenue ÷ paid orders"
+              tooltip="Revenue divided by paid orders. Undefined, not zero, when nothing was paid for."
             />
 
             <PeriodStatCard
@@ -134,6 +139,7 @@ export function PeriodSection() {
               // not a finding and a rate without its base invites acting on
               // one anyway.
               subtext={`of ${data.current.customers} customer${data.current.customers === 1 ? '' : 's'}`}
+              tooltip="Share of this window's customers who had also ordered before the window started."
             />
 
             <PeriodStatCard
@@ -148,16 +154,17 @@ export function PeriodSection() {
               goodDirection="down"
               subtext={`${data.current.cancelledOrders} of ${data.current.orders}`}
               href={`${ordersHref}&filter=cancelled`}
+              tooltip="Cancelled orders divided by all orders placed in this window."
             />
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <RevenueByCategoryPanel categories={data.byCategory} />
-            <RevenueByZonePanel zones={data.byZone} />
+            <RevenueByCategoryPanel categories={data.byCategory} window={window} />
+            <RevenueByZonePanel zones={data.byZone} window={window} />
           </div>
 
           <div className="mt-6">
-            <DeliveryPerformancePanel zones={data.byDeliveryPerformance} />
+            <DeliveryPerformancePanel zones={data.byDeliveryPerformance} window={window} />
           </div>
         </>
       )}

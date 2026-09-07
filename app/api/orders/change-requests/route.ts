@@ -13,7 +13,7 @@ import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifica
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { orderChangeRequestSchema, type OrderChangeRequestBody } from '@/lib/api/schemas/public-orders';
+import { orderChangeRequestSchema, type OrderChangeRequestBody } from '@/lib/api/schemas/order-change-request';
 import type { OrderChangeRequestType } from '@/types/orderChangeRequest';
 
 /** The validated details for one request type — exactly the fields that type

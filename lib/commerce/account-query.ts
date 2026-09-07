@@ -25,11 +25,14 @@ import { buildReorderLines, type PastOrderLine, type ReorderResult } from './cus
 import type { SignedInCustomer } from './customer-auth';
 import type { Product } from '@/types/product';
 
-/** What the account list renders. No receipt path, no internal notes. */
+/** What the account list renders. No receipt path, no internal notes.
+ *  products(sizing_type) rides along for growth-prompts.ts — a returning
+ *  customer's own past sizes are the only signal it has, and sizing_type
+ *  isn't on order_items itself. */
 const ORDER_SELECT = `
   id, order_number, created_at, status, total_amount, delivery_option,
   selected_state, city, delivery_address, customer_name, customer_phone,
-  order_items ( product_id, product_name, price, quantity, size, color )
+  order_items ( product_id, product_name, price, quantity, size, color, products ( sizing_type ) )
 `;
 
 /** How many orders the account page shows. Beyond this is history nobody
@@ -43,6 +46,8 @@ export interface AccountOrderLine {
   quantity: number;
   size: string | null;
   color: string | null;
+  /** Null when the product was deleted since, or never had one set. */
+  products: { sizing_type: Product['sizing_type'] } | null;
 }
 
 export interface AccountOrder {

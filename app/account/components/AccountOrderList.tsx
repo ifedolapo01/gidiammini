@@ -19,6 +19,7 @@ import { formatCustomerStatusLabel } from '@/lib/commerce/order-status';
 import type { OrderStatus } from '@/types/order';
 import type { AccountOrder } from '@/lib/commerce/account-query';
 import { ReorderButton } from './ReorderButton';
+import GrowthPromptCard from './GrowthPromptCard';
 
 /** Terminal-ish statuses read as good news; a cancellation does not. */
 function toneFor(status: string): 'success' | 'destructive' | 'warning' | 'info' {
@@ -53,8 +54,10 @@ export function AccountOrderList({ orders }: AccountOrderListProps) {
   }
 
   return (
-    <ul className="space-y-4">
-      {orders.map((order) => (
+    <>
+      <GrowthPromptCard orders={orders} />
+      <ul className="space-y-4">
+        {orders.map((order) => (
         <li key={order.id} className="rounded-surface border border-border bg-surface p-4">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
@@ -86,8 +89,9 @@ export function AccountOrderList({ orders }: AccountOrderListProps) {
           <div className="mt-3">
             <ReorderButton orderId={order.id} orderNumber={order.order_number} />
           </div>
-        </li>
-      ))}
-    </ul>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

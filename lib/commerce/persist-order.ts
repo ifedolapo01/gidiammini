@@ -46,6 +46,9 @@ export interface OrderRowFields {
   /** The buyer's durable identity. Nullable because customer bookkeeping must
    * never be able to fail an order — see lib/commerce/customer-identity.ts. */
   customer_id: string | null;
+  /** The checkout checkbox — gates the WhatsApp arm of every later
+   *  notification for this order. See migration 20260907140000. */
+  whatsapp_opt_in: boolean;
 }
 
 export type PersistOrderResult =

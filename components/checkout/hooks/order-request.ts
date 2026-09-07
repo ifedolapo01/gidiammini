@@ -49,6 +49,7 @@ export function buildOrderPayload(args: OrderRequestArgs, receiptPath?: string) 
     delivery_address: args.deliveryOption === 'delivery' ? formData.address : undefined,
     city: formData.city,
     note: formData.note,
+    whatsapp_opt_in: formData.whatsappOptIn,
     ...(receiptPath ? { receipt_path: receiptPath } : {}),
     items: args.items.map((item: CartItem) => ({
       product_id: item.productId,

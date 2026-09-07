@@ -9,6 +9,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchAllRows, type PagedResult } from './export-paging';
 import { text, type DatasetResult, type ExportRange } from './export-types';
+import { resolveCategoryOrderIds } from './category-orders';
+import { findOverdueOrders } from './overdue-orders';
 
 /** One line item, with its order's details alongside it. */
 interface OrderExportRow {
@@ -29,18 +31,37 @@ export async function ordersDataset(
   supabase: SupabaseClient,
   range: ExportRange
 ): Promise<DatasetResult<OrderExportRow>> {
-  const paged: PagedResult<any> = await fetchAllRows(async (from, to) => {
-    let query = supabase
-      .from('orders')
-      .select(ORDER_SELECT)
-      .order('created_at', { ascending: true })
-      .range(from, to);
+  // Category lives on the product, not the order — resolved once here, the
+  // same shape admin-orders-query.ts uses for its ?category filter, rather
+  // than joined per page.
+  const categoryOrderIds = range.category ? await resolveCategoryOrderIds(supabase, range.category) : null;
 
-    if (range.from) query = query.gte('created_at', range.from);
-    if (range.to) query = query.lte('created_at', range.to);
+  // 'overdue' isn't a real order status — like admin-orders-query.ts, it has
+  // to be resolved through the same shipping-ETA rule rather than passed to
+  // `.eq('status', ...)`, which would just match nothing.
+  const overdueOrderIds =
+    range.status === 'overdue' ? (await findOverdueOrders(supabase)).map((order) => order.id) : null;
 
-    return query;
-  });
+  const idRestrictions = [categoryOrderIds, overdueOrderIds].filter((ids): ids is string[] => ids !== null);
+  const noPossibleMatches = idRestrictions.some((ids) => ids.length === 0);
+
+  const paged: PagedResult<any> = noPossibleMatches
+    ? { rows: [], truncated: false }
+    : await fetchAllRows(async (from, to) => {
+        let query = supabase
+          .from('orders')
+          .select(ORDER_SELECT)
+          .order('created_at', { ascending: true })
+          .range(from, to);
+
+        if (range.from) query = query.gte('created_at', range.from);
+        if (range.to) query = query.lte('created_at', range.to);
+        if (range.status && range.status !== 'overdue') query = query.eq('status', range.status);
+        if (range.zone) query = query.eq('shipping_zone_id', range.zone);
+        for (const ids of idRestrictions) query = query.in('id', ids);
+
+        return query;
+      });
 
   // An order with no line items still belongs in the file — a missing order is
   // a hole in a reconciliation, and a blank item row says plainly that it has

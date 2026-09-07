@@ -20,6 +20,7 @@ import { parseListParams, listMeta, ilikeAcross, type ListMeta } from '@/lib/api
 import { ORDER_STATUSES } from './order-status';
 import { findOverdueOrders } from './overdue-orders';
 import { phoneSearchTerm } from './phone-search';
+import { resolveCategoryOrderIds } from './category-orders';
 
 export const ADMIN_ORDER_SORTABLE = [
   'created_at',
@@ -130,6 +131,19 @@ export async function fetchAdminOrders(supabase: SupabaseClient, url: URL): Prom
   // Exclusive, matching how lib/commerce/date-range.ts builds a window, so a
   // range never double-counts the boundary day.
   if (to) query = query.lt('created_at', to);
+
+  // The dashboard's zone and category drill-throughs. Zone is a column on
+  // orders itself; category needs its ids pre-resolved (see the function
+  // above), the same way the 'overdue' status filter already does.
+  const zone = url.searchParams.get('zone');
+  if (zone) query = query.eq('shipping_zone_id', zone);
+
+  const category = url.searchParams.get('category');
+  if (category) {
+    const ids = await resolveCategoryOrderIds(supabase, category);
+    if (ids.length === 0) return emptyPage(params.page, params.limit);
+    query = query.in('id', ids);
+  }
 
   if (params.search) {
     // A number typed in any format also matches the normalised column, so

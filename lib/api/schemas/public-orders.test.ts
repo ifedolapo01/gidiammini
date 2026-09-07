@@ -8,12 +8,8 @@
  * later.
  */
 import { describe, it, expect } from 'vitest';
-import {
-  trackOrderSchema,
-  orderChangeRequestSchema,
-  createOrderSchema,
-  checkoutQuoteSchema,
-} from './public-orders';
+import { trackOrderSchema, createOrderSchema, checkoutQuoteSchema } from './public-orders';
+import { orderChangeRequestSchema } from './order-change-request';
 
 /** The field paths a failed parse complained about. */
 const errorFields = (schema: { safeParse: (v: unknown) => any }, input: unknown): string[] => {

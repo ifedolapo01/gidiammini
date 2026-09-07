@@ -28,6 +28,9 @@ export interface CreateOrderSubmission {
   items?: unknown;
   /** A redemption code, revalidated at pricing time rather than trusted. */
   discount_code?: unknown;
+  /** The checkout checkbox. Read loosely (`=== true`) wherever it's consumed,
+   *  same as every other unknown field here. */
+  whatsapp_opt_in?: unknown;
   /** 'transfer' (the default) or 'paystack'. Set by the route, never by the
    *  request: which endpoint was called is the only honest source for it. */
   payment_method?: 'transfer' | 'paystack';

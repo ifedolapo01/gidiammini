@@ -84,6 +84,13 @@ function AdminOrdersContent() {
           onToggleColumn={columns.toggle}
           onShowAllColumns={columns.showAll}
           hiddenColumnCount={columns.hiddenCount}
+          exportParams={{
+            from: params.filters.from || undefined,
+            to: params.filters.to || undefined,
+            status: params.filters.status && params.filters.status !== 'all' ? params.filters.status : undefined,
+            zone: params.filters.zone || undefined,
+            category: params.filters.category || undefined,
+          }}
         />
 
         <DateRangeNotice

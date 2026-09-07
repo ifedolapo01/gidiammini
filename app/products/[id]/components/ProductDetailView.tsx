@@ -30,6 +30,7 @@ import ProductHeadlineBlock from './ProductHeadlineBlock';
 import OutOfStockNotice from './OutOfStockNotice';
 import { variantKeyFor } from '@/lib/commerce/product-variants';
 import ProductRecommendations from './ProductRecommendations';
+import ChatAboutProductLink from './ChatAboutProductLink';
 import { useAddProductToCart } from '../hooks/useAddProductToCart';
 import type { ReviewStats } from '@/lib/commerce/rating-math';
 
@@ -168,17 +169,15 @@ export default function ProductDetailView({
                 // Only when the shopper has actually picked one. A half-chosen
                 // variant would record a request for something they never
                 // selected.
-                variantKey={
-                  selectedSize && selectedColor
-                    ? variantKeyFor(selectedSize, selectedColor)
-                    : null
-                }
+                variantKey={selectedSize && selectedColor ? variantKeyFor(selectedSize, selectedColor) : null}
                 isWishlisted={isWishlisted}
                 onWishlist={() => addToWishlist(product.id)}
               />
             )}
 
             <ProductDetailsAccordion details={product.details} />
+
+            <ChatAboutProductLink product={product} />
           </div>
         </div>
 

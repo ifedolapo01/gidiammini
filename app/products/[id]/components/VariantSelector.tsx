@@ -18,6 +18,7 @@ import { isFitRating, sizeSelectorLabel } from '@/lib/commerce/size-guide';
 import type { Product } from '@/types/product';
 import FitNote from './FitNote';
 import SizeGuideDrawer from './SizeGuideDrawer';
+import SizeRecommender from './SizeRecommender';
 
 interface VariantSelectorProps {
   /**
@@ -81,6 +82,11 @@ export default function VariantSelector({
                 <Ruler className="h-4 w-4" aria-hidden="true" />
                 Size guide
               </button>
+
+              <SizeRecommender
+                product={{ sizes, sizing_type: product.sizing_type, category: product.category }}
+                onSelectSize={onSelectSize}
+              />
             </div>
           </div>
 

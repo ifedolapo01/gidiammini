@@ -21,6 +21,7 @@ const initialFormData: CheckoutFormData = {
   city: '',
   note: '',
   subscribeToNewsletter: false,
+  whatsappOptIn: false,
 };
 
 interface UseCheckoutFormArgs {

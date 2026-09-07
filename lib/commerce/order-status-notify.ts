@@ -122,6 +122,7 @@ export async function notifyStatusChange(
       customMessage: notificationMessage || defaultStatusMessage(newStatus, reasonCode, reason),
       estimatedDeliveryText,
       tracking: trackingForNotification(newStatus, shipment, order),
+      whatsappOptIn: order.whatsapp_opt_in === true,
     });
   } catch (notificationError) {
     console.error('Notification error:', notificationError);

@@ -29,13 +29,20 @@ export function useOrdersList(showToast: ShowToast) {
     direction: 'desc',
     filters: {
       status: searchParams?.get('filter') || 'all',
-      // The dashboard's drill-through arrives as ?from=&to=, so a card that
-      // says "42 orders in the last 30 days" opens exactly those 42. Empty
-      // when nothing linked here, and useListParams drops empty filters from
-      // the query string.
+      // The dashboard's drill-throughs arrive as ?from=&to=, and a
+      // breakdown-panel row adds ?zone= or ?category= on top of that, so a
+      // card or row opens exactly the orders it summarised. Empty when
+      // nothing linked here, and useListParams drops empty filters from the
+      // query string — neither has a filter control of its own yet (see
+      // OrderFilters.tsx), so they only ever arrive this way.
       from: searchParams?.get('from') || '',
       to: searchParams?.get('to') || '',
+      zone: searchParams?.get('zone') || '',
+      category: searchParams?.get('category') || '',
     },
+    // So a filtered view survives a copy-pasted URL, not only the initial
+    // link from the dashboard.
+    syncUrl: true,
   });
 
   const { items: orders, meta, loading, error, refreshSilently } = useListData<Order>(

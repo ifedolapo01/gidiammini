@@ -17,6 +17,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip } from '@/components/ui';
 import type { Delta } from '@/lib/commerce/period-metrics';
 import { DeltaBadge } from './DeltaBadge';
 
@@ -34,6 +35,9 @@ interface PeriodStatCardProps {
   /** Where the rows behind this figure live. Omitted for a derived number
    *  that has no list of its own. */
   href?: string;
+  /** What this figure actually computes — every card gets one, whether or
+   *  not it also links somewhere. */
+  tooltip?: string;
 }
 
 export function PeriodStatCard({
@@ -46,11 +50,17 @@ export function PeriodStatCard({
   goodDirection,
   subtext,
   href,
+  tooltip,
 }: PeriodStatCardProps) {
   const body = (
     <>
       <div className="mb-3 flex items-start justify-between gap-2">
-        <h3 className="text-body-sm font-semibold text-text-secondary">{title}</h3>
+        <div className="flex items-center gap-1">
+          <h3 className="text-body-sm font-semibold text-text-secondary">{title}</h3>
+          {/* z-10: when the card is also a link (see below), the tooltip
+              trigger must sit above the stretched anchor to stay clickable. */}
+          {tooltip && <Tooltip content={tooltip} className="relative z-10" />}
+        </div>
         <div className={cn('flex-shrink-0 rounded-control p-2.5', iconBgClassName)}>{icon}</div>
       </div>
 
@@ -68,22 +78,26 @@ export function PeriodStatCard({
   if (!href) return <div className={shell}>{body}</div>;
 
   return (
-    <Link
-      href={href}
-      className={cn(
-        shell,
-        'group relative block transition-colors hover:border-primary/40 hover:bg-surface-hover',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-focus'
-      )}
-    >
+    // A plain <a> can no longer wrap the whole card: the tooltip trigger is a
+    // <button>, and a button nested inside an anchor is invalid HTML and
+    // breaks keyboard/AT navigation. So the Link becomes a "stretched link" —
+    // an absolutely-positioned anchor covering the card — while the tooltip
+    // button, raised above it with z-10, keeps its own click and focus.
+    <div className={cn(shell, 'group relative transition-colors hover:border-primary/40 hover:bg-surface-hover')}>
       {body}
+      <Link
+        href={href}
+        className="absolute inset-0 rounded-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-focus"
+      >
+        <span className="sr-only">View the orders behind {title}</span>
+      </Link>
       {/* Only on hover and focus: on a grid of five cards, five permanent
           arrows are five things competing with the numbers. */}
       <ArrowUpRight
         size={14}
         aria-hidden
-        className="absolute bottom-3 right-3 text-text-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+        className="pointer-events-none absolute bottom-3 right-3 text-text-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       />
-    </Link>
+    </div>
   );
 }

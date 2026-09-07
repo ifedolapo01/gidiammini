@@ -13,7 +13,7 @@
  * Pure and dependency-free.
  */
 
-export type NotificationChannel = 'email' | 'sms';
+export type NotificationChannel = 'email' | 'sms' | 'whatsapp';
 
 export type DeliveryFailureReason =
   /** No provider credentials configured for this channel. */
@@ -58,6 +58,7 @@ const EMAIL_REASON_TEXT: Partial<Record<DeliveryFailureReason, string>> = {
 const CHANNEL_TEXT: Record<NotificationChannel, string> = {
   email: 'Email',
   sms: 'SMS',
+  whatsapp: 'WhatsApp',
 };
 
 function reasonText(failure: DeliveryFailure): string {

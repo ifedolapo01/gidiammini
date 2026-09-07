@@ -10,6 +10,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -19,11 +20,23 @@ export interface ListParamsInit {
   limit?: number;
   /** Filter name -> initial value. An empty value is omitted from the query. */
   filters?: Record<string, string>;
+  /**
+   * Keep the URL in sync with every later page/sort/search/filter change, not
+   * only the values it was seeded from. Opt-in and false by default: every
+   * other caller of this hook (products, customers, stock) reads the URL once
+   * to seed state and never touches it again, and turning this on for them
+   * unasked would start rewriting URLs nobody asked to be shareable.
+   */
+  syncUrl?: boolean;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function useListParams(init: ListParamsInit) {
+  const syncUrl = init.syncUrl ?? false;
+  const pathname = usePathname();
+  const router = useRouter();
+
   const [page, setPage] = useState(1);
   const [limit, setLimitState] = useState(init.limit ?? 25);
   const [sort, setSortState] = useState(init.sort);
@@ -70,6 +83,15 @@ export function useListParams(init: ListParamsInit) {
     }
     return params.toString();
   }, [page, limit, sort, direction, debouncedSearch, filters]);
+
+  // Opt-in only. This is what makes a filtered/sorted/paged view survive a
+  // copy-pasted URL — today it only reads the URL once, at mount, to seed
+  // state. debouncedSearch is already inside queryString's own dependency
+  // list, so no separate debounce is needed here.
+  useEffect(() => {
+    if (!syncUrl) return;
+    router.replace(`${pathname}?${queryString}`, { scroll: false });
+  }, [syncUrl, pathname, queryString, router]);
 
   return {
     page,

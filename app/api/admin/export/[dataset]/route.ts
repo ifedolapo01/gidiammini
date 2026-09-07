@@ -51,6 +51,11 @@ export const GET = withAdminAuth(async (request, { supabase, params, actor }) =>
   const range = {
     from: isoDate(url.searchParams.get('from')),
     to: isoDate(url.searchParams.get('to')),
+    // Only ordersDataset reads these; the other datasets take a bare `{}` and
+    // ignore fields they don't recognise, same as they already do for from/to.
+    status: url.searchParams.get('status') || undefined,
+    zone: url.searchParams.get('zone') || undefined,
+    category: url.searchParams.get('category') || undefined,
   };
 
   try {

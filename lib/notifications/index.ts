@@ -12,6 +12,7 @@ import { buildOrderReceivedEmail } from './templates/order-received-email';
 import { sendEmailAndLog, recordSkippedEmail } from './send';
 import { sendStatusEmailNotification, sendCustomEmailNotification } from './order-emails';
 import { sendStatusSMS, sendCustomSMS } from './sms';
+import { sendStatusWhatsApp, sendCustomWhatsApp } from './whatsapp';
 
 export type { NotificationContext };
 
@@ -46,6 +47,12 @@ interface OrderStatusUpdateParams extends NotificationContext {
   /** Courier and waybill. Only meaningful for 'shipped'; both channels ignore
    * it otherwise rather than each deciding for themselves. */
   tracking?: Partial<OrderTracking> | null;
+  /** The customer's own checkout choice (orders.whatsapp_opt_in). Unlike SMS,
+   * which sends whenever a phone is on file, WhatsApp only sends when this is
+   * true — defaults to false so callers that don't carry the order's opt-in
+   * yet (a resend, an older call site) simply skip the channel rather than
+   * messaging someone who never asked for it. */
+  whatsappOptIn?: boolean;
 }
 
 interface CustomNotificationParams extends NotificationContext {
@@ -56,13 +63,15 @@ interface CustomNotificationParams extends NotificationContext {
   message: string;
   viaEmail: boolean;
   viaSMS: boolean;
+  /** See OrderStatusUpdateParams.whatsappOptIn. */
+  whatsappOptIn?: boolean;
 }
 
 export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams): Promise<DeliveryOutcome> {
   const {
     orderNumber, customerName, customerEmail, customerPhone, newStatus,
     customMessage, estimatedDeliveryText, tracking,
-    orderId, customerId, actorId, resendOf,
+    orderId, customerId, actorId, resendOf, whatsappOptIn,
   } = params;
 
   const context = { orderId, customerId, actorId, resendOf };
@@ -93,13 +102,23 @@ export async function sendOrderStatusUpdate(params: OrderStatusUpdateParams): Pr
     else failed.push({ channel: 'sms', reason: sms.reason, detail: sms.detail });
   }
 
+  if (!whatsappOptIn) {
+    failed.push({ channel: 'whatsapp', reason: 'not_requested' });
+  } else if (!customerPhone) {
+    failed.push({ channel: 'whatsapp', reason: 'no_recipient' });
+  } else {
+    const whatsapp = await sendStatusWhatsApp({ customerPhone, orderNumber, newStatus, tracking });
+    if (whatsapp.success) delivered.push('whatsapp');
+    else failed.push({ channel: 'whatsapp', reason: whatsapp.reason, detail: whatsapp.detail });
+  }
+
   return { delivered, failed };
 }
 
 export async function sendCustomNotification(params: CustomNotificationParams): Promise<DeliveryOutcome> {
   const {
     orderNumber, customerName, customerEmail, customerPhone, message, viaEmail, viaSMS,
-    orderId, customerId, actorId, resendOf,
+    orderId, customerId, actorId, resendOf, whatsappOptIn,
   } = params;
 
   const context = { orderId, customerId, actorId, resendOf };
@@ -129,6 +148,16 @@ export async function sendCustomNotification(params: CustomNotificationParams): 
     const sms = await sendCustomSMS({ customerPhone, orderNumber, message });
     if (sms.success) delivered.push('sms');
     else failed.push({ channel: 'sms', reason: sms.reason, detail: sms.detail });
+  }
+
+  if (!whatsappOptIn) {
+    failed.push({ channel: 'whatsapp', reason: 'not_requested' });
+  } else if (!customerPhone) {
+    failed.push({ channel: 'whatsapp', reason: 'no_recipient' });
+  } else {
+    const whatsapp = await sendCustomWhatsApp({ customerPhone, orderNumber, message });
+    if (whatsapp.success) delivered.push('whatsapp');
+    else failed.push({ channel: 'whatsapp', reason: whatsapp.reason, detail: whatsapp.detail });
   }
 
   return { delivered, failed };

@@ -25,6 +25,9 @@ interface OrdersPageHeaderProps {
   onToggleColumn: (key: string) => void;
   onShowAllColumns: () => void;
   hiddenColumnCount: number;
+  /** The list's current filters, forwarded to the export so a filtered view
+   *  downloads exactly what's on screen rather than every order ever placed. */
+  exportParams: Record<string, string | undefined>;
 }
 
 export default function OrdersPageHeader({
@@ -39,6 +42,7 @@ export default function OrdersPageHeader({
   onToggleColumn,
   onShowAllColumns,
   hiddenColumnCount,
+  exportParams,
 }: OrdersPageHeaderProps) {
   return (
     <div className="mb-6 flex flex-col justify-between md:mb-8 md:flex-row md:items-center">
@@ -70,8 +74,9 @@ export default function OrdersPageHeader({
           />
         )}
         {/* Line items flattened, one row each — the shape an accountant can
-            pivot. */}
-        <ExportButton dataset="orders" label="Export orders" />
+            pivot. Carries the list's current filters, so a filtered view
+            exports exactly those rows rather than the whole table. */}
+        <ExportButton dataset="orders" label="Export orders" params={exportParams} />
       </div>
     </div>
   );

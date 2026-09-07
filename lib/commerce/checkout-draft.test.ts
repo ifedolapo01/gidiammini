@@ -27,6 +27,7 @@ const draft = (overrides: Partial<CheckoutDraft> = {}): CheckoutDraft => ({
     city: 'Lagos',
     note: 'Call on arrival',
     subscribeToNewsletter: true,
+    whatsappOptIn: false,
   },
   deliveryOption: 'delivery',
   selectedState: 'Lagos',
@@ -101,6 +102,7 @@ describe('parseCheckoutDraft', () => {
       city: '',
       note: '',
       subscribeToNewsletter: false,
+      whatsappOptIn: false,
     });
   });
 

@@ -36,6 +36,7 @@ export interface CheckoutFormData {
   city: string;
   note: string;
   subscribeToNewsletter: boolean;
+  whatsappOptIn: boolean;
 }
 
 export interface CheckoutDraft {
@@ -94,6 +95,7 @@ function parseFormData(raw: unknown): CheckoutFormData {
     city: str(source.city),
     note: str(source.note),
     subscribeToNewsletter: source.subscribeToNewsletter === true,
+    whatsappOptIn: source.whatsappOptIn === true,
   };
 }
 

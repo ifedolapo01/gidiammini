@@ -115,6 +115,9 @@ export interface Order {
   payment_method?: 'transfer' | 'paystack';
   /** How they paid, in the provider's words: card, bank, ussd. */
   payment_channel?: string | null;
+  /** The checkout checkbox — gates the WhatsApp arm of every notification for
+   *  this order. See migration 20260907140000. */
+  whatsapp_opt_in?: boolean;
   /** When the provider confirmed the money. Null for a manual transfer. */
   paid_at?: string | null;
   created_at: string;

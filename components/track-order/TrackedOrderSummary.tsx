@@ -9,6 +9,7 @@ import OrderStatusTimeline from './OrderStatusTimeline';
 import TrackingDetails from './TrackingDetails';
 import RequestChangeActions from './RequestChangeActions';
 import CustomerMessageThread from './CustomerMessageThread';
+import ShareOnWhatsAppLink from './ShareOnWhatsAppLink';
 
 interface TrackedOrderSummaryProps {
   order: Order;
@@ -34,6 +35,8 @@ export default function TrackedOrderSummary({ order, orderNumber, contact, onOrd
         </div>
 
         <OrderStatusTimeline status={order.status} deliveryOption={order.delivery_option} />
+
+        <ShareOnWhatsAppLink order={order} />
       </div>
 
       {/* Directly under the stepper. "It has shipped" and "here is how to find

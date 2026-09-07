@@ -39,8 +39,10 @@ export interface CategoryRevenue {
 
 /** Anything sold without a category recorded. Named rather than dropped: a
  *  breakdown that silently omits rows makes the total wrong and nobody can see
- *  why. */
-const UNCATEGORISED = 'Uncategorised';
+ *  why. Exported so admin-orders-query.ts's category drill-through resolves
+ *  the same label back to "no category recorded" rather than a literal string
+ *  match nothing has. */
+export const UNCATEGORISED = 'Uncategorised';
 
 export function revenueByCategory(lines: CategoryRevenueLine[]): CategoryRevenue[] {
   const totals = new Map<string, { revenue: number; units: number }>();

@@ -159,6 +159,7 @@ export async function createCustomerOrder(
       note: trimmed(submission.note) || null,
       receipt_path: trimmed(submission.receipt_path) || null,
       payment_method: submission.payment_method ?? 'transfer',
+      whatsapp_opt_in: submission.whatsapp_opt_in === true,
     },
     priced
   );
@@ -185,6 +186,8 @@ export async function createCustomerOrder(
     orderNumber: order.order_number,
     customerName,
     customerEmail,
+    customerPhone,
+    whatsappOptIn: submission.whatsapp_opt_in === true,
     deliveryEstimate,
   });
 

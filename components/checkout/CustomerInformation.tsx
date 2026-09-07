@@ -88,6 +88,21 @@ export default function CustomerInformation({
       <div className="mt-4 flex items-start">
         <div className="flex items-center h-5">
           <Checkbox
+            id="whatsappOptIn"
+            name="whatsappOptIn"
+            checked={formData.whatsappOptIn}
+            onChange={(e) => setFormData({ ...formData, whatsappOptIn: e.target.checked })}
+          />
+        </div>
+        <div className="ml-3 text-body-sm">
+          <label htmlFor="whatsappOptIn" className="font-medium text-text-primary">Send my order updates on WhatsApp</label>
+          <p className="text-text-secondary">We&apos;ll message this number when your order status changes.</p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-start">
+        <div className="flex items-center h-5">
+          <Checkbox
             id="subscribe"
             name="subscribe"
             checked={formData.subscribeToNewsletter}
