@@ -8,6 +8,7 @@ import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { ImageFile, VariantColor, VariantSize } from '@/lib/commerce/product-form-helpers';
 import { variantKeyFor } from '@/lib/commerce/product-variants';
 import type { SizingType } from '@/lib/commerce/product-form-schema';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseEditProductDataArgs {
   productId: string;
@@ -36,7 +37,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
       // query — the product being edited is usually not on page 1, and even
       // when it was, downloading the catalogue to read one row was never the
       // cheap path it looked like.
-      const response = await fetch(`/api/admin/products/${id}`, {
+      const response = await adminFetch(`/api/admin/products/${id}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });

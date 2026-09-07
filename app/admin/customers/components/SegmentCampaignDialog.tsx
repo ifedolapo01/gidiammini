@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { Send, Users } from 'lucide-react';
 import { Button, Input, Modal, Textarea } from '@/components/ui';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface SegmentCampaignDialogProps {
   tag: string;
@@ -32,7 +33,7 @@ export default function SegmentCampaignDialog({ tag, showToast, onClose }: Segme
   const post = async (confirm: boolean) => {
     setBusy(true);
     try {
-      const response = await fetch('/api/admin/customers/campaign', {
+      const response = await adminFetch('/api/admin/customers/campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tag, subject: subject.trim(), message: message.trim(), confirm }),

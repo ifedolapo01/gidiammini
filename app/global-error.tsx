@@ -61,7 +61,10 @@ export default function GlobalError({
               </button>
               {/* A full document load, deliberately. Whatever broke the root
                   layout is still broken in this runtime; starting the app over
-                  from the server is more likely to work than routing within it. */}
+                  from the server is more likely to work than routing within it.
+                  next/link would do a client transition, which is the opposite
+                  of what is wanted, so the rule is silenced rather than obeyed. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/"
                 className="inline-flex h-11 items-center justify-center rounded-control border border-border-strong px-4 text-body-md font-semibold text-text-primary transition-colors hover:bg-surface-hover"

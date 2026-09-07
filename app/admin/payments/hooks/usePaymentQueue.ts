@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PaymentQueueItem } from '@/types/payment';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import { useAdminRealtime } from '../../hooks/useAdminRealtime';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface PaymentQueueSummary {
   waiting: number;
@@ -69,7 +70,7 @@ export function usePaymentQueue({ preferredOrderId }: UsePaymentQueueOptions = {
     if (!options.quiet) setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/payments/queue');
+      const response = await adminFetch('/api/admin/payments/queue');
       const result = await response.json().catch(() => null);
 
       if (!response.ok || !result?.success) {

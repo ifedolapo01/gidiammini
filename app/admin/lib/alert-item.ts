@@ -18,6 +18,7 @@
  * every other page, as a secondary indicator.
  */
 import type { WorklistTask } from '@/types/worklist';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export type AlertTone = 'destructive' | 'warning' | 'info' | 'accent';
 
@@ -69,7 +70,7 @@ export type AlertSource = () => Promise<AlertItem[]>;
 /** A GET that yields null rather than throwing — see rule 1. */
 export async function read(url: string): Promise<any | null> {
   try {
-    const response = await fetch(url);
+    const response = await adminFetch(url);
     if (!response.ok) return null;
     return await response.json();
   } catch (error) {

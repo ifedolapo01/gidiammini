@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { notifyOrdersChanged } from '../../lib/orderEvents';
 import { describeDelivery } from '@/lib/notifications/delivery';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseOrderChangeRequestsParams {
   /** Re-reads the list, the totals and the open order from the server. */
@@ -26,7 +27,7 @@ export function useOrderChangeRequests({ onResolved, showToast }: UseOrderChange
   ) => {
     try {
       setResolvingRequestId(requestId);
-      const response = await fetch(`/api/orders/change-requests/${requestId}`, {
+      const response = await adminFetch(`/api/orders/change-requests/${requestId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, adminResponse }),

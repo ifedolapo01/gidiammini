@@ -8,12 +8,17 @@
  * the app funnels through `reportError`, so wiring a tracker is a change to one
  * function body and to nothing else.
  *
+ * Everything it catches goes through lib/logger.ts, so a boundary hit is a
+ * structured line with a level and a digest rather than a console string.
+ *
  * To wire one up, install it and add the call under the marked line below. The
  * `digest` is the important field to forward: Next replaces a production error's
  * message with an opaque hash so the message cannot leak server internals to the
  * browser, and that hash is the only way to match what the visitor saw against
  * the real stack trace in your server logs.
  */
+
+import { logger } from './logger';
 
 export interface ErrorContext {
   /** Which boundary caught it — "app/error.tsx", "app/admin/error.tsx". */
@@ -28,13 +33,13 @@ export interface ErrorContext {
  */
 export function reportError(error: Error & { digest?: string }, context: ErrorContext): void {
   try {
-    // Kept in production too. Server-side this lands in the platform's function
-    // logs, which is where the digest below can actually be matched to a stack.
-    console.error(`[${context.boundary}]`, {
-      message: error.message,
-      digest: error.digest,
+    // Through the structured logger, so a boundary hit is one queryable line
+    // in the platform's collector rather than a string somebody has to find by
+    // eye. The digest is what matches the opaque message the visitor saw to
+    // the real stack — see lib/logger.ts#describeError, which always keeps it.
+    logger.error('error boundary caught', error, {
+      boundary: context.boundary,
       path: context.path,
-      stack: error.stack,
     });
 
     // WIRE YOUR TRACKER HERE, e.g.:

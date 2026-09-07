@@ -1,6 +1,12 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 // app/page.tsx - KEEP AS SERVER COMPONENT
 //
+// Presentation only. The two reads live in lib/commerce/home-query.ts, which
+// caches them under the listing's `products` tag — this page previously
+// queried through lib/supabase/server, and because that factory reads
+// cookies() the whole page opted out of every cache Next has. The busiest
+// route on the site went to the database three times per visitor.
+//
 // The hero is static and the two sections below it are not, so they no longer
 // share a fate. Previously one component awaited three queries — products, then
 // categories, then discounts, each waiting on the one before — and nothing at
@@ -17,11 +23,8 @@ import Link from 'next/link';
 import ProductCard from '@/components/commerce/ProductCard';
 import { ProductGridSkeleton } from '@/components/commerce/ProductCardSkeleton';
 import { Skeleton } from '@/components/ui';
-import { createClient } from '@/lib/supabase/server';
-import { ProductCardProduct } from '@/types/product';
 import HeroCarousel from '@/components/HeroCarousel';
-import { asDiscount } from '@/lib/commerce/db-narrowing';
-import { attachReviewStats } from '@/lib/commerce/review-query';
+import { loadFeaturedProducts, loadHomeCategories } from '@/lib/commerce/home-query';
 
 const FEATURED_GRID = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8';
 
@@ -43,32 +46,7 @@ export default function HomePage() {
 }
 
 async function FeaturedProducts() {
-  const supabase = await createClient();
-
-  // In parallel. The discounts do not depend on the products and never did;
-  // awaiting them one after the other just added a round trip.
-  const [productsResult, discountsResult] = await Promise.all([
-    supabase
-      .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(8),
-    supabase.from('discounts').select('*').eq('is_active', true),
-  ]);
-
-  if (productsResult.error) {
-    console.error('Error fetching products:', productsResult.error);
-  }
-
-  // Stars on the front door, from the same helper the listing and the rails
-  // use. This query is the shop's own — it does not go through
-  // list_products() — so without this the highest-traffic cards on the site
-  // would be the only ones with no social proof on them.
-  const featuredProducts = await attachReviewStats(
-    (productsResult.data as ProductCardProduct[])?.slice(0, 4) || []
-  );
-  const discounts = (discountsResult.data || []).map(asDiscount);
+  const { products: featuredProducts, discounts } = await loadFeaturedProducts();
 
   if (featuredProducts.length === 0) return null;
 
@@ -103,14 +81,7 @@ async function FeaturedProducts() {
 }
 
 async function Categories() {
-  const supabase = await createClient();
-
-  const { data: categoriesData } = await supabase
-    .from('categories')
-    .select('*, subcategories(*)')
-    .order('created_at', { ascending: true });
-
-  const categories = categoriesData || [];
+  const categories = await loadHomeCategories();
 
   return (
     <section className="py-12 md:py-20 bg-surface border-t border-b border-primary/10">
@@ -125,7 +96,7 @@ async function Categories() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {categories?.map((cat) => (
+          {categories.map((cat) => (
             <Link
               key={cat.id}
               href={`/products?category=${cat.slug}`}
@@ -134,8 +105,8 @@ async function Categories() {
               <div className={`h-56 md:h-72 bg-gradient-to-br ${cat.color || 'from-secondary/80 to-accent/90'} flex flex-col justify-end p-6 md:p-8 text-text-inverse`}>
                 <h3 className="text-h4 md:text-h3 font-extrabold mb-1">{cat.name}</h3>
                 <p className="text-text-inverse/90 text-body-sm font-medium line-clamp-2">
-                  {cat.subcategories && cat.subcategories.length > 0
-                    ? cat.subcategories.map((s: any) => s.name).join(' • ')
+                  {cat.subcategories.length > 0
+                    ? cat.subcategories.map((sub) => sub.name).join(' • ')
                     : `Shop our ${cat.name.toLowerCase()} collection`}
                 </p>
               </div>

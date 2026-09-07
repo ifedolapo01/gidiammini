@@ -22,6 +22,7 @@
 import { useCallback, useState } from 'react';
 import { notifyOrdersChanged } from '../lib/orderEvents';
 import { useToast } from './useToast';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useMarkShipped(onShipped?: () => void | Promise<void>) {
   const { showToast } = useToast();
@@ -32,7 +33,7 @@ export function useMarkShipped(onShipped?: () => void | Promise<void>) {
       setShippingId(orderId);
 
       try {
-        const response = await fetch(`/api/orders/${orderId}`, {
+        const response = await adminFetch(`/api/orders/${orderId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

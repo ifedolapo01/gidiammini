@@ -12,6 +12,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Discount } from '@/lib/commerce/discounts';
 import { toastWithUndo } from '../../lib/undo-toast';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseDiscountStatusArgs {
   /** Refetches the list after a successful write. */
@@ -27,7 +28,7 @@ export function useDiscountStatus({ refresh, setPendingId }: UseDiscountStatusAr
     async (discount: Discount, isActive: boolean): Promise<boolean> => {
       setPendingId(discount.id);
       try {
-        const res = await fetch('/api/admin/discounts', {
+        const res = await adminFetch('/api/admin/discounts', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...discount, is_active: isActive }),

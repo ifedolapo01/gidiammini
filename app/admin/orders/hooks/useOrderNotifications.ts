@@ -7,6 +7,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface OrderNotification {
   id: string;
@@ -37,7 +38,7 @@ export function useOrderNotifications(
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/orders/${orderId}/notifications`);
+      const response = await adminFetch(`/api/orders/${orderId}/notifications`);
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.success) throw new Error(data?.error || 'Failed to load');
@@ -60,7 +61,7 @@ export function useOrderNotifications(
     async (notificationId: string) => {
       setResendingId(notificationId);
       try {
-        const response = await fetch(`/api/orders/${orderId}/notifications`, {
+        const response = await adminFetch(`/api/orders/${orderId}/notifications`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ notificationId }),

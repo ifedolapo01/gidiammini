@@ -14,6 +14,7 @@
 import { useCallback, useState } from 'react';
 import { readCsvTable } from '@/lib/commerce/csv-parse';
 import { autoMapColumns, type ColumnMapping, type ImportIssue } from '@/lib/commerce/product-import';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export type ImportStep = 'file' | 'map' | 'preview' | 'done';
 
@@ -109,7 +110,7 @@ export function useProductImport() {
       setError('');
 
       try {
-        const response = await fetch(ENDPOINT, {
+        const response = await adminFetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mode, csv, mapping }),

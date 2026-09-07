@@ -51,7 +51,7 @@ export default function ConfirmationStep({
 
         <h2 className="text-h5 md:text-h3 font-bold text-text-primary mb-3 md:mb-4">Order Submitted Successfully!</h2>
         <p className="text-text-secondary text-body-md md:text-body-lg mb-6 md:mb-8 flex items-center justify-center gap-2 flex-wrap">
-          <span>We've received your order #{orderNumber}</span>
+          <span>We’ve received your order #{orderNumber}</span>
           <button
             type="button"
             onClick={() => orderNumberCopy.copy(orderNumber, 'Order number copied!')}
@@ -107,7 +107,7 @@ export default function ConfirmationStep({
           </Link>
 
           <p className="text-caption-md md:text-body-sm text-text-muted mt-3 md:mt-4">
-            We'll contact you via email/SMS for updates.<br />
+            We’ll contact you via email/SMS for updates.<br />
             For urgent inquiries, you can call: <strong>0809 653 9067</strong>
           </p>
         </div>

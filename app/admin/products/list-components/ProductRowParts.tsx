@@ -49,7 +49,7 @@ export function RowActions({ productId, productName, onDelete }: RowActionsProps
   const router = useRouter();
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-end">
       <RowActionsMenu
         rowLabel={productName}
         actions={[

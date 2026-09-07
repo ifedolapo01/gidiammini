@@ -56,7 +56,7 @@ export function ProductDetailsEditor({
           </div>
         ))}
         {detailFields.length === 0 && (
-          <p className="text-body-sm text-text-muted italic">No features added. Click '+ Add Detail' to include some.</p>
+          <p className="text-body-sm text-text-muted italic">No features added. Click ’+ Add Detail’ to include some.</p>
         )}
       </div>
     </div>

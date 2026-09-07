@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { describeDelivery } from '@/lib/notifications/delivery';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseOrderShippingUpdateParams {
   /** Re-reads the list and the open order from the server. */
@@ -21,7 +22,7 @@ export function useOrderShippingUpdate({ onUpdated, showToast }: UseOrderShippin
   const updateOrderShipping = async (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => {
     try {
       setUpdatingShipping(true);
-      const response = await fetch(`/api/orders/${orderId}/shipping`, {
+      const response = await adminFetch(`/api/orders/${orderId}/shipping`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shipping_zone_id: shippingZoneId, delivery_option: deliveryOption }),

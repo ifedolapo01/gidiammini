@@ -23,15 +23,21 @@ const MOBILE_NAV_ID = 'mobile-nav';
 function HeaderContent({ categories }: { categories: CategoryNavItem[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // Every hook runs before the early return below. They used to sit after it,
+  // so navigating between an admin page and a storefront page changed how many
+  // hooks this component called between renders — the one thing React's hook
+  // ordering cannot survive. It did not blow up only because the admin routes
+  // are a different layout and this rarely remounted mid-session.
+  const { getItemCount } = useCart();
+  const { ids: wishlistIds } = useWishlist();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const currentCategory = searchParams?.get('category');
-  
+
   // Don't render header on admin pages
   if (pathname?.startsWith('/admin')) {
     return null;
   }
-  const { getItemCount } = useCart();
-  const { ids: wishlistIds } = useWishlist();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string, category?: string) => {
     if (category) {

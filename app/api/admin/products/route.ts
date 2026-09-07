@@ -9,6 +9,7 @@ import {
   buildProductUpdatePayload,
 } from '@/lib/commerce/product-payload';
 import { fetchAdminProducts } from '@/lib/commerce/admin-products-query';
+import { logger } from '@/lib/logger';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,7 @@ async function listProducts(supabase: SupabaseClient, request: NextRequest) {
 }
 
 async function createProduct(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
-  console.log('📱 Creating new product');
+  logger.debug('admin: creating product');
 
   const body = await request.json();
 
@@ -78,7 +79,7 @@ async function createProduct(supabase: SupabaseClient, request: NextRequest, aud
 }
 
 async function updateProduct(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
-  console.log('📱 Updating product');
+  logger.debug('admin: updating product');
 
   const body = await request.json();
 
@@ -137,7 +138,7 @@ async function updateProduct(supabase: SupabaseClient, request: NextRequest, aud
 }
 
 async function deleteProduct(supabase: SupabaseClient, request: NextRequest, audit: AuditRecorder) {
-  console.log('📱 Deleting product');
+  logger.debug('admin: deleting product');
 
   const body = await request.json();
 

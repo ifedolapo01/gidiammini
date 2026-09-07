@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { OrderRefund, OrderRefundTotals } from '@/types/order';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 type ShowToast = (message: string, type?: 'success' | 'error') => void;
 
@@ -48,7 +49,7 @@ export function useOrderRefunds(
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/orders/${orderId}/refunds`);
+      const response = await adminFetch(`/api/orders/${orderId}/refunds`);
       const result = await response.json().catch(() => null);
 
       if (!response.ok || !result?.success) {
@@ -81,7 +82,7 @@ export function useOrderRefunds(
     async (input: NewRefund): Promise<boolean> => {
       setSaving(true);
       try {
-        const response = await fetch(`/api/orders/${orderId}/refunds`, {
+        const response = await adminFetch(`/api/orders/${orderId}/refunds`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(input),
@@ -110,7 +111,7 @@ export function useOrderRefunds(
     async (refundId: string, outcome: 'completed' | 'failed', reference?: string): Promise<boolean> => {
       setSaving(true);
       try {
-        const response = await fetch(`/api/orders/${orderId}/refunds/${refundId}`, {
+        const response = await adminFetch(`/api/orders/${orderId}/refunds/${refundId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ outcome, reference: reference || null }),

@@ -23,6 +23,7 @@ import { useSidebarCollapsed } from './hooks/useSidebarCollapsed';
 import { clearAdminRealtimeToken } from '@/lib/supabase/realtime-client';
 import { cn } from '@/lib/utils';
 import { SkipLink, LiveAnnouncer, ConfirmProvider, MAIN_CONTENT_ID } from '@/components/ui';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   // There is deliberately no `loading` gate here. Auth is middleware's job —
@@ -73,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch('/api/admin/logout', { method: 'POST' });
+      await adminFetch('/api/admin/logout', { method: 'POST' });
       // The realtime client caches the access token in memory; without this,
       // the next admin to sign in on this tab would open a socket with the
       // previous one's credentials until it expired.
@@ -96,20 +97,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <ConfirmProvider>
-    <div className="theme-admin min-h-screen bg-background-tertiary">
+    {/*
+      The shell is exactly one viewport tall and does not scroll. The rail, the
+      ticker and the top bar are laid out inside it, and <main> is the only
+      thing with a scrollbar.
+
+      This replaced `sticky top-0 h-screen` on the rail, which was not holding:
+      the page scrolled and took the whole sidebar with it, brand header and
+      all. Sticky puts an element's *own* scrolling in the page's hands, so it
+      only ever works when nothing between it and the viewport interferes —
+      here `overflow-x: clip` on html and body (globals.css, there to stop
+      sideways drift on mobile) is enough to break it. Giving the scroll to a
+      named region instead does not depend on the ancestors at all.
+    */}
+    <div className="theme-admin flex h-svh flex-col overflow-hidden bg-background-tertiary">
       {/* Before the ticker and the sidebar's dozen section links. */}
       <SkipLink />
       {showAlertTicker && <MarqueeAlertBar />}
       <CommandPalette />
       <LiveAnnouncer />
 
-      <div className="flex">
-        {/* Desktop rail. Sticky rather than fixed so it cannot overlap the
-            content on short viewports, and scrolls its own list when the
-            window is shorter than the nav. */}
+      <div className="flex min-h-0 flex-1">
+        {/* Desktop rail. Full height of the shell, scrolling its own list when
+            the window is shorter than the nav. */}
         <aside
           className={cn(
-            'hidden lg:block sticky top-0 h-screen shrink-0 transition-[width] duration-200',
+            'hidden shrink-0 transition-[width] duration-200 lg:block',
             collapsed ? 'w-[4.5rem]' : 'w-64',
           )}
         >
@@ -150,7 +163,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* min-w-0 so a wide table scrolls inside the main column instead of
             stretching the whole page and pushing the sidebar off screen. */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <AdminTopBar
             adminLabel={adminLabel}
             onOpenNav={() => setNavOpen(true)}
@@ -158,11 +171,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             loggingOut={loggingOut}
           />
 
-          {/* tabIndex={-1} so the skip link moves focus, not just scroll. */}
+          {/* The page's scroll container, and the only one in the shell.
+              tabIndex={-1} so the skip link moves focus, not just scroll. */}
           <main
             id={MAIN_CONTENT_ID}
             tabIndex={-1}
-            className="flex-1 px-4 py-6 focus:outline-none sm:px-6 md:py-8"
+            className="min-h-0 flex-1 overflow-y-auto px-4 py-6 focus:outline-none sm:px-6 md:py-8"
           >
             <MobileViewNotice />
             {children}

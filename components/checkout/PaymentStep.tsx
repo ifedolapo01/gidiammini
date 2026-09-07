@@ -149,8 +149,8 @@ export default function PaymentStep({
             <h4 className="font-bold text-success text-body-sm md:text-body-md">Automatic Email Notification:</h4>
           </div>
           <p className="text-caption-md md:text-body-sm text-success mt-2">
-            When you click "Send Receipt to Us", we'll receive all your order details and the receipt right away.
-            We'll verify your payment and contact you via email/SMS for order confirmation.
+            When you click “Send Receipt to Us”, we’ll receive all your order details and the receipt right away.
+            We’ll verify your payment and contact you via email/SMS for order confirmation.
           </p>
         </div>
         )}

@@ -20,6 +20,7 @@ import type { StoreSettings } from '@/types/settings';
 import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
 import { invalidateAdminStoreSettings } from '../../hooks/useAdminStoreSettings';
 import { type SettingsDraft, toDraft, toPayload } from './settings-draft';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export type { SettingsDraft };
 
@@ -49,7 +50,7 @@ export function useStoreSettingsForm(showToast: (m: string, t?: 'success' | 'err
 
     (async () => {
       try {
-        const response = await fetch('/api/admin/settings');
+        const response = await adminFetch('/api/admin/settings');
         const data = await response.json().catch(() => null);
         if (!response.ok) throw new Error(data?.error || 'Failed to load settings');
         if (!active) return;
@@ -96,7 +97,7 @@ export function useStoreSettingsForm(showToast: (m: string, t?: 'success' | 'err
     setFieldErrors({});
 
     try {
-      const response = await fetch('/api/admin/settings', {
+      const response = await adminFetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload.data),

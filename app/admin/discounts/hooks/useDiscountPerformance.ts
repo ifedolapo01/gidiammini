@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import type { DiscountPerformance } from '@/lib/commerce/discount-performance';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useDiscountPerformance() {
   const [performance, setPerformance] = useState<Record<string, DiscountPerformance>>({});
@@ -21,7 +22,7 @@ export function useDiscountPerformance() {
 
     (async () => {
       try {
-        const response = await fetch('/api/admin/discounts/performance');
+        const response = await adminFetch('/api/admin/discounts/performance');
         const data = await response.json().catch(() => null);
         if (!active) return;
 

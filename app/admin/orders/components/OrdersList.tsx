@@ -16,7 +16,7 @@ import type { Order } from '@/types/order';
 import type { TableSelection } from '../../hooks/useTableSelection';
 import type { ListMeta } from '../../hooks/useListData';
 import type { SortDirection } from '../../hooks/useListParams';
-import type { TableDensity } from '../../components/table';
+import type { TableColumn, TableDensity } from '../../components/table';
 import type { OrdersView } from './OrdersViewToggle';
 import type { ShippingZone } from '@/types/shipping';
 
@@ -24,6 +24,8 @@ interface OrdersListProps {
   orders: Order[];
   view: OrdersView;
   density: TableDensity;
+  visibleColumns: TableColumn[];
+  isVisible: (key: string) => boolean;
   selection: TableSelection;
   shippingZones: ShippingZone[];
   loading: boolean;
@@ -42,6 +44,8 @@ export default function OrdersList({
   orders,
   view,
   density,
+  visibleColumns,
+  isVisible,
   selection,
   shippingZones,
   loading,
@@ -71,7 +75,10 @@ export default function OrdersList({
             direction={direction}
             onSortChange={onSortChange}
             density={density}
+            visibleColumns={visibleColumns}
+            isVisible={isVisible}
             onOpenDetails={onOpenDetails}
+            onUpdateStatus={onUpdateStatus}
           />
         </div>
       )}

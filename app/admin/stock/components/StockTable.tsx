@@ -5,10 +5,10 @@
  * see lib/commerce/product-flatten.ts#variantRef.
  *
  * Product and stock sort on the server through the same query the products
- * list uses. The stock column stays centred rather than right-aligned because
- * what sits in it is a badge and a cover hint, not a bare figure — the digits
- * inside it are tabular (see StockBadge), which is the part that makes a
- * column of them comparable.
+ * list uses. The stock column is left-aligned like the other non-numeric ones:
+ * what sits in it is a badge and a cover hint rather than a bare figure, so
+ * there is no column of digits to line up on — the digits inside the badge are
+ * tabular (see StockBadge), which is the part that makes them comparable.
  */
 'use client';
 
@@ -24,12 +24,18 @@ import { ParentStockRow, ChildStockRow } from './StockVariantRows';
 import { SortableHeaderRow, STICKY_HEAD, TABLE_SCROLL, TH, type TableColumn, type TableDensity } from '@/app/admin/components/table';
 import type { SortDirection } from '@/app/admin/hooks/useListParams';
 
-const COLUMNS: TableColumn[] = [
-  { key: 'name', label: 'Product', sortable: true, className: 'pl-16' },
-  { key: 'variant', label: 'Variant', className: 'text-center' },
-  { key: 'category', label: 'Category', className: 'text-center' },
-  { key: 'stock', label: 'Stock status', sortable: true, className: 'text-center' },
-  { key: 'actions', label: 'Actions', srOnlyLabel: true, className: 'text-center' },
+/** Module scope, so the reference is stable for useColumnVisibility. */
+export const STOCK_COLUMNS: TableColumn[] = [
+  // Not hideable: the name identifies the row, the stock figure is the reason
+  // the page exists, and the actions column is how the figure gets changed.
+  { key: 'name', label: 'Product', sortable: true, hideable: false, className: 'pl-16' },
+  // Labelled for what the cell actually holds: the variant and its price, which
+  // this table has no separate price column for. Hiding it therefore hides both
+  // — and the heading is the only thing that can say so before it happens.
+  { key: 'variant', label: 'Variant & price' },
+  { key: 'category', label: 'Category' },
+  { key: 'stock', label: 'Stock status', sortable: true, hideable: false },
+  { key: 'actions', label: 'Actions', srOnlyLabel: true, hideable: false, align: 'right' },
 ];
 
 interface StockTableProps {
@@ -39,6 +45,10 @@ interface StockTableProps {
   direction: SortDirection;
   onSortChange: (sort: string, direction: SortDirection) => void;
   density: TableDensity;
+  /** The columns still shown, in order — from useColumnVisibility. */
+  visibleColumns: TableColumn[];
+  /** Keeps the parent and variant rows lined up with the header. */
+  isVisible: (key: string) => boolean;
   /** The ledger's reading per variant id, empty until the second request
    *  lands. Passed down the same path lowStockThreshold already takes. */
   insights: Map<string, VariantInsight>;
@@ -80,6 +90,8 @@ export function StockTable({
   direction,
   onSortChange,
   density,
+  visibleColumns,
+  isVisible,
   insights,
   selection,
   onEdit,
@@ -95,7 +107,7 @@ export function StockTable({
           <table className="min-w-full divide-y divide-divider">
             <thead className={STICKY_HEAD}>
               <SortableHeaderRow
-                columns={COLUMNS}
+                columns={visibleColumns}
                 sort={sort}
                 direction={direction}
                 onSortChange={onSortChange}
@@ -127,6 +139,7 @@ export function StockTable({
                       onToggleSelect={() => selection.toggle(ref)}
                       onEdit={onEdit}
                       density={density}
+                      isVisible={isVisible}
                     />
                   );
                 }
@@ -142,6 +155,8 @@ export function StockTable({
                       allSelected={selectedCount === refs.length}
                       someSelected={selectedCount > 0 && selectedCount < refs.length}
                       onToggleGroup={() => selection.setMany(refs, selectedCount !== refs.length)}
+                      isVisible={isVisible}
+                      density={density}
                     />
                     {variants.map((product) => {
                       const ref = variantRef(product);
@@ -154,6 +169,8 @@ export function StockTable({
                           selected={selection.isSelected(ref)}
                           onToggleSelect={() => selection.toggle(ref)}
                           onEdit={onEdit}
+                          isVisible={isVisible}
+                          density={density}
                         />
                       );
                     })}

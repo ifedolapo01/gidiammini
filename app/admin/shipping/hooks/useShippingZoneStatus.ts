@@ -10,6 +10,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { ShippingZone } from '@/types/shipping';
 import { toastWithUndo } from '../../lib/undo-toast';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseShippingZoneStatusArgs {
   refresh: () => void;
@@ -22,7 +23,7 @@ export function useShippingZoneStatus({ refresh, setPendingId }: UseShippingZone
     async (zone: ShippingZone, isActive: boolean): Promise<boolean> => {
       setPendingId(zone.id);
       try {
-        const res = await fetch('/api/admin/shipping-zones', {
+        const res = await adminFetch('/api/admin/shipping-zones', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...zone, is_active: isActive }),

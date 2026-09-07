@@ -8,7 +8,8 @@ import { formatCurrency } from '@/lib/commerce/pricing';
 import { StockBadge } from '@/components/commerce/StockBadge';
 import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
 import ProductImage from '@/components/commerce/ProductImage';
-import { ROW_HOVER, cell, numericCell, type TableDensity } from '@/app/admin/components/table';
+import { ROW_HOVER, actionsCell, cell, numericCell, type TableDensity } from '@/app/admin/components/table';
+import type { ColumnVisibility } from '@/app/admin/hooks/useColumnVisibility';
 import { SelectionCell, RowActions } from './ProductRowParts';
 
 interface SingleProductRowProps {
@@ -17,6 +18,7 @@ interface SingleProductRowProps {
   onToggleSelect: (productId: string) => void;
   onDelete: (productId: string) => void;
   density: TableDensity;
+  isVisible: ColumnVisibility;
 }
 
 export function SingleProductRow({
@@ -25,6 +27,7 @@ export function SingleProductRow({
   onToggleSelect,
   onDelete,
   density,
+  isVisible,
 }: SingleProductRowProps) {
   return (
     <tr className={selected ? 'bg-primary/5 transition-colors' : ROW_HOVER}>
@@ -48,35 +51,45 @@ export function SingleProductRow({
           </div>
         </div>
       </td>
-      <td className={cell(density, 'whitespace-nowrap text-center')}>
-        {product.variantLabel && product.variantLabel !== 'Standard' ? (
-          <span className="px-3 py-1 text-caption-md rounded-full bg-accent/10 text-accent font-bold border border-accent/30">
-            {product.variantLabel}
-          </span>
-        ) : (
-          <span className="text-text-muted text-body-sm italic">No variants</span>
-        )}
-      </td>
-      <td className={cell(density, 'whitespace-nowrap text-center')}>
-        <Badge tone="primary" className="font-semibold capitalize">
-          {formatCategoryStr(product.category, product.sub_category)}
-        </Badge>
-      </td>
+      {isVisible('variant') && (
+        <td className={cell(density, 'whitespace-nowrap')}>
+          {product.variantLabel && product.variantLabel !== 'Standard' ? (
+            <span className="px-3 py-1 text-caption-md rounded-full bg-accent/10 text-accent font-bold border border-accent/30">
+              {product.variantLabel}
+            </span>
+          ) : (
+            <span className="text-text-muted text-body-sm italic">No variants</span>
+          )}
+        </td>
+      )}
+      {isVisible('category') && (
+        <td className={cell(density, 'whitespace-nowrap')}>
+          <Badge tone="primary" className="font-semibold capitalize">
+            {formatCategoryStr(product.category, product.sub_category)}
+          </Badge>
+        </td>
+      )}
       {/* Right-aligned and tabular: a column of prices in proportional digits
           cannot be compared by shape, only by reading each one. */}
-      <td className={numericCell(density, 'whitespace-nowrap text-body-sm text-text-primary')}>
-        {formatCurrency(product.price)}
-      </td>
-      <td className={numericCell(density, 'whitespace-nowrap text-body-sm')}>
-        <StockBadge stock={product.stock} hideWhenInStock={false} countFormat="units" className="font-semibold" />
-      </td>
-      <td className={numericCell(density, 'whitespace-nowrap text-body-sm')}>
-        <span className="inline-flex items-center justify-end gap-1">
-          <ImageIcon size={16} className="text-text-muted" aria-hidden="true" />
-          <span className="text-text-secondary">{1 + (product.images?.length || 0)}</span>
-        </span>
-      </td>
-      <td className={cell(density, 'whitespace-nowrap text-body-sm font-medium text-center')}>
+      {isVisible('price') && (
+        <td className={numericCell(density, 'whitespace-nowrap text-body-sm text-text-primary')}>
+          {formatCurrency(product.price)}
+        </td>
+      )}
+      {isVisible('stock') && (
+        <td className={numericCell(density, 'whitespace-nowrap text-body-sm')}>
+          <StockBadge stock={product.stock} hideWhenInStock={false} countFormat="units" className="font-semibold" />
+        </td>
+      )}
+      {isVisible('images') && (
+        <td className={numericCell(density, 'whitespace-nowrap text-body-sm')}>
+          <span className="inline-flex items-center justify-end gap-1">
+            <ImageIcon size={16} className="text-text-muted" aria-hidden="true" />
+            <span className="text-text-secondary">{1 + (product.images?.length || 0)}</span>
+          </span>
+        </td>
+      )}
+      <td className={actionsCell(density, 'whitespace-nowrap text-body-sm font-medium')}>
         <RowActions productId={product.productId} productName={product.name} onDelete={onDelete} />
       </td>
     </tr>
@@ -90,6 +103,7 @@ interface GroupedParentRowProps {
   onToggleSelect: (productId: string) => void;
   onDelete: (productId: string) => void;
   density: TableDensity;
+  isVisible: ColumnVisibility;
 }
 
 export function GroupedParentRow({
@@ -99,6 +113,7 @@ export function GroupedParentRow({
   onToggleSelect,
   onDelete,
   density,
+  isVisible,
 }: GroupedParentRowProps) {
   return (
     <tr className={`border-t-2 border-border ${selected ? 'bg-primary/5' : 'bg-background-secondary'}`}>
@@ -123,18 +138,20 @@ export function GroupedParentRow({
           </div>
         </div>
       </td>
-      <td className={cell(density)}></td>
-      <td className={cell(density, 'whitespace-nowrap text-center')}>
-        <Badge tone="primary" className="font-semibold">
-          {formatCategoryStr(parent.category, parent.sub_category)}
-        </Badge>
-      </td>
+      {isVisible('variant') && <td className={cell(density)}></td>}
+      {isVisible('category') && (
+        <td className={cell(density, 'whitespace-nowrap')}>
+          <Badge tone="primary" className="font-semibold">
+            {formatCategoryStr(parent.category, parent.sub_category)}
+          </Badge>
+        </td>
+      )}
       {/* Price and stock are per-variant on a grouped product, so the parent
           row leaves them empty rather than inventing an aggregate. */}
-      <td className={cell(density)}></td>
-      <td className={cell(density)}></td>
-      <td className={cell(density)}></td>
-      <td className={cell(density, 'whitespace-nowrap text-body-sm font-medium text-center')}>
+      {isVisible('price') && <td className={cell(density)}></td>}
+      {isVisible('stock') && <td className={cell(density)}></td>}
+      {isVisible('images') && <td className={cell(density)}></td>}
+      <td className={actionsCell(density, 'whitespace-nowrap text-body-sm font-medium')}>
         <RowActions productId={parent.productId} productName={parent.name} onDelete={onDelete} />
       </td>
     </tr>

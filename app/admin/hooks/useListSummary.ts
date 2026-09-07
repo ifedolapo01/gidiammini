@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ADMIN_CURSOR_POLL_INTERVAL_MS, ADMIN_LIVE_POLL_INTERVAL_MS } from '../lib/adminPolling';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useListSummary<S>(
   endpoint: string,
@@ -36,7 +37,7 @@ export function useListSummary<S>(
 
   const loadSummary = useCallback(async () => {
     try {
-      const response = await fetch(params ? `${endpoint}?${params}` : endpoint);
+      const response = await adminFetch(params ? `${endpoint}?${params}` : endpoint);
       if (!response.ok) return;
       const result = await response.json();
       if (!result?.success) return;
@@ -54,7 +55,7 @@ export function useListSummary<S>(
   useEffect(() => {
     const check = async () => {
       try {
-        const response = await fetch(`${endpoint}?cursor=1`);
+        const response = await adminFetch(`${endpoint}?cursor=1`);
         if (!response.ok) return;
         const result = await response.json();
         const next = result?.cursor;

@@ -16,6 +16,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface ListMeta {
   page: number;
@@ -54,7 +55,7 @@ export function useListData<T, Extra = unknown>(
       }
 
       try {
-        const response = await fetch(`${endpoint}?${query}`);
+        const response = await adminFetch(`${endpoint}?${query}`);
         const result = await response.json().catch(() => null);
 
         if (currentQuery.current !== query) return;

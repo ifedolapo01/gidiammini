@@ -17,6 +17,7 @@ import { useCallback, useState } from 'react';
 import type { RecordPaymentInput } from '@/types/payment';
 import { notifyOrdersChanged } from '../../lib/orderEvents';
 import { useToast } from '../../hooks/useToast';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseRecordPaymentOptions {
   /** Run after a decision lands — moves the queue on. */
@@ -34,7 +35,7 @@ export function useRecordPayment({ onRecorded }: UseRecordPaymentOptions) {
       setError(null);
 
       try {
-        const response = await fetch('/api/admin/payments', {
+        const response = await adminFetch('/api/admin/payments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(input),

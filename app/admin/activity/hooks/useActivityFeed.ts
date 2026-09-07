@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { AuditLogEntry } from '@/lib/commerce/audit-format';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface ActivityFilters {
   entity_type?: string;
@@ -52,7 +53,7 @@ export function useActivityFeed({ pageSize = 50, enabled = true, ...filters }: U
         if (value) params.set(field, value);
       }
 
-      const response = await fetch(`/api/admin/audit-log?${params}`);
+      const response = await adminFetch(`/api/admin/audit-log?${params}`);
       const result = await response.json().catch(() => null);
 
       if (!response.ok || !result?.success) {

@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import type { AdminRole } from '@/lib/api/admin-roles';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface AdminIdentity {
   id: string;
@@ -25,7 +26,7 @@ export function useAdminIdentity(enabled: boolean = true) {
 
     let cancelled = false;
 
-    fetch('/api/admin/session')
+    adminFetch('/api/admin/session')
       .then((response) => (response.ok ? response.json() : null))
       .then((result) => {
         if (!cancelled && result?.success) setAdmin(result.admin ?? null);

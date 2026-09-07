@@ -97,7 +97,7 @@ export default function BankDetails({ bankDetails, orderNumber, total }: BankDet
           </li>
           <li>• Transfer <strong>exactly {formatCurrency(total)}</strong></li>
           <li>• Upload the receipt below after payment and click send receipt to us</li>
-          <li>• We'll receive it immediately and start verifying your payment</li>
+          <li>• We’ll receive it immediately and start verifying your payment</li>
         </ul>
       </div>
     </div>

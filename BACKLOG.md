@@ -65,3 +65,72 @@ changes what the segment query means and who is in it.
 - Honest reporting of what went out, rather than the size of the list.
 
 ---
+
+## CI repository variables, so the build step actually runs
+
+**Status:** not started. Two entries in a GitHub settings page — no code.
+
+`.github/workflows/ci.yml` runs typecheck, lint and tests on every push, and
+*skips* the build step because `next build` needs the two public Supabase env
+vars to prerender and they are not configured on the repository. The workflow
+prints a warning in the Actions log rather than failing, so the tick stays
+green and the missing check stays visible.
+
+**Left because** it needs somebody with repository admin to click through
+Settings, and a red CI tick that nobody can fix is worse than a green one with
+a stated gap — a permanently failing gate is a gate people learn to ignore.
+
+**Done means:**
+- At `github.com/ifedolapo01/urbanthreads` → Settings → Secrets and variables →
+  Actions → the **Variables** tab → New repository variable, twice:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Values are the ones already in `.env.local`. Both are safe as *variables*
+  rather than secrets: every browser that loads the site receives them, which
+  is what the `NEXT_PUBLIC_` prefix means.
+- `SUPABASE_SERVICE_ROLE_KEY` is **not** added. The build never reads it, and a
+  repository variable is readable by anyone who can open a pull request.
+- Nothing to change in the workflow afterwards — the build step's `if:` guard
+  is keyed on the variable being present, so it starts running by itself.
+
+---
+
+## An error tracker behind `reportError`
+
+**Status:** not started. The seam exists and is wired; the tracker is not
+chosen.
+
+`lib/report-error.ts` is the single point every error boundary funnels through,
+and it now logs through `lib/logger.ts` — structured, levelled, with the Next
+`digest` preserved. What it does not do is send anything anywhere, so an error
+a customer hit is only findable if somebody goes looking in the platform's
+function logs at the right time.
+
+**Left because** choosing a tracker is not a code decision. It is a dependency,
+an account, a data-processing relationship, and a monthly bill — and error
+payloads from this app can carry order numbers and customer email addresses, so
+where they are stored and for how long is a privacy question as much as a
+tooling one.
+
+**Done means:**
+- A tracker picked and its DSN in the environment (Sentry is the obvious
+  default; GlitchTip is the self-hosted, Sentry-compatible option if the data
+  should not leave).
+- The call added under the marked line in `reportError`, forwarding `digest` as
+  a tag — that hash is the only thing linking the opaque message a visitor was
+  shown to the real stack trace.
+- The server side covered too, not just boundaries. The `catch` blocks in
+  `app/api/**` still call `console.error` directly — 104 of them, against two
+  files that import `lib/logger.ts` — so a 500 is an unstructured string with
+  no level and no request id. Moving those onto the logger is the prerequisite,
+  and worth doing whether or not a tracker is ever bought: the request id from
+  `lib/api/request-id.ts` is what lets a customer quoting a reference be
+  matched to the trace.
+- Scrubbing configured before it is switched on, so order numbers and email
+  addresses are not shipped to a third party by default.
+- An alert on the payment and order endpoints specifically. Notification
+  failures are swallowed on purpose so a bad email never blocks an order (see
+  `lib/notifications/send.ts`), which also means a broken mail transport is
+  silent — `/api/health` catches that one, an alert catches the rest.
+
+---

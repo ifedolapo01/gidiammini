@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { AdminRole } from '@/lib/api/admin-roles';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface TeamMember {
   user_id: string;
@@ -48,7 +49,7 @@ export function useTeam() {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/team');
+      const response = await adminFetch('/api/admin/team');
       const result = await response.json().catch(() => null);
 
       if (!response.ok || !result?.success) {
@@ -75,7 +76,7 @@ export function useTeam() {
   const send = useCallback(
     async (url: string, method: 'POST' | 'PATCH', body: unknown): Promise<TeamActionResult> => {
       try {
-        const response = await fetch(url, {
+        const response = await adminFetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),

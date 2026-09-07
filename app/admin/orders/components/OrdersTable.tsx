@@ -7,8 +7,10 @@
  * so "which of today's orders are unpaid" means reading every card.
  *
  * So both exist, and the operator picks (see OrdersViewToggle). This table
- * shows only what a scan needs; the row opens the details modal, which is where
- * everything else already lives.
+ * shows only what a scan needs — and carries the same two actions the card
+ * does, so choosing it is not a trade of capability for density: the actions
+ * menu opens the details modal (which is where notifying, editing, refunding
+ * and the rest already live) and moves the order's status.
  */
 'use client';
 
@@ -18,9 +20,11 @@ import { formatDate } from '@/lib/commerce/format-date';
 import { Badge } from '@/components/ui';
 import type { Order } from '@/types/order';
 import { RowCheckbox, SelectAllCheckbox } from '../../components/SelectionCheckbox';
+import OrderRowActions from './OrderRowActions';
 import type { TableSelection } from '../../hooks/useTableSelection';
 import type { SortDirection } from '../../hooks/useListParams';
 import {
+  actionsCell,
   SortableHeaderRow,
   STICKY_HEAD,
   TABLE_SCROLL,
@@ -33,13 +37,19 @@ import {
 } from '../../components/table';
 import { statusTone } from './order-status-tone';
 
-const COLUMNS: TableColumn[] = [
-  { key: 'order_number', label: 'Order' },
+/** Module scope, so the reference is stable for useColumnVisibility. */
+export const ORDER_COLUMNS: TableColumn[] = [
+  // Not hideable: it is the only thing that names the row, and it is the
+  // control that opens the order.
+  { key: 'order_number', label: 'Order', hideable: false },
   { key: 'customer_name', label: 'Customer', sortable: true },
   { key: 'status', label: 'Status', sortable: true },
   { key: 'payment', label: 'Payment' },
   { key: 'total_amount', label: 'Total', numeric: true, sortable: true },
   { key: 'created_at', label: 'Placed', sortable: true },
+  // Never hideable, for the same reason the products table's is not: a row you
+  // cannot act on is not a table anybody wants.
+  { key: 'actions', label: 'Actions', srOnlyLabel: true, hideable: false, align: 'right' },
 ];
 
 interface OrdersTableProps {
@@ -49,7 +59,12 @@ interface OrdersTableProps {
   direction: SortDirection;
   onSortChange: (sort: string, direction: SortDirection) => void;
   density: TableDensity;
+  /** The columns still shown, in order — from useColumnVisibility. */
+  visibleColumns: TableColumn[];
+  /** Keeps each row's cells lined up with the header above them. */
+  isVisible: (key: string) => boolean;
   onOpenDetails: (order: Order) => void;
+  onUpdateStatus: (order: Order, status: Order['status']) => void;
 }
 
 export default function OrdersTable({
@@ -59,7 +74,10 @@ export default function OrdersTable({
   direction,
   onSortChange,
   density,
+  visibleColumns,
+  isVisible,
   onOpenDetails,
+  onUpdateStatus,
 }: OrdersTableProps) {
   return (
     <div
@@ -74,7 +92,7 @@ export default function OrdersTable({
         </caption>
         <thead className={STICKY_HEAD}>
           <SortableHeaderRow
-            columns={COLUMNS}
+            columns={visibleColumns}
             sort={sort}
             direction={direction}
             onSortChange={onSortChange}
@@ -121,27 +139,45 @@ export default function OrdersTable({
                   )}
                 </td>
 
-                <td className={cell(density, 'text-body-sm')}>
-                  <span className="block font-medium text-text-primary">{order.customer_name}</span>
-                  <span className="block text-caption-md text-text-secondary">{order.customer_email}</span>
-                </td>
+                {isVisible('customer_name') && (
+                  <td className={cell(density, 'text-body-sm')}>
+                    <span className="block font-medium text-text-primary">{order.customer_name}</span>
+                    <span className="block text-caption-md text-text-secondary">{order.customer_email}</span>
+                  </td>
+                )}
 
-                <td className={cell(density, 'whitespace-nowrap')}>
-                  <Badge tone={statusTone(order.status)}>{formatOrderStatus(order.status)}</Badge>
-                </td>
+                {isVisible('status') && (
+                  <td className={cell(density, 'whitespace-nowrap')}>
+                    <Badge tone={statusTone(order.status)}>{formatOrderStatus(order.status)}</Badge>
+                  </td>
+                )}
 
-                <td className={cell(density, 'whitespace-nowrap')}>
-                  <Badge tone={order.payment_verified ? 'success' : 'warning'}>
-                    {order.payment_verified ? 'Verified' : 'Unverified'}
-                  </Badge>
-                </td>
+                {isVisible('payment') && (
+                  <td className={cell(density, 'whitespace-nowrap')}>
+                    <Badge tone={order.payment_verified ? 'success' : 'warning'}>
+                      {order.payment_verified ? 'Verified' : 'Unverified'}
+                    </Badge>
+                  </td>
+                )}
 
-                <td className={numericCell(density, 'whitespace-nowrap text-body-sm font-medium text-text-primary')}>
-                  {formatCurrency(order.total_amount)}
-                </td>
+                {isVisible('total_amount') && (
+                  <td className={numericCell(density, 'whitespace-nowrap text-body-sm font-medium text-text-primary')}>
+                    {formatCurrency(order.total_amount)}
+                  </td>
+                )}
 
-                <td className={cell(density, 'whitespace-nowrap text-caption-md text-text-secondary')}>
-                  {formatDate(order.created_at)}
+                {isVisible('created_at') && (
+                  <td className={cell(density, 'whitespace-nowrap text-caption-md text-text-secondary')}>
+                    {formatDate(order.created_at)}
+                  </td>
+                )}
+
+                <td className={actionsCell(density, 'whitespace-nowrap')}>
+                  <OrderRowActions
+                    order={order}
+                    onOpenDetails={onOpenDetails}
+                    onUpdateStatus={onUpdateStatus}
+                  />
                 </td>
               </tr>
             );

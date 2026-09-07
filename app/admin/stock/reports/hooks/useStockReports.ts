@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { VariantInsight } from '@/lib/commerce/inventory-analytics';
 import type { SizeInsight } from '@/lib/commerce/size-demand';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 /** A variant insight with enough of the catalogue attached to name it. */
 export interface ReportRow extends VariantInsight {
@@ -57,7 +58,7 @@ export function useStockReports(windowDays: number) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/stock/aging?windowDays=${windowDays}`);
+      const response = await adminFetch(`/api/admin/stock/aging?windowDays=${windowDays}`);
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.success) {

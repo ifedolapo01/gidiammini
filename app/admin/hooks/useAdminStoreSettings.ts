@@ -22,12 +22,13 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_STORE_SETTINGS, settingsFromRow } from '@/lib/commerce/store-settings';
 import type { StoreSettings } from '@/types/settings';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 let cached: Promise<StoreSettings> | null = null;
 
 async function fetchSettings(): Promise<StoreSettings> {
   try {
-    const response = await fetch('/api/admin/settings');
+    const response = await adminFetch('/api/admin/settings');
     if (!response.ok) throw new Error(`Settings request failed: ${response.status}`);
     const data = await response.json();
     return data?.settings ? (data.settings as StoreSettings) : DEFAULT_STORE_SETTINGS;

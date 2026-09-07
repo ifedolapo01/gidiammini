@@ -12,6 +12,7 @@
  * straight over it.
  */
 import { MAX_BULK_ROWS, type BulkOutcome, type BulkRowResult } from '@/lib/api/bulk';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export async function postBulkBatched(
   url: string,
@@ -24,7 +25,7 @@ export async function postBulkBatched(
     const batch = ids.slice(start, start + MAX_BULK_ROWS);
 
     try {
-      const response = await fetch(url, {
+      const response = await adminFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...body, ids: batch }),

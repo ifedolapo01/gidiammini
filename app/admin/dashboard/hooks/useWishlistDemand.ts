@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import type { WishlistDemandEntry } from '@/lib/commerce/wishlist-demand';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 /**
  * Its own fetch rather than another field on the dashboard stats call: this is
@@ -18,7 +19,7 @@ export function useWishlistDemand() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch('/api/admin/wishlist', { signal: controller.signal })
+    adminFetch('/api/admin/wishlist', { signal: controller.signal })
       .then((response) => response.json())
       .then((payload) => {
         if (payload?.success) setProducts(payload.products ?? []);

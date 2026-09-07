@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui';
 import { slugify } from '@/lib/commerce/format-text';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseSubcategoryFormArgs {
   /** Refetches the category list after a write. */
@@ -51,7 +52,7 @@ export function useSubcategoryForm({ refresh, setPendingDeleteId }: UseSubcatego
 
     setIsAddingSub(true);
     try {
-      const res = await fetch('/api/admin/subcategories', {
+      const res = await adminFetch('/api/admin/subcategories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,7 +92,7 @@ export function useSubcategoryForm({ refresh, setPendingDeleteId }: UseSubcatego
 
     setPendingDeleteId(id);
     try {
-      const res = await fetch('/api/admin/subcategories', {
+      const res = await adminFetch('/api/admin/subcategories', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })

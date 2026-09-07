@@ -53,7 +53,7 @@ export function ZoneGeographyFields({ formData, setFormData }: ZoneGeographyFiel
             rows={3}
           />
           <p className="text-caption-md text-text-muted mt-1">
-            Leave blank to cover the whole {formData.lga} LGA. Each district/town listed here appears as its own option in the customer's checkout dropdown.
+            Leave blank to cover the whole {formData.lga} LGA. Each district/town listed here appears as its own option in the customer’s checkout dropdown.
           </p>
         </div>
       )}

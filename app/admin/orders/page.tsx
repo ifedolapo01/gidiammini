@@ -14,6 +14,7 @@ import { OrdersSkeleton } from './components/OrdersSkeleton';
 import { Suspense } from 'react';
 import OrderDetailsModal from './components/OrderDetailsModal';
 import OrdersList from './components/OrdersList';
+import { ORDER_COLUMNS } from './components/OrdersTable';
 import OrdersPageHeader from './components/OrdersPageHeader';
 import OrderFilters from './components/OrderFilters';
 import DateRangeNotice from './components/DateRangeNotice';
@@ -27,6 +28,7 @@ import { useOrders } from './hooks/useOrders';
 import { useShippingZoneOptions } from './hooks/useShippingZoneOptions';
 import { useOrdersView } from './hooks/useOrdersView';
 import { useTableDensity } from '../hooks/useTableDensity';
+import { useColumnVisibility } from '../hooks/useColumnVisibility';
 
 function AdminOrdersContent() {
   const {
@@ -63,6 +65,7 @@ function AdminOrdersContent() {
   const selectedOrders = orders.filter((order) => selection.isSelected(order.id));
   const { view, setView } = useOrdersView();
   const { density, setDensity } = useTableDensity();
+  const columns = useColumnVisibility('admin-columns-orders', ORDER_COLUMNS);
 
   if (loading && orders.length === 0) return <OrdersSkeleton />;
 
@@ -76,6 +79,11 @@ function AdminOrdersContent() {
           onViewChange={setView}
           density={density}
           onDensityChange={setDensity}
+          hideableColumns={columns.hideable}
+          isColumnVisible={columns.isVisible}
+          onToggleColumn={columns.toggle}
+          onShowAllColumns={columns.showAll}
+          hiddenColumnCount={columns.hiddenCount}
         />
 
         <DateRangeNotice
@@ -112,6 +120,8 @@ function AdminOrdersContent() {
               orders={orders}
               view={view}
               density={density}
+              visibleColumns={columns.visibleColumns}
+              isVisible={columns.isVisible}
               selection={selection}
               shippingZones={shippingZones}
               loading={loading}

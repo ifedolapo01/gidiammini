@@ -1,50 +1,45 @@
-/** ADMIN layer — detects an expired/invalid admin session from any admin API
- * call and recovers gracefully, instead of leaving whichever hook made the
- * call to show a bare "failed to fetch" error with a Retry button that would
- * just fail again against the same stale cookie.
+/** ADMIN layer — recovers gracefully when an admin session turns out to be
+ * expired or invalid, instead of leaving whichever hook made the call to show a
+ * bare "failed to fetch" error with a Retry button that would just fail again
+ * against the same stale cookie.
  *
- * Every admin data hook (orders, products, dashboard, discounts, ...) makes
- * its own plain fetch() call — there are ~15 of them. Rather than duplicate
- * "if 401, log out and redirect" in each one (and risk missing it in future
- * hooks), this patches window.fetch once for the lifetime of the admin
- * section: any 401 response means the session itself is invalid (see
- * lib/api/admin-session.ts — no non-admin route in this app ever returns 401),
- * so it's always safe to treat one as "please log in again." The one exception
- * is the login endpoint itself, whose 401 means "wrong password," not "session
- * expired." */
+ * Every admin data call goes through adminFetch (app/admin/lib/admin-fetch.ts),
+ * which reports a 401 here. This hook owns what happens next, because that part
+ * needs the router and the toast: say so once, drop the realtime token, tell
+ * the server to clear the cookie, and send the person to the login form.
+ *
+ * It used to do the detecting as well, by replacing window.fetch for the
+ * lifetime of the admin section — see admin-fetch.ts for why that reach was
+ * worth giving up. */
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { clearAdminRealtimeToken } from '@/lib/supabase/realtime-client';
+import { setAdminSessionExpiredHandler } from '@/app/admin/lib/admin-fetch';
 
 export function useAdminSessionGuard() {
   const router = useRouter();
 
   useEffect(() => {
-    const originalFetch = window.fetch;
+    // Latched: several hooks poll in parallel, so one expired session produces
+    // a burst of 401s. Without this the person gets a stack of identical
+    // toasts and a redirect for each one.
     let expired = false;
 
-    window.fetch = async (...args) => {
-      const response = await originalFetch(...args);
+    setAdminSessionExpiredHandler(() => {
+      if (expired) return;
+      expired = true;
 
-      const [input] = args;
-      const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+      toast.error('Your session has expired. Please log in again.');
+      clearAdminRealtimeToken();
+      // Plain fetch, not adminFetch: logout answering 401 would re-enter the
+      // handler it was called from.
+      fetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
+      router.replace('/admin/login');
+    });
 
-      if (response.status === 401 && !expired && !url.includes('/api/admin/login')) {
-        expired = true;
-        toast.error('Your session has expired. Please log in again.');
-        clearAdminRealtimeToken();
-        originalFetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
-        router.replace('/admin/login');
-      }
-
-      return response;
-    };
-
-    return () => {
-      window.fetch = originalFetch;
-    };
+    return () => setAdminSessionExpiredHandler(null);
   }, [router]);
 }

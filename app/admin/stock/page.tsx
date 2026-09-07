@@ -16,14 +16,15 @@ import { useStockEditing } from './hooks/useStockEditing';
 import { useProductCategories } from '../products/hooks/useProductCategories';
 import { useTableSelection } from '../hooks/useTableSelection';
 import { useTableDensity } from '../hooks/useTableDensity';
-import { DensityToggle } from '../components/table';
+import { useColumnVisibility } from '../hooks/useColumnVisibility';
+import { TableDisplayMenu } from '../components/table';
 import TablePagination from '../components/TablePagination';
 import LiveIndicator from '../components/LiveIndicator';
 import BulkResultSummary from '../components/BulkResultSummary';
 import ExportButton from '../components/ExportButton';
 import { StockSummaryCards } from './components/StockSummaryCards';
 import { StockFilters } from './components/StockFilters';
-import { StockTable } from './components/StockTable';
+import { StockTable, STOCK_COLUMNS } from './components/StockTable';
 import { StockBulkBar } from './components/StockBulkBar';
 import { StockEditModal } from './components/StockEditModal';
 import { variantRef } from '@/lib/commerce/product-flatten';
@@ -47,6 +48,7 @@ export default function StockManagementPage() {
   const selection = useTableSelection(products.map(variantRef));
   const bulk = useStockBulk(reconcile);
   const { density, setDensity } = useTableDensity();
+  const columns = useColumnVisibility('admin-columns-stock', STOCK_COLUMNS);
 
   const {
     editingProduct,
@@ -91,7 +93,16 @@ export default function StockManagementPage() {
           {/* Exports the same variant_ref the bulk stock endpoint accepts, so a
               counted sheet can come back in. */}
           <ExportButton dataset="stock" label="Export stock" />
-          <DensityToggle density={density} onChange={setDensity} className="hidden md:inline-flex" />
+          <TableDisplayMenu
+            density={density}
+            onDensityChange={setDensity}
+            columns={columns.hideable}
+            isColumnVisible={columns.isVisible}
+            onToggleColumn={columns.toggle}
+            onShowAllColumns={columns.showAll}
+            hiddenCount={columns.hiddenCount}
+            className="hidden md:inline-flex"
+          />
         </div>
       </div>
 
@@ -123,6 +134,8 @@ export default function StockManagementPage() {
         direction={params.direction}
         onSortChange={params.setSort}
         density={density}
+        visibleColumns={columns.visibleColumns}
+        isVisible={columns.isVisible}
         insights={insights}
         selection={selection}
         onEdit={startEditing}

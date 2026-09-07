@@ -1,12 +1,13 @@
 // app/api/admin/products/[id]/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
+import { logger } from '@/lib/logger';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 async function getProduct(supabase: SupabaseClient, id: string) {
-  console.log('📱 Fetching single product');
+  logger.debug('admin: fetching product');
 
   console.log('Product ID from params:', id);
 

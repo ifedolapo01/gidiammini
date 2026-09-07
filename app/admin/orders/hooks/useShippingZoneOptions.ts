@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ShippingZone } from '@/types/shipping';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useShippingZoneOptions() {
   const [zones, setZones] = useState<ShippingZone[]>([]);
@@ -11,7 +12,7 @@ export function useShippingZoneOptions() {
   useEffect(() => {
     const fetchZones = async () => {
       try {
-        const res = await fetch('/api/admin/shipping-zones');
+        const res = await adminFetch('/api/admin/shipping-zones');
         const data = await res.json();
         if (data.success) setZones(data.zones);
       } catch (error) {

@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { WorklistEntry, WorklistTask } from '@/types/worklist';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseWorklistTaskResult {
   entries: WorklistEntry[];
@@ -38,7 +39,7 @@ export function useWorklistTask(task: WorklistTask, enabled: boolean): UseWorkli
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/worklist/${task}`);
+      const response = await adminFetch(`/api/admin/worklist/${task}`);
       const result = await response.json().catch(() => null);
 
       if (!response.ok || !result?.success) {

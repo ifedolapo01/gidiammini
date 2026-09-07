@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Order, OrderItem } from '@/types/order';
 import { calculateTax } from '@/lib/commerce/checkout';
 import { useAdminStoreSettings } from '../../hooks/useAdminStoreSettings';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 type ShowToast = (message: string, type?: 'success' | 'error') => void;
 
@@ -133,7 +134,7 @@ export function useOrderEdit(order: Order, showToast: ShowToast, onSaved: () => 
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/orders/${order.id}/items`, {
+      const response = await adminFetch(`/api/orders/${order.id}/items`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -9,6 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { Order } from '@/types/order';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 type ShowToast = (message: string, type?: 'success' | 'error') => void;
 
@@ -17,7 +18,7 @@ export function useOrderDetails(showToast: ShowToast) {
   const [detailsLoading, setDetailsLoading] = useState(false);
 
   const loadOrder = useCallback(async (orderId: string): Promise<Order | null> => {
-    const response = await fetch(`/api/orders/${orderId}`);
+    const response = await adminFetch(`/api/orders/${orderId}`);
     const result = await response.json().catch(() => null);
     if (!response.ok || !result?.success) {
       throw new Error(result?.error || 'Failed to load order');

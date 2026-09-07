@@ -12,7 +12,7 @@ import { Plus, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useProducts } from './list-hooks/useProducts';
 import { useProductCategories } from './hooks/useProductCategories';
-import { ProductsTable } from './list-components/ProductsTable';
+import { ProductsTable, PRODUCT_COLUMNS } from './list-components/ProductsTable';
 import { ProductsFilters } from './list-components/ProductsFilters';
 import { ProductsBulkBar } from './list-components/ProductsBulkBar';
 import { DeleteProductModal } from './list-components/DeleteProductModal';
@@ -22,7 +22,8 @@ import BulkResultSummary from '../components/BulkResultSummary';
 import ExportButton from '../components/ExportButton';
 import { useTableSelection } from '../hooks/useTableSelection';
 import { useTableDensity } from '../hooks/useTableDensity';
-import { DensityToggle } from '../components/table';
+import { useColumnVisibility } from '../hooks/useColumnVisibility';
+import { TableDisplayMenu } from '../components/table';
 
 function EmptyProducts({ filtered }: { filtered: boolean }) {
   return (
@@ -69,6 +70,7 @@ export default function AdminProducts() {
   const { categories } = useProductCategories();
   const selection = useTableSelection(products.map((product) => product.id));
   const { density, setDensity } = useTableDensity();
+  const columns = useColumnVisibility('admin-columns-products', PRODUCT_COLUMNS);
 
   const isFiltered = Boolean(params.search) || params.filters.category !== '' || params.filters.stock !== 'all';
 
@@ -83,7 +85,16 @@ export default function AdminProducts() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <DensityToggle density={density} onChange={setDensity} className="hidden md:inline-flex" />
+          <TableDisplayMenu
+            density={density}
+            onDensityChange={setDensity}
+            columns={columns.hideable}
+            isColumnVisible={columns.isVisible}
+            onToggleColumn={columns.toggle}
+            onShowAllColumns={columns.showAll}
+            hiddenCount={columns.hiddenCount}
+            className="hidden md:inline-flex"
+          />
           <ExportButton dataset="products" label="Export" />
           <Link
             href="/admin/products/import"
@@ -133,6 +144,8 @@ export default function AdminProducts() {
           direction={params.direction}
           onSortChange={params.setSort}
           density={density}
+          visibleColumns={columns.visibleColumns}
+          isVisible={columns.isVisible}
         >
           <TablePagination
             page={meta.page}

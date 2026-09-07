@@ -21,14 +21,14 @@ export default function NextSteps({ deliveryOption, selectedState, selectedLga, 
         <StepItem number={1} color="blue">
           <p className="font-medium text-text-primary text-body-sm md:text-body-md">Payment Verification</p>
           <p className="text-caption-md md:text-body-sm text-text-secondary">
-            We've received your receipt and will verify your bank transfer
+            We’ve received your receipt and will verify your bank transfer
           </p>
         </StepItem>
 
         <StepItem number={2} color="yellow">
           <p className="font-medium text-text-primary text-body-sm md:text-body-md">Order Confirmation</p>
           <p className="text-caption-md md:text-body-sm text-text-secondary">
-            You'll receive an email/SMS when your order is confirmed
+            You’ll receive an email/SMS when your order is confirmed
           </p>
         </StepItem>
 

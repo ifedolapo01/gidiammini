@@ -9,7 +9,7 @@
 
 import LiveIndicator from '../../components/LiveIndicator';
 import ExportButton from '../../components/ExportButton';
-import { DensityToggle, type TableDensity } from '../../components/table';
+import { TableDisplayMenu, type TableColumn, type TableDensity } from '../../components/table';
 import OrdersViewToggle, { type OrdersView } from './OrdersViewToggle';
 
 interface OrdersPageHeaderProps {
@@ -19,6 +19,12 @@ interface OrdersPageHeaderProps {
   onViewChange: (view: OrdersView) => void;
   density: TableDensity;
   onDensityChange: (density: TableDensity) => void;
+  /** Column-visibility state, forwarded to the Columns menu. */
+  hideableColumns: TableColumn[];
+  isColumnVisible: (key: string) => boolean;
+  onToggleColumn: (key: string) => void;
+  onShowAllColumns: () => void;
+  hiddenColumnCount: number;
 }
 
 export default function OrdersPageHeader({
@@ -28,6 +34,11 @@ export default function OrdersPageHeader({
   onViewChange,
   density,
   onDensityChange,
+  hideableColumns,
+  isColumnVisible,
+  onToggleColumn,
+  onShowAllColumns,
+  hiddenColumnCount,
 }: OrdersPageHeaderProps) {
   return (
     <div className="mb-6 flex flex-col justify-between md:mb-8 md:flex-row md:items-center">
@@ -44,10 +55,17 @@ export default function OrdersPageHeader({
             a narrow screen always gets cards and neither control would have
             anything to switch. */}
         <OrdersViewToggle view={view} onChange={onViewChange} className="hidden md:inline-flex" />
+        {/* Only means anything in the table view — there are no columns to
+            hide and no row height to set on a grid of cards. */}
         {view === 'table' && (
-          <DensityToggle
+          <TableDisplayMenu
             density={density}
-            onChange={onDensityChange}
+            onDensityChange={onDensityChange}
+            columns={hideableColumns}
+            isColumnVisible={isColumnVisible}
+            onToggleColumn={onToggleColumn}
+            onShowAllColumns={onShowAllColumns}
+            hiddenCount={hiddenColumnCount}
             className="hidden md:inline-flex"
           />
         )}

@@ -38,8 +38,10 @@ export default function AdminTopBar({
 }: AdminTopBarProps) {
   const shortcut = useShortcutHint();
 
+  // Not sticky: it is a sibling of the scrolling <main>, not inside it, so it
+  // stays put by construction. See app/admin/layout.tsx.
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-surface px-4 shadow-elevation-1 sm:px-6">
+    <header className="z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-surface px-4 shadow-elevation-1 sm:px-6">
       <button
         type="button"
         onClick={onOpenNav}

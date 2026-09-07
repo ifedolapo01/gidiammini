@@ -14,6 +14,7 @@ import type {
   CustomerOrder,
   CustomerWishlistEntry,
 } from '@/types/customer';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 type ShowToast = (message: string, type?: 'success' | 'error') => void;
 
@@ -35,7 +36,7 @@ export function useCustomerDetail(id: string, showToast: ShowToast) {
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch(`/api/admin/customers/${id}`);
+      const response = await adminFetch(`/api/admin/customers/${id}`);
       const result = await response.json().catch(() => null);
 
       if (!response.ok || !result?.success) {
@@ -63,7 +64,7 @@ export function useCustomerDetail(id: string, showToast: ShowToast) {
     async (edits: CustomerEdits): Promise<boolean> => {
       setSaving(true);
       try {
-        const response = await fetch(`/api/admin/customers/${id}`, {
+        const response = await adminFetch(`/api/admin/customers/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(edits),

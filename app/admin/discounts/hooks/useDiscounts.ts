@@ -12,6 +12,7 @@ import { emptyFormData, type DiscountFormData } from './useDiscounts.types';
 
 export type { DiscountFormData };
 import { useDiscountData } from './useDiscountData';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useDiscounts() {
   const confirm = useConfirm();
@@ -97,7 +98,7 @@ export function useDiscounts() {
         end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
       };
 
-      const res = await fetch(url, {
+      const res = await adminFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -139,7 +140,7 @@ export function useDiscounts() {
 
     setPendingId(id);
     try {
-      const res = await fetch('/api/admin/discounts', {
+      const res = await adminFetch('/api/admin/discounts', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })

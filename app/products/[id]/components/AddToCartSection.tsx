@@ -51,7 +51,7 @@ export default function AddToCartSection({
             }}
             className="w-full bg-surface-inverse text-on-inverse py-4 rounded-control font-semibold hover:opacity-90 transition-all text-body-lg"
           >
-            Email me when it's back
+            Email me when it’s back
           </button>
         </div>
       </div>

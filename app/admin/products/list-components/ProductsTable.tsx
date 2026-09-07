@@ -23,14 +23,17 @@ import { VariantChildRows } from './VariantChildRows';
 import { SortableHeaderRow, STICKY_HEAD, TABLE_SCROLL, TH, type TableColumn, type TableDensity } from '../../components/table';
 import type { SortDirection } from '../../hooks/useListParams';
 
-const COLUMNS: TableColumn[] = [
-  { key: 'name', label: 'Product', sortable: true, className: 'pl-16' },
+/** Module scope, so the reference is stable for useColumnVisibility. */
+export const PRODUCT_COLUMNS: TableColumn[] = [
+  // The name identifies the row and the actions act on it; neither is
+  // something a table is still usable without.
+  { key: 'name', label: 'Product', sortable: true, hideable: false, className: 'pl-16' },
   { key: 'variant', label: 'Variant' },
   { key: 'category', label: 'Category' },
   { key: 'price', label: 'Price', numeric: true, sortable: true },
   { key: 'stock', label: 'Stock', numeric: true, sortable: true },
   { key: 'images', label: 'Images', numeric: true },
-  { key: 'actions', label: 'Actions', srOnlyLabel: true },
+  { key: 'actions', label: 'Actions', srOnlyLabel: true, hideable: false, align: 'right' },
 ];
 
 interface ProductsTableProps {
@@ -42,6 +45,11 @@ interface ProductsTableProps {
   direction: SortDirection;
   onSortChange: (sort: string, direction: SortDirection) => void;
   density: TableDensity;
+  /** The columns still shown, in order — from useColumnVisibility. */
+  visibleColumns: TableColumn[];
+  /** Keeps every row's cells lined up with the header, including the variant
+   *  child rows, which render one cell per column whether or not they fill it. */
+  isVisible: (key: string) => boolean;
   children?: React.ReactNode;
 }
 
@@ -54,6 +62,8 @@ export function ProductsTable({
   direction,
   onSortChange,
   density,
+  visibleColumns,
+  isVisible,
   children,
 }: ProductsTableProps) {
   const flattened = flattenProducts(products);
@@ -65,7 +75,7 @@ export function ProductsTable({
         <table className="w-full">
           <thead className={STICKY_HEAD}>
             <SortableHeaderRow
-              columns={COLUMNS}
+              columns={visibleColumns}
               sort={sort}
               direction={direction}
               onSortChange={onSortChange}
@@ -97,6 +107,7 @@ export function ProductsTable({
                     onToggleSelect={selection.toggle}
                     onDelete={onDelete}
                     density={density}
+                    isVisible={isVisible}
                   />
                 );
               }
@@ -111,8 +122,15 @@ export function ProductsTable({
                     onToggleSelect={selection.toggle}
                     onDelete={onDelete}
                     density={density}
+                    isVisible={isVisible}
                   />
-                  <VariantChildRows productId={productId} variants={variants} />
+                  <VariantChildRows
+                    productId={productId}
+                    variants={variants}
+                    isVisible={isVisible}
+                    density={density}
+                    visibleColumnCount={visibleColumns.length}
+                  />
                 </Fragment>
               );
             })}

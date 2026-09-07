@@ -14,6 +14,7 @@ import { useListParams } from '../../hooks/useListParams';
 import { useListData } from '../../hooks/useListData';
 import { useListSummary } from '../../hooks/useListSummary';
 import { useAdminRealtime } from '../../hooks/useAdminRealtime';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useProductsList() {
   const params = useListParams({
@@ -52,7 +53,7 @@ export function useProductsList() {
     async (id: string) => {
       setIsDeleting(true);
       try {
-        const response = await fetch('/api/admin/products', {
+        const response = await adminFetch('/api/admin/products', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id }),

@@ -4,6 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { DailyPoint, StatusCount, ProductSales } from '@/lib/commerce/dashboard-analytics';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export type TrendRange = 7 | 30 | 90;
 
@@ -34,7 +35,7 @@ export function useDashboardCharts() {
       else setRefreshing(true);
       setError(null);
 
-      const response = await fetch(`/api/admin/dashboard/charts?range=${nextRange}`);
+      const response = await adminFetch(`/api/admin/dashboard/charts?range=${nextRange}`);
       if (!response.ok) throw new Error('Failed to fetch dashboard charts');
 
       setCharts(await response.json());
@@ -56,7 +57,7 @@ export function useDashboardCharts() {
   // without the range-switch dimming effect kicking in every interval tick.
   const syncChartsSilently = useCallback(async (activeRange: TrendRange) => {
     try {
-      const response = await fetch(`/api/admin/dashboard/charts?range=${activeRange}`);
+      const response = await adminFetch(`/api/admin/dashboard/charts?range=${activeRange}`);
       if (response.ok) setCharts(await response.json());
     } catch (err) {
       console.error('Error syncing dashboard charts:', err);

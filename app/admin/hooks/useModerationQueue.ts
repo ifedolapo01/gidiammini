@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 const PAGE_SIZE = 25;
 
@@ -59,7 +60,7 @@ export function useModerationQueue<TItem extends { id: string }, TChange>(
         });
         if (status !== 'all') params.set('status', status);
 
-        const response = await fetch(`/api/admin/${resource}?${params}`);
+        const response = await adminFetch(`/api/admin/${resource}?${params}`);
         const result = await response.json().catch(() => null);
 
         if (!response.ok || !result?.success) {
@@ -92,7 +93,7 @@ export function useModerationQueue<TItem extends { id: string }, TChange>(
       setSaving(id);
 
       try {
-        const response = await fetch(`/api/admin/${resource}/${id}`, {
+        const response = await adminFetch(`/api/admin/${resource}/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(change),
@@ -124,7 +125,7 @@ export function useModerationQueue<TItem extends { id: string }, TChange>(
       setSaving(id);
 
       try {
-        const response = await fetch(`/api/admin/${resource}/${id}`, { method: 'DELETE' });
+        const response = await adminFetch(`/api/admin/${resource}/${id}`, { method: 'DELETE' });
         const result = await response.json().catch(() => null);
 
         if (!response.ok || !result?.success) {

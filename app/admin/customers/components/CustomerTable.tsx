@@ -37,10 +37,17 @@ interface CustomerTableProps {
   direction: SortDirection;
   onSortChange: (sort: string, direction: SortDirection) => void;
   density: TableDensity;
+  /** The columns still shown, in order — from useColumnVisibility. */
+  visibleColumns: TableColumn[];
+  /** Keeps each row's cells lined up with the header above them. */
+  isVisible: (key: string) => boolean;
 }
 
-const COLUMNS: TableColumn[] = [
-  { key: 'email', label: 'Customer', sortable: true },
+/** Module scope, so the reference is stable for useColumnVisibility. */
+export const CUSTOMER_COLUMNS: TableColumn[] = [
+  // Not hideable: it is the only column that says who the row is about, and
+  // it carries the link into the customer detail page.
+  { key: 'email', label: 'Customer', sortable: true, hideable: false },
   { key: 'orders_total', label: 'Orders', numeric: true, sortable: true },
   { key: 'lifetime_value', label: 'Spend', numeric: true, sortable: true },
   { key: 'net_lifetime_value', label: 'Kept', numeric: true, sortable: true },
@@ -54,6 +61,8 @@ export default function CustomerTable({
   direction,
   onSortChange,
   density,
+  visibleColumns,
+  isVisible,
 }: CustomerTableProps) {
   return (
     <div className={`hidden md:block ${TABLE_SCROLL}`} tabIndex={0} role="region" aria-label="Customers table">
@@ -64,7 +73,7 @@ export default function CustomerTable({
         </caption>
         <thead className={STICKY_HEAD}>
           <SortableHeaderRow
-            columns={COLUMNS}
+            columns={visibleColumns}
             sort={sort}
             direction={direction}
             onSortChange={onSortChange}
@@ -91,37 +100,48 @@ export default function CustomerTable({
                 )}
               </td>
 
-              <td className={numericCell(density, 'text-body-sm text-text-primary')}>
-                {customer.orders_total ?? 0}
-                {(customer.orders_cancelled ?? 0) > 0 && (
-                  <span className="block text-caption-md text-warning">
-                    {customer.orders_cancelled} cancelled
-                  </span>
-                )}
-              </td>
+              {isVisible('orders_total') && (
+                <td className={numericCell(density, 'text-body-sm text-text-primary')}>
+                  {customer.orders_total ?? 0}
+                  {(customer.orders_cancelled ?? 0) > 0 && (
+                    <span className="block text-caption-md text-warning">
+                      {customer.orders_cancelled} cancelled
+                    </span>
+                  )}
+                </td>
+              )}
 
-              <td className={numericCell(density, 'text-body-sm font-medium text-text-primary')}>
-                {formatCurrency(Number(customer.lifetime_value ?? 0))}
-              </td>
+              {isVisible('lifetime_value') && (
+                <td className={numericCell(density, 'text-body-sm font-medium text-text-primary')}>
+                  {formatCurrency(Number(customer.lifetime_value ?? 0))}
+                </td>
+              )}
 
               {/* Gross and net side by side. A buyer who orders constantly and
                   sends half of it back is a very different person from one who
-                  does not, and one column cannot show that. */}
-              <td className={numericCell(density, 'text-body-sm text-text-secondary')}>
-                {formatCurrency(Number(customer.net_lifetime_value ?? 0))}
-              </td>
+                  does not, and one column cannot show that — which is also why
+                  hiding one of the pair is offered rather than assumed. */}
+              {isVisible('net_lifetime_value') && (
+                <td className={numericCell(density, 'text-body-sm text-text-secondary')}>
+                  {formatCurrency(Number(customer.net_lifetime_value ?? 0))}
+                </td>
+              )}
 
-              <td className={cell(density, 'whitespace-nowrap text-caption-md text-text-secondary')}>
-                {customer.last_order_at ? formatDate(customer.last_order_at) : 'Never ordered'}
-              </td>
+              {isVisible('last_order_at') && (
+                <td className={cell(density, 'whitespace-nowrap text-caption-md text-text-secondary')}>
+                  {customer.last_order_at ? formatDate(customer.last_order_at) : 'Never ordered'}
+                </td>
+              )}
 
-              <td className={cell(density)}>
-                <span className="flex flex-wrap gap-1">
-                  {(customer.tags ?? []).map((tag) => (
-                    <Badge key={tag} tone="neutral">{tag}</Badge>
-                  ))}
-                </span>
-              </td>
+              {isVisible('tags') && (
+                <td className={cell(density)}>
+                  <span className="flex flex-wrap gap-1">
+                    {(customer.tags ?? []).map((tag) => (
+                      <Badge key={tag} tone="neutral">{tag}</Badge>
+                    ))}
+                  </span>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

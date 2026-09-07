@@ -32,7 +32,7 @@ export default function CancelOrderForm({ orderNumber, contact, onClose, onSubmi
     <Modal open onClose={onClose} title="Cancel Order" size="sm">
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-body-sm text-text-secondary">
-          We'll review your request and confirm the cancellation shortly.
+          We’ll review your request and confirm the cancellation shortly.
         </p>
         <div>
           <label htmlFor="cancel-reason" className="block text-body-sm font-medium text-text-primary mb-1.5">Reason (optional)</label>

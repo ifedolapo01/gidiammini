@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import type { VariantInsight } from '@/lib/commerce/inventory-analytics';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface StockInsights {
   byVariant: Map<string, VariantInsight>;
@@ -40,7 +41,7 @@ export function useStockInsights(variantIds: (string | null | undefined)[]): Sto
 
     (async () => {
       try {
-        const response = await fetch(`/api/admin/stock/insights?variantIds=${encodeURIComponent(key)}`);
+        const response = await adminFetch(`/api/admin/stock/insights?variantIds=${encodeURIComponent(key)}`);
         if (!response.ok) throw new Error(`Insights request failed: ${response.status}`);
 
         const data = await response.json();

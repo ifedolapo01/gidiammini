@@ -14,6 +14,7 @@ import { useDiscountVariantTargeting } from './hooks/useDiscountVariantTargeting
 import { DiscountTable } from './components/DiscountTable';
 import { DiscountFormModal } from './components/DiscountFormModal';
 import { NotifySubscribersModal } from './components/NotifySubscribersModal';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export default function DiscountsPage() {
   const {
@@ -55,7 +56,7 @@ export default function DiscountsPage() {
     if (!notifyModalDiscount) return;
     setIsNotifying(true);
     try {
-      const res = await fetch('/api/admin/discounts/notify', {
+      const res = await adminFetch('/api/admin/discounts/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

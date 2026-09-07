@@ -11,6 +11,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface AdminDirectoryEntry {
   email: string;
@@ -27,7 +28,7 @@ export function useAdminDirectory(enabled: boolean = true) {
 
     let cancelled = false;
 
-    fetch('/api/admin/team')
+    adminFetch('/api/admin/team')
       .then((response) => (response.ok ? response.json() : null))
       .then((result) => {
         if (cancelled || !result?.success) return;

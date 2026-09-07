@@ -43,8 +43,11 @@ export function StockFilters({
   lowStockThreshold,
   onLowStockThresholdChange,
 }: StockFiltersProps) {
+  // Six cells: search spans two, then category, stock level, the low-stock
+  // threshold and sort. It was grid-cols-5 with sort spanning two — seven cells
+  // in five columns — so the sort control wrapped every time.
   return (
-    <div className="mb-6 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+    <div className="mb-6 grid gap-3 md:grid-cols-2 lg:grid-cols-6">
       <div className="relative lg:col-span-2">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted w-5 h-5" />
         <Input
@@ -100,7 +103,6 @@ export function StockFilters({
           const [nextSort, nextDirection] = event.target.value.split(':');
           onSortChange(nextSort, nextDirection as SortDirection);
         }}
-        className="lg:col-span-2"
         aria-label="Sort stock rows"
       >
         {SORT_OPTIONS.map((option) => (

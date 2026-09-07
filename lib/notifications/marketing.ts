@@ -106,7 +106,9 @@ export async function sendMarketingCampaign(params: {
     }
 
     const html = buildHtml({ recipient, unsubscribeFooterHtml: unsubscribeFooter(url) });
-    const result = await sendOrderEmail(recipient.email, subject, html);
+    // Marketing stream: this is mail the shop chose to send, so a complaint
+    // about it must not spend the reputation that carries order confirmations.
+    const result = await sendOrderEmail(recipient.email, subject, html, { stream: 'marketing' });
 
     await recordNotification({
       channel: 'email',

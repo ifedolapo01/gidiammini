@@ -15,6 +15,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseReceiptUrlResult {
   url: string | null;
@@ -54,7 +55,7 @@ export function useReceiptUrl(orderId: string | null): UseReceiptUrlResult {
 
     (async () => {
       try {
-        const response = await fetch(`/api/admin/orders/${orderId}/receipt`);
+        const response = await adminFetch(`/api/admin/orders/${orderId}/receipt`);
         const result = await response.json().catch(() => null);
         if (!active) return;
 

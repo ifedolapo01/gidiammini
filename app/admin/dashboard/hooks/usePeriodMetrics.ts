@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_RANGE, rangeFor, type RangePreset } from '@/lib/commerce/date-range';
 import type { PeriodDeltas, PeriodMetrics } from '@/lib/commerce/period-metrics';
 import type { CategoryRevenue, ZoneRevenue } from '@/lib/commerce/revenue-breakdown';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface PeriodResponse {
   current: PeriodMetrics;
@@ -65,7 +66,7 @@ export function usePeriodMetrics() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/dashboard/period?range=${range}`);
+      const response = await adminFetch(`/api/admin/dashboard/period?range=${range}`);
       const body = await response.json().catch(() => null);
 
       if (!response.ok || !body?.success) {

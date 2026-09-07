@@ -60,7 +60,7 @@ export default function OrderStatusTimeline({ status, deliveryOption }: OrderSta
           <div>
             <p className="font-semibold text-warning text-body-sm">Delivery Rescheduled</p>
             <p className="text-body-sm text-text-secondary">
-              Your delivery timing has changed. Call us at 0809 653 9067 if you'd like to arrange a new time.
+              Your delivery timing has changed. Call us at 0809 653 9067 if you’d like to arrange a new time.
             </p>
           </div>
         </div>

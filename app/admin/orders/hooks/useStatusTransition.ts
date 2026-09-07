@@ -24,6 +24,7 @@ import type { Order, OrderStatus } from '@/types/order';
 import { formatOrderStatus } from '@/lib/commerce/order-status';
 import { describeDelivery, anyDelivered } from '@/lib/notifications/delivery';
 import { notifyOrdersChanged } from '../../lib/orderEvents';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 type ShowToast = (message: string, type?: 'success' | 'error') => void;
 
@@ -53,7 +54,7 @@ export function useStatusTransition(showToast: ShowToast, onApplied: () => Promi
     async (orderId: string, status: OrderStatus, extras: TransitionExtras = {}) => {
       setApplying(true);
       try {
-        const response = await fetch(`/api/orders/${orderId}`, {
+        const response = await adminFetch(`/api/orders/${orderId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

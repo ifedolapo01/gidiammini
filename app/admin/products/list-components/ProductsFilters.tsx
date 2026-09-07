@@ -43,8 +43,10 @@ export function ProductsFilters({
   onSortChange,
   categories,
 }: ProductsFiltersProps) {
+  // Six cells: the search box spans two, then category, stock, status and sort
+  // take one each. It was grid-cols-5, so sort wrapped onto a row of its own.
   return (
-    <div className="mb-6 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+    <div className="mb-6 grid gap-3 md:grid-cols-2 lg:grid-cols-6">
       <div className="relative lg:col-span-2">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted w-5 h-5" />
         <Input

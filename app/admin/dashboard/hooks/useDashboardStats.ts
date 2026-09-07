@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import type { MarginTotals } from '@/lib/commerce/margin';
 import { DEFAULT_STORE_SETTINGS } from '@/lib/commerce/store-settings';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -51,7 +52,6 @@ export function useDashboardStats() {
 
   useEffect(() => {
     fetchDashboardStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -60,7 +60,7 @@ export function useDashboardStats() {
       setError(null);
 
       // Fetch dashboard stats
-      const response = await fetch('/api/admin/dashboard');
+      const response = await adminFetch('/api/admin/dashboard');
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
@@ -86,7 +86,7 @@ export function useDashboardStats() {
    * the page with an error banner over a transient network hiccup. */
   const syncStatsSilently = async () => {
     try {
-      const response = await fetch('/api/admin/dashboard');
+      const response = await adminFetch('/api/admin/dashboard');
       if (response.ok) setStats(await response.json());
     } catch (error) {
       console.error('Error syncing dashboard stats:', error);
@@ -96,7 +96,6 @@ export function useDashboardStats() {
   useEffect(() => {
     const interval = setInterval(syncStatsSilently, ADMIN_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { stats, loading, error, fetchDashboardStats };

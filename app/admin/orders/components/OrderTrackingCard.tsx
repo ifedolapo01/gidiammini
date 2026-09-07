@@ -22,6 +22,7 @@ import {
   hasTracking,
 } from '@/lib/commerce/order-tracking';
 import type { Order } from '@/types/order';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface OrderTrackingCardProps {
   order: Order;
@@ -45,7 +46,7 @@ export default function OrderTrackingCard({ order, showToast, onSaved }: OrderTr
   const save = async () => {
     setSaving(true);
     try {
-      const response = await fetch(`/api/orders/${order.id}/tracking`, {
+      const response = await adminFetch(`/api/orders/${order.id}/tracking`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

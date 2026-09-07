@@ -153,7 +153,7 @@ export function VariantGroupCard({
               />
             ))}
             {variant.colors.length === 0 && (
-              <p className="text-caption-md text-warning italic py-2">No colors added. Click 'Add Color' above.</p>
+              <p className="text-caption-md text-warning italic py-2">No colors added. Click ’Add Color’ above.</p>
             )}
           </div>
         </div>

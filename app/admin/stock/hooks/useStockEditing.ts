@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { FlattenedProduct } from '@/lib/commerce/product-flatten';
 import { DEFAULT_STOCK_EDIT_REASON, type StockEditReason } from '@/lib/commerce/inventory-movements';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useStockEditing(onSaved: () => void) {
   const [editingProduct, setEditingProduct] = useState<FlattenedProduct | null>(null);
@@ -34,7 +35,7 @@ export function useStockEditing(onSaved: () => void) {
     if (!editingProduct) return;
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/admin/products/${editingProduct.productId}/stock`, {
+      const response = await adminFetch(`/api/admin/products/${editingProduct.productId}/stock`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

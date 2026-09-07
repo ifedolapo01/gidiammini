@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface ExportButtonProps {
   dataset: 'orders' | 'products' | 'stock' | 'customers';
@@ -60,7 +61,7 @@ export default function ExportButton({
       }
 
       const suffix = query.toString();
-      const response = await fetch(`/api/admin/export/${dataset}${suffix ? `?${suffix}` : ''}`);
+      const response = await adminFetch(`/api/admin/export/${dataset}${suffix ? `?${suffix}` : ''}`);
 
       if (!response.ok) {
         const result = await response.json().catch(() => null);

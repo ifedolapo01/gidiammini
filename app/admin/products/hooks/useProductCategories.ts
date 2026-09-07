@@ -3,13 +3,14 @@
 
 import { useEffect, useState } from 'react';
 import { Category } from '@/types/product';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useProductCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/categories')
+    adminFetch('/api/admin/categories')
       .then((res) => res.json())
       .then((data) => {
         if (data.success) setCategories(data.categories || []);

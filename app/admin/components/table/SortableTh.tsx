@@ -15,7 +15,7 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SortDirection } from '../../hooks/useListParams';
-import { TH, NUMERIC } from './table-styles';
+import { TH, NUMERIC, ALIGN, type ColumnAlign } from './table-styles';
 
 export interface TableColumn {
   /** The server's sort key. Must match what the list endpoint accepts. */
@@ -23,9 +23,25 @@ export interface TableColumn {
   label: string;
   /** Right-aligned and tabular — money, counts, stock. */
   numeric?: boolean;
+  /**
+   * Overrides the default, which is 'right' for a numeric column and 'left'
+   * for everything else. The only real use is the trailing actions column,
+   * whose cells are right-aligned but hold no figures. See the alignment rule
+   * in table-styles.ts — there is no 'center'.
+   */
+  align?: ColumnAlign;
   sortable?: boolean;
   /** For a column whose heading is an icon or a checkbox. */
   srOnlyLabel?: boolean;
+  /**
+   * Whether the operator may hide this column. Defaults to true.
+   *
+   * Set false on the column that identifies the row — the product's name, the
+   * order number — and on the actions column. A table whose rows cannot be
+   * told apart, or acted on, is not a configuration anybody wants; offering it
+   * only produces a state people have to work out how to escape.
+   */
+  hideable?: boolean;
   className?: string;
 }
 
@@ -39,7 +55,11 @@ interface SortableThProps {
 export function SortableTh({ column, sort, direction, onSortChange }: SortableThProps) {
   const active = column.sortable && sort === column.key;
 
-  const headerClass = cn(TH, column.numeric && NUMERIC, column.className);
+  // One source for the header's alignment, matching what the body cells use:
+  // numericCell for a numeric column, actionsCell for the actions column, and
+  // the plain left default for text.
+  const align: ColumnAlign = column.align ?? (column.numeric ? 'right' : 'left');
+  const headerClass = cn(TH, ALIGN[align], column.numeric && NUMERIC, column.className);
 
   if (!column.sortable) {
     return (
@@ -62,11 +82,10 @@ export function SortableTh({ column, sort, direction, onSortChange }: SortableTh
       <button
         type="button"
         onClick={() => onSortChange(column.key, next)}
-        className={cn(
-          'inline-flex items-center gap-1 uppercase tracking-wider hover:text-text-primary',
-          // The numeric column's heading has to sit over the digits it labels.
-          column.numeric && 'flex-row-reverse',
-        )}
+        // The <th> is already right-aligned for a numeric column, which puts
+        // this button over the digits it labels; the label and its arrow keep
+        // the same order they have everywhere else.
+        className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-text-primary"
         aria-label={`Sort by ${column.label}, ${next === 'asc' ? 'ascending' : 'descending'}`}
       >
         {column.label}

@@ -9,6 +9,7 @@ import type { Category } from '@/types/product';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import { useSubcategoryForm } from './useSubcategoryForm';
 import { useCategoryPatch } from './useCategoryPatch';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useCategories() {
   const confirm = useConfirm();
@@ -54,7 +55,7 @@ export function useCategories() {
   const fetchCategories = async (opts: { silent?: boolean } = {}) => {
     try {
       if (!opts.silent) setLoading(true);
-      const res = await fetch('/api/admin/categories');
+      const res = await adminFetch('/api/admin/categories');
       const data = await res.json();
       if (data.success) {
         setCategories(data.categories || []);
@@ -73,7 +74,6 @@ export function useCategories() {
   useEffect(() => {
     const interval = setInterval(() => fetchCategories({ silent: true }), ADMIN_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-generate slug from name
@@ -89,7 +89,7 @@ export function useCategories() {
 
     setIsAddingCat(true);
     try {
-      const res = await fetch('/api/admin/categories', {
+      const res = await adminFetch('/api/admin/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCatName, slug: newCatSlug })
@@ -137,7 +137,7 @@ export function useCategories() {
 
     setPendingDeleteId(id);
     try {
-      const res = await fetch('/api/admin/categories', {
+      const res = await adminFetch('/api/admin/categories', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })

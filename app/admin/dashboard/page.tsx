@@ -42,7 +42,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
           <h1 className="text-h3 font-bold text-text-primary">Admin Dashboard</h1>
-          <p className="text-text-secondary mt-1">Welcome back! Here's what's happening with your store.</p>
+          <p className="text-text-secondary mt-1">Welcome back! Here’s what’s happening with your store.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
           {/* The customer list has no page of its own, so its export lives

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Discount } from '@/lib/commerce/discounts';
 import type { Category, Product } from '@/types/product';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export function useDiscountData() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -29,8 +30,8 @@ export function useDiscountData() {
     if (!opts.silent) setLoading(true);
     try {
       const [discRes, catRes] = await Promise.all([
-        fetch('/api/admin/discounts'),
-        fetch('/api/admin/categories'),
+        adminFetch('/api/admin/discounts'),
+        adminFetch('/api/admin/categories'),
       ]);
 
       const discData = await discRes.json();
@@ -51,7 +52,7 @@ export function useDiscountData() {
   }, [fetchData]);
 
   useEffect(() => {
-    fetch('/api/admin/products/catalog')
+    adminFetch('/api/admin/products/catalog')
       .then((response) => response.json())
       .then((data) => {
         if (data.success) setProducts(data.products || []);

@@ -4,6 +4,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 type ShowToast = (message: string, type?: 'success' | 'error') => void;
 
@@ -20,7 +21,7 @@ export function useOrderNotification(showToast: ShowToast, onSent: () => void) {
 
       setSendingNotification(orderId);
       try {
-        const response = await fetch(`/api/orders/${orderId}/notify`, {
+        const response = await adminFetch(`/api/orders/${orderId}/notify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: notificationMessage, viaEmail: true, viaSMS: true }),

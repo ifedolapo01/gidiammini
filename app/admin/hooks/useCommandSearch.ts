@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { can, type AdminPermission, type AdminRole } from '@/lib/api/admin-roles';
 import { adminConfig } from '../config';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface CommandItem {
   id: string;
@@ -75,8 +76,8 @@ export function useCommandSearch(query: string, enabled: boolean, role?: AdminRo
       try {
         const query = `search=${encodeURIComponent(trimmed)}&limit=${REMOTE_LIMIT}`;
         const [orders, products] = await Promise.all([
-          fetch(`/api/orders?${query}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-          fetch(`/api/admin/products?${query}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          adminFetch(`/api/orders?${query}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          adminFetch(`/api/admin/products?${query}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
         ]);
 
         if (cancelled) return;

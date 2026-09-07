@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { CategoryEditField } from '@/lib/commerce/category-edit';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseCategoryPatchParams {
   field: CategoryEditField;
@@ -23,7 +24,7 @@ export function useCategoryPatch({ field, labels, onSaved }: UseCategoryPatchPar
   const save = async (id: string, value: string) => {
     setSavingId(id);
     try {
-      const res = await fetch('/api/admin/categories', {
+      const res = await adminFetch('/api/admin/categories', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, [field]: value }),

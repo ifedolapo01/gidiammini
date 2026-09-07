@@ -9,6 +9,7 @@ import type { ShippingZone } from '@/types/shipping';
 import type { ZoneExceptionFormRow } from './useZoneExceptions';
 import { type ShippingZoneFormData, emptyFormData } from './useShippingZones.types';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export type { ShippingZoneFormData };
 
@@ -39,7 +40,7 @@ export function useShippingZones() {
   const fetchZones = async (opts: { silent?: boolean } = {}) => {
     if (!opts.silent) setLoading(true);
     try {
-      const res = await fetch('/api/admin/shipping-zones');
+      const res = await adminFetch('/api/admin/shipping-zones');
       const data = await res.json();
       if (data.success) setZones(data.zones);
     } catch (err) {
@@ -54,7 +55,6 @@ export function useShippingZones() {
   useEffect(() => {
     const interval = setInterval(() => fetchZones({ silent: true }), ADMIN_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openModal = (zone?: ShippingZone) => {
@@ -119,7 +119,7 @@ export function useShippingZones() {
         })),
       };
 
-      const res = await fetch(url, {
+      const res = await adminFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -156,7 +156,7 @@ export function useShippingZones() {
 
     setPendingId(id);
     try {
-      const res = await fetch('/api/admin/shipping-zones', {
+      const res = await adminFetch('/api/admin/shipping-zones', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })

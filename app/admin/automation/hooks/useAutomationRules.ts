@@ -2,6 +2,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface AutomationRuleRow {
   id: string;
@@ -42,7 +43,7 @@ export function useAutomationRules(
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/automation');
+      const response = await adminFetch('/api/admin/automation');
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.success) throw new Error('Failed to load');
 
@@ -65,7 +66,7 @@ export function useAutomationRules(
     async (rule: AutomationRuleRow) => {
       setPendingId(rule.id);
       try {
-        const response = await fetch('/api/admin/automation', {
+        const response = await adminFetch('/api/admin/automation', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: rule.id, is_active: !rule.is_active }),

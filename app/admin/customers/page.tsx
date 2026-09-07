@@ -22,9 +22,10 @@ import ExportButton from '../components/ExportButton';
 import { useToast } from '../hooks/useToast';
 import { useCustomers } from './hooks/useCustomers';
 import CustomerFilters from './components/CustomerFilters';
-import CustomerTable from './components/CustomerTable';
-import { DensityToggle } from '../components/table';
+import CustomerTable, { CUSTOMER_COLUMNS } from './components/CustomerTable';
+import { TableDisplayMenu } from '../components/table';
 import { useTableDensity } from '../hooks/useTableDensity';
+import { useColumnVisibility } from '../hooks/useColumnVisibility';
 import CustomerCard from './components/CustomerCard';
 import SegmentCampaignDialog from './components/SegmentCampaignDialog';
 import { CustomersSkeleton } from './components/CustomersSkeleton';
@@ -36,6 +37,7 @@ export default function AdminCustomers() {
 
   const activeTag = params.filters.tag ?? '';
   const { density, setDensity } = useTableDensity();
+  const columns = useColumnVisibility('admin-columns-customers', CUSTOMER_COLUMNS);
 
   if (loading && customers.length === 0) return <CustomersSkeleton />;
 
@@ -64,7 +66,16 @@ export default function AdminCustomers() {
             {/* Beside the export, because both are about the table below
                 rather than about any one row in it. Hidden on mobile, where
                 the list renders as cards and density means nothing. */}
-            <DensityToggle density={density} onChange={setDensity} className="hidden md:inline-flex" />
+            <TableDisplayMenu
+              density={density}
+              onDensityChange={setDensity}
+              columns={columns.hideable}
+              isColumnVisible={columns.isVisible}
+              onToggleColumn={columns.toggle}
+              onShowAllColumns={columns.showAll}
+              hiddenCount={columns.hiddenCount}
+              className="hidden md:inline-flex"
+            />
             <ExportButton dataset="customers" label="Export customers" />
           </div>
         </div>
@@ -105,6 +116,8 @@ export default function AdminCustomers() {
               direction={params.direction}
               onSortChange={params.setSort}
               density={density}
+              visibleColumns={columns.visibleColumns}
+              isVisible={columns.isVisible}
             />
 
             <div className="space-y-2 p-3 md:hidden">

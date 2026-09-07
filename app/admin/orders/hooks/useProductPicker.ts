@@ -13,6 +13,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface PickerVariant {
   variant_key: string;
@@ -43,7 +44,7 @@ export function useProductPicker() {
   useEffect(() => {
     let cancelled = false;
 
-    fetch('/api/admin/products/catalog')
+    adminFetch('/api/admin/products/catalog')
       .then((response) => response.json())
       .then((data) => {
         if (cancelled) return;
