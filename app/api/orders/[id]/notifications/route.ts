@@ -13,6 +13,7 @@ import { withAdminAuth, type AdminRouteContext } from '@/lib/api/with-admin-auth
 import { sendOrderReceivedEmail, sendOrderStatusUpdate } from '@/lib/notifications';
 import { isResendable } from '@/lib/notifications/kinds';
 import { anyDelivered, describeDelivery } from '@/lib/notifications/delivery';
+import { formatDeliveryWindow } from '@/lib/commerce/delivery-promise';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +79,7 @@ async function resendNotification(
 
   const { data: order } = await supabase
     .from('orders')
-    .select('id, order_number, customer_name, customer_email, customer_phone, status, customer_id')
+    .select('id, order_number, customer_name, customer_email, customer_phone, status, customer_id, promised_delivery_start, promised_delivery_end')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -101,11 +102,17 @@ async function resendNotification(
   };
 
   if (original.kind === 'order_received') {
+    const deliveryEstimate =
+      order.promised_delivery_start && order.promised_delivery_end
+        ? formatDeliveryWindow(new Date(order.promised_delivery_start), new Date(order.promised_delivery_end))
+        : null;
+
     const result = await sendOrderReceivedEmail({
       ...context,
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,
+      deliveryEstimate,
     });
 
     return result.success

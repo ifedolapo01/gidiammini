@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
-import { canRequestOrderChange, canCancelOrder } from '@/lib/commerce/order-status';
+import { canRequestOrderChange, canCancelOrder, canRequestReturn, deliveredAtFrom } from '@/lib/commerce/order-status';
 import { asOrderStatus } from '@/lib/commerce/db-narrowing';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
 import { sendOrderEmail } from '@/lib/email';
@@ -20,19 +20,27 @@ import type { OrderChangeRequestType } from '@/types/orderChangeRequest';
  * declares, with anything else the caller sent already stripped. */
 type ChangeRequestDetails = OrderChangeRequestBody['details'];
 
+/** One clause per request type — kept as a lookup rather than another if/else
+ *  chain, since this is the third place (the others being the schema and the
+ *  approval dispatcher) that has to know all eight of them. */
+const REQUEST_SUMMARIES: Record<OrderChangeRequestType, (details: any) => string> = {
+  reschedule: (d) => `reschedule to ${escapeHtml(d.preferredDate)}`,
+  delivery_method_change: (d) => `switch to ${escapeHtml(d.newDeliveryOption)}`,
+  cancel: () => 'cancel their order',
+  address_correction: (d) => `correct their address to ${escapeHtml(d.newAddress)}`,
+  item_swap: (d) => `swap an item for size/colour "${escapeHtml(d.newSize || d.newColor || 'unspecified')}"`,
+  add_item: (d) => `add ${d.quantity} more of an item already on the order`,
+  return_request: (d) => `return an item — ${escapeHtml(d.reason)}`,
+  hold_until: (d) => `hold the order until ${escapeHtml(d.holdUntilDate)}`,
+};
+
 async function notifyOwner(
   order: any,
   requestType: OrderChangeRequestType,
   details: any,
   customerNote?: string
 ) {
-  // details.preferredDate is customer-supplied free text; newDeliveryOption is
-  // validated against a fixed pair but escaped anyway so the rule is uniform.
-  const summary = requestType === 'reschedule'
-    ? `reschedule to ${escapeHtml(details.preferredDate)}`
-    : requestType === 'cancel'
-    ? 'cancel their order'
-    : `switch to ${escapeHtml(details.newDeliveryOption)}`;
+  const summary = REQUEST_SUMMARIES[requestType](details);
 
   await sendOrderEmail(
     process.env.STORE_OWNER_EMAIL || 'ifedolapoajayi0@gmail.com',
@@ -59,7 +67,7 @@ async function submitChangeRequest(request: NextRequest) {
 
     const { data: order, error } = await supabase
       .from('orders')
-      .select('*, order_change_requests (*)')
+      .select('*, order_items (id, product_id), order_change_requests (*), order_status_history (status, changed_at)')
       .eq('order_number', orderNumber)
       .single();
 
@@ -71,9 +79,15 @@ async function submitChangeRequest(request: NextRequest) {
     }
 
     const orderStatus = asOrderStatus(order.status);
-    const isEligible = requestType === 'cancel' ? canCancelOrder(orderStatus) : canRequestOrderChange(orderStatus);
+    const isEligible =
+      requestType === 'cancel' ? canCancelOrder(orderStatus)
+      : requestType === 'return_request' ? canRequestReturn(orderStatus, deliveredAtFrom(order.order_status_history))
+      : canRequestOrderChange(orderStatus);
     if (!isEligible) {
-      const error = requestType === 'cancel' ? 'This order can no longer be cancelled.' : 'This order can no longer be changed.';
+      const error =
+        requestType === 'cancel' ? 'This order can no longer be cancelled.'
+        : requestType === 'return_request' ? 'This order is not eligible for a return — it must have been delivered within the last 30 days.'
+        : 'This order can no longer be changed.';
       return NextResponse.json({ success: false, error }, { status: 400 });
     }
 
@@ -82,6 +96,31 @@ async function submitChangeRequest(request: NextRequest) {
         { success: false, error: 'You already have a pending request for this order.' },
         { status: 400 }
       );
+    }
+
+    // item_swap/add_item name a product that must actually be on this order —
+    // both are "another one of what you bought", never a pick from the whole
+    // catalogue, so this is the one check that keeps that true.
+    if ((requestType === 'item_swap' || requestType === 'add_item') && 'productId' in details) {
+      const onOrder = order.order_items?.some((item: any) => item.product_id === details.productId);
+      if (!onOrder) {
+        return NextResponse.json(
+          { success: false, error: 'That item is not on this order.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Likewise for a return: only items actually on the order can be named.
+    if (requestType === 'return_request' && 'orderItemIds' in details) {
+      const orderItemIds = new Set((order.order_items ?? []).map((item: any) => item.id));
+      const allOnOrder = details.orderItemIds.every((id: string) => orderItemIds.has(id));
+      if (!allOnOrder) {
+        return NextResponse.json(
+          { success: false, error: 'One of those items is not on this order.' },
+          { status: 400 }
+        );
+      }
     }
 
     if (requestType === 'delivery_method_change' && 'newDeliveryOption' in details) {

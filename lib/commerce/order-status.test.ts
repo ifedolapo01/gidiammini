@@ -13,7 +13,7 @@ import {
   ORDER_STATUSES, INITIAL_ORDER_STATUS, REVENUE_STATUSES,
   formatOrderStatus, formatCustomerStatusLabel, getStatusOptions,
   hasStockReserved, canRequestOrderChange, canCancelOrder, getStatusColorToken,
-  commonStatusOptions,
+  commonStatusOptions, canRequestReturn, deliveredAtFrom, RETURN_WINDOW_DAYS,
 } from './order-status';
 import type { OrderStatus } from '@/types/order';
 
@@ -123,6 +123,54 @@ describe('canCancelOrder', () => {
     expect(canCancelOrder('picked_up')).toBe(false);
     expect(canCancelOrder('delivered')).toBe(false);
     expect(canCancelOrder('cancelled')).toBe(false);
+  });
+});
+
+describe('deliveredAtFrom', () => {
+  it('finds the delivered row regardless of position', () => {
+    const history = [
+      { status: 'pending' as const, changed_at: '2026-01-01T00:00:00Z' },
+      { status: 'delivered' as const, changed_at: '2026-01-05T00:00:00Z' },
+      { status: 'confirmed' as const, changed_at: '2026-01-02T00:00:00Z' },
+    ];
+    expect(deliveredAtFrom(history)).toBe('2026-01-05T00:00:00Z');
+  });
+
+  it('is null when the order was never delivered', () => {
+    expect(deliveredAtFrom([{ status: 'pending', changed_at: '2026-01-01T00:00:00Z' }])).toBeNull();
+  });
+
+  it('is null for undefined or empty history', () => {
+    expect(deliveredAtFrom(undefined)).toBeNull();
+    expect(deliveredAtFrom([])).toBeNull();
+  });
+});
+
+describe('canRequestReturn', () => {
+  const deliveredAt = '2026-08-01T00:00:00Z';
+
+  it('is false for any status other than delivered', () => {
+    expect(canRequestReturn('shipped', deliveredAt)).toBe(false);
+    expect(canRequestReturn('confirmed', null)).toBe(false);
+  });
+
+  it('is false when delivered but no delivered timestamp is known', () => {
+    expect(canRequestReturn('delivered', null)).toBe(false);
+  });
+
+  it('is true within the return window', () => {
+    const now = new Date('2026-08-15T00:00:00Z'); // 14 days later
+    expect(canRequestReturn('delivered', deliveredAt, now)).toBe(true);
+  });
+
+  it('is true right at the edge of the window', () => {
+    const now = new Date(new Date(deliveredAt).getTime() + RETURN_WINDOW_DAYS * 86_400_000);
+    expect(canRequestReturn('delivered', deliveredAt, now)).toBe(true);
+  });
+
+  it('is false once the window has passed', () => {
+    const now = new Date(new Date(deliveredAt).getTime() + (RETURN_WINDOW_DAYS + 1) * 86_400_000);
+    expect(canRequestReturn('delivered', deliveredAt, now)).toBe(false);
   });
 });
 

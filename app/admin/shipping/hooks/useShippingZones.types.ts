@@ -18,6 +18,10 @@ export interface ShippingZoneFormData {
   delivery_eta_min: string;
   delivery_eta_max: string;
   delivery_eta_unit: ShippingEtaUnit;
+  /** "HH:MM" (24h), or '' for no cutoff. */
+  order_cutoff_time: string;
+  /** ISO weekday numbers (1=Monday .. 7=Sunday). */
+  working_days: number[];
   is_primary: boolean;
   is_active: boolean;
   sort_order: string;
@@ -37,6 +41,8 @@ export const emptyFormData: ShippingZoneFormData = {
   delivery_eta_min: '',
   delivery_eta_max: '',
   delivery_eta_unit: 'days',
+  order_cutoff_time: '',
+  working_days: [1, 2, 3, 4, 5, 6],
   is_primary: false,
   is_active: true,
   sort_order: '0',

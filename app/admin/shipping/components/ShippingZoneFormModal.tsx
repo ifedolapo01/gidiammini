@@ -7,6 +7,7 @@ import type { ShippingZoneFormData } from '../hooks/useShippingZones';
 import type { ZoneExceptionFormRow } from '../hooks/useZoneExceptions';
 import { ZoneGeographyFields } from './ZoneGeographyFields';
 import { ZoneEtaFields } from './ZoneEtaFields';
+import { ZoneScheduleFields } from './ZoneScheduleFields';
 import { ZoneAvailabilityFields } from './ZoneAvailabilityFields';
 import { ZoneExceptionsFields } from './ZoneExceptionsFields';
 
@@ -75,6 +76,8 @@ export function ShippingZoneFormModal({
           <ZoneGeographyFields formData={formData} setFormData={setFormData} />
 
           <ZoneEtaFields formData={formData} setFormData={setFormData} />
+
+          <ZoneScheduleFields formData={formData} setFormData={setFormData} />
 
           <ZoneAvailabilityFields formData={formData} setFormData={setFormData} />
 

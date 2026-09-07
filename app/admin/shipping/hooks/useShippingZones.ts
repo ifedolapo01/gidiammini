@@ -74,6 +74,9 @@ export function useShippingZones() {
         delivery_eta_min: zone.delivery_eta_min.toString(),
         delivery_eta_max: zone.delivery_eta_max.toString(),
         delivery_eta_unit: zone.delivery_eta_unit,
+        // DB returns "HH:MM:SS"; the time input wants "HH:MM".
+        order_cutoff_time: zone.order_cutoff_time ? zone.order_cutoff_time.slice(0, 5) : '',
+        working_days: zone.working_days?.length ? zone.working_days : [1, 2, 3, 4, 5, 6],
         is_primary: zone.is_primary,
         is_active: zone.is_active,
         sort_order: zone.sort_order.toString(),

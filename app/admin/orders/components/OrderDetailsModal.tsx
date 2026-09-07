@@ -27,11 +27,13 @@ import OrderEditPanel from './OrderEditPanel';
 import RefundPanel from './RefundPanel';
 import OrderPrintDocument, { type PrintDocumentKind } from './OrderPrintDocument';
 import OrderNotificationsTab from './OrderNotificationsTab';
+import OrderMessageThread from './OrderMessageThread';
 
 const TABS = [
   { id: 'summary', label: 'Summary' },
   { id: 'edit', label: 'Edit items' },
   { id: 'refunds', label: 'Refunds' },
+  { id: 'messages', label: 'Messages' },
   { id: 'history', label: 'History' },
 ] as const;
 
@@ -51,7 +53,12 @@ interface OrderDetailsModalProps {
   onNotificationMessageChange: (message: string) => void;
   onSendNotification: (orderId: string) => void;
   onUpdateShipping: (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => void;
-  onResolveChangeRequest: (requestId: string, decision: 'approved' | 'rejected', adminResponse?: string) => void;
+  onResolveChangeRequest: (
+    requestId: string,
+    decision: 'approved' | 'rejected',
+    adminResponse?: string,
+    refundAmount?: number
+  ) => void;
 }
 
 export default function OrderDetailsModal(props: OrderDetailsModalProps) {
@@ -134,6 +141,8 @@ export default function OrderDetailsModal(props: OrderDetailsModalProps) {
       {tab === 'refunds' && (
         <RefundPanel orderId={selectedOrder.id} showToast={showToast} onChanged={onRefresh} />
       )}
+
+      {tab === 'messages' && <OrderMessageThread orderId={selectedOrder.id} />}
 
       {tab === 'history' && (
         <>

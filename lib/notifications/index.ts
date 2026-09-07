@@ -138,6 +138,10 @@ interface OrderReceivedParams extends NotificationContext {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
+  /** Formatted delivery window ("Tue 12 – Thu 14 Sept"), or null/undefined for
+   *  pickup, an unresolved zone, or a resend of an order placed before this
+   *  field existed. */
+  deliveryEstimate?: string | null;
 }
 
 /** Sent right after checkout, before any admin action — gives the customer

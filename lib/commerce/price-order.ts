@@ -23,6 +23,7 @@ import { priceCartLines, sumOf } from './price-lines';
 import { loadPricingContext } from './price-order-context';
 import { calculateTax } from './checkout';
 import { applyFreeShipping } from './store-settings';
+import { computeDeliveryWindow } from './delivery-promise';
 import type { PricedLine, PriceOrderInput, PriceOrderResult } from './price-order.types';
 
 export type {
@@ -139,6 +140,12 @@ export async function priceOrder(
       }
     : null;
 
+  // The promise made at the moment of purchase, not recomputed later — a
+  // zone's cutoff/working-days/ETA can change after the parcel has shipped,
+  // and "were we late" must be judged against what the customer was told.
+  const promisedWindow = deliveryOption === 'delivery' ? computeDeliveryWindow(new Date(), zone) : null;
+  const toIsoDate = (date: Date) => date.toISOString().slice(0, 10);
+
   return {
     ok: true,
     products,
@@ -154,6 +161,8 @@ export async function priceOrder(
       selected_lga: selectedLga,
       selected_place: selectedPlace,
       requires_address: deliveryOption === 'delivery' && zone.is_door_delivery,
+      promised_delivery_start: promisedWindow ? toIsoDate(promisedWindow.start) : null,
+      promised_delivery_end: promisedWindow ? toIsoDate(promisedWindow.end) : null,
       applied_code: appliedCode,
       code_error: resolvedCode.error,
     },

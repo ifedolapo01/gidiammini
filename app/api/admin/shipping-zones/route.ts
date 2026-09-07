@@ -31,6 +31,9 @@ function buildZoneData(body: any) {
     delivery_eta_min: Number(body.delivery_eta_min) || 1,
     delivery_eta_max: Number(body.delivery_eta_max) || Number(body.delivery_eta_min) || 1,
     delivery_eta_unit: body.delivery_eta_unit || 'days',
+    order_cutoff_time: body.order_cutoff_time || null,
+    working_days:
+      Array.isArray(body.working_days) && body.working_days.length ? body.working_days : [1, 2, 3, 4, 5, 6],
     is_primary: !!body.is_primary,
     is_active: body.is_active ?? true,
     sort_order: Number(body.sort_order) || 0,

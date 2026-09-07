@@ -16,9 +16,11 @@ import { REVENUE_STATUSES } from '@/lib/commerce/order-status';
 import { parseRange, rangeFor } from '@/lib/commerce/date-range';
 import { comparePeriods, summarisePeriod } from '@/lib/commerce/period-metrics';
 import { revenueByCategory, revenueByZone } from '@/lib/commerce/revenue-breakdown';
+import { deliveryPerformanceByZone } from '@/lib/commerce/delivery-performance';
 import {
   MAX_ROWS,
   fetchCategoryLines,
+  fetchDeliveredHistory,
   fetchPeriodOrders,
   fetchPriorCustomers,
   fetchZoneNames,
@@ -56,6 +58,9 @@ async function getPeriod(request: NextRequest, { supabase }: AdminRouteContext) 
       fetchZoneNames(supabase),
     ]);
 
+    // Needs currentOrders' own ids first, so it can't join the Promise.all above.
+    const deliveredAt = await fetchDeliveredHistory(supabase, currentOrders.map((order) => order.id));
+
     const currentMetrics = summarisePeriod(currentOrders, prior.identities);
     const previousMetrics = summarisePeriod(previousOrders, prior.identities);
 
@@ -84,6 +89,7 @@ async function getPeriod(request: NextRequest, { supabase }: AdminRouteContext) 
           })),
         zoneNames
       ),
+      byDeliveryPerformance: deliveryPerformanceByZone(currentOrders, deliveredAt, zoneNames),
       // Said out loud rather than left for somebody to discover: past this,
       // the repeat rate is computed against a partial history and is wrong.
       truncated: prior.truncated || currentOrders.length >= MAX_ROWS,

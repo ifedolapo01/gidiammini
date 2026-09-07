@@ -902,6 +902,45 @@ export type Database = {
           },
         ]
       }
+      order_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          order_id: string
+          sender: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          order_id: string
+          sender: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_number_reservations: {
         Row: {
           created_at: string
@@ -1160,6 +1199,8 @@ export type Database = {
           payment_reference: string | null
           payment_reminder_sent_at: string | null
           payment_verified: boolean
+          promised_delivery_end: string | null
+          promised_delivery_start: string | null
           receipt_path: string | null
           receipt_url: string | null
           reserved_until: string | null
@@ -1202,6 +1243,8 @@ export type Database = {
           payment_reference?: string | null
           payment_reminder_sent_at?: string | null
           payment_verified?: boolean
+          promised_delivery_end?: string | null
+          promised_delivery_start?: string | null
           receipt_path?: string | null
           receipt_url?: string | null
           reserved_until?: string | null
@@ -1244,6 +1287,8 @@ export type Database = {
           payment_reference?: string | null
           payment_reminder_sent_at?: string | null
           payment_verified?: boolean
+          promised_delivery_end?: string | null
+          promised_delivery_start?: string | null
           receipt_path?: string | null
           receipt_url?: string | null
           reserved_until?: string | null
@@ -1788,12 +1833,14 @@ export type Database = {
           is_primary: boolean
           lga: string | null
           name: string
+          order_cutoff_time: string | null
           pickup_address: string | null
           pickup_available: boolean
           places: string | null
           sort_order: number
           state: string
           updated_at: string | null
+          working_days: number[]
         }
         Insert: {
           contact_phone?: string | null
@@ -1809,12 +1856,14 @@ export type Database = {
           is_primary?: boolean
           lga?: string | null
           name: string
+          order_cutoff_time?: string | null
           pickup_address?: string | null
           pickup_available?: boolean
           places?: string | null
           sort_order?: number
           state: string
           updated_at?: string | null
+          working_days?: number[]
         }
         Update: {
           contact_phone?: string | null
@@ -1830,12 +1879,14 @@ export type Database = {
           is_primary?: boolean
           lga?: string | null
           name?: string
+          order_cutoff_time?: string | null
           pickup_address?: string | null
           pickup_available?: boolean
           places?: string | null
           sort_order?: number
           state?: string
           updated_at?: string | null
+          working_days?: number[]
         }
         Relationships: []
       }

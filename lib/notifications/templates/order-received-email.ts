@@ -8,6 +8,9 @@ import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifica
 export interface OrderReceivedEmailParams {
   orderNumber: string;
   customerName: string;
+  /** Formatted delivery window ("Tue 12 – Thu 14 Sept"). Omitted for pickup,
+   *  an unresolved zone, or an order placed before this field existed. */
+  deliveryEstimate?: string | null;
 }
 
 export interface OrderReceivedEmailContent {
@@ -16,7 +19,7 @@ export interface OrderReceivedEmailContent {
 }
 
 export function buildOrderReceivedEmail(params: OrderReceivedEmailParams): OrderReceivedEmailContent {
-  const { orderNumber, customerName } = params;
+  const { orderNumber, customerName, deliveryEstimate } = params;
   const subject = sanitizeHeader(`Order received — #${orderNumber}`);
 
   const html = `
@@ -45,6 +48,11 @@ export function buildOrderReceivedEmail(params: OrderReceivedEmailParams): Order
           <p class="order-number">#${escapeHtml(orderNumber)}</p>
           <p style="margin: 8px 0 0; color: #6b7280; font-size: 13px;">Save this — you'll need it (with the email or phone number you checked out with) to track your order.</p>
         </div>
+
+        ${deliveryEstimate ? `
+        <p style="text-align: center; margin: 0 0 20px; color: #374151;">
+          Estimated delivery: <strong>${escapeHtml(deliveryEstimate)}</strong>
+        </p>` : ''}
 
         ${buildTrackOrderButton('#2563eb')}
 

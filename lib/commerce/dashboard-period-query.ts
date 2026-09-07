@@ -24,12 +24,15 @@ export const MAX_ROWS = 20000;
 
 const PERIOD_COLUMNS =
   'id, created_at, status, total_amount, amount_paid, amount_refunded,' +
-  ' customer_id, customer_email, shipping_amount, shipping_zone_id, selected_state';
+  ' customer_id, customer_email, shipping_amount, shipping_zone_id, selected_state,' +
+  ' promised_delivery_start, promised_delivery_end';
 
 export interface PeriodOrderRow extends PeriodOrder {
   shipping_amount: number | null;
   shipping_zone_id: string | null;
   selected_state: string | null;
+  promised_delivery_start: string | null;
+  promised_delivery_end: string | null;
 }
 
 export async function fetchPeriodOrders(
@@ -110,4 +113,32 @@ export async function fetchCategoryLines(
 export async function fetchZoneNames(supabase: SupabaseClient): Promise<Map<string, string>> {
   const { data } = await supabase.from('shipping_zones').select('id, name');
   return new Map((data ?? []).map((zone: any) => [zone.id as string, zone.name as string]));
+}
+
+/** When each of the given orders actually reached 'delivered', for the
+ *  promised-vs-actual report — order_status_history has no dedicated
+ *  delivered_at column, only a row per status transition. */
+export async function fetchDeliveredHistory(
+  supabase: SupabaseClient,
+  orderIds: string[]
+): Promise<Map<string, string>> {
+  if (orderIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('order_status_history')
+    .select('order_id, changed_at')
+    .eq('status', 'delivered')
+    .in('order_id', orderIds)
+    .order('changed_at', { ascending: true });
+
+  if (error) throw error;
+
+  const deliveredAt = new Map<string, string>();
+  for (const row of (data ?? []) as { order_id: string; changed_at: string }[]) {
+    // An order can only be marked 'delivered' once in the ordinary flow, but a
+    // status correction could insert a second row — the earliest one is the
+    // actual delivery, so keep it rather than the correction that overwrote it.
+    if (!deliveredAt.has(row.order_id)) deliveredAt.set(row.order_id, row.changed_at);
+  }
+  return deliveredAt;
 }

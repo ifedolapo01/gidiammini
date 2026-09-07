@@ -7,14 +7,16 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui';
 import { Discount, formatDiscountValue } from '@/lib/commerce/discounts';
-import { parseVariantTargets } from '@/lib/commerce/discount-target';
+import { parseVariantTargets, serializeVariantTargets } from '@/lib/commerce/discount-target';
 import { useDiscounts } from './hooks/useDiscounts';
 import { useDiscountPerformance } from './hooks/useDiscountPerformance';
 import { useDiscountVariantTargeting } from './hooks/useDiscountVariantTargeting';
 import { DiscountTable } from './components/DiscountTable';
 import { DiscountFormModal } from './components/DiscountFormModal';
+import { MarkdownCandidatesPanel } from './components/MarkdownCandidatesPanel';
 import { NotifySubscribersModal } from './components/NotifySubscribersModal';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
+import type { ReportRow } from '@/app/admin/stock/reports/hooks/useStockReports';
 
 export default function DiscountsPage() {
   const {
@@ -43,6 +45,25 @@ export default function DiscountsPage() {
     } else {
       variantTargeting.resetVariants();
     }
+  };
+
+  // Turns one aging-report row into a pre-targeted discount, via the same
+  // reuse-as-template path a "Duplicate" button on an existing discount uses.
+  const handleCreateFromCandidate = (row: ReportRow) => {
+    const candidate: Discount = {
+      id: '',
+      name: `Clear ${row.productName}${row.label !== 'Single' ? ` (${row.label})` : ''}`,
+      type: 'PERCENTAGE',
+      value: 0,
+      scope: 'VARIANT',
+      target_id: serializeVariantTargets([
+        { productId: row.productId, size: row.size ?? '', color: row.color ?? '' },
+      ]),
+      is_active: true,
+      start_date: null,
+      end_date: null,
+    };
+    openModal(candidate, true);
   };
 
   const openNotifyModal = (discount: Discount) => {
@@ -97,6 +118,8 @@ export default function DiscountsPage() {
           Create Discount
         </Button>
       </div>
+
+      <MarkdownCandidatesPanel onCreateDiscount={handleCreateFromCandidate} />
 
       <DiscountTable
         discounts={activeDiscounts}

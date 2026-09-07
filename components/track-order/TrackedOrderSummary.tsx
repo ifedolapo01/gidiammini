@@ -8,6 +8,7 @@ import type { Order } from '@/types/order';
 import OrderStatusTimeline from './OrderStatusTimeline';
 import TrackingDetails from './TrackingDetails';
 import RequestChangeActions from './RequestChangeActions';
+import CustomerMessageThread from './CustomerMessageThread';
 
 interface TrackedOrderSummaryProps {
   order: Order;
@@ -44,6 +45,13 @@ export default function TrackedOrderSummary({ order, orderNumber, contact, onOrd
         order={order}
         orderNumber={orderNumber}
         contact={contact}
+        onOrderUpdate={onOrderUpdate}
+      />
+
+      <CustomerMessageThread
+        orderNumber={orderNumber}
+        contact={contact}
+        messages={order.order_messages ?? []}
         onOrderUpdate={onOrderUpdate}
       />
 

@@ -20,7 +20,7 @@ const MAX_LIMIT = 100;
 const SELECT = `
   id, order_number, customer_name, customer_email, customer_phone,
   total_amount, amount_paid, status, payment_method, payment_verified,
-  receipt_path, note, created_at,
+  receipt_path, note, created_at, payment_reference,
   order_payments (
     id, order_id, status, amount, method, reference, received_at,
     reason_code, note, receipt_path, actor_id, actor_email, created_at

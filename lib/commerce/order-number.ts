@@ -16,8 +16,14 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-/** Matches the shape reserve_order_number() produces: UT + 8 digits. */
-export const ORDER_NUMBER_PATTERN = /^UT\d{8}$/;
+/** The shape reserve_order_number() produces: UT + 8 digits. Unanchored, so
+ *  it can also find an order number sitting inside a longer string — a bank
+ *  alert pasted whole, say — see payment-queue-search.ts. Case-sensitive like
+ *  the anchored pattern below; a caller scanning free text upper-cases it
+ *  first rather than this regex being lenient about it. */
+export const ORDER_NUMBER_TOKEN = /UT\d{8}/;
+/** The same shape, anchored: true only when the *whole* string is one order number. */
+export const ORDER_NUMBER_PATTERN = new RegExp(`^${ORDER_NUMBER_TOKEN.source}$`);
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

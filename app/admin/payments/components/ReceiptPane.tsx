@@ -17,17 +17,19 @@ import { ImageOff, RefreshCw, ZoomIn } from 'lucide-react';
 import { Button, Modal, Spinner } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { settlement } from '@/lib/commerce/payment-outcome';
-import { useReceiptUrl } from '../../hooks/useReceiptUrl';
 import type { PaymentQueueItem } from '@/types/payment';
 
 interface ReceiptPaneProps {
   order: PaymentQueueItem;
+  /** Lifted to VerifyPanel, which also feeds this same URL into OCR. */
+  url: string | null;
+  loading: boolean;
+  error: string | null;
+  reload: () => void;
+  reportExpired: () => void;
 }
 
-export function ReceiptPane({ order }: ReceiptPaneProps) {
-  const { url, loading, error, reload, reportExpired } = useReceiptUrl(
-    order.receipt_path ? order.id : null
-  );
+export function ReceiptPane({ order, url, loading, error, reload, reportExpired }: ReceiptPaneProps) {
   const [zoomed, setZoomed] = useState(false);
   const balance = settlement(order.total_amount, order.amount_paid);
 

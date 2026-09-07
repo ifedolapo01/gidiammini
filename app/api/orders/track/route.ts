@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
+import { deliveredAtFrom } from '@/lib/commerce/order-status';
 import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 import { parseJsonBody } from '@/lib/api/parse-body';
@@ -26,7 +27,10 @@ async function trackOrder(request: NextRequest) {
 
     const { data: order, error } = await supabase
       .from('orders')
-      .select(`*, order_items (*), order_change_requests (*)`)
+      // order_status_history is selected narrowly and never returned as-is —
+      // an admin actor's email and internal reason codes have no business
+      // reaching a customer's browser. Only the derived delivered_at below is.
+      .select(`*, order_items (*), order_change_requests (*), order_status_history (status, changed_at), order_messages (*)`)
       .eq('order_number', orderNumber)
       .single();
 
@@ -34,7 +38,12 @@ async function trackOrder(request: NextRequest) {
       return NextResponse.json({ success: false, error: NOT_FOUND_MESSAGE }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, order });
+    const { order_status_history, ...publicOrder } = order;
+
+    return NextResponse.json({
+      success: true,
+      order: { ...publicOrder, delivered_at: deliveredAtFrom(order_status_history) },
+    });
   } catch (error: any) {
     console.error('Error tracking order:', error);
     return NextResponse.json(

@@ -17,6 +17,9 @@ export interface ReportRow extends VariantInsight {
   productId: string;
   productName: string;
   label: string;
+  /** Raw axes behind `label` — null for a single-variant product. */
+  size: string | null;
+  color: string | null;
   stock: number;
   /** Value on the shelf at cost, or null where no cost is recorded. */
   tiedUpValue: number | null;

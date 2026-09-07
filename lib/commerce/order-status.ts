@@ -188,3 +188,31 @@ const CANCEL_BLOCKED_STATUSES: OrderStatus[] = ['shipped', 'picked_up', 'deliver
 export function canCancelOrder(status: OrderStatus): boolean {
   return !CANCEL_BLOCKED_STATUSES.includes(status);
 }
+
+/** There is no `delivered_at` column — like every other status timestamp,
+ *  it's read off order_status_history. Null when the order has never
+ *  actually reached 'delivered' (there is no row to find). Takes a plain
+ *  `{status, changed_at}` shape rather than the full `OrderStatusHistoryEntry`
+ *  so a narrow Supabase select (no actor/reason columns — see
+ *  app/api/orders/track/route.ts) can be passed straight through. */
+export function deliveredAtFrom(
+  history: { status: string; changed_at: string | null }[] | null | undefined
+): string | null {
+  const row = (history ?? []).find((entry) => entry.status === 'delivered');
+  return row?.changed_at ?? null;
+}
+
+/** Matches the "30-day return policy" copy already shown on the product page
+ *  (ProductDetailsAccordion.tsx) — a return can be requested only once the
+ *  order has actually been delivered, and only within that window afterwards. */
+export const RETURN_WINDOW_DAYS = 30;
+
+export function canRequestReturn(
+  status: OrderStatus,
+  deliveredAt: string | null,
+  now: Date = new Date()
+): boolean {
+  if (status !== 'delivered' || !deliveredAt) return false;
+  const daysSinceDelivery = (now.getTime() - new Date(deliveredAt).getTime()) / 86_400_000;
+  return daysSinceDelivery <= RETURN_WINDOW_DAYS;
+}

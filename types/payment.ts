@@ -70,6 +70,9 @@ export interface PaymentQueueItem {
   receipt_path: string | null;
   note: string | null;
   created_at: string;
+  /** The "<order number>-<random>" reference generated at creation. Searched
+   *  alongside order_number/customer fields — see the queue's search box. */
+  payment_reference: string | null;
   /** Every decision already recorded against this order, newest first. */
   payments: OrderPayment[];
 }

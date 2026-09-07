@@ -18,6 +18,7 @@ const zone = (over: Partial<ShippingZone>): ShippingZone => ({
   delivery_fee: 5000, pickup_available: false, pickup_address: null, contact_phone: null,
   delivery_label: 'Delivery', is_door_delivery: true,
   delivery_eta_min: 3, delivery_eta_max: 5, delivery_eta_unit: 'days',
+  order_cutoff_time: null, working_days: [1, 2, 3, 4, 5, 6],
   is_primary: false, is_active: true, sort_order: 0, ...over,
 });
 

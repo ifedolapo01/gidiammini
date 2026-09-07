@@ -51,6 +51,12 @@ export interface PricedOrder {
   selected_place: string | null;
   /** True when the resolved zone expects a street address (drop-off zones don't). */
   requires_address: boolean;
+  /** The delivery window promised at order-creation time, computed from the
+   *  resolved zone's cutoff/working-days/ETA. Null for pickup or when no zone
+   *  resolved. ISO date strings ("YYYY-MM-DD"), stored rather than
+   *  recomputed later — see supabase/migrations/20260907120100_orders_promised_delivery.sql. */
+  promised_delivery_start: string | null;
+  promised_delivery_end: string | null;
   /** The code that was accepted, or null. */
   applied_code: AppliedCode | null;
   /** Why a supplied code was not applied. Null when none was supplied or it

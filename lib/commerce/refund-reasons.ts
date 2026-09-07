@@ -22,6 +22,7 @@ export const REFUND_CODES = [
   'not_delivered',
   'overpayment',
   'duplicate_payment',
+  'customer_return',
   'goodwill',
   'other',
 ] as const;
@@ -94,6 +95,12 @@ export const REFUND_REASONS: readonly RefundReason[] = [
     hint: 'The same order was paid for more than once.',
     customerMessage:
       'This order was paid for twice, so we have sent the second payment back to you.',
+  },
+  {
+    code: 'customer_return',
+    label: 'Customer returned it',
+    hint: 'Approved through the self-service return request, not a fault or a shop error.',
+    customerMessage: 'This is the refund for the item you returned.',
   },
   {
     code: 'goodwill',

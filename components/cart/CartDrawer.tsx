@@ -21,8 +21,10 @@ import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
 import { Modal } from '@/components/ui';
 import { useCart } from '@/components/CartProvider';
+import { useActiveShippingZones } from '@/components/checkout/hooks/useActiveShippingZones';
 import { cartLineKey } from '@/lib/commerce/cart-input';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { computeDeliveryWindow, formatDeliveryWindow } from '@/lib/commerce/delivery-promise';
 import CartDrawerLine from './CartDrawerLine';
 import CartDrawerCrossSell from './CartDrawerCrossSell';
 
@@ -36,6 +38,12 @@ interface CartDrawerProps {
 export default function CartDrawer({ open, onClose, highlightKey }: CartDrawerProps) {
   const { items, getTotal, getItemCount } = useCart();
   const itemCount = getItemCount();
+  // A generic, non-personalized estimate — nothing before checkout knows the
+  // shopper's actual LGA, so this uses the store's primary zone the same way
+  // the product page's headline estimate does.
+  const { zones } = useActiveShippingZones();
+  const primaryZone = zones.find((z) => z.is_primary);
+  const deliveryWindow = primaryZone ? computeDeliveryWindow(new Date(), primaryZone) : null;
 
   // The dialog's accessible name is announced when it opens, so this line is
   // what tells a screen-reader user the add succeeded.
@@ -86,6 +94,11 @@ export default function CartDrawer({ open, onClose, highlightKey }: CartDrawerPr
               <p className="mt-1 text-caption-md text-text-secondary">
                 Shipping and tax calculated at checkout.
               </p>
+              {primaryZone && deliveryWindow && (
+                <p className="mt-0.5 text-caption-md text-text-secondary">
+                  Estimated delivery: {formatDeliveryWindow(deliveryWindow.start, deliveryWindow.end)} to {primaryZone.state} — exact dates at checkout.
+                </p>
+              )}
 
               <Link
                 href="/checkout"

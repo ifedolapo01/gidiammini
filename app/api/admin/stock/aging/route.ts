@@ -37,6 +37,10 @@ interface VariantLabel {
   productId: string;
   productName: string;
   label: string;
+  /** Raw axes behind `label`, for a caller that needs to address the variant
+   *  itself (e.g. targeting a discount at it) rather than just display it. */
+  size: string | null;
+  color: string | null;
   stock: number;
   /** Value sitting on the shelf, at cost where cost is known. The number that
    *  turns "17 units unsold" into a reason to do something. */
@@ -79,6 +83,8 @@ async function getAgingReport(request: NextRequest, { supabase }: AdminRouteCont
       productId: row.product_id,
       productName: row.products?.name ?? 'Unknown product',
       label: axes || 'Single',
+      size: row.size ?? null,
+      color: row.color ?? null,
       stock: Number(row.stock) || 0,
       tiedUpValue: unitValue === null ? null : unitValue * (Number(row.stock) || 0),
     });

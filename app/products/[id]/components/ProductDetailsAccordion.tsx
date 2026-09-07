@@ -1,19 +1,42 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
+import { useEffect, useState } from 'react';
 import { ChevronLeft, Truck, Shield } from 'lucide-react';
 import { useActiveShippingZones } from '@/components/checkout/hooks/useActiveShippingZones';
-import { formatZoneEta, aggregateEtaRange } from '@/lib/commerce/shipping-eta';
+import { aggregateEtaRange } from '@/lib/commerce/shipping-eta';
+import { computeDeliveryWindow, formatDeliveryWindow, minutesUntilCutoffToday } from '@/lib/commerce/delivery-promise';
 
 interface ProductDetailsAccordionProps {
   details: string[] | undefined;
 }
 
+/** Refreshed every minute so the cutoff countdown stays accurate — cheap here
+ * because this is a single instance per product page, not per card. */
+function useNow(intervalMs: number): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
 export default function ProductDetailsAccordion({ details }: ProductDetailsAccordionProps) {
   const { zones } = useActiveShippingZones();
+  const now = useNow(60_000);
   const primaryZone = zones.find((z) => z.is_primary);
   const otherZones = zones.filter((z) => !z.is_primary);
   const otherStatesEta = aggregateEtaRange(otherZones);
+
+  const deliveryWindow = primaryZone ? computeDeliveryWindow(now, primaryZone) : null;
+  const cutoffMinutes = primaryZone ? minutesUntilCutoffToday(now, primaryZone) : null;
+  const cutoffMessage =
+    cutoffMinutes != null
+      ? `Order within ${Math.floor(cutoffMinutes / 60)}h ${cutoffMinutes % 60}m for dispatch today`
+      : primaryZone?.order_cutoff_time
+        ? 'Order now for dispatch on the next working day'
+        : null;
 
   return (
     <div className="space-y-4 border-t pt-6 md:pt-8 mt-6 md:mt-0">
@@ -61,10 +84,11 @@ export default function ProductDetailsAccordion({ details }: ProductDetailsAccor
       <div className="p-4 bg-info-background border border-info-border rounded-control">
         <h4 className="font-medium text-info mb-2">Delivery Information</h4>
         <p className="text-body-sm text-info">
-          {primaryZone
-            ? <>• {primaryZone.state}: {formatZoneEta(primaryZone)}<br/></>
+          {primaryZone && deliveryWindow
+            ? <>• {primaryZone.state}: arrives {formatDeliveryWindow(deliveryWindow.start, deliveryWindow.end)}<br/></>
             : <>• Set your main location in Admin &rarr; Shipping to show it here<br/></>
           }
+          {cutoffMessage && <>• {cutoffMessage}<br/></>}
           {otherStatesEta && <>• Other states: {otherStatesEta} to designated parks<br/></>}
           • Contact us for expedited shipping
         </p>

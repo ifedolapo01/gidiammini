@@ -21,7 +21,7 @@ import { getAdminRealtimeClient } from '@/lib/supabase/realtime-client';
 
 /** Tables an admin browser is allowed to subscribe to. Anything else has no
  * policy behind it and would subscribe to silence. */
-export type AdminRealtimeTable = 'orders' | 'product_variants';
+export type AdminRealtimeTable = 'orders' | 'product_variants' | 'order_messages';
 
 export function useAdminRealtime(tables: AdminRealtimeTable[], onChange: () => void) {
   const [connected, setConnected] = useState(false);

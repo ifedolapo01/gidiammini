@@ -1,6 +1,7 @@
 // types/order.ts
 
 import type { OrderChangeRequest } from './orderChangeRequest';
+import type { OrderMessage } from './orderMessage';
 
 /** Single source of truth for every valid order status — see
  * lib/commerce/order-status.ts for the ordered list, display formatting,
@@ -132,8 +133,17 @@ export interface Order {
   order_change_requests?: OrderChangeRequest[];
   /** Set by the admin orders list. See order_change_requests above. */
   has_pending_change_request?: boolean;
-  /** Embedded via the orders -> order_status_history relation. */
+  /** Embedded via the orders -> order_status_history relation. Present only
+   *  on the admin detail fetch — the public track-order lookup computes
+   *  `delivered_at` below instead of exposing the raw history (which carries
+   *  an admin actor's email) to a customer's browser. */
   order_status_history?: OrderStatusHistoryEntry[];
+  /** When this order reached 'delivered', from order_status_history —
+   *  attached only by the public track-order lookup, for the return-request
+   *  window. Null if never delivered. */
+  delivered_at?: string | null;
+  /** The running conversation on this order — see types/orderMessage.ts. */
+  order_messages?: OrderMessage[];
 }
 
 /** One refund on an order — see supabase/migrations/20260905190200. */

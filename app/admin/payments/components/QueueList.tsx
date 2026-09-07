@@ -7,9 +7,11 @@
  */
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, ListChecks } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronDown, ListChecks, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui';
+import { filterPaymentQueue } from '@/lib/commerce/payment-queue-search';
 import type { PaymentQueueItem } from '@/types/payment';
 import { QueueRow } from './QueueRow';
 
@@ -23,12 +25,21 @@ interface QueueListProps {
 
 export function QueueList({ items, selectedId, onSelect, capped }: QueueListProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  // Client-side: the queue is already loaded in full for this screen, so
+  // pasting a whole bank alert or typing a name filters without a round trip.
+  const filtered = useMemo(() => filterPaymentQueue(items, query), [items, query]);
 
   const heading = `Queue · ${items.length}${capped ? '+' : ''}`;
 
-  const rows = (
+  const rows = filtered.length === 0 ? (
+    <p className="p-4 text-center text-body-sm text-text-secondary">
+      Nothing in the queue matches that.
+    </p>
+  ) : (
     <ul className="divide-y divide-divider">
-      {items.map((order) => (
+      {filtered.map((order) => (
         <QueueRow
           key={order.id}
           order={order}
@@ -69,6 +80,21 @@ export function QueueList({ items, selectedId, onSelect, capped }: QueueListProp
       </h2>
 
       <div className={cn('border-t border-divider', open ? 'block' : 'hidden lg:block')}>
+        <div className="p-2">
+          <label className="relative block">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-muted"
+              aria-hidden="true"
+            />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Paste a bank alert, or search a name/phone"
+              className="pl-9"
+              aria-label="Search the payment queue"
+            />
+          </label>
+        </div>
         <div className="max-h-[60vh] overflow-y-auto lg:max-h-[calc(100vh-10rem)]">{rows}</div>
       </div>
     </div>

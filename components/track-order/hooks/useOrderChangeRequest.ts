@@ -3,7 +3,17 @@
 'use client';
 
 import { useState } from 'react';
-import type { OrderChangeRequestType, RescheduleDetails, DeliveryMethodChangeDetails, CancelDetails } from '@/types/orderChangeRequest';
+import type {
+  OrderChangeRequestType,
+  RescheduleDetails,
+  DeliveryMethodChangeDetails,
+  CancelDetails,
+  AddressCorrectionDetails,
+  ItemSwapDetails,
+  AddItemDetails,
+  ReturnRequestDetails,
+  HoldUntilDetails,
+} from '@/types/orderChangeRequest';
 import {
   readFieldErrors,
   mapFieldErrors,
@@ -15,7 +25,15 @@ interface SubmitChangeRequestParams {
   orderNumber: string;
   contact: string;
   requestType: OrderChangeRequestType;
-  details: RescheduleDetails | DeliveryMethodChangeDetails | CancelDetails;
+  details:
+    | RescheduleDetails
+    | DeliveryMethodChangeDetails
+    | CancelDetails
+    | AddressCorrectionDetails
+    | ItemSwapDetails
+    | AddItemDetails
+    | ReturnRequestDetails
+    | HoldUntilDetails;
   customerNote?: string;
 }
 

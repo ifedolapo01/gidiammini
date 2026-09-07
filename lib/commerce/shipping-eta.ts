@@ -4,7 +4,9 @@
 
 import type { ShippingEtaUnit, ShippingZone } from '@/types/shipping';
 
-const UNIT_TO_DAYS: Record<ShippingEtaUnit, number> = { days: 1, weeks: 7, months: 30 };
+/** Exported for lib/commerce/delivery-promise.ts, which turns this same
+ * (min, max, unit) shape into a calendar date range rather than a display string. */
+export const UNIT_TO_DAYS: Record<ShippingEtaUnit, number> = { days: 1, weeks: 7, months: 30 };
 const SINGULAR: Record<ShippingEtaUnit, string> = { days: 'day', weeks: 'week', months: 'month' };
 
 /** The latest a zone's ETA allows delivery to still take, in hours — the

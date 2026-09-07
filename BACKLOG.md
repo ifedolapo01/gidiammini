@@ -134,3 +134,35 @@ tooling one.
   silent — `/api/health` catches that one, an alert catches the rest.
 
 ---
+
+## Resend webhook endpoint, so bounces and complaints get recorded
+
+**Status:** not started. Two clicks in the Resend dashboard — no code.
+
+`app/api/webhooks/resend/route.ts` verifies signed delivery events and, once
+they arrive, writes `notifications.status` to `'delivered'`, `'bounced'` or
+`'complained'` and unsubscribes a hard-bounced address (added 2026-09-07, see
+`lib/notifications/resend-webhook.ts` and
+`lib/notifications/subscriber-suppress.ts`). Nothing is pointed at it yet:
+Resend does not know the endpoint exists, so every send still logs as
+`'sent'` regardless of whether it ever reached an inbox.
+
+**Left because** it needs someone with access to the Resend account to click
+through its dashboard, and the signing secret it hands back on creation exists
+nowhere until then — there is nothing in the repository that can stand in for
+it.
+
+**Done means:**
+- In the Resend dashboard -> Webhooks -> add an endpoint at
+  `https://<your-domain>/api/webhooks/resend`, subscribed to at least
+  `email.delivered`, `email.bounced` and `email.complained`.
+- The signing secret Resend shows on creation copied into
+  `RESEND_WEBHOOK_SECRET` (`.env.example` has the shape: `whsec_...`) — it is
+  shown once, so this is a "copy it before leaving the page" step, not a
+  "come back for it later" one.
+- Confirmed by sending anything through the shop and checking Resend's own
+  webhook delivery log shows a `200` — the endpoint answers `503` and does
+  nothing until the secret is set, so a failed delivery there means the
+  variable is still missing, not a bug in the route.
+
+---

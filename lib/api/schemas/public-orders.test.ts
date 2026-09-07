@@ -141,6 +141,88 @@ describe('orderChangeRequestSchema — details is an allowlist, not a passthroug
   it('defaults an absent note to an empty string', () => {
     expect(parsed<any>(orderChangeRequestSchema, { ...base, requestType: 'cancel' }).customerNote).toBe('');
   });
+
+  it('keeps only newAddress and city on an address correction', () => {
+    const result = parsed<any>(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'address_correction',
+      details: { newAddress: '12 Example Close', city: 'Abuja', status: 'approved' },
+    });
+    expect(result.details).toEqual({ newAddress: '12 Example Close', city: 'Abuja' });
+  });
+
+  it('requires newAddress on an address correction', () => {
+    expect(errorFields(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'address_correction',
+      details: {},
+    })).toEqual(['details.newAddress']);
+  });
+
+  it('accepts an item swap naming only the product it is on the order for', () => {
+    const result = parsed<any>(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'item_swap',
+      details: { productId: 'prod-1', newSize: '6-9m' },
+    });
+    expect(result.details).toEqual({ productId: 'prod-1', newSize: '6-9m', newColor: '' });
+  });
+
+  it('requires a productId on an item swap', () => {
+    expect(errorFields(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'item_swap',
+      details: { newSize: '6-9m' },
+    })).toEqual(['details.productId']);
+  });
+
+  it('coerces and caps the quantity on an add-item request', () => {
+    const result = parsed<any>(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'add_item',
+      details: { productId: 'prod-1', quantity: '2' },
+    });
+    expect(result.details.quantity).toBe(2);
+  });
+
+  it('rejects a quantity outside the accepted range', () => {
+    expect(errorFields(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'add_item',
+      details: { productId: 'prod-1', quantity: 0 },
+    })).toEqual(['details.quantity']);
+
+    expect(errorFields(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'add_item',
+      details: { productId: 'prod-1', quantity: 21 },
+    })).toEqual(['details.quantity']);
+  });
+
+  it('requires at least one item and a reason on a return request', () => {
+    expect(errorFields(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'return_request',
+      details: { orderItemIds: [], reason: '' },
+    }).sort()).toEqual(['details.orderItemIds', 'details.reason']);
+  });
+
+  it('accepts a return request naming the items and why', () => {
+    const result = parsed<any>(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'return_request',
+      details: { orderItemIds: ['item-1', 'item-2'], reason: 'Wrong size arrived' },
+    });
+    expect(result.details).toEqual({ orderItemIds: ['item-1', 'item-2'], reason: 'Wrong size arrived' });
+  });
+
+  it('requires a date on a hold-until request', () => {
+    expect(errorFields(orderChangeRequestSchema, {
+      ...base,
+      requestType: 'hold_until',
+      details: {},
+    })).toEqual(['details.holdUntilDate']);
+  });
 });
 
 describe('createOrderSchema', () => {

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_RANGE, rangeFor, type RangePreset } from '@/lib/commerce/date-range';
 import type { PeriodDeltas, PeriodMetrics } from '@/lib/commerce/period-metrics';
 import type { CategoryRevenue, ZoneRevenue } from '@/lib/commerce/revenue-breakdown';
+import type { ZoneDeliveryPerformance } from '@/lib/commerce/delivery-performance';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 export interface PeriodResponse {
@@ -23,6 +24,7 @@ export interface PeriodResponse {
   deltas: PeriodDeltas;
   byCategory: CategoryRevenue[];
   byZone: ZoneRevenue[];
+  byDeliveryPerformance: ZoneDeliveryPerformance[];
   /** True when a query hit its row cap, which makes the repeat rate a figure
    *  over partial history. Surfaced rather than swallowed. */
   truncated: boolean;
@@ -52,6 +54,7 @@ const EMPTY: PeriodResponse = {
   },
   byCategory: [],
   byZone: [],
+  byDeliveryPerformance: [],
   truncated: false,
 };
 

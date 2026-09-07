@@ -22,7 +22,7 @@ import {
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { usePeriodMetrics } from '../../hooks/usePeriodMetrics';
 import { PeriodStatCard } from './PeriodStatCard';
-import { RevenueByCategoryPanel, RevenueByZonePanel } from './RevenueBreakdownPanels';
+import { RevenueByCategoryPanel, RevenueByZonePanel, DeliveryPerformancePanel } from './RevenueBreakdownPanels';
 import { PeriodSkeleton } from './PeriodSkeleton';
 
 /** A rate as a whole percent, or an em dash when it is undefined — an average
@@ -154,6 +154,10 @@ export function PeriodSection() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <RevenueByCategoryPanel categories={data.byCategory} />
             <RevenueByZonePanel zones={data.byZone} />
+          </div>
+
+          <div className="mt-6">
+            <DeliveryPerformancePanel zones={data.byDeliveryPerformance} />
           </div>
         </>
       )}

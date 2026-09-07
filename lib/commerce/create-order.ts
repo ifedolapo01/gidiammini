@@ -16,6 +16,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { priceOrder, findStockShortage } from './price-order';
+import { formatDeliveryWindow } from './delivery-promise';
 import type { CreateOrderSubmission } from './create-order.types';
 
 export type { CreateOrderSubmission };
@@ -174,11 +175,17 @@ export async function createCustomerOrder(
     return { ok: true, order, replayed: true };
   }
 
+  const deliveryEstimate =
+    priced.promised_delivery_start && priced.promised_delivery_end
+      ? formatDeliveryWindow(new Date(priced.promised_delivery_start), new Date(priced.promised_delivery_end))
+      : null;
+
   await runOrderCreatedEffects(supabase, {
     orderId: order.id,
     orderNumber: order.order_number,
     customerName,
     customerEmail,
+    deliveryEstimate,
   });
 
   return { ok: true, order };

@@ -25,12 +25,29 @@ import {
   requiredText,
 } from './common';
 
+/** A free-text size/colour, or a product/order-item id. None of these are
+ *  validated against the catalogue here — like reschedule's preferredDate,
+ *  the real check (does this variant exist, is there stock) happens when the
+ *  request is approved, against the live product, not at submission time. */
+const idField = requiredText('That', 100);
+const freeTextOption = optionalText('That', 60);
+
 export const trackOrderSchema = z.object({
   orderNumber: orderNumberField,
   contact: contactField,
 });
 
 export type TrackOrderBody = z.infer<typeof trackOrderSchema>;
+
+/** A customer posting into the conversation on their own order — same trust
+ *  model as trackOrderSchema (order number + the contact used at checkout). */
+export const orderMessageSchema = z.object({
+  orderNumber: orderNumberField,
+  contact: contactField,
+  body: requiredText('Message', MAX_LENGTHS.message),
+});
+
+export type OrderMessageBody = z.infer<typeof orderMessageSchema>;
 
 /**
  * Where the order is going. Shared by the quote and create-order bodies — the
@@ -92,6 +109,35 @@ const deliveryMethodChangeDetails = z.discriminatedUnion(
   { error: 'Choose either pickup or delivery.' }
 );
 
+const addressCorrectionDetails = z.object({
+  newAddress: requiredText('A corrected address', MAX_LENGTHS.address),
+  city: optionalText('City', MAX_LENGTHS.city),
+});
+
+const itemSwapDetails = z.object({
+  productId: idField,
+  newSize: freeTextOption,
+  newColor: freeTextOption,
+});
+
+const addItemDetails = z.object({
+  productId: idField,
+  size: freeTextOption,
+  color: freeTextOption,
+  // A quantity nobody is going to type 500 of by mistake and mean it — capped
+  // the same way cart-input.ts caps a line, without importing it for one number.
+  quantity: z.coerce.number().int().min(1).max(20),
+});
+
+const returnRequestDetails = z.object({
+  orderItemIds: z.array(idField).min(1, 'Choose at least one item to return.'),
+  reason: requiredText('A reason', MAX_LENGTHS.note),
+});
+
+const holdUntilDetails = z.object({
+  holdUntilDate: requiredText('A date', MAX_LENGTHS.date),
+});
+
 const changeRequestBase = {
   orderNumber: orderNumberField,
   contact: contactField,
@@ -118,6 +164,31 @@ export const orderChangeRequestSchema = z.discriminatedUnion(
       // send, so whatever arrives — including nothing at all — becomes an
       // empty object rather than being stored.
       details: z.unknown().optional().transform(() => ({})),
+    }),
+    z.object({
+      ...changeRequestBase,
+      requestType: z.literal('address_correction'),
+      details: addressCorrectionDetails,
+    }),
+    z.object({
+      ...changeRequestBase,
+      requestType: z.literal('item_swap'),
+      details: itemSwapDetails,
+    }),
+    z.object({
+      ...changeRequestBase,
+      requestType: z.literal('add_item'),
+      details: addItemDetails,
+    }),
+    z.object({
+      ...changeRequestBase,
+      requestType: z.literal('return_request'),
+      details: returnRequestDetails,
+    }),
+    z.object({
+      ...changeRequestBase,
+      requestType: z.literal('hold_until'),
+      details: holdUntilDetails,
     }),
   ],
   { error: 'Choose a valid request type.' }

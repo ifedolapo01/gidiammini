@@ -23,14 +23,16 @@ export function useOrderChangeRequests({ onResolved, showToast }: UseOrderChange
   const resolveChangeRequest = async (
     requestId: string,
     decision: 'approved' | 'rejected',
-    adminResponse?: string
+    adminResponse?: string,
+    /** Only meaningful approving a return_request — see order_refunds. */
+    refundAmount?: number
   ) => {
     try {
       setResolvingRequestId(requestId);
       const response = await adminFetch(`/api/orders/change-requests/${requestId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision, adminResponse }),
+        body: JSON.stringify({ decision, adminResponse, refundAmount }),
       });
 
       const result = await response.json();

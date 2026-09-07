@@ -15,6 +15,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { adjustStock, toStockChangeItems } from './order-stock';
 import { recordDiscountRedemption } from './record-redemption';
 import { INITIAL_ORDER_STATUS } from './order-status';
+import { generatePaymentReference } from './payment-reference';
 import type { PricedOrder } from './price-order.types';
 
 /**
@@ -106,6 +107,13 @@ export async function persistOrderWithReservedStock(
       selected_lga: priced.selected_lga,
       selected_place: priced.selected_place,
       shipping_zone_id: priced.shipping_zone_id,
+      promised_delivery_start: priced.promised_delivery_start,
+      promised_delivery_end: priced.promised_delivery_end,
+      // Every order gets one at creation, transfer included — Paystack's own
+      // flow overwrites this moments later with the gateway-confirmed
+      // reference; a transfer order keeps this one, and it's what the
+      // payments queue's reference search matches against.
+      payment_reference: generatePaymentReference(fields.order_number),
       status: INITIAL_ORDER_STATUS,
       payment_verified: false,
       stock_reserved: true,

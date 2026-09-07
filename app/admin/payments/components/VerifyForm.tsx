@@ -21,6 +21,7 @@ import { Button, Input } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { settlement, suggestOutcome } from '@/lib/commerce/payment-outcome';
 import type { PaymentQueueItem, RecordPaymentInput } from '@/types/payment';
+import type { ReceiptOcrGuess } from '../hooks/useReceiptOcr';
 import { PaymentMethodField } from './PaymentMethodField';
 import { toReceivedAt, todayInputValue } from '../lib/received-at';
 
@@ -29,9 +30,12 @@ interface VerifyFormProps {
   saving: boolean;
   onSubmit: (input: RecordPaymentInput) => void;
   onStartReject: () => void;
+  /** A best-effort read of the receipt image, once OCR resolves. Applied only
+   *  while the fields are still at their untouched defaults — see below. */
+  ocrGuess?: ReceiptOcrGuess | null;
 }
 
-export function VerifyForm({ order, saving, onSubmit, onStartReject }: VerifyFormProps) {
+export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }: VerifyFormProps) {
   const balance = settlement(order.total_amount, order.amount_paid);
   // Prefilled with what is actually owed, not the order total: on a part-paid
   // order those differ, and the figure being confirmed is the balance.
@@ -51,6 +55,20 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject }: VerifyFor
     setReceivedOn(todayInputValue());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.id]);
+
+  // OCR resolves after the fields already have their defaults, sometimes a
+  // couple of seconds later — applied only into a field still at that
+  // default, so it can never overwrite something the verifier already typed.
+  useEffect(() => {
+    if (!ocrGuess) return;
+    if (ocrGuess.amount != null && amount === String(suggestedAmount)) {
+      setAmount(String(ocrGuess.amount));
+    }
+    if (ocrGuess.reference != null && reference === '') {
+      setReference(ocrGuess.reference);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ocrGuess]);
 
   const typed = Number(amount);
   const valid = Number.isFinite(typed) && typed > 0;
@@ -90,6 +108,9 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject }: VerifyFor
             {balance.partial
               ? `${formatCurrency(order.amount_paid)} already recorded. Balance ${formatCurrency(balance.outstanding)}.`
               : `The order asks for ${formatCurrency(order.total_amount)}.`}
+            {ocrGuess?.amount != null && amount === String(ocrGuess.amount) && (
+              <> <strong className="text-info">Read from the receipt — double-check it.</strong></>
+            )}
           </span>
         </label>
 
@@ -127,6 +148,9 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject }: VerifyFor
         <span id="reference-help" className="mt-1 block text-caption-md text-text-secondary">
           Copy it off the receipt. It is how this payment is found again on a statement, and how
           a duplicate transfer is caught.
+          {ocrGuess?.reference && reference === ocrGuess.reference && (
+            <> <strong className="text-info">Read from the receipt — double-check it.</strong></>
+          )}
         </span>
       </label>
 

@@ -13,7 +13,9 @@ import { ExternalLink, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui';
 import { formatDate } from '@/lib/commerce/format-date';
-import { daysWaiting } from '@/lib/commerce/payment-outcome';
+import { daysWaiting, settlement } from '@/lib/commerce/payment-outcome';
+import { useReceiptUrl } from '../../hooks/useReceiptUrl';
+import { useReceiptOcr } from '../hooks/useReceiptOcr';
 import type { PaymentQueueItem, RecordPaymentInput } from '@/types/payment';
 import { ReceiptPane } from './ReceiptPane';
 import { VerifyForm } from './VerifyForm';
@@ -31,6 +33,16 @@ interface VerifyPanelProps {
 export function VerifyPanel({ order, saving, error, onSubmit, onDismissError }: VerifyPanelProps) {
   const [rejecting, setRejecting] = useState(false);
   const waited = daysWaiting(order.created_at);
+
+  const receipt = useReceiptUrl(order.receipt_path ? order.id : null);
+  const balance = settlement(order.total_amount, order.amount_paid);
+  const { guess: ocrGuess } = useReceiptOcr({
+    url: receipt.url,
+    expectedAmount: balance.partial ? balance.outstanding : order.total_amount,
+    knownReferences: [order.payment_reference, order.order_number].filter(
+      (value): value is string => Boolean(value)
+    ),
+  });
 
   // A new order in the panel starts on the recording form. Leaving it in
   // reject mode would put a rejection one tap away on an order nobody has
@@ -87,7 +99,14 @@ export function VerifyPanel({ order, saving, error, onSubmit, onDismissError }: 
         )}
       </header>
 
-      <ReceiptPane order={order} />
+      <ReceiptPane
+        order={order}
+        url={receipt.url}
+        loading={receipt.loading}
+        error={receipt.error}
+        reload={receipt.reload}
+        reportExpired={receipt.reportExpired}
+      />
 
       <section className="rounded-surface border border-border bg-surface p-4">
         {error && (
@@ -115,6 +134,7 @@ export function VerifyPanel({ order, saving, error, onSubmit, onDismissError }: 
               setRejecting(true);
               onDismissError();
             }}
+            ocrGuess={ocrGuess}
           />
         )}
       </section>

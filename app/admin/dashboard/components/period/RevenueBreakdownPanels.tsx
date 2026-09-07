@@ -14,6 +14,7 @@
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import type { CategoryRevenue, ZoneRevenue } from '@/lib/commerce/revenue-breakdown';
+import type { ZoneDeliveryPerformance } from '@/lib/commerce/delivery-performance';
 
 function Panel({
   title,
@@ -104,6 +105,47 @@ export function RevenueByZonePanel({ zones }: { zones: ZoneRevenue[] }) {
             {row.shippingCharged > 0 && (
               <> · {formatCurrency(row.shippingCharged)} delivery charged</>
             )}
+          </p>
+        </li>
+      ))}
+
+      <li className="p-3 text-center">
+        <Link
+          href="/admin/shipping"
+          className="text-caption-md font-medium text-primary hover:text-primary-hover"
+        >
+          Review zone fees
+        </Link>
+      </li>
+    </Panel>
+  );
+}
+
+export function DeliveryPerformancePanel({ zones }: { zones: ZoneDeliveryPerformance[] }) {
+  return (
+    <Panel
+      title="Delivery performance by zone"
+      description="Delivered orders judged against the date each was promised at checkout — worst zone first."
+      empty="No orders delivered in this period yet."
+      rows={zones.length}
+    >
+      {zones.slice(0, 8).map((row) => (
+        <li key={row.zoneId ?? row.label} className="p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="truncate font-medium text-text-primary">{row.label}</span>
+            <span
+              className={`shrink-0 text-body-sm font-medium ${row.lateRate > 0 ? 'text-destructive' : 'text-success'}`}
+            >
+              {Math.round(row.lateRate * 100)}% late
+            </span>
+          </div>
+          {/* Skipped at 0% late rather than shown as a sliver — ShareBar's
+              1%-minimum width would read as "slightly late" for a zone that
+              was never late at all. */}
+          {row.lateRate > 0 && <ShareBar share={row.lateRate} tone="bg-destructive" />}
+          <p className="mt-1 text-caption-md text-text-secondary">
+            {row.late} of {row.delivered} order{row.delivered === 1 ? '' : 's'} late
+            {row.late > 0 && <> · {row.avgDaysLate.toFixed(1)} days late on average</>}
           </p>
         </li>
       ))}

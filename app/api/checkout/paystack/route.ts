@@ -22,12 +22,7 @@ import { createOrderSchema } from '@/lib/api/schemas/public-orders';
 import { createCustomerOrder } from '@/lib/commerce/create-order';
 import { initializePayment, isPaystackConfigured } from '@/lib/payments/paystack';
 import { absoluteUrl } from '@/lib/site-url';
-import { randomBytes } from 'node:crypto';
-
-/** "<order number>-<random>" — see the payment_reference column comment. */
-function referenceFor(orderNumber: string): string {
-  return `${orderNumber}-${randomBytes(4).toString('hex')}`;
-}
+import { generatePaymentReference } from '@/lib/commerce/payment-reference';
 
 async function startPayment(request: NextRequest) {
   if (!isPaystackConfigured()) {
@@ -81,7 +76,7 @@ async function startPayment(request: NextRequest) {
     return NextResponse.json({ success: true, alreadyPaid: true, orderNumber: order.order_number });
   }
 
-  const reference = referenceFor(order.order_number);
+  const reference = generatePaymentReference(order.order_number);
 
   try {
     const payment = await initializePayment({

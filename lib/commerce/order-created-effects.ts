@@ -18,11 +18,14 @@ interface OrderCreatedEffectsParams {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
+  /** Formatted delivery window ("Tue 12 – Thu 14 Sept"), or null for pickup
+   *  or an unresolved zone. See lib/commerce/delivery-promise.ts. */
+  deliveryEstimate: string | null;
 }
 
 export async function runOrderCreatedEffects(
   supabase: SupabaseClient,
-  { orderId, orderNumber, customerName, customerEmail }: OrderCreatedEffectsParams
+  { orderId, orderNumber, customerName, customerEmail, deliveryEstimate }: OrderCreatedEffectsParams
 ): Promise<void> {
   const { error: historyError } = await supabase
     .from('order_status_history')
@@ -33,7 +36,7 @@ export async function runOrderCreatedEffects(
   }
 
   try {
-    await sendOrderReceivedEmail({ orderId, orderNumber, customerName, customerEmail });
+    await sendOrderReceivedEmail({ orderId, orderNumber, customerName, customerEmail, deliveryEstimate });
   } catch (notificationError) {
     console.error('Order-received email error:', notificationError);
   }

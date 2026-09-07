@@ -39,6 +39,11 @@ export interface ShippingZone {
   delivery_eta_min: number;
   delivery_eta_max: number;
   delivery_eta_unit: ShippingEtaUnit;
+  /** UTC clock time ("HH:MM:SS") an order must be placed by to dispatch the
+   * same day. Null = no cutoff. See lib/commerce/delivery-promise.ts. */
+  order_cutoff_time: string | null;
+  /** ISO weekday numbers (1=Monday .. 7=Sunday) this zone dispatches on. */
+  working_days: number[];
   /** The one "main location" zone — drives the product page's headline delivery estimate. */
   is_primary: boolean;
   is_active: boolean;

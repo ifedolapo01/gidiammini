@@ -3,7 +3,7 @@
 
 import { Clock, Truck, ArrowRight } from 'lucide-react';
 import { getDeliveryLabel, findShippingZone } from '@/lib/commerce/checkout';
-import { formatZoneEta } from '@/lib/commerce/shipping-eta';
+import { computeDeliveryWindow, formatDeliveryWindow } from '@/lib/commerce/delivery-promise';
 import type { ShippingZone } from '@/types/shipping';
 
 interface EstimatedTimelineProps {
@@ -18,7 +18,12 @@ export default function EstimatedTimeline({ deliveryOption, selectedState, selec
   const arrangementLabel = getDeliveryLabel(deliveryOption, zones, selectedState, 'arrangementLower', { lga: selectedLga, place: selectedPlace });
   const zone = findShippingZone(zones, selectedState, selectedLga, selectedPlace);
   const isPickup = deliveryOption === 'pickup' && zone?.pickup_available;
-  const arrangementDuration = isPickup ? "We'll notify you" : zone ? formatZoneEta(zone) : 'Varies by location';
+  const deliveryWindow = zone ? computeDeliveryWindow(new Date(), zone) : null;
+  const arrangementDuration = isPickup
+    ? "We'll notify you"
+    : deliveryWindow
+      ? formatDeliveryWindow(deliveryWindow.start, deliveryWindow.end)
+      : 'Varies by location';
 
   return (
     <div className="bg-background-secondary rounded-surface p-4 md:p-6 mb-6 md:mb-8">

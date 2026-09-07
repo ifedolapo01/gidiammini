@@ -70,6 +70,12 @@ export const CHANGE_REQUEST_FIELD_MAP: Record<string, string> = {
   'details.deliveryAddress': 'deliveryAddress',
   'details.city': 'city',
   'details.newDeliveryOption': 'newDeliveryOption',
+  'details.newAddress': 'newAddress',
+  'details.productId': 'productId',
+  'details.quantity': 'quantity',
+  'details.orderItemIds': 'orderItemIds',
+  'details.reason': 'reason',
+  'details.holdUntilDate': 'holdUntilDate',
 };
 
 /**
