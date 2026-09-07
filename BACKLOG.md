@@ -166,3 +166,41 @@ it.
   variable is still missing, not a bug in the route.
 
 ---
+
+## A real domain, verified in Resend
+
+**Status:** not started. Gmail SMTP is standing in for now
+(`20260907213000`).
+
+`RESEND_FROM_EMAIL` was still the unedited `.env.example` placeholder,
+`noreply@yourstore.com`, in both the local environment and (almost certainly)
+on Vercel — confirmed by a direct test send to Resend's own test address,
+which came back `403 The yourstore.com domain is not verified`. Every
+transactional email the app sends (order received, sign-in link, status
+updates) was failing silently at that point, because a bad mail transport is
+deliberately never allowed to fail an order or a sign-in. The store currently
+has no domain of its own, only `gidiammini.vercel.app`, and Vercel's own
+subdomain can never be verified in Resend — that DNS is Vercel's to control,
+not the store owner's.
+
+**Left because** it needs a domain purchased and DNS records added at
+whatever registrar holds it, which is an account/money step nobody else can
+take. Gmail SMTP (`EMAIL_HOST`/`EMAIL_USER`/`EMAIL_PASS`/`EMAIL_FROM`,
+`RESEND_API_KEY` unset) is filling the gap in the meantime — nodemailer's
+Gmail transport needs no domain of its own, so it unblocks sending today, at
+the cost of a low daily cap and mail that goes out over Gmail's reputation
+rather than the shop's.
+
+**Done means:**
+- A domain purchased and added in Resend -> Domains, with its SPF, DKIM and
+  DMARC records published at the registrar and showing **Verified**.
+- `RESEND_FROM_EMAIL` pointed at an address on that domain, in both
+  `.env.local` and Vercel's Environment Variables for the deployed project.
+- `RESEND_API_KEY` set again (it never needed to be removed, only stopped
+  being the transport that runs — `lib/email.ts` prefers Resend automatically
+  the moment it is configured), so mail moves back off the Gmail cap.
+- Confirmed the same way the break was found: a direct test send to Resend's
+  own test address (`delivered@resend.dev`) returns success rather than a
+  domain-verification `403`.
+
+---

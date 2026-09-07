@@ -13,7 +13,9 @@
 //               refunded you" without one is unverifiable and gets chased
 //               anyway.
 import { formatCurrency } from '@/lib/commerce/pricing';
-import { buildEmailShell } from './email-shell';
+import {
+  buildEmailShell, panelStyle, FIGURES_TABLE_STYLE, FIGURES_TD_STYLE, figuresLastTdStyle,
+} from './email-shell';
 import { refundMessage } from '@/lib/commerce/refund-reasons';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
@@ -64,15 +66,15 @@ export function buildRefundEmail(params: RefundEmailParams): RefundEmailContent 
           <p>${settled ? 'has been refunded to you.' : 'is being refunded to you.'}</p>
         </div>
 
-        <div class="panel">
+        <div style="${panelStyle(ACCENT)}">
           <p>${escapeHtmlWithBreaks(refundMessage(reasonCode, note))}</p>
 
-          <table class="figures">
-            <tr><td>Order total</td><td>${formatCurrency(orderTotal)}</td></tr>
-            <tr><td>${isPartial ? 'Refunded' : 'Refunded in full'}</td><td style="color: ${ACCENT};">${formatCurrency(amount)}</td></tr>
-            ${showsRunningTotal ? `<tr><td>Refunded on this order in total</td><td>${formatCurrency(refundedTotal)}</td></tr>` : ''}
-            ${methodLabel ? `<tr><td>Sent by</td><td style="font-weight: normal;">${escapeHtml(methodLabel)}</td></tr>` : ''}
-            ${reference ? `<tr><td>Reference</td><td style="font-weight: normal; font-family: monospace;">${escapeHtml(reference)}</td></tr>` : ''}
+          <table style="${FIGURES_TABLE_STYLE}">
+            <tr><td style="${FIGURES_TD_STYLE}">Order total</td><td style="${figuresLastTdStyle()}">${formatCurrency(orderTotal)}</td></tr>
+            <tr><td style="${FIGURES_TD_STYLE}">${isPartial ? 'Refunded' : 'Refunded in full'}</td><td style="${figuresLastTdStyle(`color: ${ACCENT};`)}">${formatCurrency(amount)}</td></tr>
+            ${showsRunningTotal ? `<tr><td style="${FIGURES_TD_STYLE}">Refunded on this order in total</td><td style="${figuresLastTdStyle()}">${formatCurrency(refundedTotal)}</td></tr>` : ''}
+            ${methodLabel ? `<tr><td style="${FIGURES_TD_STYLE}">Sent by</td><td style="${figuresLastTdStyle('font-weight: normal;')}">${escapeHtml(methodLabel)}</td></tr>` : ''}
+            ${reference ? `<tr><td style="${FIGURES_TD_STYLE}">Reference</td><td style="${figuresLastTdStyle('font-weight: normal; font-family: monospace;')}">${escapeHtml(reference)}</td></tr>` : ''}
           </table>
         </div>
 

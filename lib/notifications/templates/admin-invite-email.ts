@@ -39,35 +39,33 @@ export function buildAdminInviteEmail(params: AdminInviteEmailParams): AdminInvi
   const from = invitedBy?.trim() ? escapeHtml(invitedBy.trim()) : 'The store owner';
   const subject = sanitizeHeader(`You have been invited to ${storeName}`);
 
+  const boxStyle =
+    `background: white; padding: 24px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT}; text-align: center;`;
+  const roleStyle = 'background: white; padding: 16px 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;';
+  const ctaStyle =
+    `display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold;`;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .box { background: white; padding: 24px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT}; text-align: center; }
-        .role { background: white; padding: 16px 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }
-        .cta { display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>${escapeHtml(storeName)}</h1>
         <p>${greeting}</p>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <p>${from} has given you an admin account for <strong>${escapeHtml(storeName)}</strong>.</p>
 
-        <div class="role">
+        <div style="${roleStyle}">
           <p style="margin: 0; font-weight: bold;">Your role: ${escapeHtml(roleLabel)}</p>
           <p style="margin: 6px 0 0; color: #6b7280; font-size: 14px;">${escapeHtml(roleDescription)}</p>
         </div>
 
-        <div class="box">
-          <a href="${escapeHtml(inviteUrl)}" class="cta">Set your password</a>
+        <div style="${boxStyle}">
+          <a href="${escapeHtml(inviteUrl)}" style="${ctaStyle}">Set your password</a>
           <p style="margin: 12px 0 0; color: #6b7280; font-size: 13px;">
             Choose a password nobody else knows. This account is yours alone —
             everything you do in the admin is recorded against your name.
@@ -84,7 +82,7 @@ export function buildAdminInviteEmail(params: AdminInviteEmailParams): AdminInvi
           ever used. Tell ${from} that you received it.
         </p>
 
-        <div class="footer">
+        <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
           <p>You received this because somebody with owner access invited you to administer this store.</p>
         </div>
       </div>

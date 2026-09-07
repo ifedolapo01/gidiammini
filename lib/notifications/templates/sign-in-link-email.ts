@@ -31,29 +31,27 @@ export function buildSignInLinkEmail(params: SignInLinkEmailParams): SignInLinkE
   const greeting = customerName?.trim() ? `Hello ${escapeHtml(customerName.trim())},` : 'Hello,';
   const subject = sanitizeHeader('Your sign-in link for GidiamMini');
 
+  const boxStyle =
+    `background: white; padding: 24px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT}; text-align: center;`;
+  const ctaStyle =
+    `display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold;`;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .box { background: white; padding: 24px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT}; text-align: center; }
-        .cta { display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>Sign in to your orders</h1>
         <p>${greeting}</p>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <p>Tap the button to see your order history, saved delivery details and reorder anything you have bought before. No password needed.</p>
 
-        <div class="box">
-          <a href="${escapeHtml(signInUrl)}" class="cta">Sign in</a>
+        <div style="${boxStyle}">
+          <a href="${escapeHtml(signInUrl)}" style="${ctaStyle}">Sign in</a>
           <p style="margin: 12px 0 0; color: #6b7280; font-size: 13px;">
             This link works once and expires in 20 minutes.
           </p>
@@ -70,7 +68,7 @@ export function buildSignInLinkEmail(params: SignInLinkEmailParams): SignInLinkE
           link is useless unless it is opened, and it stops working shortly anyway.
         </p>
 
-        <div class="footer">
+        <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
           <p>You received this because a sign-in was requested for this address. It is not a subscription.</p>
         </div>
       </div>

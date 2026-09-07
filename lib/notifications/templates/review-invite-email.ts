@@ -45,33 +45,31 @@ export function buildReviewInviteEmail(params: ReviewInviteEmailParams): ReviewI
   // a person.
   const subject = sanitizeHeader(`How did we do, ${customerName.split(' ')[0] || 'there'}?`);
 
+  const askBoxStyle =
+    `background: white; padding: 24px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT};`;
+  const starsStyle = `font-size: 28px; letter-spacing: 6px; color: ${ACCENT}; margin: 0 0 8px;`;
+  const ctaStyle =
+    `display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 8px;`;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .ask-box { background: white; padding: 24px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT}; }
-        .stars { font-size: 28px; letter-spacing: 6px; color: ${ACCENT}; margin: 0 0 8px; }
-        .cta { display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 8px; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>How did we do?</h1>
         <p>Hello ${escapeHtml(customerName)},</p>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <p>Your order <strong>#${escapeHtml(orderNumber)}</strong> has arrived, so there is only one thing left to ask: how was it?</p>
 
-        <div class="ask-box">
-          <p class="stars">★ ★ ★ ★ ★</p>
+        <div style="${askBoxStyle}">
+          <p style="${starsStyle}">★ ★ ★ ★ ★</p>
           <p style="margin: 0;">Tell us about ${describe(productNames)}: the fit, the fabric, whether it was what you expected. A photo of it being worn is worth more than anything we could write ourselves.</p>
           <div style="text-align: center;">
-            <a href="${escapeHtml(reviewUrl)}" class="cta">Leave a review</a>
+            <a href="${escapeHtml(reviewUrl)}" style="${ctaStyle}">Leave a review</a>
           </div>
           <p style="margin: 12px 0 0; color: #6b7280; font-size: 13px; text-align: center;">Takes about a minute. No account, no password.</p>
         </div>
@@ -83,7 +81,7 @@ export function buildReviewInviteEmail(params: ReviewInviteEmailParams): ReviewI
           there too: we would rather fix it than not hear about it.
         </p>
 
-        <div class="footer">
+        <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
           <p>You received this because you ordered from us and it was delivered. It's a one-off. You're not subscribed to anything.</p>
         </div>
       </div>

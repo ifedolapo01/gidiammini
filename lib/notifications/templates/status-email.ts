@@ -3,10 +3,11 @@
 // "What's Next" bullets live in status-email-copy.ts; this file is only the
 // assembly.
 //
-// It predates buildEmailShell() and keeps its own <style> block on purpose —
-// see the note in email-shell.ts about not rewriting a working email's markup
-// for no functional gain. The .panel and .figures rules below are the shell's,
-// copied so buildTrackingPanel() renders identically here.
+// It predates buildEmailShell() and keeps its own assembly on purpose — see
+// the note in email-shell.ts about not rewriting a working email's markup for
+// no functional gain. It reuses the shell's inline-style helpers (panelStyle
+// et al.) so buildTrackingPanel() — which uses the same helpers — renders
+// identically here.
 import type { OrderTracking } from '@/lib/commerce/order-tracking';
 import { buildTrackOrderButton } from './track-order-cta';
 import { buildTrackingPanel } from './tracking-block';
@@ -14,6 +15,7 @@ import {
   STATUS_MESSAGES, formatOrderStatus, getStatusColor, getStatusIcon, getNextSteps,
 } from './status-email-copy';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
+import { BODY_STYLE, headerStyle, CONTENT_STYLE, panelStyle, FOOTER_STYLE } from './email-shell';
 
 // Re-exported: these were part of this module's surface before the copy split,
 // and moving them silently would be a needless break for anything importing
@@ -47,37 +49,30 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
     ? sanitizeHeader(`${getStatusIcon(newStatus)} Order ${statusLabel} - #${orderNumber}`)
     : sanitizeHeader(`Order Status Update - #${orderNumber}`);
 
+  const statusColor = getStatusColor(newStatus);
+  const statusBadgeStyle =
+    `display: inline-block; padding: 8px 16px; background: white; color: ${statusColor}; border-radius: 20px; font-weight: bold; margin: 10px 0;`;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${getStatusColor(newStatus)}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .status-badge { display: inline-block; padding: 8px 16px; background: white; color: ${getStatusColor(newStatus)}; border-radius: 20px; font-weight: bold; margin: 10px 0; }
-        .message-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${getStatusColor(newStatus)}; }
-        .panel { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${getStatusColor(newStatus)}; }
-        .figures { width: 100%; border-collapse: collapse; margin: 8px 0; }
-        .figures td { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-        .figures td:last-child { text-align: right; font-weight: bold; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="${BODY_STYLE}">
+      <div style="${headerStyle(statusColor)}">
         <h1>${getStatusIcon(newStatus)} Order Status Update</h1>
         <p>Hello ${escapeHtml(customerName)},</p>
       </div>
-      <div class="content">
+      <div style="${CONTENT_STYLE}">
         <div style="text-align: center;">
-          <div class="status-badge">
+          <div style="${statusBadgeStyle}">
             ${statusLabel}
           </div>
           <h2>Order #${escapeHtml(orderNumber)}</h2>
         </div>
 
-        <div class="message-box">
+        <div style="${panelStyle(statusColor)}">
           <h3>${subject}</h3>
           <p>${message}</p>
 
@@ -96,7 +91,7 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
           ${getNextSteps(newStatus, estimatedDeliveryText, tracking)}
         </ul>
 
-        ${buildTrackOrderButton(getStatusColor(newStatus))}
+        ${buildTrackOrderButton(statusColor)}
 
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Need Help?</strong></p>
@@ -107,7 +102,7 @@ export function buildStatusEmail(params: StatusEmailParams): StatusEmailContent 
         <p>Best regards,<br>
         <strong>The GidiamMini Team</strong></p>
       </div>
-      <div class="footer">
+      <div style="${FOOTER_STYLE}">
         <p>GidiamMini Clothing Store<br>
         Abuja, Nigeria</p>
       </div>

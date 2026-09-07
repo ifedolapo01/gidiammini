@@ -12,7 +12,9 @@
 // a customer it had already sold to.
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { buildTrackOrderButton } from './track-order-cta';
-import { buildEmailShell } from './email-shell';
+import {
+  buildEmailShell, panelStyle, FIGURES_TABLE_STYLE, FIGURES_TD_STYLE, figuresLastTdStyle,
+} from './email-shell';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 /** Amber: something needs doing, nothing has gone wrong. */
@@ -53,13 +55,13 @@ export function buildPaymentShortfallEmail(
           <p>We have received part of your payment.</p>
         </div>
 
-        <div class="panel">
+        <div style="${panelStyle(ACCENT)}">
           <p>Thank you. We confirmed <strong>${formatCurrency(received)}</strong> against this order. There is a balance still outstanding.</p>
 
-          <table class="figures">
-            <tr><td>Order total</td><td>${formatCurrency(expected)}</td></tr>
-            ${showsRunningTotal ? `<tr><td>Received so far</td><td>${formatCurrency(receivedTotal)}</td></tr>` : ''}
-            <tr><td>Balance to pay</td><td style="color: ${ACCENT};">${formatCurrency(outstanding)}</td></tr>
+          <table style="${FIGURES_TABLE_STYLE}">
+            <tr><td style="${FIGURES_TD_STYLE}">Order total</td><td style="${figuresLastTdStyle()}">${formatCurrency(expected)}</td></tr>
+            ${showsRunningTotal ? `<tr><td style="${FIGURES_TD_STYLE}">Received so far</td><td style="${figuresLastTdStyle()}">${formatCurrency(receivedTotal)}</td></tr>` : ''}
+            <tr><td style="${FIGURES_TD_STYLE}">Balance to pay</td><td style="${figuresLastTdStyle(`color: ${ACCENT};`)}">${formatCurrency(outstanding)}</td></tr>
           </table>
 
           <p>Please transfer the balance of <strong>${formatCurrency(outstanding)}</strong> to the same account you used before, then upload the new receipt. We will confirm your order as soon as it arrives.</p>

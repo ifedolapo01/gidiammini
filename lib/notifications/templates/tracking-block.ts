@@ -13,6 +13,7 @@
 import { carrierName } from '@/lib/commerce/order-tracking';
 import type { OrderTracking } from '@/lib/commerce/order-tracking';
 import { escapeHtml } from '@/lib/notifications/escape-html';
+import { panelStyle, FIGURES_TABLE_STYLE, FIGURES_TD_STYLE, figuresLastTdStyle } from './email-shell';
 
 /** The courier/waybill card, or '' when the order has no tracking. */
 export function buildTrackingPanel(
@@ -28,11 +29,11 @@ export function buildTrackingPanel(
   if (!name && !number && !url) return '';
 
   return `
-        <div class="panel" style="border-left-color: ${accentColor};">
+        <div style="${panelStyle(accentColor)}">
           <p><strong>📦 Your parcel</strong></p>
-          <table class="figures">
-            ${name ? `<tr><td>Courier</td><td>${escapeHtml(name)}</td></tr>` : ''}
-            ${number ? `<tr><td>Tracking number</td><td style="font-family: monospace;">${escapeHtml(number)}</td></tr>` : ''}
+          <table style="${FIGURES_TABLE_STYLE}">
+            ${name ? `<tr><td style="${FIGURES_TD_STYLE}">Courier</td><td style="${figuresLastTdStyle()}">${escapeHtml(name)}</td></tr>` : ''}
+            ${number ? `<tr><td style="${FIGURES_TD_STYLE}">Tracking number</td><td style="${figuresLastTdStyle('font-family: monospace;')}">${escapeHtml(number)}</td></tr>` : ''}
           </table>
           ${url
             ? `<div style="text-align: center; margin-top: 16px;">

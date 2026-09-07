@@ -13,7 +13,9 @@
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { rejectionMessage } from '@/lib/commerce/payment-rejection';
 import { buildTrackOrderButton } from './track-order-cta';
-import { buildEmailShell } from './email-shell';
+import {
+  buildEmailShell, panelStyle, FIGURES_TABLE_STYLE, FIGURES_TD_STYLE, figuresLastTdStyle,
+} from './email-shell';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 /** Red: the customer must act, and nothing has been credited. */
@@ -51,15 +53,15 @@ export function buildPaymentRejectedEmail(
           <p>${escapeHtml(headline)}.</p>
         </div>
 
-        <div class="panel">
+        <div style="${panelStyle(ACCENT)}">
           <p><strong>What to do next</strong></p>
           <p>${escapeHtml(nextStep)}</p>
           ${detail ? `<p style="color: #4b5563; font-style: italic;">"${escapeHtmlWithBreaks(detail)}"</p>` : ''}
         </div>
 
-        <table class="figures">
-          <tr><td>Order total</td><td>${formatCurrency(totalAmount)}</td></tr>
-          <tr><td>Confirmed so far</td><td>${formatCurrency(receivedTotal)}</td></tr>
+        <table style="${FIGURES_TABLE_STYLE}">
+          <tr><td style="${FIGURES_TD_STYLE}">Order total</td><td style="${figuresLastTdStyle()}">${formatCurrency(totalAmount)}</td></tr>
+          <tr><td style="${FIGURES_TD_STYLE}">Confirmed so far</td><td style="${figuresLastTdStyle()}">${formatCurrency(receivedTotal)}</td></tr>
         </table>
 
         <p>Your order has <strong>not</strong> been cancelled. It is waiting for a payment we can confirm. Nothing else is needed from you beyond the step above.</p>

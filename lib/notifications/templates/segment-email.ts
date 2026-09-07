@@ -11,7 +11,7 @@
 // product grid, no "Shop now" the admin did not write: whoever is sending this
 // knows what they want to say, and a template that decorates it will sooner or
 // later contradict it.
-import { buildEmailShell } from './email-shell';
+import { buildEmailShell, panelStyle } from './email-shell';
 import { buildTrackOrderButton } from './track-order-cta';
 import { escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
@@ -31,7 +31,7 @@ export interface SegmentEmailContent {
 
 export function buildSegmentEmail(params: SegmentEmailParams): SegmentEmailContent {
   const body = `
-        <div class="panel">
+        <div style="${panelStyle(ACCENT)}">
           <p>${escapeHtmlWithBreaks(params.message)}</p>
         </div>
 

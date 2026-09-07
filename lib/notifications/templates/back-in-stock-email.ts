@@ -35,26 +35,19 @@ export function buildBackInStockEmail(params: BackInStockEmailParams): BackInSto
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #047857; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .product-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #047857; }
-        .cta { display: inline-block; background: #047857; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 8px; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: #047857; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>It's back in stock</h1>
       </div>
-      <div class="content">
-        <div class="product-box">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #047857;">
           <h2 style="margin: 0;">${escapeHtml(productName)}</h2>
           ${variantLine}
           <p style="margin-top: 16px;">You asked us to let you know when this was available again. It is, as of today.</p>
           <div style="text-align: center;">
-            <a href="${escapeHtml(productUrl)}" class="cta">View the product</a>
+            <a href="${escapeHtml(productUrl)}" style="display: inline-block; background: #047857; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 8px;">View the product</a>
           </div>
         </div>
 
@@ -63,7 +56,7 @@ export function buildBackInStockEmail(params: BackInStockEmailParams): BackInSto
           people check out, so it's worth a look soon.
         </p>
 
-        <div class="footer">
+        <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
           <p>You received this because you asked to be told when this product returned. It's a one-off. You're not subscribed to anything.</p>
         </div>
       </div>

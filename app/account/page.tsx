@@ -55,14 +55,15 @@ export default async function AccountPage() {
 
         {saved && <SavedDetailsCard saved={saved} />}
 
-        <AccountOrderList orders={orders} />
+        <AccountOrderList orders={orders} customerEmail={customer.email} />
 
         <p className="mt-8 border-t border-divider pt-4 text-caption-md text-text-secondary">
-          Need to reschedule, change the delivery method or cancel? That runs through{' '}
+          Tracking an order that is not on this account, a friend&apos;s, or one placed
+          as a guest?{' '}
           <Link href="/track-order" className="text-primary underline-offset-4 hover:underline">
-            order tracking
-          </Link>
-          , which asks for the order number so the request is tied to one order.
+            Look it up here
+          </Link>{' '}
+          with the order number.
         </p>
       </div>
     </div>

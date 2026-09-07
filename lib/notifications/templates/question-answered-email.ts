@@ -34,38 +34,36 @@ export function buildQuestionAnsweredEmail(
 
   const subject = sanitizeHeader(`Answered: your question about the ${productName}`);
 
+  const qaStyle =
+    `background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT};`;
+  const labelStyle = 'margin: 0 0 4px; color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;';
+  const ctaStyle =
+    `display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 8px;`;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .qa { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${ACCENT}; }
-        .label { margin: 0 0 4px; color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .cta { display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 8px; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>We've answered your question</h1>
         <p>Hello ${escapeHtml(askerName)},</p>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <p>You asked us about the <strong>${escapeHtml(productName)}</strong>. Here's the answer:</p>
 
-        <div class="qa">
-          <p class="label">Your question</p>
+        <div style="${qaStyle}">
+          <p style="${labelStyle}">Your question</p>
           <p style="margin: 0 0 16px;">${escapeHtmlWithBreaks(question)}</p>
 
-          <p class="label">Our answer</p>
+          <p style="${labelStyle}">Our answer</p>
           <p style="margin: 0;">${escapeHtmlWithBreaks(answer)}</p>
         </div>
 
         <div style="text-align: center;">
-          <a href="${escapeHtml(productUrl)}" class="cta">View the product</a>
+          <a href="${escapeHtml(productUrl)}" style="${ctaStyle}">View the product</a>
         </div>
 
         <p style="color: #6b7280; font-size: 14px;">
@@ -74,7 +72,7 @@ export function buildQuestionAnsweredEmail(
           quite cover it, reply to this email and we will take another go.
         </p>
 
-        <div class="footer">
+        <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
           <p>You received this because you asked a question about a product on our site. It's a one-off. You're not subscribed to anything.</p>
         </div>
       </div>

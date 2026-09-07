@@ -28,25 +28,19 @@ export function buildPaymentReminderEmail(params: PaymentReminderEmailParams): P
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #b45309; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .message-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #b45309; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: #b45309; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>⏳ Still Verifying Your Payment</h1>
         <p>Hello ${escapeHtml(customerName)},</p>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <div style="text-align: center;">
           <h2>Order #${escapeHtml(orderNumber)}</h2>
         </div>
 
-        <div class="message-box">
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #b45309;">
           <p>We received your payment receipt for order #${escapeHtml(orderNumber)} (<strong>${formatCurrency(totalAmount)}</strong>), and it's taking us a little longer than usual to verify it against our bank records.</p>
           <p>There's nothing further you need to do. We'll email/SMS you the moment it's confirmed. If you'd like an update in the meantime, feel free to reach out.</p>
         </div>
@@ -63,7 +57,7 @@ export function buildPaymentReminderEmail(params: PaymentReminderEmailParams): P
         <p>Best regards,<br>
         <strong>The GidiamMini Team</strong></p>
       </div>
-      <div class="footer">
+      <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
         <p>GidiamMini Clothing Store<br>
         Abuja, Nigeria</p>
       </div>

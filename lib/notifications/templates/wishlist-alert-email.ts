@@ -73,35 +73,33 @@ export function buildWishlistAlertEmail(
   const { alert, productUrl, wishlistUrl } = params;
   const copy = copyFor(alert);
 
+  const productBoxStyle =
+    `background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${copy.accent};`;
+  const ctaStyle =
+    `display: inline-block; background: ${copy.accent}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 16px;`;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${copy.accent}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .product-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${copy.accent}; }
-        .cta { display: inline-block; background: ${copy.accent}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 16px; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: ${copy.accent}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1 style="margin: 0;">${escapeHtml(copy.heading)}</h1>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <p style="margin-top: 0;">${escapeHtml(copy.lead)}</p>
 
-        <div class="product-box">
+        <div style="${productBoxStyle}">
           <h2 style="margin: 0;">${escapeHtml(alert.productName)}</h2>
           ${copy.detail}
           <div style="text-align: center;">
-            <a href="${escapeHtml(productUrl)}" class="cta">${escapeHtml(copy.cta)}</a>
+            <a href="${escapeHtml(productUrl)}" style="${ctaStyle}">${escapeHtml(copy.cta)}</a>
           </div>
         </div>
 
-        <div class="footer">
+        <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
           <p>
             You are getting this because you saved this product to your wishlist.
             Remove it from <a href="${escapeHtml(wishlistUrl)}">your wishlist</a> and we will stop.

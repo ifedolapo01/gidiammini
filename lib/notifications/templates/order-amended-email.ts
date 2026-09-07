@@ -12,7 +12,9 @@
 // is the difference between a top-up transfer and a doorstep argument.
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { buildTrackOrderButton } from './track-order-cta';
-import { buildEmailShell } from './email-shell';
+import {
+  buildEmailShell, panelStyle, FIGURES_TABLE_STYLE, FIGURES_TD_STYLE, figuresLastTdStyle,
+} from './email-shell';
 import { escapeHtml, escapeHtmlWithBreaks, sanitizeHeader } from '@/lib/notifications/escape-html';
 
 /** Blue: informational. Nothing has gone wrong and nothing is being refused. */
@@ -56,7 +58,7 @@ function balancePanel(total: number, paid: number): string {
 
   if (balance > 0) {
     return `
-        <div class="panel" style="border-left-color: #b45309;">
+        <div style="${panelStyle('#b45309')}">
           <p><strong>There is now ${formatCurrency(balance)} left to pay.</strong></p>
           <p>Please transfer the balance to the same account you used before and upload the receipt, and we will carry on with your order.</p>
         </div>`;
@@ -64,14 +66,14 @@ function balancePanel(total: number, paid: number): string {
 
   if (balance < 0) {
     return `
-        <div class="panel" style="border-left-color: #10b981;">
+        <div style="${panelStyle('#10b981')}">
           <p><strong>You have paid ${formatCurrency(-balance)} more than this order now comes to.</strong></p>
           <p>We will refund the difference. If you would rather leave it against a future order, reply to this email and we will hold it for you.</p>
         </div>`;
   }
 
   return `
-        <div class="panel" style="border-left-color: #10b981;">
+        <div style="${panelStyle('#10b981')}">
           <p><strong>This order is fully paid.</strong> Nothing further is owed.</p>
         </div>`;
 }
@@ -93,21 +95,21 @@ export function buildOrderAmendedEmail(params: OrderAmendedEmailParams): OrderAm
           <p>We have updated your order.</p>
         </div>
 
-        <div class="panel">
+        <div style="${panelStyle(ACCENT)}">
           <p><strong>What changed</strong></p>
           ${changeList}
           ${note ? `<p style="color: #4b5563; font-style: italic;">"${escapeHtmlWithBreaks(note)}"</p>` : ''}
         </div>
 
-        <div class="panel">
+        <div style="${panelStyle(ACCENT)}">
           <p><strong>Your order now</strong></p>
-          <table class="figures">
-            <tr><td>Items</td><td>${formatCurrency(itemsSubtotal)}</td></tr>
-            ${taxAmount > 0 ? `<tr><td>Tax</td><td>${formatCurrency(taxAmount)}</td></tr>` : ''}
-            ${shippingAmount > 0 ? `<tr><td>Delivery</td><td>${formatCurrency(shippingAmount)}</td></tr>` : ''}
-            ${discountAmount > 0 ? `<tr><td>Discount${discountReason ? ` (${escapeHtml(discountReason)})` : ''}</td><td>-${formatCurrency(discountAmount)}</td></tr>` : ''}
-            <tr><td><strong>Total</strong></td><td style="color: ${ACCENT};">${formatCurrency(totalAmount)}</td></tr>
-            ${previousTotal !== totalAmount ? `<tr><td style="color: #6b7280;">Previously</td><td style="color: #6b7280; font-weight: normal;">${formatCurrency(previousTotal)}</td></tr>` : ''}
+          <table style="${FIGURES_TABLE_STYLE}">
+            <tr><td style="${FIGURES_TD_STYLE}">Items</td><td style="${figuresLastTdStyle()}">${formatCurrency(itemsSubtotal)}</td></tr>
+            ${taxAmount > 0 ? `<tr><td style="${FIGURES_TD_STYLE}">Tax</td><td style="${figuresLastTdStyle()}">${formatCurrency(taxAmount)}</td></tr>` : ''}
+            ${shippingAmount > 0 ? `<tr><td style="${FIGURES_TD_STYLE}">Delivery</td><td style="${figuresLastTdStyle()}">${formatCurrency(shippingAmount)}</td></tr>` : ''}
+            ${discountAmount > 0 ? `<tr><td style="${FIGURES_TD_STYLE}">Discount${discountReason ? ` (${escapeHtml(discountReason)})` : ''}</td><td style="${figuresLastTdStyle()}">-${formatCurrency(discountAmount)}</td></tr>` : ''}
+            <tr><td style="${FIGURES_TD_STYLE}"><strong>Total</strong></td><td style="${figuresLastTdStyle(`color: ${ACCENT};`)}">${formatCurrency(totalAmount)}</td></tr>
+            ${previousTotal !== totalAmount ? `<tr><td style="${FIGURES_TD_STYLE} color: #6b7280;">Previously</td><td style="${figuresLastTdStyle('color: #6b7280; font-weight: normal;')}">${formatCurrency(previousTotal)}</td></tr>` : ''}
           </table>
         </div>
 

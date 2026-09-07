@@ -12,29 +12,16 @@
 
 import { Package } from 'lucide-react';
 import Link from 'next/link';
-import { Badge } from '@/components/ui';
-import { formatCurrency } from '@/lib/commerce/pricing';
-import { formatDateOnly } from '@/lib/commerce/format-date';
-import { capitalizeText } from '@/lib/commerce/format-text';
-import { formatCustomerStatusLabel } from '@/lib/commerce/order-status';
 import type { AccountOrder } from '@/lib/commerce/account-query';
-import { ReorderButton } from './ReorderButton';
 import GrowthPromptCard from './GrowthPromptCard';
-
-/** Terminal-ish statuses read as good news; a cancellation does not. */
-function toneFor(status: string): 'success' | 'destructive' | 'warning' | 'info' {
-  if (status === 'cancelled') return 'destructive';
-  if (status === 'delivered' || status === 'picked_up') return 'success';
-  if (status === 'pending') return 'warning';
-  return 'info';
-}
-
+import { AccountOrderRow } from './AccountOrderRow';
 
 interface AccountOrderListProps {
   orders: AccountOrder[];
+  customerEmail: string;
 }
 
-export function AccountOrderList({ orders }: AccountOrderListProps) {
+export function AccountOrderList({ orders, customerEmail }: AccountOrderListProps) {
   if (orders.length === 0) {
     return (
       <div className="rounded-surface border border-dashed border-border bg-surface p-8 text-center">
@@ -58,38 +45,7 @@ export function AccountOrderList({ orders }: AccountOrderListProps) {
       <GrowthPromptCard orders={orders} />
       <ul className="space-y-4">
         {orders.map((order) => (
-        <li key={order.id} className="rounded-surface border border-border bg-surface p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="text-body-md font-semibold text-text-primary">#{order.order_number}</p>
-              <p className="text-caption-md text-text-secondary">
-                <time dateTime={order.created_at}>{formatDateOnly(order.created_at)}</time>
-                {' · '}
-                {formatCurrency(order.total_amount)}
-                {order.delivery_option === 'pickup' ? ' · Pickup' : ''}
-              </p>
-            </div>
-            <Badge tone={toneFor(order.status)}>{formatCustomerStatusLabel(order.status)}</Badge>
-          </div>
-
-          <ul className="mt-3 space-y-1 text-body-sm text-text-secondary">
-            {order.order_items.map((line, index) => (
-              <li key={`${order.id}-${index}`}>
-                {line.quantity} × {line.product_name}
-                {(line.size || line.color) && (
-                  <span className="text-text-muted">
-                    {' '}
-                    ({[line.size, capitalizeText(line.color)].filter(Boolean).join(', ')})
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-3">
-            <ReorderButton orderId={order.id} orderNumber={order.order_number} />
-          </div>
-          </li>
+          <AccountOrderRow key={order.id} order={order} customerEmail={customerEmail} />
         ))}
       </ul>
     </>

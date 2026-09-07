@@ -21,26 +21,20 @@ export function buildCustomEmail(params: CustomEmailParams): CustomEmailContent 
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4F46E5; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .message-box { background: white; padding: 25px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: #4F46E5; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>📨 Message About Your Order</h1>
         <p>Hello ${escapeHtml(customerName)},</p>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h2>Order #${escapeHtml(orderNumber)}</h2>
           <p>You have a new message from our team:</p>
         </div>
 
-        <div class="message-box">
+        <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
           <p style="font-style: italic; color: #4b5563;">"${escapeHtmlWithBreaks(message)}"</p>
         </div>
 
@@ -56,7 +50,7 @@ export function buildCustomEmail(params: CustomEmailParams): CustomEmailContent 
         <p>Best regards,<br>
         <strong>The GidiamMini Team</strong></p>
       </div>
-      <div class="footer">
+      <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
         <p>GidiamMini Clothing Store<br>
         Abuja, Nigeria</p>
       </div>

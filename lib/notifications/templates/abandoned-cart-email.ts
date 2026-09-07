@@ -77,28 +77,24 @@ export function buildAbandonedCartEmail(
     ? 'Your basket is still here, exactly as you left it. Nothing has been ordered yet. Pick up where you stopped whenever you are ready.'
     : 'Your basket is still saved. We do not hold stock, though, so if one of these is on your list it is worth finishing before somebody else does.';
 
+  const ctaStyle =
+    `display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold;`;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .card { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .cta { display: inline-block; background: ${ACCENT}; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; }
-        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 13px; }
-      </style>
+      <meta charset="utf-8">
     </head>
-    <body>
-      <div class="header">
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: ${ACCENT}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1>${first ? 'Your basket is waiting' : 'Still in your basket'}</h1>
         <p>${greeting}</p>
       </div>
-      <div class="content">
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
         <p>${opening}</p>
 
-        <div class="card">
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             ${lines.map(itemRow).join('')}
             <tr>
@@ -114,7 +110,7 @@ export function buildAbandonedCartEmail(
           </p>
 
           <div style="text-align:center;margin-top:20px;">
-            <a href="${escapeHtml(resumeUrl)}" class="cta">Finish my order</a>
+            <a href="${escapeHtml(resumeUrl)}" style="${ctaStyle}">Finish my order</a>
           </div>
         </div>
 
@@ -124,7 +120,7 @@ export function buildAbandonedCartEmail(
           email.
         </p>
 
-        <div class="footer">
+        <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 13px;">
           <p>
             You are getting this because you started a checkout with this address.
             ${first ? 'We will send one more reminder and then stop.' : 'This is the last one.'}
