@@ -124,7 +124,7 @@ export default function AskQuestionForm({ productId }: AskQuestionFormProps) {
         </div>
 
         <p className="text-caption-md text-text-secondary">
-          We email you the answer — that is the only thing your address is used for.
+          We email you the answer. That is the only thing your address is used for.
           Your name appears with the question; your email never does.
         </p>
       </fieldset>

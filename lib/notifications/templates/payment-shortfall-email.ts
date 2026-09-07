@@ -54,7 +54,7 @@ export function buildPaymentShortfallEmail(
         </div>
 
         <div class="panel">
-          <p>Thank you — we confirmed <strong>${formatCurrency(received)}</strong> against this order. There is a balance still outstanding.</p>
+          <p>Thank you. We confirmed <strong>${formatCurrency(received)}</strong> against this order. There is a balance still outstanding.</p>
 
           <table class="figures">
             <tr><td>Order total</td><td>${formatCurrency(expected)}</td></tr>
@@ -68,7 +68,7 @@ export function buildPaymentShortfallEmail(
 
         ${buildTrackOrderButton(ACCENT)}
 
-        <p>If you believe you sent the full amount, reply to this email with the transfer details and we will trace it for you — your items stay reserved in the meantime.</p>`;
+        <p>If you believe you sent the full amount, reply to this email with the transfer details and we will trace it for you. Your items stay reserved in the meantime.</p>`;
 
   return {
     subject: sanitizeHeader(

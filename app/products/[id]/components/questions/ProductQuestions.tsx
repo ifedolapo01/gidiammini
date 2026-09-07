@@ -43,8 +43,8 @@ export default function ProductQuestions({ productId, data }: ProductQuestionsPr
 
       {questions.length === 0 ? (
         <p className="max-w-prose text-body-sm text-text-secondary">
-          Nobody has asked about this one yet. If something is not clear — the fit,
-          the fabric, what is included — ask and we will answer it here, so the next
+          Nobody has asked about this one yet. If something is not clear (the fit,
+          the fabric, what is included), ask and we will answer it here, so the next
           person does not have to.
         </p>
       ) : (

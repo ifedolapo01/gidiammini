@@ -97,7 +97,7 @@ export default function OrderEditPanel({ order, showToast, onSaved }: OrderEditP
 
       <dl className="rounded-surface border border-border p-3">
         <p className="mb-2 text-caption-md font-medium uppercase tracking-wide text-text-secondary">
-          Preview — the server recalculates on save
+          Preview: the server recalculates on save
         </p>
         {[
           ['Items', edit.preview.subtotal],

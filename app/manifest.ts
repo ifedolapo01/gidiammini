@@ -17,7 +17,7 @@ const BRAND = '#db2777';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'GidiamMini — Baby, Kids & Maternity',
+    name: 'GidiamMini: Baby, Kids & Maternity',
     // What fits under a home-screen icon. Android truncates around 12
     // characters, so the long name is never the one shown there.
     short_name: 'GidiamMini',

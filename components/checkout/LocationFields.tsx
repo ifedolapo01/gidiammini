@@ -59,7 +59,7 @@ export default function LocationFields({
             ))}
           </Select>
           <p className="text-caption-md sm:text-body-sm text-text-secondary mt-1 sm:mt-2">
-            Pick your district/town if listed — it may carry its own rate.
+            Pick your district/town if listed. It may carry its own rate.
           </p>
         </div>
       )}

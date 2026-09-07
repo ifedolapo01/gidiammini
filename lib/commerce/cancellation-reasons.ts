@@ -73,7 +73,7 @@ export const CANCELLATION_REASONS: readonly CancellationReason[] = [
     hint: 'The item is gone, damaged, or never arrived from the supplier.',
     origin: 'shop',
     customerMessage:
-      'We are very sorry — we are not able to fulfil this order. The item is no longer available in the size or colour you chose.',
+      'We are very sorry. We are not able to fulfil this order. The item is no longer available in the size or colour you chose.',
     refundExpected: true,
   },
   {
@@ -119,7 +119,7 @@ export const CANCELLATION_REASONS: readonly CancellationReason[] = [
     hint: 'Outside every zone we serve, or the address could not be found.',
     origin: 'neither',
     customerMessage:
-      'We are sorry — we are not able to deliver to the address on this order. If you have another address we can reach, or would like to collect instead, reply to this email and we will set that up.',
+      'We are sorry. We are not able to deliver to the address on this order. If you have another address we can reach, or would like to collect instead, reply to this email and we will set that up.',
     refundExpected: true,
   },
   {
@@ -128,7 +128,7 @@ export const CANCELLATION_REASONS: readonly CancellationReason[] = [
     hint: 'The listed price or delivery fee was a mistake on our side.',
     origin: 'shop',
     customerMessage:
-      'We are sorry — the price shown on this order was listed in error, so we have had to cancel it. Please get in touch and we will do what we can to make it right.',
+      'We are sorry. The price shown on this order was listed in error, so we have had to cancel it. Please get in touch and we will do what we can to make it right.',
     refundExpected: true,
     requiresNote: true,
   },

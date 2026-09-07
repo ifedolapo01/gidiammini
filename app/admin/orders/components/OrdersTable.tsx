@@ -132,7 +132,7 @@ export default function OrdersTable({
                     className="text-body-sm font-semibold tabular-nums text-primary hover:underline"
                   >
                     {order.order_number}
-                    <span className="sr-only"> — open details</span>
+                    <span className="sr-only">, open details</span>
                   </button>
                   {order.has_pending_change_request && (
                     <Badge tone="warning" className="ml-2">Change requested</Badge>

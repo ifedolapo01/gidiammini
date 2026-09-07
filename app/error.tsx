@@ -35,7 +35,7 @@ export default function StorefrontError({
       title="Something went wrong"
       description={
         <>
-          We could not load this page. This is our fault, not yours — trying
+          We could not load this page. This is our fault, not yours. Trying
           again often works, and your cart has not been touched.
         </>
       }

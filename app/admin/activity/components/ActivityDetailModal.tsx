@@ -80,7 +80,7 @@ export default function ActivityDetailModal({ entry, onClose }: ActivityDetailMo
             </span>
           )}
         </Fact>
-        <Fact label="From">{entry.ip || '—'}</Fact>
+        <Fact label="From">{entry.ip || '-'}</Fact>
       </dl>
 
       {entry.reason && (

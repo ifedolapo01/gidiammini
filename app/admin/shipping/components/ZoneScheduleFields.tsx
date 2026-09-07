@@ -50,7 +50,7 @@ export function ZoneScheduleFields({ formData, setFormData }: ZoneScheduleFields
     <div className="space-y-3 pt-2 border-t border-border-light">
       <div>
         <label className="block text-body-sm font-semibold text-text-primary mb-1.5">
-          Order Cutoff Time <span className="font-normal text-text-muted text-caption-md">(UTC — leave blank for no cutoff)</span>
+          Order Cutoff Time <span className="font-normal text-text-muted text-caption-md">(UTC, leave blank for no cutoff)</span>
         </label>
         <Input
           type="time"

@@ -94,7 +94,7 @@ export default function RefundForm({ totals, saving, onSubmit }: RefundFormProps
     <form onSubmit={submit} className="space-y-4 rounded-surface border border-border p-3">
       <p className="text-body-sm text-text-secondary">
         <span className="font-semibold text-text-primary">{formatCurrency(totals.refundable)}</span>{' '}
-        can be refunded — that is what was received, less what has already gone back.
+        can be refunded: that is what was received, less what has already gone back.
       </p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

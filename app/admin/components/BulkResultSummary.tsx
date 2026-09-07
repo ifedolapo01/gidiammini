@@ -48,7 +48,7 @@ export default function BulkResultSummary({ outcome, onDismiss }: BulkResultSumm
               {failures.map((failure) => (
                 <li key={failure.id}>
                   <span className="font-medium text-text-primary">{failure.label || failure.id}</span>
-                  {' — '}
+                  {': '}
                   {failure.error || 'Unknown error'}
                 </li>
               ))}

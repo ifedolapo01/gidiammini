@@ -86,7 +86,7 @@ async function submitChangeRequest(request: NextRequest) {
     if (!isEligible) {
       const error =
         requestType === 'cancel' ? 'This order can no longer be cancelled.'
-        : requestType === 'return_request' ? 'This order is not eligible for a return — it must have been delivered within the last 30 days.'
+        : requestType === 'return_request' ? 'This order is not eligible for a return. It must have been delivered within the last 7 days.'
         : 'This order can no longer be changed.';
       return NextResponse.json({ success: false, error }, { status: 400 });
     }

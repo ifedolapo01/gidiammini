@@ -3,6 +3,7 @@
 
 import ProductImage from '@/components/commerce/ProductImage';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { capitalizeText } from '@/lib/commerce/format-text';
 import type { CartItem } from '@/types/order';
 
 interface CartDrawerLineProps {
@@ -13,7 +14,7 @@ interface CartDrawerLineProps {
 }
 
 export default function CartDrawerLine({ item, justAdded }: CartDrawerLineProps) {
-  const variant = [item.color, item.size].filter(Boolean).join(' · ');
+  const variant = [capitalizeText(item.color), item.size].filter(Boolean).join(' · ');
 
   return (
     <li className="flex gap-3 py-3">

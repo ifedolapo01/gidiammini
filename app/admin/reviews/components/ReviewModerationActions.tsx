@@ -60,7 +60,7 @@ export default function ReviewModerationActions({
   const handleDelete = async () => {
     const confirmed = await confirm({
       title: 'Delete this review permanently?',
-      message: 'Rejecting is usually the better option — it hides the review and keeps the record.',
+      message: 'Rejecting is usually the better option. It hides the review and keeps the record.',
       consequences: [
         'Removes the review and its rating from the product average',
         photos.length > 0 ? photoLine('Deletes') : 'The review has no photos',
@@ -79,7 +79,7 @@ export default function ReviewModerationActions({
         <Button
           size="sm"
           loading={saving}
-          onClick={() => onModerate({ status: 'published' }, 'Published — it is on the product page now.')}
+          onClick={() => onModerate({ status: 'published' }, 'Published. It is on the product page now.')}
         >
           Publish
         </Button>

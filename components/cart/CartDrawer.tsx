@@ -96,7 +96,7 @@ export default function CartDrawer({ open, onClose, highlightKey }: CartDrawerPr
               </p>
               {primaryZone && deliveryWindow && (
                 <p className="mt-0.5 text-caption-md text-text-secondary">
-                  Estimated delivery: {formatDeliveryWindow(deliveryWindow.start, deliveryWindow.end)} to {primaryZone.state} — exact dates at checkout.
+                  Estimated delivery: {formatDeliveryWindow(deliveryWindow.start, deliveryWindow.end)} to {primaryZone.state}. Exact dates at checkout.
                 </p>
               )}
 

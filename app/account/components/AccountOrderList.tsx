@@ -15,8 +15,8 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatDateOnly } from '@/lib/commerce/format-date';
+import { capitalizeText } from '@/lib/commerce/format-text';
 import { formatCustomerStatusLabel } from '@/lib/commerce/order-status';
-import type { OrderStatus } from '@/types/order';
 import type { AccountOrder } from '@/lib/commerce/account-query';
 import { ReorderButton } from './ReorderButton';
 import GrowthPromptCard from './GrowthPromptCard';
@@ -79,7 +79,7 @@ export function AccountOrderList({ orders }: AccountOrderListProps) {
                 {(line.size || line.color) && (
                   <span className="text-text-muted">
                     {' '}
-                    ({[line.size, line.color].filter(Boolean).join(', ')})
+                    ({[line.size, capitalizeText(line.color)].filter(Boolean).join(', ')})
                   </span>
                 )}
               </li>

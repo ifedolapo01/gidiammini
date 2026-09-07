@@ -54,7 +54,7 @@ export function TodayEntryList({ task, href, onChanged }: TodayEntryListProps) {
   if (entries.length === 0) {
     return (
       <p className="px-3 py-3 text-body-sm text-text-secondary">
-        Nothing left here — the count is on its way down.
+        Nothing left here: the count is on its way down.
       </p>
     );
   }

@@ -69,7 +69,7 @@ export function buildReviewInviteEmail(params: ReviewInviteEmailParams): ReviewI
 
         <div class="ask-box">
           <p class="stars">★ ★ ★ ★ ★</p>
-          <p style="margin: 0;">Tell us about ${describe(productNames)} — the fit, the fabric, whether it was what you expected. A photo of it being worn is worth more than anything we could write ourselves.</p>
+          <p style="margin: 0;">Tell us about ${describe(productNames)}: the fit, the fabric, whether it was what you expected. A photo of it being worn is worth more than anything we could write ourselves.</p>
           <div style="text-align: center;">
             <a href="${escapeHtml(reviewUrl)}" class="cta">Leave a review</a>
           </div>
@@ -77,14 +77,14 @@ export function buildReviewInviteEmail(params: ReviewInviteEmailParams): ReviewI
         </div>
 
         <p style="color: #6b7280; font-size: 14px;">
-          Your review helps the next parent decide — most of them are buying from
+          Your review helps the next parent decide. Most of them are buying from
           us for the first time, and yours is the only evidence they have that
           somebody did it before them. If something went wrong instead, tell us
           there too: we would rather fix it than not hear about it.
         </p>
 
         <div class="footer">
-          <p>You received this because you ordered from us and it was delivered. It's a one-off — you're not subscribed to anything.</p>
+          <p>You received this because you ordered from us and it was delivered. It's a one-off. You're not subscribed to anything.</p>
         </div>
       </div>
     </body>

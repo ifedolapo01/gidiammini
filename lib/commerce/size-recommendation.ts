@@ -48,17 +48,25 @@ export function shouldOfferSizeRecommendation(product: ProductSizing): boolean {
   return GROWTH_CHART_IDS.has(chartForProduct(product).id);
 }
 
-/** The row's age span in months, or null when the label isn't one of the two
- *  standard forms. "Newborn" is younger than the first numbered band and
- *  short — a few weeks — so it is given a narrow span rather than a range
- *  parsed from its name. */
-export function rowAgeRangeMonths(row: SizeChartRow): [number, number] | null {
-  if (row.label.toLowerCase() === 'newborn') return [0, 1];
-  const months = row.label.match(/^(\d+)-(\d+)\s*months$/i);
+/** An age span in months parsed out of a label — a chart row's own label, or
+ *  a product's raw size string. The same two forms cover both: "X-Y months",
+ *  "X-Y years". "Newborn" is younger than the first numbered band and short —
+ *  a few weeks — so it is given a narrow span rather than a range parsed from
+ *  its name. Unanchored (no ^/$) so it also matches a size string that isn't
+ *  *only* the range, e.g. a stray "Age: 3-6 months" label. */
+function parseAgeRangeMonths(label: string): [number, number] | null {
+  if (label.trim().toLowerCase() === 'newborn') return [0, 1];
+  const months = label.match(/(\d+)\s*-\s*(\d+)\s*months?\b/i);
   if (months) return [Number(months[1]), Number(months[2])];
-  const years = row.label.match(/^(\d+)-(\d+)\s*years$/i);
+  const years = label.match(/(\d+)\s*-\s*(\d+)\s*years?\b/i);
   if (years) return [Number(years[1]) * 12, Number(years[2]) * 12];
   return null;
+}
+
+/** The row's age span in months, or null when its label isn't one of the two
+ *  standard forms. */
+export function rowAgeRangeMonths(row: SizeChartRow): [number, number] | null {
+  return parseAgeRangeMonths(row.label);
 }
 
 /** The leading numeric range in a values-column cell: "58-66 cm" → [58, 66],
@@ -118,14 +126,29 @@ function findRowByHeight(chart: SizeChart, heightCm: number, weightKg?: number):
   return weightIdx > heightIdx ? byWeight : byHeight;
 }
 
-/** Which chart row a stocked size string maps to, via the same alias
- *  matching the size guide uses — passing a single size through it turns
- *  "which rows does this product cover" into "which row is this one size". */
+/** Which chart row a stocked size string maps to.
+ *
+ * Tries the size guide's own alias matching first — the aliases are the
+ * standard spellings of the standard bands ("0-3 months", "0-3m"...). A shop
+ * that stocks a size cut to a different split ("1-2 Months", "3-5 Months")
+ * has nothing in that list to match, and used to come back with no row at
+ * all — not "no chart", just no answer, on stock the questionnaire was
+ * built for. So a size with no alias match falls back to its own parsed age
+ * range, landing on whichever standard row its midpoint falls in. */
 function rowForSize(chart: SizeChart, size: string): SizeChartRow | null {
   const labels = matchedChartRows(chart, [size]);
-  if (labels.size === 0) return null;
-  const [label] = labels;
-  return chart.rows.find((row) => row.label === label) ?? null;
+  if (labels.size > 0) {
+    const [label] = labels;
+    return chart.rows.find((row) => row.label === label) ?? null;
+  }
+
+  const ownRange = parseAgeRangeMonths(size);
+  if (!ownRange) return null;
+
+  const bands = chart.rows
+    .map((row) => ({ row, range: rowAgeRangeMonths(row) }))
+    .filter((b): b is { row: SizeChartRow; range: [number, number] } => b.range !== null);
+  return pickBand(bands, (ownRange[0] + ownRange[1]) / 2);
 }
 
 /** The stocked size to recommend for a target row: that row's own size if

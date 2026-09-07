@@ -54,7 +54,7 @@ function PendingRequestBanner({ request }: { request: NonNullable<Order['order_c
 
   return (
     <div className="bg-warning-background border border-warning-border p-4 rounded-surface">
-      <p className="font-semibold text-warning text-body-sm">Request submitted — awaiting review</p>
+      <p className="font-semibold text-warning text-body-sm">Request submitted: awaiting review</p>
       <p className="text-body-sm text-text-secondary mt-1">{summary}</p>
     </div>
   );

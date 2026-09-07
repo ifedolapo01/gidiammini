@@ -52,10 +52,7 @@ export default function ProductReviews({ data, productName }: ProductReviewsProp
             No reviews for this one yet
           </p>
           <p className="mx-auto mt-2 max-w-prose text-body-sm text-text-secondary">
-            We only ask for a review once an order has actually been delivered,
-            and only the person who bought it can leave one — so this space stays
-            empty until a real customer fills it. If that is you, check your email
-            after your parcel arrives.
+            Buy it and we&apos;ll email you a link to leave the first review once it&apos;s delivered.
           </p>
         </div>
       ) : (

@@ -65,7 +65,7 @@ export default function ReviewItemForm({ token, item, defaultAuthorName }: Revie
           <span>
             {done
               ? message
-              : "You've already reviewed this one — thank you. It appears on the product page once we've read it."}
+              : "You've already reviewed this one. Thank you. It appears on the product page once we've read it."}
           </span>
         </p>
       ) : (

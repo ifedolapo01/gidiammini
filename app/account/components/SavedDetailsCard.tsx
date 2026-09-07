@@ -43,7 +43,7 @@ export function SavedDetailsCard({ saved }: SavedDetailsCardProps) {
       </div>
 
       <p className="mt-2 text-caption-md text-text-muted">
-        Checkout fills these in for you. They come from your most recent order — place
+        Checkout fills these in for you. They come from your most recent order. Place
         one with a new address and this follows.
       </p>
     </section>

@@ -34,7 +34,7 @@ export function StockCoverHint({ insight }: StockCoverHintProps) {
       // row at once.
       title={
         `Selling ${insight.velocity.toFixed(2)} a day` +
-        (insight.confident ? '' : ` — based on only ${insight.observedDays} days of history`)
+        (insight.confident ? '' : `: based on only ${insight.observedDays} days of history`)
       }
     >
       {urgent && <AlertTriangle size={12} className="inline mr-1 -mt-0.5" aria-hidden />}
@@ -42,7 +42,7 @@ export function StockCoverHint({ insight }: StockCoverHintProps) {
       {/* An asterisk rather than a sentence: the page-level notice on the
           reports screen explains it, and repeating "based on 4 days" on fifty
           rows would drown the numbers it is qualifying. */}
-      {!insight.confident && <span title="Early estimate — little stock history yet"> *</span>}
+      {!insight.confident && <span title="Early estimate: little stock history yet"> *</span>}
     </p>
   );
 }

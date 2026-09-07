@@ -72,7 +72,7 @@ export default function CustomerMessageThread({ orderNumber, contact, messages, 
 
       {messages.length === 0 ? (
         <p className="text-body-sm text-text-secondary">
-          Have a question about this order? Send us a message — we&rsquo;ll reply by email.
+          Have a question about this order? Send us a message. We&rsquo;ll reply by email.
         </p>
       ) : (
         <ul className="space-y-3">

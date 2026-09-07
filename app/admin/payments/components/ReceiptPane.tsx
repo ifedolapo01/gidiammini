@@ -65,7 +65,7 @@ export function ReceiptPane({ order, url, loading, error, reload, reportExpired 
             <p className="text-body-sm font-medium text-text-primary">No receipt uploaded</p>
             <p className="text-caption-md max-w-xs">
               Nothing to verify yet. Record a payment anyway if the money arrived by another
-              route — cash, POS, or a transfer you found on the statement.
+              route: cash, POS, or a transfer you found on the statement.
             </p>
           </div>
         ) : error ? (

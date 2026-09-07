@@ -23,7 +23,7 @@ export default function CustomerAddresses({ addresses }: { addresses: CustomerAd
   if (addresses.length === 0) {
     return (
       <p className="rounded-surface border border-border bg-background-secondary p-4 text-body-sm text-text-secondary">
-        No delivery addresses on record — every order so far has been a pickup, or predates
+        No delivery addresses on record: every order so far has been a pickup, or predates
         addresses being captured.
       </p>
     );

@@ -138,7 +138,7 @@ export default function OrderPrintDocument({ order, kind, onDone }: OrderPrintDo
                   pick list, and the reason this is paper and not a screen. */}
               {!invoice && <td className={CELL}>&nbsp;</td>}
               <td className={CELL}>{item.product_name}</td>
-              <td className={CELL}>{[item.size, item.color].filter(Boolean).join(' / ') || '—'}</td>
+              <td className={CELL}>{[item.size, item.color].filter(Boolean).join(' / ') || '-'}</td>
               <td className={`${CELL} text-right font-semibold`}>{item.quantity}</td>
               {invoice && <td className={`${CELL} text-right`}>{formatCurrency(item.price)}</td>}
               {invoice && (

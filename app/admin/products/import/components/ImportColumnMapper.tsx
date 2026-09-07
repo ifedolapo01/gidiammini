@@ -69,7 +69,7 @@ export function ImportColumnMapper({ headers, mapping, onChange }: ImportColumnM
                         onChange(field.key, event.target.value === '' ? null : Number(event.target.value))
                       }
                     >
-                      <option value="">— not in this file —</option>
+                      <option value="">(not in this file)</option>
                       {headers.map((header, index) => (
                         <option key={`${header}-${index}`} value={index}>
                           {header || `Column ${index + 1}`}

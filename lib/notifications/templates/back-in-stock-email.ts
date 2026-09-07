@@ -52,19 +52,19 @@ export function buildBackInStockEmail(params: BackInStockEmailParams): BackInSto
         <div class="product-box">
           <h2 style="margin: 0;">${escapeHtml(productName)}</h2>
           ${variantLine}
-          <p style="margin-top: 16px;">You asked us to let you know when this was available again — it is, as of today.</p>
+          <p style="margin-top: 16px;">You asked us to let you know when this was available again. It is, as of today.</p>
           <div style="text-align: center;">
             <a href="${escapeHtml(productUrl)}" class="cta">View the product</a>
           </div>
         </div>
 
         <p style="color: #6b7280; font-size: 14px;">
-          We couldn't hold one back for you — restocked items sell in the order
+          We couldn't hold one back for you. Restocked items sell in the order
           people check out, so it's worth a look soon.
         </p>
 
         <div class="footer">
-          <p>You received this because you asked to be told when this product returned. It's a one-off — you're not subscribed to anything.</p>
+          <p>You received this because you asked to be told when this product returned. It's a one-off. You're not subscribed to anything.</p>
         </div>
       </div>
     </body>

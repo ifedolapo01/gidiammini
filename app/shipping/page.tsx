@@ -40,7 +40,7 @@ export default function ShippingPage() {
         <div className="mb-4 sm:mb-6">
           <h1 className="text-body-lg sm:text-h5 md:text-h4 font-bold mb-1 text-text-primary">Shipping Information</h1>
           <p className="text-caption-md sm:text-body-sm text-text-secondary">
-            How we process, deliver, and hand off your order.
+            How we process, deliver and hand off your order.
           </p>
         </div>
 

@@ -100,7 +100,7 @@ export default function SearchResults() {
             Nothing matches “{query.trim()}”.
           </p>
           <p className="mt-2 text-body-sm text-text-secondary">
-            Try a shorter or more general word — “gown” rather than “long sleeve gown”.
+            Try a shorter or more general word: “gown” rather than “long sleeve gown”.
           </p>
           <Link
             href="/products"

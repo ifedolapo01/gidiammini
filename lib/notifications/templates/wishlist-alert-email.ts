@@ -45,7 +45,7 @@ function copyFor(alert: WishlistAlert): Copy {
       lead: 'You saved this to your wishlist while it was sold out. It is available again as of today.',
       // Said plainly: it is not being held, and whoever saved it is not the
       // only person who can buy it.
-      detail: `<p style="margin: 12px 0 0; color: #6b7280;">Stock is limited and we cannot hold it — first come, first served.</p>`,
+      detail: `<p style="margin: 12px 0 0; color: #6b7280;">Stock is limited and we cannot hold it. First come, first served.</p>`,
       cta: 'Buy it now',
     };
   }

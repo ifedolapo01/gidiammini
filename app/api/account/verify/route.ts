@@ -26,7 +26,7 @@ async function verifyLink(request: NextRequest) {
         success: false,
         error:
           outcome.reason === 'expired'
-            ? 'That link has expired. Ask for a new one — it only takes a moment.'
+            ? 'That link has expired. Ask for a new one. It only takes a moment.'
             : 'That link is not valid. It may already have been used.',
       },
       { status: outcome.reason === 'expired' ? 410 : 401 }

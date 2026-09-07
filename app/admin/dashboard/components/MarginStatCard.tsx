@@ -42,7 +42,7 @@ export default function MarginStatCard({ margin }: { margin: MarginTotals | null
       title="Gross Margin"
       icon={<TrendingUp className="w-5 h-5 text-primary" />}
       iconBgClassName="bg-secondary"
-      value={hasAnyCost ? formatCurrency(margin.grossMargin) : '—'}
+      value={hasAnyCost ? formatCurrency(margin.grossMargin) : '-'}
       valueClassName={VALUE_CLASS[tone]}
       subtext={subtext}
     />

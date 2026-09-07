@@ -76,12 +76,12 @@ export function StockMovementReason({
           }`}
         >
           {difference === 0 ? (
-            <span>Counted {newStock} — matches the system exactly.</span>
+            <span>Counted {newStock}. Matches the system exactly.</span>
           ) : (
             <span className="flex items-start gap-2">
               <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden />
               <span>
-                System says {expectedStock}, you counted {newStock} —{' '}
+                System says {expectedStock}, you counted {newStock}:{' '}
                 <strong>
                   {difference > 0 ? `${difference} more` : `${Math.abs(difference)} missing`}
                 </strong>
@@ -102,7 +102,7 @@ export function StockMovementReason({
           onChange={(event) => onNoteChange(event.target.value)}
           placeholder={
             counting
-              ? 'Where the difference came from — damaged, miscounted, taken as a sample…'
+              ? 'Where the difference came from: damaged, miscounted, taken as a sample…'
               : reason === 'restock'
                 ? 'Supplier, invoice number…'
                 : 'What was wrong with the old number…'

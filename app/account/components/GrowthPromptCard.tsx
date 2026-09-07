@@ -35,11 +35,11 @@ export default function GrowthPromptCard({ orders }: GrowthPromptCardProps) {
       <div>
         <p className="text-body-sm font-medium text-text-primary">
           {prompt.productName ? `You bought ${prompt.productName} in ` : 'You bought '}
-          {prompt.boughtSize} on {formatDateOnly(prompt.boughtDate)} — they&apos;re probably closer to{' '}
+          {prompt.boughtSize} on {formatDateOnly(prompt.boughtDate)}. They&apos;re probably closer to{' '}
           <strong>{prompt.suggestedNextSize}</strong> by now.
         </p>
         <p className="mt-1 text-caption-md text-text-secondary">
-          A guide based on typical growth, not a measurement — check against the size guide before you order.
+          A guide based on typical growth, not a measurement. Check against the size guide before you order.
         </p>
       </div>
     </div>

@@ -41,7 +41,7 @@ export function QuantitySelector({
    */
   const applyAndAnnounce = (next: number) => {
     onChange(next);
-    announce(announceLabel ? `Quantity ${next} — ${announceLabel}` : `Quantity ${next}`);
+    announce(announceLabel ? `Quantity ${next}, ${announceLabel}` : `Quantity ${next}`);
   };
 
   const decrement = () =>

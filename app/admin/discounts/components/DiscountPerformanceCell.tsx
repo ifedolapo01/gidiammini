@@ -26,7 +26,7 @@ interface Props {
 
 export default function DiscountPerformanceCell({ performance, unavailable }: Props) {
   if (unavailable) {
-    return <span className="text-caption-md text-text-muted">—</span>;
+    return <span className="text-caption-md text-text-muted">-</span>;
   }
 
   if (!performance || performance.orders === 0) {

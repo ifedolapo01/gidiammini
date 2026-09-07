@@ -6,6 +6,7 @@ import { QuantitySelector } from '@/components/commerce/QuantitySelector';
 import ProductImage from '@/components/commerce/ProductImage';
 import { formatCurrency } from '@/lib/commerce/pricing';
 import { describeStockShortage, type CartStockIssue } from '@/lib/commerce/cart-stock';
+import { capitalizeText } from '@/lib/commerce/format-text';
 import type { CartItem } from '@/types/order';
 import { announce } from '@/lib/announce';
 
@@ -32,7 +33,7 @@ export default function CartLineRow({ item, issue, onQuantityChange, onRemove }:
       <div className="flex-1 ml-3 sm:ml-4 md:ml-6 min-w-0"> {/* Added min-w-0 */}
         <h3 className="font-semibold text-body-sm sm:text-body-md md:text-body-lg truncate">{item.name}</h3>
         <p className="text-text-secondary text-caption-md sm:text-body-sm mt-1 truncate">
-          {item.color && `Color: ${item.color}`}
+          {item.color && `Color: ${capitalizeText(item.color)}`}
           {item.size && ` • Size/Age: ${item.size}`}
         </p>
 

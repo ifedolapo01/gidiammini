@@ -105,7 +105,7 @@ export default function QuestionModerationCard({
             onModerate(
               publish ? { answer, status: 'published' } : { answer },
               publish
-                ? 'Answered and published — the asker has been emailed.'
+                ? 'Answered and published. The asker has been emailed.'
                 : 'Answer saved. It is not on the product page yet.'
             )
           }
@@ -154,7 +154,7 @@ export default function QuestionModerationCard({
             onClick={async () => {
               const confirmed = await confirm({
                 title: 'Delete this question permanently?',
-                message: 'Rejecting is usually the better option — it hides the question and keeps the record.',
+                message: 'Rejecting is usually the better option. It hides the question and keeps the record.',
                 consequences: [
                   'Removes the question and any answer given to it',
                   'Cannot be undone',

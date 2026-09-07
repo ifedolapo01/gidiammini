@@ -111,7 +111,7 @@ export default function AdminCustomerDetail({ params }: { params: Promise<{ id: 
             <Ban className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
             <div>
               <p className="text-body-sm font-semibold text-destructive">
-                This customer is blocked — their checkout is refused.
+                This customer is blocked: their checkout is refused.
               </p>
               {customer.blocked_reason && (
                 <p className="mt-0.5 text-caption-md text-text-secondary">{customer.blocked_reason}</p>

@@ -3,6 +3,7 @@
 
 import { MapPin, Store } from 'lucide-react';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { capitalizeText } from '@/lib/commerce/format-text';
 import { getStatusColor, formatCustomerStatusLabel } from '@/lib/commerce/order-status';
 import type { Order } from '@/types/order';
 import OrderStatusTimeline from './OrderStatusTimeline';
@@ -93,7 +94,7 @@ export default function TrackedOrderSummary({ order, orderNumber, contact, onOrd
                 <p className="text-caption-md md:text-body-sm text-text-secondary">
                   Qty: {item.quantity}
                   {item.size && ` • Size: ${item.size}`}
-                  {item.color && ` • Color: ${item.color}`}
+                  {item.color && ` • Color: ${capitalizeText(item.color)}`}
                 </p>
               </div>
               <p className="font-semibold text-text-primary text-body-sm md:text-body-md">

@@ -159,7 +159,7 @@ describe('canRequestReturn', () => {
   });
 
   it('is true within the return window', () => {
-    const now = new Date('2026-08-15T00:00:00Z'); // 14 days later
+    const now = new Date(new Date(deliveredAt).getTime() + (RETURN_WINDOW_DAYS - 1) * 86_400_000);
     expect(canRequestReturn('delivered', deliveredAt, now)).toBe(true);
   });
 

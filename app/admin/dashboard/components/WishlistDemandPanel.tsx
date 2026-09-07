@@ -22,7 +22,7 @@ export function WishlistDemandPanel() {
         <div>
           <h2 className="text-h5 font-bold text-text-primary">Most Wishlisted</h2>
           <p className="text-body-sm text-text-secondary mt-0.5">
-            Saved but not bought — sold-out items first.
+            Saved but not bought, sold-out items first.
           </p>
         </div>
         <Link

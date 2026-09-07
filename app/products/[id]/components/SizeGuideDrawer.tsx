@@ -93,7 +93,7 @@ export default function SizeGuideDrawer({
             over a tape measure and then being disappointed by the parcel. */}
         <p className="border-t border-divider pt-3 text-caption-md text-text-muted">
           These measurements are a guide to standard sizing, not a promise about
-          one garment. If your child is between two bands, size up — and if you
+          one garment. If your child is between two bands, size up. If you
           are still unsure, ask us on the product page and we will measure the
           actual item.
         </p>

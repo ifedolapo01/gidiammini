@@ -110,7 +110,7 @@ function UnsubscribeCard() {
         <h1 className="text-h5 font-bold text-text-primary mb-2">You are unsubscribed</h1>
         <p className="text-text-secondary mb-6">
           We will not send offers to <strong className="text-text-primary">{state.email}</strong> again.
-          You will still get emails about any order you place — those are not marketing.
+          You will still get emails about any order you place. Those are not marketing.
         </p>
         <Link
           href="/"

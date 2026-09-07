@@ -20,8 +20,8 @@ export default function OnlinePaymentPanel({ total, isRedirecting, onPay }: Onli
   return (
     <div className="mb-6 rounded-surface border border-border bg-surface p-4 md:p-6">
       <p className="text-body-md text-text-secondary">
-        You will finish on our payment provider&apos;s secure page — card, bank, USSD or
-        transfer — and come straight back. No receipt to upload, and your order is
+        You will finish on our payment provider&apos;s secure page (card, bank, USSD or
+        transfer) and come straight back. No receipt to upload, and your order is
         confirmed the moment the payment goes through.
       </p>
 

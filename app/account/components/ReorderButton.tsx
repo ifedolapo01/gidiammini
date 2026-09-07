@@ -52,7 +52,7 @@ export function ReorderButton({ orderId, orderNumber }: ReorderButtonProps) {
       }
 
       if (result.priceChanged) {
-        toast.info('Some prices have changed since that order — the cart shows the current ones.');
+        toast.info('Some prices have changed since that order. The cart shows the current ones.');
       }
       toast.success(result.message);
       router.push('/cart');
@@ -67,7 +67,7 @@ export function ReorderButton({ orderId, orderNumber }: ReorderButtonProps) {
     <Button variant="outline" size="sm" loading={working} onClick={reorder}>
       <RotateCcw className="h-4 w-4" aria-hidden="true" />
       <span>
-        Buy it again<span className="sr-only"> — everything from order {orderNumber}</span>
+        Buy it again<span className="sr-only">: everything from order {orderNumber}</span>
       </span>
     </Button>
   );

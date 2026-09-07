@@ -61,7 +61,7 @@ export default function DiscountRedemptionFields({
           // Uppercased as it is typed, because that is how it is stored and how
           // the checkout will compare it.
           onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-          placeholder="e.g. WELCOME10 — leave blank for automatic"
+          placeholder="e.g. WELCOME10 (leave blank for automatic)"
           autoCapitalize="characters"
           spellCheck={false}
           maxLength={32}

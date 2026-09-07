@@ -74,7 +74,7 @@ export function ProductFitSection({ register }: ProductFitSectionProps) {
           id="fit_note"
           rows={2}
           maxLength={300}
-          placeholder="The neck opening is snug on bigger heads — the popper side helps."
+          placeholder="The neck opening is snug on bigger heads. The popper side helps."
           {...register('fit_note')}
         />
         <p className="mt-1 text-caption-md text-text-secondary">

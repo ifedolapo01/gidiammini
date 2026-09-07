@@ -48,7 +48,7 @@ export default function GlobalError({
             </h1>
             <p className="mb-8 text-body-sm text-text-secondary sm:text-body-md">
               Something failed while loading the site itself. Please try again in
-              a moment — no order or payment is affected by this.
+              a moment. No order or payment is affected by this.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">

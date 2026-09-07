@@ -29,7 +29,7 @@ export function MarkdownCandidatesPanel({ onCreateDiscount }: MarkdownCandidates
         <div>
           <h2 className="text-body-lg font-bold text-text-primary">Markdown candidates</h2>
           <p className="text-caption-md text-text-secondary">
-            Stale or dead stock, ranked by cash tied up — clear it without going below cost.
+            Stale or dead stock, ranked by cash tied up: clear it without going below cost.
           </p>
         </div>
         <span className="bg-primary/10 text-primary text-caption-md font-bold px-2.5 py-1 rounded-full">

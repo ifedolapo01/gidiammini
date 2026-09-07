@@ -74,7 +74,7 @@ export default function DiscountCodeField({
           <span className="text-destructive">{error}</span>
         ) : applied && saved > 0 ? (
           <span className="text-success">
-            {applied.code} applied — you saved {formatCurrency(saved)}
+            {applied.code} applied: you saved {formatCurrency(saved)}
             {applied.saved_on_shipping > 0 && applied.saved_on_items === 0 ? ' on delivery' : ''}.
           </span>
         ) : applied ? (

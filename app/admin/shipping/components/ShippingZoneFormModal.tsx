@@ -108,7 +108,7 @@ export function ShippingZoneFormModal({
               onChange={(e) => setFormData({ ...formData, is_primary: e.target.checked })}
             />
             <label htmlFor="is_primary" className="text-body-sm font-medium text-text-primary">
-              Main location <span className="text-text-muted font-normal">(drives the product page’s headline delivery estimate — only one zone can be primary)</span>
+              Main location <span className="text-text-muted font-normal">(drives the product page’s headline delivery estimate: only one zone can be primary)</span>
             </label>
           </div>
 

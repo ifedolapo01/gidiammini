@@ -62,7 +62,7 @@ export function useReviewSubmit(token: string) {
         return false;
       }
 
-      setMessage(result.message ?? 'Thank you — your review is with us.');
+      setMessage(result.message ?? 'Thank you. Your review is with us.');
       setDone(true);
       return true;
     } catch {

@@ -46,7 +46,7 @@ export default function AutomationPage() {
 
       {unavailable ? (
         <p className="rounded-control border border-warning-border bg-warning-background p-3 text-body-sm text-warning">
-          Automation is not available on this deployment yet — apply migration 20260906160000 to
+          Automation is not available on this deployment yet. Apply migration 20260906160000 to
           switch it on.
         </p>
       ) : (
@@ -79,7 +79,7 @@ export default function AutomationPage() {
           )}
 
           <p className="text-caption-md text-text-secondary">
-            The thresholds these rules use — the reorder point, the high-value amount — come from{' '}
+            The thresholds these rules use (the reorder point, the high-value amount) come from{' '}
             <Link href="/admin/settings" className="text-primary hover:text-primary-hover">
               Settings
             </Link>

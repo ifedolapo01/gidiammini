@@ -41,7 +41,7 @@ export default function ProductsGrid({
         </p>
         <p className="mt-2 text-body-sm text-text-muted">
           {hasActiveFilters
-            ? 'Try removing a filter — a wider price range or another size usually brings results back.'
+            ? 'Try removing a filter. A wider price range or another size usually brings results back.'
             : 'Check back soon, or browse another collection.'}
         </p>
         {hasActiveFilters && (

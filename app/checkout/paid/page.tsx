@@ -95,7 +95,7 @@ export default async function PaidPage({ searchParams }: PaidPageProps) {
               <h1 className="mt-3 text-h5 font-bold text-text-primary">Something is off</h1>
               <p className="mt-2 text-body-md text-text-secondary">
                 The amount paid does not match order <strong>#{outcome.orderNumber}</strong>.
-                Nothing has been confirmed and a person is looking at it — please contact us
+                Nothing has been confirmed and a person is looking at it. Please contact us
                 and we will sort it out today.
               </p>
             </>
@@ -106,12 +106,12 @@ export default async function PaidPage({ searchParams }: PaidPageProps) {
                 We have not seen that payment yet
               </h1>
               <p className="mt-2 text-body-md text-text-secondary">
-                It may have been cancelled, or it may still be settling — refresh in a
+                It may have been cancelled, or it may still be settling. Refresh in a
                 moment to check. Your cart is untouched, so nothing is lost either way,
                 and you can pay by bank transfer instead.
               </p>
               <p className="mt-2 text-caption-md text-text-muted">
-                If your bank has already debited you, do not pay again — contact us with
+                If your bank has already debited you, do not pay again. Contact us with
                 your order number and we will confirm it by hand.
               </p>
             </>

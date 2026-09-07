@@ -39,7 +39,7 @@ export default function SingleCostField({ register, errors, watch }: SingleCostF
   return (
     <div>
       <label htmlFor="single-cost" className="block text-body-sm font-bold text-text-primary mb-2">
-        Cost Price (₦) <span className="text-text-muted font-normal">— optional</span>
+        Cost Price (₦) <span className="text-text-muted font-normal">(optional)</span>
       </label>
       <div className="relative">
         <span aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary font-medium">
@@ -63,7 +63,7 @@ export default function SingleCostField({ register, errors, watch }: SingleCostF
       ) : (
         <p className={`text-body-sm mt-1.5 ${TONE_CLASS[marginTone(marginPercent)]}`} role={belowCost ? 'alert' : undefined}>
           {marginPercent === null
-            ? 'No cost recorded — margin cannot be shown.'
+            ? 'No cost recorded. Margin cannot be shown.'
             : belowCost
               ? `Selling below cost: ${formatCurrency(price - (cost ?? 0))} per unit (${formatMarginPercent(marginPercent)}).`
               : `Margin ${formatMarginPercent(marginPercent)} · ${formatCurrency(price - (cost ?? 0))} per unit.`}

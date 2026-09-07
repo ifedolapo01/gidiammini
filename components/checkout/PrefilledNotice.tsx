@@ -20,7 +20,7 @@ export function PrefilledNotice({ email }: PrefilledNoticeProps) {
       <p className="flex items-center gap-2 text-body-sm text-success">
         <UserCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
-          Filled in from your last order — signed in as{' '}
+          Filled in from your last order, signed in as{' '}
           <strong className="font-semibold">{email}</strong>
         </span>
       </p>

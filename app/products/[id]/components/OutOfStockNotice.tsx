@@ -50,7 +50,7 @@ export default function OutOfStockNotice({
         Sold out for now
       </h4>
       <p className="mb-4 text-body-sm text-text-secondary">
-        This one has gone. We restock regularly — leave your email and you&apos;ll be first to know.
+        This one has gone. We restock regularly. Leave your email and you&apos;ll be first to know.
       </p>
 
       <BackInStockForm productId={productId} variantKey={variantKey} />

@@ -152,7 +152,7 @@ export default function ReviewPhotoPicker({
         </p>
       ) : (
         <p className="mt-1.5 text-caption-md text-text-secondary">
-          Optional — up to {MAX_REVIEW_PHOTOS} photos. A photo of it being worn
+          Optional: up to {MAX_REVIEW_PHOTOS} photos. A photo of it being worn
           helps more than anything else you can write.
         </p>
       )}

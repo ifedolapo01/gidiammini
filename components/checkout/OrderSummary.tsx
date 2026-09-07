@@ -4,6 +4,7 @@
 import { Banknote } from 'lucide-react';
 import { CartItem } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { capitalizeText } from '@/lib/commerce/format-text';
 import { getDeliveryLabel } from '@/lib/commerce/checkout';
 import type { ShippingZone } from '@/types/shipping';
 import ProductImage from '@/components/commerce/ProductImage';
@@ -73,7 +74,7 @@ export default function OrderSummary({
               <div>
                 <span className="font-medium text-text-primary text-body-sm md:text-body-md">{item.name}</span>
                 <div className="text-caption-md md:text-body-sm text-text-secondary mt-1">
-                  {item.color && <span>Color: {item.color}</span>}
+                  {item.color && <span>Color: {capitalizeText(item.color)}</span>}
                   {item.size && <span> • Size: {item.size}</span>}
                   <span> • Qty: {item.quantity}</span>
                 </div>

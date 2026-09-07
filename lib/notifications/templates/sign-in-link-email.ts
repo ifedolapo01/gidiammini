@@ -66,7 +66,7 @@ export function buildSignInLinkEmail(params: SignInLinkEmailParams): SignInLinkE
 
         <p style="color: #6b7280; font-size: 14px;">
           <strong>Did not ask for this?</strong> Somebody typed your email or phone
-          number into our sign-in box. Ignore this email and nothing happens — the
+          number into our sign-in box. Ignore this email and nothing happens. The
           link is useless unless it is opened, and it stops working shortly anyway.
         </p>
 

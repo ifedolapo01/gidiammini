@@ -66,7 +66,7 @@ function RequestSummary({ changeRequest }: { changeRequest: OrderChangeRequest }
         <p className="text-body-sm text-text-secondary">
           Switch to <span className="font-medium text-text-primary">{newDeliveryOption}</span>
           {newDeliveryOption === 'delivery' && deliveryAddress && (
-            <> — {deliveryAddress}, {city}</>
+            <>: {deliveryAddress}, {city}</>
           )}
         </p>
       );
@@ -106,7 +106,7 @@ function RequestSummary({ changeRequest }: { changeRequest: OrderChangeRequest }
       const { orderItemIds, reason } = changeRequest.details as ReturnRequestDetails;
       return (
         <p className="text-body-sm text-text-secondary">
-          Return {orderItemIds.length} item{orderItemIds.length === 1 ? '' : 's'} — {reason}
+          Return {orderItemIds.length} item{orderItemIds.length === 1 ? '' : 's'}: {reason}
         </p>
       );
     }
@@ -167,7 +167,7 @@ export default function ChangeRequestReviewCard({
       {isReturn && (
         <div className="mt-3">
           <label className="block text-body-sm font-medium text-text-primary mb-1.5">
-            Refund amount (₦) — confirm before approving
+            Refund amount (₦): confirm before approving
           </label>
           <Input
             type="number"
@@ -177,7 +177,7 @@ export default function ChangeRequestReviewCard({
             onChange={(e) => setRefundAmount(Math.max(0, Number(e.target.value) || 0))}
           />
           <p className="mt-1 text-caption-md text-text-secondary">
-            Defaulted to the named lines&rsquo; value ({formatCurrency(refundAmount)}) — adjust for a restocking
+            Defaulted to the named lines&rsquo; value ({formatCurrency(refundAmount)}). Adjust for a restocking
             deduction or a partial return.
           </p>
         </div>

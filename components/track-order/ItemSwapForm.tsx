@@ -69,7 +69,7 @@ export default function ItemSwapForm({ orderNumber, contact, orderItems, onClose
           </div>
         </div>
         <p className="text-caption-md text-text-secondary">
-          We&rsquo;ll check what&rsquo;s actually in stock before confirming — leave whichever one isn&rsquo;t changing blank.
+          We&rsquo;ll check what&rsquo;s actually in stock before confirming. Leave whichever one isn&rsquo;t changing blank.
         </p>
         <div>
           <label htmlFor="swap-note" className="block text-body-sm font-medium text-text-primary mb-1.5">Note (optional)</label>

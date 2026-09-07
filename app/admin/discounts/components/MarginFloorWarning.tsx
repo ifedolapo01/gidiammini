@@ -61,7 +61,7 @@ export default function MarginFloorWarning({ products, discount }: MarginFloorWa
             <span className="font-medium">{variant.productName}</span>
             {variant.label !== 'Standard' && <span className="text-destructive/80"> · {variant.label}</span>}
             {': '}
-            {formatCurrency(variant.discountedPrice)} vs {formatCurrency(variant.cost)} cost —
+            {formatCurrency(variant.discountedPrice)} vs {formatCurrency(variant.cost)} cost,
             {' '}losing {formatCurrency(variant.lossPerUnit)} per unit
           </li>
         ))}

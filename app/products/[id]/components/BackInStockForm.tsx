@@ -66,8 +66,8 @@ export default function BackInStockForm({ productId, variantKey }: BackInStockFo
       >
         <Check className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
         <p className="text-body-sm text-success">
-          You&apos;re on the list. We&apos;ll email you the moment it&apos;s back — once, for this
-          product only.
+          You&apos;re on the list. We&apos;ll email you the moment it&apos;s back (once, for this
+          product only).
         </p>
       </div>
     );

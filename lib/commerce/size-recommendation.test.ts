@@ -103,6 +103,30 @@ describe('recommendSize — height and weight', () => {
   });
 });
 
+describe('recommendSize — sizes that split the standard bands differently', () => {
+  // A real product stocked "1-2 Months" / "3-5 Months" — neither is an alias
+  // of any BABY row, so the old exact-alias match returned null for every
+  // input, even a fully answered form. The fallback below resolves each
+  // stocked size to whichever standard row its own midpoint falls in.
+  const CUSTOM_SPLIT_PRODUCT = {
+    sizing_type: 'age' as const,
+    category: 'baby',
+    sizes: ['1-2 Months', '3-5 Months'],
+  };
+
+  it('matches a non-standard stocked size via its own parsed range', () => {
+    // Age 2 months ideally wants "0-3 months"; "1-2 Months" (midpoint 1.5,
+    // inside the 0-3 band) is the nearer stocked size than "3-5 Months".
+    const result = recommendSize(CUSTOM_SPLIT_PRODUCT, { ageMonths: 2, heightCm: 58, weightKg: 56 });
+    expect(result?.recommendedSize).toBe('1-2 Months');
+  });
+
+  it('matches the other custom-split size for an older band', () => {
+    const result = recommendSize(CUSTOM_SPLIT_PRODUCT, { ageMonths: 5 });
+    expect(result?.recommendedSize).toBe('3-5 Months');
+  });
+});
+
 describe('recommendSize — no answer', () => {
   it('returns null for letter and maternity charts', () => {
     expect(recommendSize(LETTER_PRODUCT, { ageMonths: 60 })).toBeNull();

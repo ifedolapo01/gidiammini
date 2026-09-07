@@ -23,7 +23,7 @@ export default function AccountLoginPage() {
             checkout and we will email you a link.
           </p>
           <p className="mt-2 text-caption-md text-text-secondary">
-            For customers who have ordered before — ordering is what creates your
+            For customers who have ordered before: ordering is what creates your
             account. If this is your first time, just check out as a guest.
           </p>
         </header>

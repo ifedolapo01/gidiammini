@@ -158,7 +158,7 @@ export function useOrderEdit(order: Order, showToast: ShowToast, onSaved: () => 
         notify && result.notified
           ? `${result.message} The customer has been emailed.`
           : notify
-            ? `${result.message} The customer could not be emailed — tell them yourself.`
+            ? `${result.message} The customer could not be emailed. Tell them yourself.`
             : result.message,
         notify && !result.notified ? 'error' : 'success'
       );

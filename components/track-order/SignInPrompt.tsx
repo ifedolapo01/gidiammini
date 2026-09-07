@@ -19,7 +19,7 @@ export default function SignInPrompt() {
           Ordered with us before?
         </p>
         <p className="mt-0.5 text-caption-md text-text-secondary sm:text-body-sm">
-          Sign in to see every order on your account — no order number needed.
+          Sign in to see every order on your account. No order number needed.
         </p>
       </div>
 

@@ -109,7 +109,7 @@ export default function AcceptInviteForm() {
           </button>
         </div>
         <p id="invite-password-hint" className="mt-1 text-caption-md text-text-secondary">
-          At least {MIN_LENGTH} characters. This account is yours alone — everything
+          At least {MIN_LENGTH} characters. This account is yours alone: everything
           you do is recorded against your name.
         </p>
       </div>
@@ -168,7 +168,7 @@ export function AcceptInviteFooter() {
   return (
     <p className="mt-6 flex items-center justify-center gap-1.5 text-body-sm text-text-muted">
       <ShieldCheck size={14} aria-hidden="true" />
-      Restricted access — authorized personnel only
+      Restricted access: authorized personnel only
     </p>
   );
 }

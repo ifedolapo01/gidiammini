@@ -74,7 +74,7 @@ export function buildAbandonedCartEmail(
   );
 
   const opening = first
-    ? 'Your basket is still here, exactly as you left it. Nothing has been ordered yet — pick up where you stopped whenever you are ready.'
+    ? 'Your basket is still here, exactly as you left it. Nothing has been ordered yet. Pick up where you stopped whenever you are ready.'
     : 'Your basket is still saved. We do not hold stock, though, so if one of these is on your list it is worth finishing before somebody else does.';
 
   const html = `
@@ -119,7 +119,7 @@ export function buildAbandonedCartEmail(
         </div>
 
         <p style="color:#6b7280;font-size:14px;">
-          You can pay by card, bank transfer or USSD — or transfer yourself and upload
+          You can pay by card, bank transfer or USSD, or transfer yourself and upload
           the receipt, whichever you prefer. Any questions at all, just reply to this
           email.
         </p>

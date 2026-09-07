@@ -34,7 +34,7 @@ export default function OrderMessageThread({ orderId }: OrderMessageThreadProps)
         </div>
       ) : messages.length === 0 ? (
         <p className="mt-2 text-body-sm text-text-secondary">
-          Nothing yet — a message here reaches the customer by email.
+          Nothing yet. A message here reaches the customer by email.
         </p>
       ) : (
         <ul className="mt-3 space-y-3">
@@ -65,7 +65,7 @@ export default function OrderMessageThread({ orderId }: OrderMessageThreadProps)
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={2}
-          placeholder="Reply to the customer — sent by email"
+          placeholder="Reply to the customer (sent by email)"
           className="flex-1"
         />
         <Button type="submit" loading={sending} disabled={!draft.trim()}>

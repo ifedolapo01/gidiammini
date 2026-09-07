@@ -124,7 +124,7 @@ export default function AddOrderLine({ onAdd }: AddOrderLineProps) {
                   {variants.map((option) => (
                     <option key={option.variant_key} value={option.variant_key}>
                       {variantLabel(option.size, option.color)}
-                      {option.price != null ? ` — ${formatCurrency(option.price)}` : ''}
+                      {option.price != null ? `: ${formatCurrency(option.price)}` : ''}
                     </option>
                   ))}
                 </Select>

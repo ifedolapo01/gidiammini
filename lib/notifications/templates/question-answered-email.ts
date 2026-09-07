@@ -75,7 +75,7 @@ export function buildQuestionAnsweredEmail(
         </p>
 
         <div class="footer">
-          <p>You received this because you asked a question about a product on our site. It's a one-off — you're not subscribed to anything.</p>
+          <p>You received this because you asked a question about a product on our site. It's a one-off. You're not subscribed to anything.</p>
         </div>
       </div>
     </body>

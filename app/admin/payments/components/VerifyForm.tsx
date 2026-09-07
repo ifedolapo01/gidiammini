@@ -109,7 +109,7 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }:
               ? `${formatCurrency(order.amount_paid)} already recorded. Balance ${formatCurrency(balance.outstanding)}.`
               : `The order asks for ${formatCurrency(order.total_amount)}.`}
             {ocrGuess?.amount != null && amount === String(ocrGuess.amount) && (
-              <> <strong className="text-info">Read from the receipt — double-check it.</strong></>
+              <> <strong className="text-info">Read from the receipt. Double-check it.</strong></>
             )}
           </span>
         </label>
@@ -127,7 +127,7 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }:
             aria-describedby="date-help"
           />
           <span id="date-help" className="mt-1 block text-caption-md text-text-secondary">
-            The date on the receipt, not today — that is what reconciles.
+            The date on the receipt, not today: that is what reconciles.
           </span>
         </label>
       </div>
@@ -159,7 +159,7 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }:
       {/* The consequence of what has been typed, before anything is pressed. */}
       {shortfall && !shortfall.settled && (
         <p className="rounded-control border border-warning-border bg-warning-background px-3 py-2 text-body-sm text-warning">
-          That leaves <strong>{formatCurrency(shortfall.outstanding)}</strong> outstanding — record it
+          That leaves <strong>{formatCurrency(shortfall.outstanding)}</strong> outstanding. Record it
           as a short payment and the customer is emailed the balance.
         </p>
       )}
@@ -179,7 +179,7 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }:
           onClick={() => submit('verified')}
         >
           <Check className="size-5" aria-hidden="true" />
-          Verified — confirm order
+          Verified: confirm order
         </Button>
         <Button
           size="lg"
@@ -190,7 +190,7 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }:
           onClick={() => submit('short_paid')}
         >
           <HandCoins className="size-5" aria-hidden="true" />
-          Short paid — email balance
+          Short paid: email balance
         </Button>
       </div>
 
@@ -200,7 +200,7 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }:
         disabled={saving}
         className="min-h-11 w-full rounded-control text-body-sm font-medium text-destructive hover:bg-destructive-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus disabled:opacity-50"
       >
-        No money arrived — reject this receipt
+        No money arrived: reject this receipt
       </button>
     </div>
   );

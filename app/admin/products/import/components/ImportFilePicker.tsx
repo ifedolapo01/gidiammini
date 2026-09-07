@@ -65,7 +65,7 @@ export function ImportFilePicker({ onFile }: ImportFilePickerProps) {
         <h2 className="font-semibold text-text-primary">What the file should look like</h2>
         <p className="mt-1 text-body-sm text-text-secondary">
           One row per variant. Rows sharing a product name become one product, with each row a size
-          and colour of it. Only <strong>name</strong> and <strong>price</strong> are required —
+          and colour of it. Only <strong>name</strong> and <strong>price</strong> are required:
           everything else is optional, and any column you leave out is left untouched on products
           that already exist.
         </p>

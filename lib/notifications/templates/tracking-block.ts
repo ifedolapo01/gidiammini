@@ -55,7 +55,7 @@ export function trackingNextSteps(tracking: Partial<OrderTracking> | null | unde
 
   if (!name && !number) return null;
 
-  const who = name ? `<li>${escapeHtml(name)} has your parcel${number ? ` — reference <strong>${escapeHtml(number)}</strong>` : ''}</li>` : '';
+  const who = name ? `<li>${escapeHtml(name)} has your parcel${number ? `: reference <strong>${escapeHtml(number)}</strong>` : ''}</li>` : '';
   const how = tracking?.trackingUrl
     ? '<li>Use the tracking button above for the latest position</li>'
     : number

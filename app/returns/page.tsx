@@ -19,7 +19,7 @@ const ELIGIBLE: PolicyItem[] = [
   {
     icon: PackageCheck,
     title: 'Unused and unworn',
-    body: 'Items must be unworn, unwashed, and in their original condition with tags attached.',
+    body: 'Items must be unworn, unwashed and in their original condition with tags attached.',
   },
   {
     icon: PackageCheck,
@@ -99,7 +99,7 @@ export default function ReturnsPage() {
             <li>Once we receive and inspect your return, we&apos;ll confirm approval and process a refund or exchange.</li>
             <li>Refunds are issued to your original payment method and may take a few business days to reflect.</li>
             <li>Exchanges are subject to stock availability for the requested size or color.</li>
-            <li>Damaged, defective, or incorrect items are covered at no extra cost — let us know right away with a photo of the item.</li>
+            <li>Damaged, defective, or incorrect items are covered at no extra cost. Let us know right away with a photo of the item.</li>
           </ul>
         </section>
 

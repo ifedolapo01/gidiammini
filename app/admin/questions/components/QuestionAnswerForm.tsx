@@ -52,7 +52,7 @@ export default function QuestionAnswerForm({
   return (
     <div className="w-full">
       <label htmlFor={fieldId} className="mb-1 block text-caption-md font-medium text-text-primary">
-        Your answer — shown publicly under the question, and emailed to whoever asked
+        Your answer (shown publicly under the question, and emailed to whoever asked)
       </label>
       <Textarea
         id={fieldId}
@@ -60,7 +60,7 @@ export default function QuestionAnswerForm({
         onChange={(event) => setDraft(event.target.value)}
         maxLength={MAX_QUESTION_ANSWER}
         rows={4}
-        placeholder="It runs a little generously — a chunky six-month-old is usually happier in the 6-9M."
+        placeholder="It runs a little generously. A chunky six-month-old is usually happier in the 6-9M."
       />
 
       <div className="mt-2 flex flex-wrap gap-2">
@@ -101,7 +101,7 @@ export default function QuestionAnswerForm({
 
       {empty && (
         <p className="mt-1 text-caption-md text-text-secondary">
-          {'A question cannot be published without an answer — an unanswered one on the product page reads worse than no Q&A at all.'}
+          {'A question cannot be published without an answer. An unanswered one on the product page reads worse than no Q&A at all.'}
         </p>
       )}
     </div>

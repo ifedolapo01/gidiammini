@@ -215,7 +215,7 @@ async function applyApprovedChange(
   if (changeRequest.request_type === 'reschedule') {
     const { preferredDate } = changeRequest.details as RescheduleDetails;
     const result = await applyOrderStatusTransition(supabase, order.id, 'rescheduled', {
-      notificationMessage: `Your delivery reschedule request has been approved — new date: ${preferredDate}.`,
+      notificationMessage: `Your delivery reschedule request has been approved. New date: ${preferredDate}.`,
       actor,
       reason,
     });
@@ -224,7 +224,7 @@ async function applyApprovedChange(
 
   if (changeRequest.request_type === 'cancel') {
     const result = await applyOrderStatusTransition(supabase, order.id, 'cancelled', {
-      notificationMessage: 'Your cancellation request has been approved — your order has been cancelled.',
+      notificationMessage: 'Your cancellation request has been approved. Your order has been cancelled.',
       actor,
       reason,
       // A customer-initiated cancellation always has the same ground, and

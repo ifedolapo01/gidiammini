@@ -48,7 +48,7 @@ export default function BulkActionBar({
           <>
             <p className="flex-1 text-body-sm text-text-primary" aria-live="assertive">
               <span className="font-semibold">{pending.description}</span>
-              {' — applying to '}
+              {': applying to '}
               {pending.count} row{pending.count === 1 ? '' : 's'} in {pending.secondsLeft}s
             </p>
             <div className="flex gap-2">

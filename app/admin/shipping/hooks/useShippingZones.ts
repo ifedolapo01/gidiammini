@@ -151,7 +151,7 @@ export function useShippingZones() {
       consequences: [
         'Customers in this zone lose their delivery option at checkout',
         'Orders already placed keep the delivery they were charged for',
-        'Cannot be undone — deactivating instead keeps the rates',
+        'Cannot be undone: deactivating instead keeps the rates',
       ],
       confirmLabel: 'Delete zone',
     });

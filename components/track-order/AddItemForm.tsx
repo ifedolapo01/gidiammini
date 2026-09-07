@@ -54,7 +54,7 @@ export default function AddItemForm({ orderNumber, contact, orderItems, onClose,
     <Modal open onClose={onClose} title="Add Another Item" size="sm">
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-body-sm text-text-secondary">
-          Add more of something already on this order — a different size, colour, or just another one.
+          Add more of something already on this order: a different size, colour, or just another one.
           This will change what you owe; we&rsquo;ll confirm the new total with you.
         </p>
         <div>

@@ -30,7 +30,7 @@ import { PeriodSkeleton } from './PeriodSkeleton';
 /** A rate as a whole percent, or an em dash when it is undefined — an average
  *  of no orders is not zero. */
 function percent(rate: number | null): string {
-  return rate === null ? '—' : `${Math.round(rate * 100)}%`;
+  return rate === null ? '-' : `${Math.round(rate * 100)}%`;
 }
 
 export function PeriodSection() {
@@ -121,7 +121,7 @@ export function PeriodSection() {
               title="Average order"
               icon={<NairaSign className="h-5 w-5 text-success" />}
               iconBgClassName="bg-success-background"
-              value={data.current.averageOrderValue === null ? '—' : formatCurrency(data.current.averageOrderValue)}
+              value={data.current.averageOrderValue === null ? '-' : formatCurrency(data.current.averageOrderValue)}
               delta={data.deltas.averageOrderValue}
               comparison={comparison}
               subtext="revenue ÷ paid orders"

@@ -85,7 +85,7 @@ export default function ProductImportPage() {
       {wizard.step === 'map' && (
         <>
           <p className="mb-4 text-body-sm text-text-secondary">
-            Reading <span className="font-medium text-text-primary">{wizard.filename}</span> —{' '}
+            Reading <span className="font-medium text-text-primary">{wizard.filename}</span>:{' '}
             {wizard.rowCount} row{wizard.rowCount === 1 ? '' : 's'}. We have guessed the columns;
             change any that are wrong.
           </p>
@@ -156,7 +156,7 @@ export default function ProductImportPage() {
                       .map((row) => (
                         <li key={row.id}>
                           <span className="font-medium text-text-primary">{row.label || row.id}</span>
-                          {' — '}
+                          {': '}
                           {row.error || 'Unknown error'}
                         </li>
                       ))}

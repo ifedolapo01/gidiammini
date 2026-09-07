@@ -117,7 +117,7 @@ export default function AdminLogin() {
 
         <p className="flex items-center justify-center gap-1.5 mt-6 text-body-sm text-text-muted">
           <ShieldCheck size={14} aria-hidden="true" />
-          Restricted access — authorized personnel only
+          Restricted access: authorized personnel only
         </p>
       </div>
     </div>

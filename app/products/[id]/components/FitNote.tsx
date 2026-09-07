@@ -49,7 +49,7 @@ export default function FitNote({ rating, note, tone }: FitNoteProps) {
         <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', colour)} aria-hidden="true" />
         <span className="text-text-secondary">
           {rating && <span className={cn('font-semibold', colour)}>{fitLabel(rating)}</span>}
-          {rating && ' — '}
+          {rating && ': '}
           {rating ? fitAdvice(rating) : note}
         </span>
       </p>

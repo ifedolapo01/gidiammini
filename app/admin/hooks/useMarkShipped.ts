@@ -49,7 +49,7 @@ export function useMarkShipped(onShipped?: () => void | Promise<void>) {
           return;
         }
 
-        showToast(`${orderNumber} marked shipped — the customer has been told.`);
+        showToast(`${orderNumber} marked shipped. The customer has been told.`);
         notifyOrdersChanged();
         await onShipped?.();
       } catch {

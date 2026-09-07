@@ -48,7 +48,7 @@ export default function OfflineBanner() {
       <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
       <span>
         <strong className="font-semibold">You are offline.</strong> You can keep browsing pages you
-        have already seen — your basket is saved and will be here when the signal returns.
+        have already seen. Your basket is saved and will be here when the signal returns.
       </span>
     </div>
   );

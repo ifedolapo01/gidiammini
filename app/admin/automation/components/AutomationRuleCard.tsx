@@ -96,7 +96,7 @@ export default function AutomationRuleCard({ rule, runs, pending, canToggle, onT
 
       <p className="mt-3 text-caption-md text-text-secondary">
         {rule.last_run_at
-          ? `Last checked ${formatDate(rule.last_run_at)}${rule.last_run_note ? ` — ${rule.last_run_note}` : ''}`
+          ? `Last checked ${formatDate(rule.last_run_at)}${rule.last_run_note ? `: ${rule.last_run_note}` : ''}`
           : 'Has not run yet.'}
         {rule.cooldown_hours
           ? ` · Repeats on the same item after ${Math.round(rule.cooldown_hours / 24)} days.`
@@ -114,7 +114,7 @@ export default function AutomationRuleCard({ rule, runs, pending, canToggle, onT
               )}
               <span className={run.outcome === 'failed' ? 'text-destructive' : 'text-text-secondary'}>
                 <span className="font-medium text-text-primary">{run.subject_label ?? 'Item'}</span>
-                {run.detail ? ` — ${run.detail}` : ''}
+                {run.detail ? `: ${run.detail}` : ''}
                 <span className="text-text-muted"> · {formatDate(run.ran_at)}</span>
               </span>
             </li>

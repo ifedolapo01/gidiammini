@@ -61,7 +61,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-h4 font-bold text-text-primary">Settings</h1>
         <p className="text-text-secondary">
-          Store details, bank account, tax and stock thresholds — changed here, not in code.
+          Store details, bank account, tax and stock thresholds. Changed here, not in code.
         </p>
       </div>
 

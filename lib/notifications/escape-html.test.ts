@@ -117,7 +117,7 @@ describe('the templates apply it', () => {
 
   it('still renders the real content correctly for ordinary input', () => {
     const { subject, html } = buildOrderReceivedEmail({ orderNumber: 'UT24445514', customerName: "Ada O'Brien" });
-    expect(subject).toBe('Order received — #UT24445514');
+    expect(subject).toBe('Order received: #UT24445514');
     expect(html).toContain('#UT24445514');
     expect(html).toContain('Ada O&#39;Brien');
   });

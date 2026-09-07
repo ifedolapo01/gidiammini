@@ -76,7 +76,7 @@ export function SignInForm() {
         <p className="mt-2 text-body-sm text-text-secondary">{sent}</p>
         <p className="mt-2 text-caption-md text-text-secondary">
           Check your spam folder if nothing arrives in a minute. Never ordered with
-          that email or phone before? There is no account yet — place an order as a
+          that email or phone before? There is no account yet. Place an order as a
           guest and one is created for you.
         </p>
       </div>
@@ -120,7 +120,7 @@ export function SignInForm() {
 
       <p className="mt-3 text-caption-md text-text-secondary">
         The link goes to the email address on your order, whichever of the two you
-        type here — so nobody can point it at an inbox that is not yours.
+        type here, so nobody can point it at an inbox that is not yours.
       </p>
     </form>
   );

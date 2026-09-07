@@ -84,7 +84,7 @@ export function RejectForm({ order, saving, onSubmit, onCancel }: RejectFormProp
       <label className="block">
         <span className="mb-1.5 block text-body-sm font-medium text-text-primary">
           Anything to add{code === 'other' ? '' : ' (optional)'}
-          <span className="ml-1 font-normal text-text-secondary">— the customer reads this</span>
+          <span className="ml-1 font-normal text-text-secondary">(the customer reads this)</span>
         </span>
         <Textarea
           value={note}

@@ -48,7 +48,7 @@ export function buildPaymentReminderEmail(params: PaymentReminderEmailParams): P
 
         <div class="message-box">
           <p>We received your payment receipt for order #${escapeHtml(orderNumber)} (<strong>${formatCurrency(totalAmount)}</strong>), and it's taking us a little longer than usual to verify it against our bank records.</p>
-          <p>There's nothing further you need to do — we'll email/SMS you the moment it's confirmed. If you'd like an update in the meantime, feel free to reach out.</p>
+          <p>There's nothing further you need to do. We'll email/SMS you the moment it's confirmed. If you'd like an update in the meantime, feel free to reach out.</p>
         </div>
 
         ${buildTrackOrderButton('#b45309')}

@@ -50,7 +50,7 @@ export function CategorySizeGuidance({
               <span className="line-clamp-2">{current}</span>
             ) : (
               <span className="italic text-text-muted">
-                Nothing yet — shoppers see the measurement tables only.
+                Nothing yet. Shoppers see the measurement tables only.
               </span>
             )}
           </p>
@@ -73,7 +73,7 @@ export function CategorySizeGuidance({
         onChange={(event) => setDraft(event.target.value)}
         maxLength={MAX}
         rows={4}
-        placeholder="Our sleepsuits have fold-over mittens, so the arms run a little long — most parents find the stated age band fits."
+        placeholder="Our sleepsuits have fold-over mittens, so the arms run a little long. Most parents find the stated age band fits."
       />
       <p className="mt-1 text-caption-md text-text-secondary">
         Shown at the top of the size guide for every product in this category.{' '}

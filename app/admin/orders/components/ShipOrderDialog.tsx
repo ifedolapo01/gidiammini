@@ -103,7 +103,7 @@ export default function ShipOrderDialog({ order, saving, onClose, onConfirm }: S
 
         <div>
           <label htmlFor="ship-tracking-url" className="mb-1.5 block text-body-sm font-medium text-text-primary">
-            Tracking link {derivedUrl ? '(optional — one is built for you)' : '(optional)'}
+            Tracking link {derivedUrl ? '(optional: one is built for you)' : '(optional)'}
           </label>
           <Input
             id="ship-tracking-url"

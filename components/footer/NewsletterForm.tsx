@@ -48,7 +48,7 @@ export default function NewsletterForm() {
         <div>
           <p className="font-semibold text-body-sm md:text-body-md">You&apos;re on the list</p>
           <p className="text-on-inverse/70 text-body-sm">
-            Look out for an email — offers land there first.
+            Look out for an email. Offers land there first.
           </p>
         </div>
       </div>

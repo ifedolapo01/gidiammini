@@ -39,7 +39,7 @@ export default function ContactForm() {
         <CheckCircle2 className="w-8 h-8 text-success" />
         <p className="font-bold text-body-md text-text-primary">Message sent</p>
         <p className="text-body-sm text-text-secondary">
-          Thanks for reaching out — we&apos;ll get back to you as soon as possible.
+          Thanks for reaching out. We&apos;ll get back to you as soon as possible.
         </p>
       </div>
     );

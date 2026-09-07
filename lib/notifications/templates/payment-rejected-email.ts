@@ -62,7 +62,7 @@ export function buildPaymentRejectedEmail(
           <tr><td>Confirmed so far</td><td>${formatCurrency(receivedTotal)}</td></tr>
         </table>
 
-        <p>Your order has <strong>not</strong> been cancelled — it is waiting for a payment we can confirm. Nothing else is needed from you beyond the step above.</p>
+        <p>Your order has <strong>not</strong> been cancelled. It is waiting for a payment we can confirm. Nothing else is needed from you beyond the step above.</p>
 
         ${buildTrackOrderButton(ACCENT)}`;
 

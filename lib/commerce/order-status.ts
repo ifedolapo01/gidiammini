@@ -202,10 +202,10 @@ export function deliveredAtFrom(
   return row?.changed_at ?? null;
 }
 
-/** Matches the "30-day return policy" copy already shown on the product page
+/** Matches the "7-day return policy" copy already shown on the product page
  *  (ProductDetailsAccordion.tsx) — a return can be requested only once the
  *  order has actually been delivered, and only within that window afterwards. */
-export const RETURN_WINDOW_DAYS = 30;
+export const RETURN_WINDOW_DAYS = 7;
 
 export function canRequestReturn(
   status: OrderStatus,

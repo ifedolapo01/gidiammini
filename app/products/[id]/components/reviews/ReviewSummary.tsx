@@ -71,7 +71,7 @@ export default function ReviewSummary({ stats }: ReviewSummaryProps) {
             <strong className="font-medium text-text-primary">
               {stats.verified_count} verified {stats.verified_count === 1 ? 'purchase' : 'purchases'}
             </strong>{' '}
-            — we only invite a review after an order has been delivered, so nobody
+            : we only invite a review after an order has been delivered, so nobody
             can leave one for something they did not buy.
           </span>
         </p>

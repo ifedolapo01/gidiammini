@@ -63,7 +63,7 @@ export default function OrdersBulkBar({
     >
       {options.length === 0 ? (
         <p className="text-body-sm text-text-secondary">
-          These orders have no status change in common — they are already finished, or they mix
+          These orders have no status change in common. They are already finished, or they mix
           pickup and delivery.
         </p>
       ) : (

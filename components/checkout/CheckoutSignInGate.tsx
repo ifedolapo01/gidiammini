@@ -44,7 +44,7 @@ export default function CheckoutSignInGate({ identity }: CheckoutSignInGateProps
       <div className="rounded-surface border border-border bg-surface p-6 md:p-8">
         <h1 className="text-h5 font-bold text-text-primary md:text-h4">Bought from us before?</h1>
         <p className="mt-2 text-body-md text-text-secondary">
-          Sign in and we will fill this in for you. No password — we email you a link.
+          Sign in and we will fill this in for you. No password. We email you a link.
         </p>
 
         <ul className="mt-4 space-y-2">
@@ -76,7 +76,7 @@ export default function CheckoutSignInGate({ identity }: CheckoutSignInGateProps
         </Button>
 
         <p className="mt-3 text-caption-md text-text-secondary">
-          First time here? Continue as guest — we create your account with the order, so
+          First time here? Continue as guest. We create your account with the order, so
             next time everything is already saved and you can sign in with this email.
           </p>
         </div>

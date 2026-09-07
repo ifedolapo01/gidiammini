@@ -114,7 +114,7 @@ export default function StockReportsPage() {
           className="rounded-control border border-info-border bg-info-background p-3 text-body-sm text-info"
         >
           {observedDays === 0
-            ? 'No stock movements recorded yet. These reports fill in as orders are placed and stock is received — there is no history to work from before that.'
+            ? 'No stock movements recorded yet. These reports fill in as orders are placed and stock is received. There is no history to work from before that.'
             : `Based on ${observedDays} day${observedDays === 1 ? '' : 's'} of stock history. Treat the rates below as early signals rather than settled figures until there are at least ${MIN_CONFIDENT_DAYS} days.`}
         </p>
       )}
@@ -125,7 +125,7 @@ export default function StockReportsPage() {
           { label: 'Not moving', value: String(totals.agingCount) },
           {
             label: 'Cash in slow stock',
-            value: totals.tiedUpValue > 0 ? formatCurrency(totals.tiedUpValue) : '—',
+            value: totals.tiedUpValue > 0 ? formatCurrency(totals.tiedUpValue) : '-',
           },
         ].map((card) => (
           <div key={card.label} className="bg-surface border border-border rounded-surface shadow-elevation-1 p-4">

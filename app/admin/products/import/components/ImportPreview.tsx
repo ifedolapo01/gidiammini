@@ -61,7 +61,7 @@ export function ImportPreview({ summary, plan, issues }: ImportPreviewProps) {
                   <li key={`${issue.line}-${issue.field ?? ''}-${index}`}>
                     <span className="font-medium text-text-primary">Line {issue.line}</span>
                     {issue.field && <span className="text-text-secondary"> · {issue.field}</span>}
-                    <span className="text-text-secondary"> — {issue.message}</span>
+                    <span className="text-text-secondary">: {issue.message}</span>
                   </li>
                 ))}
               </ul>

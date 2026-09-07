@@ -24,7 +24,7 @@ export { formatOrderStatus };
  * for anything not listed here. */
 export const STATUS_MESSAGES: Record<string, string> = {
   confirmed: 'Your order has been confirmed and is being processed.',
-  rescheduled: 'Your delivery timing has changed — see below for details.',
+  rescheduled: 'Your delivery timing has changed. See below for details.',
   shipped: 'Your order has been shipped! Track your package for delivery updates.',
   ready_for_pickup: 'Your order is ready for pickup!',
   picked_up: 'Your order has been picked up. Thank you for shopping with us!',

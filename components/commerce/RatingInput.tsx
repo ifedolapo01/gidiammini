@@ -72,7 +72,7 @@ export default function RatingInput({
             )}
           />
           <span className="sr-only">
-            {rating} {rating === 1 ? 'star' : 'stars'} — {MEANINGS[rating - 1]}
+            {rating} {rating === 1 ? 'star' : 'stars'}, {MEANINGS[rating - 1]}
           </span>
         </label>
       ))}

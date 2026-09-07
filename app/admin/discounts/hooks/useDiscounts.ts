@@ -132,7 +132,7 @@ export function useDiscounts() {
           ? `The code ${discount.code} stops working at checkout`
           : 'It stops applying to any product it currently prices',
         'Orders already placed with it keep the price they were given',
-        'Cannot be undone — deactivating instead keeps the record',
+        'Cannot be undone: deactivating instead keeps the record',
       ],
       confirmLabel: 'Delete discount',
     });

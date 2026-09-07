@@ -20,7 +20,7 @@ export interface OrderReceivedEmailContent {
 
 export function buildOrderReceivedEmail(params: OrderReceivedEmailParams): OrderReceivedEmailContent {
   const { orderNumber, customerName, deliveryEstimate } = params;
-  const subject = sanitizeHeader(`Order received — #${orderNumber}`);
+  const subject = sanitizeHeader(`Order received: #${orderNumber}`);
 
   const html = `
     <!DOCTYPE html>
@@ -41,12 +41,12 @@ export function buildOrderReceivedEmail(params: OrderReceivedEmailParams): Order
         <p>Hello ${escapeHtml(customerName)},</p>
       </div>
       <div class="content">
-        <p>Thanks for your order — we've received your payment receipt and we're verifying it now. We'll email/SMS you as soon as it's confirmed.</p>
+        <p>Thanks for your order. We've received your payment receipt and we're verifying it now. We'll email/SMS you as soon as it's confirmed.</p>
 
         <div class="order-number-box">
           <p style="margin: 0 0 4px; color: #6b7280;">Your order number</p>
           <p class="order-number">#${escapeHtml(orderNumber)}</p>
-          <p style="margin: 8px 0 0; color: #6b7280; font-size: 13px;">Save this — you'll need it (with the email or phone number you checked out with) to track your order.</p>
+          <p style="margin: 8px 0 0; color: #6b7280; font-size: 13px;">Save this. You'll need it (with the email or phone number you checked out with) to track your order.</p>
         </div>
 
         ${deliveryEstimate ? `

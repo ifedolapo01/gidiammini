@@ -116,8 +116,8 @@ export default async function ResumeCartPage({ searchParams }: ResumePageProps) 
       <ShoppingBag className="mx-auto h-10 w-10 text-text-secondary" aria-hidden="true" />
       <h1 className="mt-3 text-h5 font-bold text-text-primary">This basket has moved on</h1>
       <p className="mt-2 text-body-md text-text-secondary">
-        The link has expired, or what was in it has sold out since. Nothing is lost —
-        have another look and we will save whatever you pick.
+        The link has expired, or what was in it has sold out since. Nothing is lost.
+        Have another look and we will save whatever you pick.
       </p>
       <Link
         href="/products"

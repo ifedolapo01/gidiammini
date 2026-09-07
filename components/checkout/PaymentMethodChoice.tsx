@@ -40,7 +40,7 @@ const OPTIONS: Array<{
   {
     value: 'transfer',
     label: 'Bank transfer',
-    detail: 'Transfer yourself, upload the receipt, and we confirm it by hand.',
+    detail: 'Transfer yourself, upload the receipt and we confirm it by hand.',
     Icon: Building2,
   },
 ];

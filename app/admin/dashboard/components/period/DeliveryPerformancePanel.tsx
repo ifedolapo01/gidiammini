@@ -57,7 +57,7 @@ export function DeliveryPerformancePanel({
   return (
     <Panel
       title="Delivery performance by zone"
-      description="Delivered orders judged against the date each was promised at checkout — worst zone first."
+      description="Delivered orders judged against the date each was promised at checkout, worst zone first."
       empty="No orders delivered in this period yet."
       rows={zones.length}
     >

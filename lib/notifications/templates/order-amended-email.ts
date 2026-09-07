@@ -85,7 +85,7 @@ export function buildOrderAmendedEmail(params: OrderAmendedEmailParams): OrderAm
 
   const changeList = changes.length
     ? `<ul>${changes.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`
-    : '<p>The items are unchanged — only the amount due has been adjusted.</p>';
+    : '<p>The items are unchanged. Only the amount due has been adjusted.</p>';
 
   const body = `
         <div style="text-align: center;">

@@ -35,7 +35,7 @@ export default function ShippingPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-h4 font-bold text-text-primary">Manage Shipping</h1>
-          <p className="text-text-secondary">Set delivery fees, pickup locations, and contact numbers per state.</p>
+          <p className="text-text-secondary">Set delivery fees, pickup locations and contact numbers per state.</p>
         </div>
         <Button onClick={() => openModal()} className="shadow-elevation-1">
           <Plus size={18} />

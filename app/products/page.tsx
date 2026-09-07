@@ -48,10 +48,10 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
   const subcategory = category?.subcategories?.find((entry) => entry.slug === filters.subcategory);
   const name = subcategory?.name ?? category?.name;
 
-  const title = name ? `${name} — Our Collection` : 'Our Collection';
+  const title = name ? `${name}: Our Collection` : 'Our Collection';
   const description = name
-    ? `Shop ${name} at GidiamMini — filter by size, colour and price.`
-    : 'Browse the full GidiamMini collection — filter by category, size, colour and price.';
+    ? `Shop ${name} at GidiamMini. Filter by size, colour and price.`
+    : 'Browse the full GidiamMini collection. Filter by category, size, colour and price.';
   const canonical = canonicalListingPath(filters);
 
   return {

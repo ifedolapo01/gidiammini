@@ -24,7 +24,7 @@ import { askQuestionSchema } from '@/lib/api/schemas/questions';
  */
 const RECEIVED = {
   success: true,
-  message: "Thanks — we've got your question. We'll email you the answer, and post it on this page so the next person doesn't have to ask.",
+  message: "Thanks. We've got your question. We'll email you the answer, and post it on this page so the next person doesn't have to ask.",
 };
 
 async function askQuestion(request: NextRequest) {

@@ -41,7 +41,7 @@ export default function CartDrawerCrossSell({ productIds }: CartDrawerCrossSellP
         Goes well with this
       </h3>
       <p className="mt-0.5 text-caption-md text-text-secondary">
-        Delivery is charged per order — adding to this one costs nothing more to ship.
+        Delivery is charged per order. Adding to this one costs nothing more to ship.
       </p>
 
       <ul className="mt-2 divide-y divide-divider">

@@ -87,12 +87,12 @@ export default function CostInput({ price, cost, onChange, variant = 'compact', 
   return (
     <div>
       <label htmlFor={id} className="block text-body-sm font-bold text-text-primary mb-2">
-        Cost Price (₦) <span className="text-text-muted font-normal">— optional</span>
+        Cost Price (₦) <span className="text-text-muted font-normal">(optional)</span>
       </label>
       {field}
       <p className={`text-body-sm mt-1.5 ${tone}`} role={belowCost ? 'alert' : undefined}>
         {marginPercent === null
-          ? 'No cost recorded — margin cannot be shown.'
+          ? 'No cost recorded. Margin cannot be shown.'
           : belowCost
             ? `Selling below cost: ${formatCurrency(price - (cost ?? 0))} per unit (${formatMarginPercent(marginPercent)}).`
             : `Margin ${formatMarginPercent(marginPercent)} · ${formatCurrency(price - (cost ?? 0))} per unit.`}

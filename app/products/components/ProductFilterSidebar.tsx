@@ -37,7 +37,7 @@ function ClearAllButton({ count, onClearAll }: { count: number; onClearAll: () =
   return (
     <Button variant="ghost" size="sm" onClick={onClearAll}>
       Clear all
-      <span className="sr-only"> — {count} filter{count === 1 ? '' : 's'}</span>
+      <span className="sr-only">: {count} filter{count === 1 ? '' : 's'}</span>
     </Button>
   );
 }

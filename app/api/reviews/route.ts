@@ -27,7 +27,7 @@ const UNIQUE_VIOLATION = '23505';
 
 const THANKS = {
   success: true,
-  message: "Thank you — your review is with us. We read every one before it goes live, so it'll appear on the product shortly.",
+  message: "Thank you. Your review is with us. We read every one before it goes live, so it'll appear on the product shortly.",
 };
 
 /** Blank optional text is stored as NULL, not as ''. A column that holds both
@@ -79,7 +79,7 @@ async function submitReview(request: NextRequest) {
 
   if (item.reviewed) {
     return NextResponse.json(
-      { success: false, error: "You've already reviewed this item — thank you." },
+      { success: false, error: "You've already reviewed this item. Thank you." },
       { status: 409 }
     );
   }

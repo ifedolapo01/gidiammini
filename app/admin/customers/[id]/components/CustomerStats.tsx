@@ -44,7 +44,7 @@ export default function CustomerStats({ customer }: { customer: CustomerDetail }
       />
       <Stat
         label="Last seen"
-        value={customer.last_order_at ? formatDate(customer.last_order_at) : '—'}
+        value={customer.last_order_at ? formatDate(customer.last_order_at) : '-'}
         hint={
           customer.first_order_at
             ? `First ordered ${formatDate(customer.first_order_at)}`

@@ -14,7 +14,7 @@ export default function ContactInfoPanel() {
       <div>
         <p className="font-bold text-body-md text-text-primary mb-1">GidiamMini Clothing Store</p>
         <p className="text-body-sm text-text-secondary">
-          Have a question about an order, a product, or anything else? Reach out — we typically respond within one business day.
+          Have a question about an order, a product, or anything else? Reach out. We typically respond within one business day.
         </p>
       </div>
       <ul className="space-y-3">

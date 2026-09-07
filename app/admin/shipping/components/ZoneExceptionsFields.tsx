@@ -24,7 +24,7 @@ export function ZoneExceptionsFields({ rows, parentState, parentLga, onAdd, onUp
     <div className="pt-2 border-t border-border-light">
       <div className="flex items-center justify-between mb-2">
         <label className="block text-body-sm font-semibold text-text-primary">
-          Exceptions <span className="font-normal text-text-muted text-caption-md">(carve out a cheaper/slower LGA or district/town — only fee/ETA can differ)</span>
+          Exceptions <span className="font-normal text-text-muted text-caption-md">(carve out a cheaper/slower LGA or district/town: only fee/ETA can differ)</span>
         </label>
         <Button type="button" variant="secondary" size="sm" onClick={onAdd}>
           <Plus size={14} /> Add Exception
@@ -32,7 +32,7 @@ export function ZoneExceptionsFields({ rows, parentState, parentLga, onAdd, onUp
       </div>
 
       {rows.length === 0 && (
-        <p className="text-caption-md text-text-muted">No exceptions — this zone applies uniformly.</p>
+        <p className="text-caption-md text-text-muted">No exceptions. This zone applies uniformly.</p>
       )}
 
       <div className="space-y-4">

@@ -28,8 +28,8 @@ export default function LiveIndicator({ live, subject }: LiveIndicatorProps) {
       }`}
       title={
         live
-          ? `Connected — ${subject} update as they change.`
-          : `Not connected — ${subject} are refreshed on a timer instead.`
+          ? `Connected: ${subject} update as they change.`
+          : `Not connected: ${subject} are refreshed on a timer instead.`
       }
     >
       {live ? (

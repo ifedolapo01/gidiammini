@@ -91,7 +91,7 @@ function Row({
         {failed && (
           <p className="text-caption-md text-destructive mt-1 break-words">
             {REASON_TEXT[notification.failure_reason ?? ''] ?? 'It did not go out'}
-            {notification.failure_detail ? ` — ${notification.failure_detail}` : ''}
+            {notification.failure_detail ? `: ${notification.failure_detail}` : ''}
           </p>
         )}
 
@@ -136,8 +136,8 @@ export default function OrderNotificationTimeline({
         </p>
       ) : unavailable ? (
         <p className="rounded-control border border-warning-border bg-warning-background p-3 text-body-sm text-warning">
-          The message log is not available on this deployment yet. Messages are still being sent —
-          apply migration 20260906140000 to start recording them.
+          The message log is not available on this deployment yet. Messages are still being sent.
+          Apply migration 20260906140000 to start recording them.
         </p>
       ) : notifications.length === 0 ? (
         <p className="py-4 text-body-sm text-text-secondary">

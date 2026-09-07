@@ -44,7 +44,7 @@ function rate(velocity: number): string {
 }
 
 function cover(days: number | null): string {
-  if (days === null) return '—';
+  if (days === null) return '-';
   if (days < 1) return 'Under a day';
   return `${Math.round(days)} days`;
 }
@@ -124,7 +124,7 @@ export function AgingTable({ rows }: { rows: ReportRow[] }) {
               <td className="px-4 py-3 text-body-sm font-medium text-text-primary">{row.stock}</td>
               <td className="px-4 py-3 text-body-sm text-text-primary whitespace-nowrap">
                 {row.tiedUpValue === null
-                  ? <span className="text-text-muted" title="No cost price recorded for this variant">—</span>
+                  ? <span className="text-text-muted" title="No cost price recorded for this variant">-</span>
                   : formatCurrency(row.tiedUpValue)}
               </td>
               <td className="px-4 py-3">

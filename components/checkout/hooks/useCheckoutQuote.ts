@@ -111,7 +111,7 @@ export function useCheckoutQuote() {
         const saved = quote.applied_code.saved_on_items + quote.applied_code.saved_on_shipping;
         toast.success(
           saved > 0
-            ? `${quote.applied_code.code} applied — you saved ${formatCurrency(saved)}.`
+            ? `${quote.applied_code.code} applied: you saved ${formatCurrency(saved)}.`
             : // A code that lost to a better sale on every line. Saying
               // "applied" and showing no change is worse than explaining.
               `${quote.applied_code.code} is valid, but the prices you already have are better.`,

@@ -16,7 +16,7 @@ export default function ActivityPage() {
       <header>
         <h1 className="text-body-lg sm:text-h5 md:text-h4 font-bold text-text-primary">Activity</h1>
         <p className="mt-1 text-caption-md sm:text-body-sm text-text-secondary">
-          Every change made through the admin: who, what, and when. Entries cannot be edited.
+          Every change made through the admin: who, what and when. Entries cannot be edited.
         </p>
       </header>
 

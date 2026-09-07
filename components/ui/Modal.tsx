@@ -105,8 +105,21 @@ export function Modal({
         onClose();
       }}
       onClick={(event) => {
-        /* Clicks on the dialog element itself hit the backdrop area. */
-        if (dismissible && event.target === dialogRef.current) onClose();
+        /* A click that lands outside the dialog's own rendered box is a
+         * backdrop click — checked by coordinates against the box, not by
+         * `event.target === dialogRef.current`. That equality check only
+         * holds when the click's target resolves to the dialog element
+         * itself, which is not reliable across browsers/layouts (a nested
+         * child can end up as the target even over what looks like open
+         * backdrop). Coordinates against the actual box are true regardless
+         * of which descendant the click nominally hit. */
+        if (!dismissible) return;
+        const rect = dialogRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const inside =
+          event.clientX >= rect.left && event.clientX <= rect.right &&
+          event.clientY >= rect.top && event.clientY <= rect.bottom;
+        if (!inside) onClose();
       }}
       className={cn(
         'bg-surface p-0 text-text-primary shadow-elevation-4',

@@ -104,7 +104,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
         </h1>
         <p className="mt-2 max-w-prose text-body-md text-text-secondary">
           {outstanding === 0
-            ? 'You have reviewed everything on this order — thank you. Nothing else to do here.'
+            ? 'You have reviewed everything on this order. Thank you. Nothing else to do here.'
             : `Rate ${outstanding === 1 ? 'the item' : `each of the ${outstanding} items`} below. The
                rating is the only part we need; everything else is optional. Most people
                are buying from us for the first time, and what you write is the only

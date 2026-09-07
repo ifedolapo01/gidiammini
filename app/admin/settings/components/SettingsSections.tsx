@@ -59,7 +59,7 @@ export function BankDetailsSection({ draft, setField, errors }: SectionProps) {
   return (
     <SettingsSection
       title="Bank transfer details"
-      description="The account shown at checkout and repeated in payment reminders. Check the account number character by character before saving — this is where customers send money."
+      description="The account shown at checkout and repeated in payment reminders. Check the account number character by character before saving. This is where customers send money."
     >
       <SettingsField
         id="bankName"
@@ -147,7 +147,7 @@ export function OperationsSection({ draft, setField, errors }: SectionProps) {
       <SettingsField
         id="reorderCoverDays"
         label="Cover to hold"
-        hint="Days of stock to keep on top of the lead time — the buffer that absorbs a good week."
+        hint="Days of stock to keep on top of the lead time, the buffer that absorbs a good week."
         inputMode="numeric"
         suffix="days"
         value={draft.reorderCoverDays}
@@ -170,7 +170,7 @@ export function NotificationsSection({ draft, setField }: SectionProps) {
   return (
     <SettingsSection
       title="Notifications"
-      description="Which messages go out on their own. Turning one off means the shop handles it by hand — it does not queue anything for later."
+      description="Which messages go out on their own. Turning one off means the shop handles it by hand. It does not queue anything for later."
     >
       <SettingsToggle
         id="notifyOrderReceived"

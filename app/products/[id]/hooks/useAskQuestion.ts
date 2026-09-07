@@ -53,7 +53,7 @@ export function useAskQuestion() {
         return false;
       }
 
-      setMessage(result.message ?? "Thanks — we've got your question.");
+      setMessage(result.message ?? "Thanks. We've got your question.");
       setDone(true);
       return true;
     } catch {

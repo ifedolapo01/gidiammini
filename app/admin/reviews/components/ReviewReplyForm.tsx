@@ -45,7 +45,7 @@ export default function ReviewReplyForm({ reviewId, current, saving, onSave }: R
         htmlFor={fieldId}
         className="mb-1 block text-caption-md font-medium text-text-primary"
       >
-        Public reply — shown under this review on the product page
+        Public reply (shown under this review on the product page)
       </label>
       <Textarea
         id={fieldId}
@@ -53,7 +53,7 @@ export default function ReviewReplyForm({ reviewId, current, saving, onSave }: R
         onChange={(event) => setDraft(event.target.value)}
         maxLength={2000}
         rows={3}
-        placeholder="Thank you for letting us know — we have changed the size guide on this one."
+        placeholder="Thank you for letting us know. We have changed the size guide on this one."
       />
       <div className="mt-2 flex flex-wrap gap-2">
         <Button size="sm" loading={saving} onClick={() => onSave(draft)}>

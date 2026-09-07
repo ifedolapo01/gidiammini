@@ -71,9 +71,9 @@ export function useRecordPayment({ onRecorded }: UseRecordPaymentOptions) {
 function describeOutcome(status: RecordPaymentInput['status'], result: any): string {
   if (result.warning) return result.warning;
 
-  if (status === 'rejected') return 'Receipt rejected — the customer has been emailed what to do next.';
+  if (status === 'rejected') return 'Receipt rejected. The customer has been emailed what to do next.';
   if (result.confirmed) return 'Payment verified and the order is confirmed.';
-  if (result.outstanding > 0) return 'Part payment recorded — the customer has been emailed the balance.';
+  if (result.outstanding > 0) return 'Part payment recorded. The customer has been emailed the balance.';
 
   return 'Payment recorded.';
 }

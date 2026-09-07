@@ -33,7 +33,7 @@ export function ZoneEtaFields({ formData, setFormData }: ZoneEtaFieldsProps) {
           onChange={(e) => setFormData({ ...formData, is_door_delivery: e.target.checked })}
         />
         <label htmlFor="is_door_delivery" className="text-body-sm font-medium text-text-primary">
-          Doorstep delivery <span className="text-text-muted font-normal">(customer provides a street address — uncheck for a park/hub drop-off, which needs no address)</span>
+          Doorstep delivery <span className="text-text-muted font-normal">(customer provides a street address: uncheck for a park/hub drop-off, which needs no address)</span>
         </label>
       </div>
 

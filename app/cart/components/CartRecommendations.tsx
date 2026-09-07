@@ -27,7 +27,7 @@ export default function CartRecommendations({ productIds }: CartRecommendationsP
   return (
     <ProductRail
       title="Customers also bought"
-      subtitle="Delivery is charged per order — adding to this one costs nothing more to ship."
+      subtitle="Delivery is charged per order. Adding to this one costs nothing more to ship."
       products={products}
       discounts={discounts}
     />

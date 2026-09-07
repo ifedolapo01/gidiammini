@@ -65,7 +65,7 @@ export function ShippingZoneTable({ zones, pendingId, onToggleStatus, onEdit, on
           </div>
           <h3 className="text-body-lg font-bold text-text-primary mb-1">No shipping zones yet</h3>
           <p className="text-text-secondary max-w-md mx-auto">
-            Add a zone for each state or area you ship to — set its delivery fee, whether pickup is offered, and a contact phone number.
+            Add a zone for each state or area you ship to: set its delivery fee, whether pickup is offered and a contact phone number.
           </p>
         </div>
       ) : (

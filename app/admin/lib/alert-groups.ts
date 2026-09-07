@@ -35,7 +35,7 @@ export const ALERT_GROUPS: readonly AlertGroupInfo[] = [
   { key: 'fulfilment', label: 'Orders to move', hint: 'Orders that should have gone out, or gone further.' },
   { key: 'customers', label: 'People waiting', hint: 'Someone asked you something and has had no reply.' },
   { key: 'inventory', label: 'Stock', hint: 'What you cannot sell, and what you are about to run out of.' },
-  { key: 'store', label: 'Today at a glance', hint: 'Nothing to do here — just where the shop stands.' },
+  { key: 'store', label: 'Today at a glance', hint: 'Nothing to do here, just where the shop stands.' },
 ];
 
 export interface AlertGroupBucket extends AlertGroupInfo {
