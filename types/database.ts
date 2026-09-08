@@ -1666,9 +1666,11 @@ export type Database = {
           details: string[] | null
           fit_note: string | null
           fit_rating: string | null
+          featured_rank: number | null
           id: string
           images: string[] | null
           is_active: boolean
+          is_featured: boolean
           main_image: string
           name: string
           price: number
@@ -1688,9 +1690,11 @@ export type Database = {
           details?: string[] | null
           fit_note?: string | null
           fit_rating?: string | null
+          featured_rank?: number | null
           id?: string
           images?: string[] | null
           is_active?: boolean
+          is_featured?: boolean
           main_image: string
           name: string
           price: number
@@ -1710,9 +1714,11 @@ export type Database = {
           details?: string[] | null
           fit_note?: string | null
           fit_rating?: string | null
+          featured_rank?: number | null
           id?: string
           images?: string[] | null
           is_active?: boolean
+          is_featured?: boolean
           main_image?: string
           name?: string
           price?: number
@@ -1725,6 +1731,89 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      homepage_slides: {
+        Row: {
+          created_at: string
+          cta_label: string
+          cta_link: string
+          ends_at: string | null
+          id: string
+          image_path: string
+          is_active: boolean
+          sort_order: number
+          starts_at: string | null
+          subtitle: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string
+          cta_link?: string
+          ends_at?: string | null
+          id?: string
+          image_path: string
+          is_active?: boolean
+          sort_order?: number
+          starts_at?: string | null
+          subtitle?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string
+          cta_link?: string
+          ends_at?: string | null
+          id?: string
+          image_path?: string
+          is_active?: boolean
+          sort_order?: number
+          starts_at?: string | null
+          subtitle?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      storefront_events: {
+        Row: {
+          event: string
+          id: string
+          product_id: string | null
+          session_id: string
+          ts: string
+          value: number | null
+          variant_key: string | null
+        }
+        Insert: {
+          event: string
+          id?: string
+          product_id?: string | null
+          session_id: string
+          ts?: string
+          value?: number | null
+          variant_key?: string | null
+        }
+        Update: {
+          event?: string
+          id?: string
+          product_id?: string | null
+          session_id?: string
+          ts?: string
+          value?: number | null
+          variant_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storefront_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
@@ -2424,6 +2513,25 @@ export type Database = {
         Returns: string
       }
       reset_rate_limit: { Args: { p_key: string }; Returns: undefined }
+      storefront_funnel: {
+        Args: { p_window_days?: number }
+        Returns: {
+          event: string
+          sessions: number
+        }[]
+      }
+      storefront_traffic_without_sales: {
+        Args: { p_limit?: number; p_window_days?: number }
+        Returns: {
+          add_to_carts: number
+          main_image: string
+          price: number
+          product_id: string
+          product_name: string
+          stock: number
+          views: number
+        }[]
+      }
       search_products: {
         Args: { p_limit?: number; p_query: string }
         Returns: {

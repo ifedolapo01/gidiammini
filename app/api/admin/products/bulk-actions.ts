@@ -141,6 +141,44 @@ export async function adjustProductPrice(
   return { ok: true, label };
 }
 
+/**
+ * Feature or unfeature a product on the home page grid.
+ *
+ * `rank` is only meaningful when featuring — it places the row after every
+ * currently-featured product, in the order the operator selected them, so a
+ * multi-select "Feature" doesn't need a separate reorder step. Unfeaturing
+ * clears the rank rather than leaving a stale number behind.
+ */
+export async function setProductFeatured(
+  supabase: SupabaseClient,
+  id: string,
+  isFeatured: boolean,
+  rank: number | null,
+  label: string,
+  audit: AuditRecorder
+): Promise<BulkRowOutcome> {
+  const { error } = await supabase
+    .from('products')
+    .update({
+      is_featured: isFeatured,
+      featured_rank: isFeatured ? rank : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) return { ok: false, label, error: error.message };
+
+  audit({
+    entityType: 'product',
+    entityId: id,
+    action: 'update',
+    after: { is_featured: isFeatured, featured_rank: isFeatured ? rank : null },
+    reason: `Bulk ${isFeatured ? 'feature' : 'unfeature'}`,
+  });
+
+  return { ok: true, label };
+}
+
 // setVariantStock lives in ./bulk-stock-action.ts — it is the only handler
 // here that also moves inventory and sends mail, which is a different job from
 // editing a catalogue row. Re-exported so the route keeps one import.

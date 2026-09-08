@@ -12,11 +12,13 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
 import { calculateTax } from '@/lib/commerce/checkout';
 import { applyFreeShipping } from '@/lib/commerce/store-settings';
 import { useStoreSettings } from '@/components/StoreSettingsProvider';
+import { trackBeginCheckout, trackPurchase } from '@/lib/commerce/storefront-events';
+import { variantKeyFor } from '@/lib/commerce/product-variants';
 import { useCheckoutAttempt } from './useCheckoutAttempt';
 import { useCheckoutForm } from './useCheckoutForm';
 import { useCheckoutIdentity } from './useCheckoutIdentity';
@@ -73,6 +75,17 @@ export function useCheckoutFlow() {
     persist({ formData, deliveryOption, selectedState, selectedLga, selectedPlace });
   }, [persist, formData, deliveryOption, selectedState, selectedLga, selectedPlace]);
 
+  // The funnel's next stage after add_to_cart: reaching checkout with
+  // something in the basket. Once only per attempt — a customer going back and
+  // forth between the details step and the payment step has begun checkout
+  // once, not every time the step changes.
+  const beginCheckoutSent = useRef(false);
+  useEffect(() => {
+    if (beginCheckoutSent.current || step !== 'form' || items.length === 0) return;
+    beginCheckoutSent.current = true;
+    trackBeginCheckout(total);
+  }, [step, items.length, total]);
+
   // The code box lives in the order summary, is sent with the quote at the
   // step-1 gate, and its verdict comes back on that same quote. Held here
   // because both the summary (which renders it) and the submit hook (which
@@ -94,6 +107,15 @@ export function useCheckoutFlow() {
     selectedLga,
     selectedPlace,
     onOrdered: () => {
+      // Read before clearCart() empties it — this is the last point at which
+      // the lines that were just bought are still in memory.
+      trackPurchase(
+        items.map((item) => ({
+          productId: item.productId,
+          variantKey: variantKeyFor(item.size, item.color),
+          value: item.price * item.quantity,
+        }))
+      );
       clearCart();
       attempt.completeOrder();
     },

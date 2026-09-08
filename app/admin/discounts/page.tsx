@@ -14,6 +14,8 @@ import { useDiscountVariantTargeting } from './hooks/useDiscountVariantTargeting
 import { DiscountTable } from './components/DiscountTable';
 import { DiscountFormModal } from './components/DiscountFormModal';
 import { MarkdownCandidatesPanel } from './components/MarkdownCandidatesPanel';
+import { TrafficWithoutSalesPanel } from './components/TrafficWithoutSalesPanel';
+import type { TrafficCandidate } from '@/app/admin/hooks/useStorefrontAnalytics';
 import { NotifySubscribersModal } from './components/NotifySubscribersModal';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
 import type { ReportRow } from '@/app/admin/stock/reports/hooks/useStockReports';
@@ -59,6 +61,24 @@ export default function DiscountsPage() {
       target_id: serializeVariantTargets([
         { productId: row.productId, size: row.size ?? '', color: row.color ?? '' },
       ]),
+      is_active: true,
+      start_date: null,
+      end_date: null,
+    };
+    openModal(candidate, true);
+  };
+
+  // Whole-product, not variant-scoped: traffic is aggregated across every size
+  // and colour, so there is no single variant to target the way the aging
+  // report's rows do.
+  const handleCreateFromTraffic = (row: TrafficCandidate) => {
+    const candidate: Discount = {
+      id: '',
+      name: `Move ${row.productName}`,
+      type: 'PERCENTAGE',
+      value: 0,
+      scope: 'PRODUCT',
+      target_id: row.productId,
       is_active: true,
       start_date: null,
       end_date: null,
@@ -120,6 +140,7 @@ export default function DiscountsPage() {
       </div>
 
       <MarkdownCandidatesPanel onCreateDiscount={handleCreateFromCandidate} />
+      <TrafficWithoutSalesPanel onCreateDiscount={handleCreateFromTraffic} />
 
       <DiscountTable
         discounts={activeDiscounts}

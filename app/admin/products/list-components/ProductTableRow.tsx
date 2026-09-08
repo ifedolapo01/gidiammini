@@ -1,7 +1,7 @@
 /** ADMIN layer — single-row and grouped-parent-row renderers for the products list table. */
 'use client';
 
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Star } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { formatCategoryStr } from '@/lib/commerce/format-text';
 import { formatCurrency } from '@/lib/commerce/pricing';
@@ -47,7 +47,12 @@ export function SingleProductRow({
             sizes="48px"
           />
           <div className="ml-4 text-left">
-            <div className="text-body-sm font-bold text-text-primary">{product.name}</div>
+            <div className="flex items-center gap-1.5 text-body-sm font-bold text-text-primary">
+              {product.isFeatured && (
+                <Star size={14} className="shrink-0 fill-warning text-warning" aria-label="Featured on home page" />
+              )}
+              {product.name}
+            </div>
           </div>
         </div>
       </td>
@@ -133,7 +138,12 @@ export function GroupedParentRow({
             sizes="48px"
           />
           <div className="ml-4 text-left">
-            <div className="text-body-sm font-bold text-text-primary">{parent.name}</div>
+            <div className="flex items-center gap-1.5 text-body-sm font-bold text-text-primary">
+              {parent.isFeatured && (
+                <Star size={14} className="shrink-0 fill-warning text-warning" aria-label="Featured on home page" />
+              )}
+              {parent.name}
+            </div>
             <div className="text-caption-md text-text-secondary">{variantsCount} variations</div>
           </div>
         </div>

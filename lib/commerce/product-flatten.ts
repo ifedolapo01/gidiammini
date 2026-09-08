@@ -39,6 +39,9 @@ export interface FlattenedProduct {
   /** Service-role reads only; anon is not granted this column. */
   cost?: number | null;
   isActive?: boolean;
+  /** Curated onto the home page's featured grid. Product-level, so every
+   *  variant row of the same product carries the same value. */
+  isFeatured?: boolean;
 }
 
 function buildVariantEntry(
@@ -62,7 +65,8 @@ function buildVariantEntry(
     stock,
     main_image: p.main_image || (p.images && p.images[0]),
     images: p.images,
-    colorImages: p.pricing_config?.colorImages
+    colorImages: p.pricing_config?.colorImages,
+    isFeatured: Boolean(p.is_featured),
   };
 }
 

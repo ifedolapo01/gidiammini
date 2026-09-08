@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { useCart } from '@/components/CartProvider';
 import { useCartDrawer } from '@/components/cart/CartDrawerProvider';
 import { cartLineKey } from '@/lib/commerce/cart-input';
+import { variantKeyFor } from '@/lib/commerce/product-variants';
+import { trackAddToCart } from '@/lib/commerce/storefront-events';
 import type { ProductCardProduct } from '@/types/product';
 
 interface UseAddProductToCartArgs {
@@ -62,6 +64,8 @@ export function useAddProductToCart({
       size: selectedSize,
       color: selectedColor,
     });
+
+    trackAddToCart(product.id, variantKeyFor(selectedSize, selectedColor), finalPrice * quantity);
 
     // The confirmation. This was `getElementById('add-to-cart-button')` with
     // its textContent rewritten, which — with a desktop button and a sticky

@@ -80,6 +80,8 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/admin/discounts', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/discounts/notify', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/shipping-zones', read: 'store:read', write: 'catalog:write' },
+  { pattern: '/api/admin/homepage-slides', read: 'store:read', write: 'catalog:write' },
+  { pattern: '/api/admin/homepage-slides/*', read: 'store:read', write: 'catalog:write' },
 
   // Moderation.
   { pattern: '/api/admin/reviews', read: 'store:read', write: 'moderation:write' },
@@ -117,6 +119,7 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/admin/discounts/performance', read: 'store:read' },
   { pattern: '/api/admin/stock/insights', read: 'store:read' },
   { pattern: '/api/admin/stock/aging', read: 'store:read' },
+  { pattern: '/api/admin/analytics/storefront', read: 'store:read' },
 
   // Automation. Readable by everyone who works here; switching a rule on is
   // owner-only, because a rule that cancels orders is a standing instruction

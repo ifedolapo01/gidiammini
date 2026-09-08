@@ -51,5 +51,16 @@ export function useProductsBulk(onApplied: () => void | Promise<void>) {
     [schedule]
   );
 
-  return { ...bulk, setActive, moveCategory, adjustPrice };
+  const setFeatured = useCallback(
+    (ids: string[], isFeatured: boolean) => {
+      schedule({
+        description: isFeatured ? 'Feature on home page' : 'Remove from home page',
+        count: ids.length,
+        run: () => postBulkBatched(ENDPOINT, ids, { action: isFeatured ? 'feature' : 'unfeature' }),
+      });
+    },
+    [schedule]
+  );
+
+  return { ...bulk, setActive, moveCategory, adjustPrice, setFeatured };
 }

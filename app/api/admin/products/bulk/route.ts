@@ -16,12 +16,13 @@ import {
   setProductActive,
   moveProductCategory,
   adjustProductPrice,
+  setProductFeatured,
   setVariantStock,
 } from '../bulk-actions';
 
 export const maxDuration = 60;
 
-const ACTIONS = ['activate', 'deactivate', 'category', 'price_adjust', 'stock_set'] as const;
+const ACTIONS = ['activate', 'deactivate', 'category', 'price_adjust', 'feature', 'unfeature', 'stock_set'] as const;
 type BulkAction = (typeof ACTIONS)[number];
 
 function bad(error: string) {
@@ -74,6 +75,32 @@ export const POST = withAdminAuth(async (request, { supabase, audit, actor }) =>
         return bad('Enter a percentage between -99 and 1000, and not zero.');
       }
       handle = (id) => adjustProductPrice(supabase, id, percent, labelFor(id), audit);
+      break;
+    }
+
+    case 'feature':
+    case 'unfeature': {
+      const isFeatured = action === 'feature';
+
+      // New ranks start after whatever is already featured, in the order the
+      // operator selected the rows — so a multi-select "Feature" needs no
+      // separate reorder step afterwards.
+      let nextRank = 0;
+      if (isFeatured) {
+        const { data: current } = await supabase
+          .from('products')
+          .select('featured_rank')
+          .eq('is_featured', true)
+          .order('featured_rank', { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
+        nextRank = (current?.featured_rank ?? -1) + 1;
+      }
+
+      handle = (id) => {
+        const rank = isFeatured ? nextRank++ : null;
+        return setProductFeatured(supabase, id, isFeatured, rank, labelFor(id), audit);
+      };
       break;
     }
 

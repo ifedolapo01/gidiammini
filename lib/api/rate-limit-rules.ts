@@ -149,6 +149,14 @@ export const RATE_LIMITS = {
   cartCapture: { bucket: 'cart-capture', limit: 60, windowSeconds: HOUR },
 
   /**
+   * Storefront behavioural events (view_item, add_to_cart, begin_checkout,
+   * purchase). The client batches several events per request and flushes on a
+   * timer, so this limits request rate, not event volume — held to roughly the
+   * browse budget, since it is triggered by the same scrolling and clicking.
+   */
+  storefrontEvents: { bucket: 'storefront-events', limit: 120, windowSeconds: 5 * MINUTE },
+
+  /**
    * Admin login, per IP. Fails closed: an unthrottled password guesser against
    * a single shared credential is worse than a login page that is unavailable
    * while the database is down — and with the database down the admin cannot

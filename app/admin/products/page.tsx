@@ -171,6 +171,7 @@ export default function AdminProducts() {
         onSetActive={bulk.setActive}
         onMoveCategory={bulk.moveCategory}
         onAdjustPrice={bulk.adjustPrice}
+        onSetFeatured={bulk.setFeatured}
         onUndo={bulk.undo}
         onApplyNow={bulk.applyNow}
         onClear={selection.clear}

@@ -16,7 +16,7 @@ import carouselMaternity from '@/public/images/carousel_maternity.png';
 import carouselKids from '@/public/images/carousel_kids.png';
 
 interface Slide {
-  image: StaticImageData;
+  image: StaticImageData | string;
   title: string;
   subtitle: string;
   buttonText: string;
@@ -24,7 +24,10 @@ interface Slide {
   bgColor: string;
 }
 
-const slides: Slide[] = [
+/** Shown when the admin has not curated any homepage_slides rows yet — see
+ *  lib/commerce/home-query.ts. Once a slide exists in the database, these are
+ *  never mixed in: curation, once used, wins outright. */
+const DEFAULT_SLIDES: Slide[] = [
   {
     image: carouselBabies,
     title: 'A World of Softness for Your Baby',
@@ -51,7 +54,41 @@ const slides: Slide[] = [
   }
 ];
 
-export default function HeroCarousel() {
+/** Cycled through for however many admin-curated slides there are, so a
+ *  database slide gets the same pastel treatment the hardcoded ones did. */
+const BG_GRADIENTS = [
+  'from-accent/15 to-background-secondary',
+  'from-primary/15 to-background-secondary',
+  'from-info/15 to-background-secondary',
+];
+
+export interface HeroCarouselSlide {
+  id: string;
+  image: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  link: string;
+}
+
+interface HeroCarouselProps {
+  /** Admin-curated slides from homepage_slides. Falls back to DEFAULT_SLIDES
+   *  when empty — a fresh install or a shop that hasn't added any yet. */
+  slides?: HeroCarouselSlide[];
+}
+
+export default function HeroCarousel({ slides: curated }: HeroCarouselProps = {}) {
+  const slides: Slide[] = curated && curated.length > 0
+    ? curated.map((slide, index) => ({
+        image: slide.image,
+        title: slide.title,
+        subtitle: slide.subtitle,
+        buttonText: slide.buttonText,
+        link: slide.link,
+        bgColor: BG_GRADIENTS[index % BG_GRADIENTS.length],
+      }))
+    : DEFAULT_SLIDES;
+
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -59,7 +96,7 @@ export default function HeroCarousel() {
       setCurrent((prev) => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const prevSlide = () => {
     setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
@@ -101,7 +138,10 @@ export default function HeroCarousel() {
                 // behind an opacity transition and can wait. Marking all three
                 // priority would have them race the one that is actually visible.
                 priority={index === 0}
-                placeholder="blur"
+                // Only a bundled StaticImageData carries the dimensions Next
+                // needs to synthesise a blur placeholder; an admin-uploaded
+                // slide is a plain URL and gets none.
+                placeholder={typeof slide.image === 'string' ? 'empty' : 'blur'}
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover object-center"
               />

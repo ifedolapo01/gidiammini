@@ -34,6 +34,11 @@ export interface Product {
   details: string[];
   stock: number;
   is_active: boolean;
+  /** Curated onto the home page's featured grid. Set from the products list
+   *  bulk bar; see lib/commerce/home-query.ts for how it's read. */
+  is_featured?: boolean;
+  /** Display order within the featured grid, lowest first. Null sorts last. */
+  featured_rank?: number | null;
   sizing_type?: 'size' | 'age' | 'maternity' | null;
   /** How this garment runs against its stated size. Drives the line under the
    *  size buttons and the top of the size guide. */

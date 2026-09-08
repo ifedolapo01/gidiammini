@@ -12,7 +12,7 @@
 // text worth indexing (reviews, Q&A) are server-rendered and passed in.
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useWishlist } from '@/components/WishlistProvider';
@@ -32,6 +32,7 @@ import { variantKeyFor } from '@/lib/commerce/product-variants';
 import ProductRecommendations from './ProductRecommendations';
 import ChatAboutProductLink from './ChatAboutProductLink';
 import { useAddProductToCart } from '../hooks/useAddProductToCart';
+import { trackViewItem } from '@/lib/commerce/storefront-events';
 import type { ReviewStats } from '@/lib/commerce/rating-math';
 
 interface ProductDetailViewProps {
@@ -74,6 +75,13 @@ export default function ProductDetailView({
 
   const [quantity, setQuantity] = useState(1);
   const isWishlisted = isInWishlist(product.id);
+
+  // Fired once per product page visit — the funnel's top of stage. See
+  // lib/commerce/storefront-events.ts for why this is queued rather than sent
+  // immediately.
+  useEffect(() => {
+    trackViewItem(product.id);
+  }, [product.id]);
 
   const currentBasePrice = getVariantPrice(product, selectedSize, selectedColor);
   const currentStock = getVariantStock(product, selectedSize, selectedColor);

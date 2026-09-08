@@ -10,6 +10,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes, Star, ReceiptText,
   CircleQuestionMark, FolderTree, Percent, Truck, History, Users, Contact, Settings, Zap,
+  GalleryHorizontal,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/api/admin-roles';
 
@@ -83,6 +84,10 @@ export const adminConfig = {
     { href: '/admin/reviews', label: 'Reviews', icon: Star, permission: 'store:read' },
     { href: '/admin/questions', label: 'Questions', icon: CircleQuestionMark, permission: 'store:read' },
     { href: '/admin/categories', label: 'Categories', icon: FolderTree, permission: 'store:read' },
+    // Beside Categories: both are merchandising controls over what the
+    // storefront shows, neither is a catalogue row. store:read to view,
+    // catalog:write to touch — same split as Categories.
+    { href: '/admin/homepage-slides', label: 'Homepage', icon: GalleryHorizontal, permission: 'store:read' },
     { href: '/admin/discounts', label: 'Discounts', icon: Percent, permission: 'store:read' },
     { href: '/admin/shipping', label: 'Shipping', icon: Truck, permission: 'store:read' },
     { href: '/admin/activity', label: 'Activity', icon: History, permission: 'audit:read' },

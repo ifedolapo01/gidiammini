@@ -10,6 +10,7 @@ import { StatCard } from './components/StatCard';
 import { DashboardSkeleton } from './components/DashboardSkeleton';
 import MarginStatCard from './components/MarginStatCard';
 import { AnalyticsSection } from './components/AnalyticsSection';
+import { FunnelPanel } from './components/FunnelPanel';
 import { PeriodSection } from './components/period/PeriodSection';
 import { RecentOrdersPanel } from './components/RecentOrdersPanel';
 import { LowStockPanel } from './components/LowStockPanel';
@@ -129,6 +130,12 @@ export default function AdminDashboard() {
 
       {/* Analytics */}
       <AnalyticsSection />
+
+      {/* The one number the order-derived panels above cannot produce: how
+          many sessions saw a product for every one that bought it. */}
+      <div className="grid grid-cols-1 mb-8">
+        <FunnelPanel />
+      </div>
 
       {/* Recent Orders & Low Stock */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

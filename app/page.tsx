@@ -7,12 +7,12 @@
 // cookies() the whole page opted out of every cache Next has. The busiest
 // route on the site went to the database three times per visitor.
 //
-// The hero is static and the two sections below it are not, so they no longer
-// share a fate. Previously one component awaited three queries — products, then
-// categories, then discounts, each waiting on the one before — and nothing at
-// all was sent until the last of them came back. Now the hero (the largest
-// paint on this route) flushes immediately and each section streams in behind
-// its own boundary as its data lands.
+// The three sections below no longer share a fate. Previously one component
+// awaited three queries — products, then categories, then discounts, each
+// waiting on the one before — and nothing at all was sent until the last of
+// them came back. Each now streams in behind its own boundary as its data
+// lands, hero included since it now reads homepage_slides — its skeleton
+// reserves the same 520px so the page never lurches once it resolves.
 //
 // There is no loading.tsx for this route and there must not be: app/loading.tsx
 // would wrap every route in the app, including /products/[id], whose
@@ -24,15 +24,16 @@ import ProductCard from '@/components/commerce/ProductCard';
 import { ProductGridSkeleton } from '@/components/commerce/ProductCardSkeleton';
 import { Skeleton } from '@/components/ui';
 import HeroCarousel from '@/components/HeroCarousel';
-import { loadFeaturedProducts, loadHomeCategories } from '@/lib/commerce/home-query';
+import { loadFeaturedProducts, loadHomeCategories, loadHeroSlides } from '@/lib/commerce/home-query';
 
 const FEATURED_GRID = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8';
 
 export default function HomePage() {
   return (
     <div className="bg-primary/5">
-      {/* Hero Carousel Section */}
-      <HeroCarousel />
+      <Suspense fallback={<HeroSkeleton />}>
+        <Hero />
+      </Suspense>
 
       <Suspense fallback={<FeaturedProductsSkeleton />}>
         <FeaturedProducts />
@@ -43,6 +44,11 @@ export default function HomePage() {
       </Suspense>
     </div>
   );
+}
+
+async function Hero() {
+  const slides = await loadHeroSlides();
+  return <HeroCarousel slides={slides} />;
 }
 
 async function FeaturedProducts() {
@@ -118,8 +124,12 @@ async function Categories() {
   );
 }
 
-/* The two fallbacks below reserve the same height as the sections they stand in
+/* The fallbacks below reserve the same height as the sections they stand in
    for, so the page does not lurch as each one resolves. */
+
+function HeroSkeleton() {
+  return <Skeleton className="h-[520px] w-full rounded-none" />;
+}
 
 function FeaturedProductsSkeleton() {
   return (

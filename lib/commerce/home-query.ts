@@ -51,17 +51,53 @@ export interface HomeCategory {
   subcategories: { name: string }[];
 }
 
+export interface HeroSlide {
+  id: string;
+  image: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  link: string;
+}
+
+/**
+ * The curated grid, falling back to recent stock when nothing is curated yet.
+ *
+ * A fresh install (or a shop that has never touched the "Feature" bulk
+ * action) has no is_featured rows at all — showing an empty grid in that case
+ * would be a regression on the demo's previous "just show the newest four"
+ * behaviour. The fallback only fires when the featured query comes back
+ * empty, so once an admin features anything, that curation wins outright.
+ */
+async function fetchFeaturedProductRows(supabase: ReturnType<typeof createPublicClient>) {
+  const featured = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .eq('is_featured', true)
+    .gt('stock', 0)
+    .order('featured_rank', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(FEATURED_COUNT);
+
+  if (featured.error) return featured;
+  if ((featured.data?.length ?? 0) > 0) return featured;
+
+  return supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .gt('stock', 0)
+    .order('created_at', { ascending: false })
+    .limit(FEATURED_COUNT);
+}
+
 async function fetchFeatured(): Promise<FeaturedProducts> {
   const supabase = createPublicClient();
 
   // In parallel: the discounts do not depend on the products.
   const [productsResult, discountsResult] = await Promise.all([
-    supabase
-      .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(FEATURED_COUNT),
+    fetchFeaturedProductRows(supabase),
     supabase.from('discounts').select('*').eq('is_active', true),
   ]);
 
@@ -79,6 +115,36 @@ async function fetchFeatured(): Promise<FeaturedProducts> {
   const products = await attachReviewStats((productsResult.data ?? []) as ProductCardProduct[]);
 
   return { products, discounts: (discountsResult.data ?? []).map(asDiscount) };
+}
+
+async function fetchHeroSlides(): Promise<HeroSlide[]> {
+  const supabase = createPublicClient();
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('homepage_slides')
+    .select('id, image_path, title, subtitle, cta_label, cta_link')
+    .eq('is_active', true)
+    .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
+    .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+    .order('sort_order', { ascending: true });
+
+  if (error) {
+    // The hero has a built-in default carousel for exactly this case — see
+    // HeroCarousel.tsx — so an empty array here is a graceful fallback, not a
+    // broken page.
+    console.error('Error fetching homepage slides:', error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    image: row.image_path,
+    title: row.title,
+    subtitle: row.subtitle,
+    buttonText: row.cta_label,
+    link: row.cta_link,
+  }));
 }
 
 async function fetchCategories(): Promise<HomeCategory[]> {
@@ -116,5 +182,19 @@ export function loadHomeCategories(): Promise<HomeCategory[]> {
   return unstable_cache(fetchCategories, ['home-categories'], {
     tags: [PRODUCTS_CACHE_TAG],
     revalidate: CATEGORY_CACHE_SECONDS,
+  })();
+}
+
+/**
+ * Tagged with the same PRODUCTS_CACHE_TAG as everything else on this page,
+ * not a tag of its own: withAdminAuth already drops that tag after every
+ * successful admin mutation (see lib/api/with-admin-auth.ts), including a
+ * write to homepage_slides, so a dedicated tag would need its own
+ * invalidation call for no benefit.
+ */
+export function loadHeroSlides(): Promise<HeroSlide[]> {
+  return unstable_cache(fetchHeroSlides, ['home-hero-slides'], {
+    tags: [PRODUCTS_CACHE_TAG],
+    revalidate: PRODUCT_CACHE_SECONDS,
   })();
 }

@@ -35,6 +35,7 @@ export type AuditEntityType =
   | 'shipping_zone'
   | 'category'
   | 'subcategory'
+  | 'homepage_slide'
   | 'customer'
   | 'subscriber'
   /** A person's admin account: invited, re-roled, revoked, restored. */

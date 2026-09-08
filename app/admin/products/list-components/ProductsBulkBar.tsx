@@ -1,13 +1,14 @@
 /** ADMIN layer — the bulk controls for the products table.
  *
- * Four actions, each one request: end-of-season markdown, a category move, and
- * activate / deactivate. All of them go through the shared undo window, so
- * nothing is written until the countdown finishes.
+ * Each action is one request: end-of-season markdown, a category move,
+ * activate / deactivate, and feature / unfeature on the home page grid. All of
+ * them go through the shared undo window, so nothing is written until the
+ * countdown finishes.
  */
 'use client';
 
 import { useState } from 'react';
-import { Percent, FolderInput, Eye, EyeOff } from 'lucide-react';
+import { Percent, FolderInput, Eye, EyeOff, Star, StarOff } from 'lucide-react';
 import { Button, Input, Select } from '@/components/ui';
 import type { Category } from '@/types/product';
 import { isValidPercent } from '@/lib/commerce/price-adjust';
@@ -22,6 +23,7 @@ interface ProductsBulkBarProps {
   onSetActive: (ids: string[], isActive: boolean) => void;
   onMoveCategory: (ids: string[], category: string, subCategory: string | null) => void;
   onAdjustPrice: (ids: string[], percent: number) => void;
+  onSetFeatured: (ids: string[], isFeatured: boolean) => void;
   onUndo: () => void;
   onApplyNow: () => void;
   onClear: () => void;
@@ -35,6 +37,7 @@ export function ProductsBulkBar({
   onSetActive,
   onMoveCategory,
   onAdjustPrice,
+  onSetFeatured,
   onUndo,
   onApplyNow,
   onClear,
@@ -127,6 +130,16 @@ export function ProductsBulkBar({
       <Button size="sm" variant="outline" onClick={() => onSetActive(selectedIds, false)}>
         <EyeOff className="w-4 h-4" />
         Deactivate
+      </Button>
+
+      <Button size="sm" variant="outline" onClick={() => onSetFeatured(selectedIds, true)}>
+        <Star className="w-4 h-4" />
+        Feature
+      </Button>
+
+      <Button size="sm" variant="outline" onClick={() => onSetFeatured(selectedIds, false)}>
+        <StarOff className="w-4 h-4" />
+        Unfeature
       </Button>
     </BulkActionBar>
   );
