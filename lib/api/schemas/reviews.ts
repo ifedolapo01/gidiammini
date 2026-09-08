@@ -11,6 +11,7 @@
 import { z } from 'zod';
 import { MAX_LENGTHS, optionalText, requiredText, honeypotFields } from './common';
 import { MAX_REVIEW_BODY, MAX_REVIEW_PHOTOS, MAX_REVIEW_TITLE, REVIEW_STATUSES } from '@/lib/commerce/reviews';
+import { FIT_RATINGS } from '@/lib/commerce/size-guide';
 
 /** Matches isReviewTokenShape — base64url of 32 random bytes. */
 const tokenField = z
@@ -39,6 +40,9 @@ export const reviewSubmissionSchema = z.object({
     .max(5, 'Please choose a star rating.'),
   title: optionalText('A review title', MAX_REVIEW_TITLE),
   body: optionalText('Your review', MAX_REVIEW_BODY),
+  /** Optional, like everything past the rating — the highest-leverage field a
+   *  clothing store can ask for, but still not one worth losing a review over. */
+  fitRating: z.enum(FIT_RATINGS).optional(),
   /** Prefilled from the order and editable — some people would rather appear
    *  as "Ada O." than by their full name. */
   authorName: requiredText('Your name', MAX_LENGTHS.name),

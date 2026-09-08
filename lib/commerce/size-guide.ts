@@ -23,7 +23,13 @@
 import { SIZE_CHARTS, type SizeChart } from '@/lib/data/size-charts';
 
 export type SizingType = 'size' | 'age' | 'maternity';
-export type FitRating = 'runs_small' | 'true_to_size' | 'runs_large';
+
+/** Shared by the admin's own fit claim (products.fit_rating) and a customer's
+ *  self-reported fit on a review (product_reviews.fit_rating) — one
+ *  vocabulary, so the two can be compared rather than silently disagreeing
+ *  about what "runs small" means. */
+export const FIT_RATINGS = ['runs_small', 'true_to_size', 'runs_large'] as const;
+export type FitRating = (typeof FIT_RATINGS)[number];
 
 /** A size string as typed, reduced to something comparable with an alias. */
 function normalise(size: string): string {
@@ -129,7 +135,7 @@ const FIT_ADVICE: Record<FitRating, string> = {
 };
 
 export function isFitRating(value: unknown): value is FitRating {
-  return value === 'runs_small' || value === 'true_to_size' || value === 'runs_large';
+  return (FIT_RATINGS as readonly unknown[]).includes(value);
 }
 
 export function fitLabel(rating: FitRating): string {

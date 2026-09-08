@@ -53,7 +53,7 @@ export default function EditProductPage(props: PageProps) {
       },
     });
 
-  const { product, isLoading, loadError, refetch } = useEditProductData({
+  const { product, reviewFitStats, isLoading, loadError, refetch } = useEditProductData({
     productId: params.id,
     reset,
     setImages,
@@ -109,7 +109,7 @@ export default function EditProductPage(props: PageProps) {
 
         <PricingVariantsEditor register={register} errors={errors} watch={watch} {...variantsApi} />
 
-        <ProductFitSection register={register} />
+        <ProductFitSection register={register} reviewFitStats={reviewFitStats} />
 
         <hr className="border-border-light" />
 

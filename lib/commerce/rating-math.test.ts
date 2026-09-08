@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { reviewPhotoUrl, reviewStatusLabel } from './reviews';
 import {
+  dominantFitSignal,
   formatRatingAverage,
   ratingAriaLabel,
   ratingDistribution,
@@ -112,5 +113,30 @@ describe('reviewPhotoUrl', () => {
 describe('reviewStatusLabel', () => {
   it('words pending as what it means to an admin', () => {
     expect(reviewStatusLabel('pending')).toBe('Awaiting review');
+  });
+});
+
+describe('dominantFitSignal', () => {
+  it('is null below the minimum number of fit-answering reviews', () => {
+    expect(dominantFitSignal({ runs_small_count: 2, true_to_size_count: 0, runs_large_count: 0 })).toBeNull();
+  });
+
+  it('is null when no rating holds a clear majority', () => {
+    // 3 of 6 is exactly half — not a majority.
+    expect(
+      dominantFitSignal({ runs_small_count: 3, true_to_size_count: 3, runs_large_count: 0 })
+    ).toBeNull();
+  });
+
+  it('reports the majority rating, its share, and total responses', () => {
+    expect(
+      dominantFitSignal({ runs_small_count: 8, true_to_size_count: 2, runs_large_count: 0 })
+    ).toEqual({ rating: 'runs_small', percent: 80, responses: 10 });
+  });
+
+  it('respects a caller-supplied minimum', () => {
+    expect(
+      dominantFitSignal({ runs_small_count: 2, true_to_size_count: 0, runs_large_count: 0 }, 1)
+    ).toEqual({ rating: 'runs_small', percent: 100, responses: 2 });
   });
 });

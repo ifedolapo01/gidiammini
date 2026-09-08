@@ -24,6 +24,7 @@ import ProductImageGallery from './ProductImageGallery';
 import VariantSelector from './VariantSelector';
 import MobileProductBar from './MobileProductBar';
 import AddToCartSection from './AddToCartSection';
+import DeliveryPromiseLine from './DeliveryPromiseLine';
 import ProductDetailsAccordion from './ProductDetailsAccordion';
 import DesktopProductHeader from './DesktopProductHeader';
 import ProductHeadlineBlock from './ProductHeadlineBlock';
@@ -159,6 +160,7 @@ export default function ProductDetailView({
               onSelectColor={setSelectedColor}
               currentStock={currentStock}
               categoryGuidance={categorySizeGuidance}
+              reviewStats={reviewStats}
             />
 
             <AddToCartSection
@@ -170,6 +172,11 @@ export default function ProductDetailView({
               finalPrice={finalPrice}
               onAddToCart={handleAddToCart}
             />
+
+            {/* The second question after "how much?" — answered here, right
+                where the decision to buy is being made, rather than only
+                after checkout is already underway. */}
+            {currentStock > 0 && <DeliveryPromiseLine />}
 
             {currentStock <= 0 && (
               <OutOfStockNotice

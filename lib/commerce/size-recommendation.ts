@@ -23,13 +23,23 @@
  * Height in column 0 — so one range parser covers age labels and every
  * measurement column without a chart-specific table to keep in sync.
  */
-import { chartForProduct, matchedChartRows, type ProductSizing } from './size-guide';
+import { chartForProduct, matchedChartRows, type FitRating, type ProductSizing } from './size-guide';
 import type { SizeChart, SizeChartRow } from '@/lib/data/size-charts';
 
 export interface SizeRecommendationInput {
   ageMonths?: number;
   heightCm?: number;
   weightKg?: number;
+  /**
+   * A known fit signal — the admin's own claim, or the aggregate of customer
+   * fit feedback (rating-math.ts's dominantFitSignal) — nudging the
+   * age/height answer by one row before it is mapped to stock. 'runs_small'
+   * moves the target up a row, 'runs_large' moves it down; 'true_to_size' and
+   * undefined leave the answer alone. This is the same three-value vocabulary
+   * FitNote already shows under the size buttons, applied here instead of
+   * just displayed.
+   */
+  fitRating?: FitRating;
 }
 
 export interface SizeRecommendation {
@@ -175,6 +185,18 @@ function mapRowToStockedSize(chart: SizeChart, sizes: readonly string[], target:
   return best ? { recommendedSize: best.size, idealLabel: target.label, exactMatch: false } : null;
 }
 
+/** Shifts the target row by one band toward the size a known fit signal
+ *  points at, clamped to the chart's own ends. 'true_to_size' and no signal
+ *  both leave the age/height answer exactly where it landed. */
+function applyFitOffset(chart: SizeChart, row: SizeChartRow, fitRating?: FitRating): SizeChartRow {
+  if (fitRating !== 'runs_small' && fitRating !== 'runs_large') return row;
+
+  const offset = fitRating === 'runs_small' ? 1 : -1;
+  const index = chart.rows.indexOf(row);
+  const nextIndex = Math.min(chart.rows.length - 1, Math.max(0, index + offset));
+  return chart.rows[nextIndex];
+}
+
 /**
  * The size to recommend, given an age or a height (weight is a refinement,
  * never used alone). Null covers three honest "no answer" cases: the
@@ -193,6 +215,7 @@ export function recommendSize(product: ProductSizing, input: SizeRecommendationI
     : input.heightCm !== undefined
       ? findRowByHeight(chart, input.heightCm, input.weightKg)
       : null;
+  if (!target) return null;
 
-  return target ? mapRowToStockedSize(chart, sizes, target) : null;
+  return mapRowToStockedSize(chart, sizes, applyFitOffset(chart, target, input.fitRating));
 }

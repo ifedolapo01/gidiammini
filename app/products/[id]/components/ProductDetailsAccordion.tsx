@@ -1,25 +1,14 @@
 /** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
 'use client';
 
-import { useEffect, useState } from 'react';
 import { ChevronLeft, Truck, Shield } from 'lucide-react';
 import { useActiveShippingZones } from '@/components/checkout/hooks/useActiveShippingZones';
 import { aggregateEtaRange } from '@/lib/commerce/shipping-eta';
 import { computeDeliveryWindow, formatDeliveryWindow, minutesUntilCutoffToday } from '@/lib/commerce/delivery-promise';
+import { useNow } from '../hooks/useNow';
 
 interface ProductDetailsAccordionProps {
   details: string[] | undefined;
-}
-
-/** Refreshed every minute so the cutoff countdown stays accurate — cheap here
- * because this is a single instance per product page, not per card. */
-function useNow(intervalMs: number): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
 }
 
 export default function ProductDetailsAccordion({ details }: ProductDetailsAccordionProps) {

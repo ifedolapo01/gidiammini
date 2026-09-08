@@ -50,8 +50,18 @@ async function getProduct(supabase: SupabaseClient, id: string) {
 
   console.log('✅ Product found:', data.id);
 
+  // The customer side of the fit story, next to the admin's own claim on
+  // the form below. Best-effort: a missing or errored row just means no
+  // reviews have answered the fit question yet, not a reason to fail the
+  // product load.
+  const { data: fitStats } = await supabase
+    .from('product_review_stats')
+    .select('runs_small_count, true_to_size_count, runs_large_count')
+    .eq('product_id', id)
+    .maybeSingle();
+
   return NextResponse.json(
-    { success: true, product: data },
+    { success: true, product: data, reviewFitStats: fitStats ?? null },
     { headers: JSON_HEADERS }
   );
 }

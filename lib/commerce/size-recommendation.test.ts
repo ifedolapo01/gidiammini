@@ -127,6 +127,32 @@ describe('recommendSize — sizes that split the standard bands differently', ()
   });
 });
 
+describe('recommendSize — fit-rating offset', () => {
+  it('nudges the target up a band on "runs_small" rather than just noting the fact', () => {
+    const result = recommendSize(BABY_PRODUCT, { ageMonths: 4, fitRating: 'runs_small' });
+    // Age 4 alone wants "3-6 months"; a known "runs small" signal moves the
+    // target one band up before it is mapped to stock.
+    expect(result).toEqual({ recommendedSize: '6-9 months', idealLabel: '6-9 months', exactMatch: true });
+  });
+
+  it('nudges the target down a band on "runs_large"', () => {
+    const result = recommendSize(BABY_PRODUCT, { ageMonths: 4, fitRating: 'runs_large' });
+    expect(result).toEqual({ recommendedSize: '0-3 months', idealLabel: '0-3 months', exactMatch: true });
+  });
+
+  it('leaves the age/height answer alone for "true_to_size" and for no signal', () => {
+    const base = recommendSize(BABY_PRODUCT, { ageMonths: 4 });
+    expect(recommendSize(BABY_PRODUCT, { ageMonths: 4, fitRating: 'true_to_size' })).toEqual(base);
+  });
+
+  it('clamps at the chart\'s own ends rather than running off it', () => {
+    // Ideal is already the chart's last band (18-24 months) — "runs small"
+    // has nowhere further up to move it.
+    const result = recommendSize(BABY_PRODUCT, { ageMonths: 36, fitRating: 'runs_small' });
+    expect(result?.idealLabel).toBe('18-24 months');
+  });
+});
+
 describe('recommendSize — no answer', () => {
   it('returns null for letter and maternity charts', () => {
     expect(recommendSize(LETTER_PRODUCT, { ageMonths: 60 })).toBeNull();

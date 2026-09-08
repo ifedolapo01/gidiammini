@@ -11,11 +11,16 @@ import { useState, type FormEvent } from 'react';
 import { Wand2 } from 'lucide-react';
 import { Button, Input, Select } from '@/components/ui';
 import { recommendSize, shouldOfferSizeRecommendation, type SizeRecommendation } from '@/lib/commerce/size-recommendation';
-import type { ProductSizing } from '@/lib/commerce/size-guide';
+import type { FitRating, ProductSizing } from '@/lib/commerce/size-guide';
 
 interface SizeRecommenderProps {
   product: ProductSizing;
   onSelectSize: (size: string) => void;
+  /** The dominant customer fit signal for this product, if there is one
+   *  strong enough to print (rating-math.ts's dominantFitSignal) — feeds the
+   *  age/height answer as an offset rather than only being displayed next to
+   *  the size buttons. */
+  fitRating?: FitRating;
 }
 
 type HeightUnit = 'cm' | 'in';
@@ -38,7 +43,7 @@ function toPositiveNumber(value: string): number | undefined {
  *  for a gap that's actually in the catalogue's sizing. */
 type RecommendationResult = SizeRecommendation | { kind: 'no_input' } | { kind: 'no_match' };
 
-export default function SizeRecommender({ product, onSelectSize }: SizeRecommenderProps) {
+export default function SizeRecommender({ product, onSelectSize, fitRating }: SizeRecommenderProps) {
   const [open, setOpen] = useState(false);
   const [ageMonths, setAgeMonths] = useState('');
   const [heightValue, setHeightValue] = useState('');
@@ -65,6 +70,7 @@ export default function SizeRecommender({ product, onSelectSize }: SizeRecommend
       ageMonths: age,
       heightCm: height === undefined ? undefined : heightUnit === 'in' ? height * CM_PER_INCH : height,
       weightKg: weight === undefined ? undefined : weightUnit === 'lb' ? weight * KG_PER_LB : weight,
+      fitRating,
     });
     setResult(recommendation ?? { kind: 'no_match' });
   }

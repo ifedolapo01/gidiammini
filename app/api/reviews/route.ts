@@ -41,7 +41,7 @@ async function submitReview(request: NextRequest) {
   const parsed = await parseJsonBody(request, reviewSubmissionSchema);
   if (!parsed.ok) return parsed.response;
 
-  const { token, productId, rating, title, body, authorName, photoPaths } = parsed.data;
+  const { token, productId, rating, title, body, fitRating, authorName, photoPaths } = parsed.data;
 
   // Answered as success, so a scripted submitter learns nothing from the
   // response about having been spotted.
@@ -101,6 +101,7 @@ async function submitReview(request: NextRequest) {
     rating,
     title: orNull(title),
     body: orNull(body),
+    fit_rating: fitRating ?? null,
     author_name: authorName,
     // From the order, never from the form: it is the address the invite was
     // sent to, and a moderator needs to be able to reply to a real person.

@@ -13,9 +13,15 @@
 import type { UseFormRegister } from 'react-hook-form';
 import { Textarea } from '@/components/ui';
 import type { ProductFormValues } from '@/lib/commerce/product-form-schema';
+import type { ReviewFitStats } from '../hooks/useEditProductData';
+import { dominantFitSignal } from '@/lib/commerce/rating-math';
+import { fitLabel } from '@/lib/commerce/size-guide';
 
 interface ProductFitSectionProps {
   register: UseFormRegister<ProductFormValues>;
+  /** The customer side of the fit story — absent on the new-product form,
+   *  where there are no reviews yet to aggregate. */
+  reviewFitStats?: ReviewFitStats | null;
 }
 
 const OPTIONS: Array<{ value: string; label: string; hint: string }> = [
@@ -25,7 +31,12 @@ const OPTIONS: Array<{ value: string; label: string; hint: string }> = [
   { value: 'runs_large', label: 'Runs large', hint: 'We suggest sizing down' },
 ];
 
-export function ProductFitSection({ register }: ProductFitSectionProps) {
+export function ProductFitSection({ register, reviewFitStats }: ProductFitSectionProps) {
+  const totalFitResponses = reviewFitStats
+    ? reviewFitStats.runs_small_count + reviewFitStats.true_to_size_count + reviewFitStats.runs_large_count
+    : 0;
+  const customerSignal = reviewFitStats ? dominantFitSignal(reviewFitStats) : null;
+
   return (
     <div className="bg-background-secondary p-5 rounded-surface border border-border-light space-y-4">
       <div>
@@ -37,6 +48,22 @@ export function ProductFitSection({ register }: ProductFitSectionProps) {
           {`Shown under the size buttons and at the top of the size guide. This is the single thing that reduces "it didn't fit" messages, so it is worth filling in even when the answer is "true to size".`}
         </p>
       </div>
+
+      {/* What buyers actually said, once there are enough of them to say
+          anything — the outcome this radio group is a prediction of. */}
+      {reviewFitStats && totalFitResponses > 0 && (
+        <div className="rounded-control border border-border bg-surface p-3 text-body-sm">
+          <p className="font-medium text-text-primary">
+            {customerSignal
+              ? `Customers say: ${fitLabel(customerSignal.rating)} (${customerSignal.percent}% of ${customerSignal.responses})`
+              : 'Customer fit feedback so far: no clear majority yet'}
+          </p>
+          <p className="mt-1 text-caption-md text-text-secondary">
+            {reviewFitStats.runs_small_count} runs small · {reviewFitStats.true_to_size_count} true to size ·{' '}
+            {reviewFitStats.runs_large_count} runs large
+          </p>
+        </div>
+      )}
 
       <fieldset>
         <legend className="sr-only">How this product runs against its stated size</legend>

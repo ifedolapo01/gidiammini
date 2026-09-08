@@ -14,12 +14,17 @@
 
 import { useState } from 'react';
 import type { FieldErrors } from '@/lib/api/field-errors';
+import type { FitRating } from '@/lib/commerce/size-guide';
 
 export interface ReviewDraft {
   productId: string;
   rating: number;
   title: string;
   body: string;
+  /** Absent, not an empty string — the route's schema treats it as "skipped"
+   *  only when the key is missing, the same undefined-means-leave-it
+   *  convention the moderation schema uses for its own optional fields. */
+  fitRating?: FitRating;
   authorName: string;
   photoPaths: string[];
   /** The honeypot input's value. Empty for every human; a filled one is

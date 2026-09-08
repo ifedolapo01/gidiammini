@@ -19,7 +19,9 @@ import ProductImage from '@/components/commerce/ProductImage';
 import RatingInput from '@/components/commerce/RatingInput';
 import { Button, FieldError, Input, Textarea, fieldErrorId } from '@/components/ui';
 import { MAX_REVIEW_BODY, MAX_REVIEW_TITLE } from '@/lib/commerce/reviews';
+import type { FitRating } from '@/lib/commerce/size-guide';
 import type { ReviewableItem } from '@/lib/commerce/review-claim';
+import ReviewFitField from './ReviewFitField';
 import ReviewPhotoPicker from './ReviewPhotoPicker';
 import { useReviewSubmit } from '../hooks/useReviewSubmit';
 
@@ -32,6 +34,7 @@ interface ReviewItemFormProps {
 
 export default function ReviewItemForm({ token, item, defaultAuthorName }: ReviewItemFormProps) {
   const [rating, setRating] = useState(0);
+  const [fitRating, setFitRating] = useState<FitRating | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [authorName, setAuthorName] = useState(defaultAuthorName);
@@ -73,7 +76,16 @@ export default function ReviewItemForm({ token, item, defaultAuthorName }: Revie
           className="mt-4 space-y-4"
           onSubmit={(event) => {
             event.preventDefault();
-            submit({ productId: item.productId, rating, title, body, authorName, photoPaths, website });
+            submit({
+              productId: item.productId,
+              rating,
+              fitRating: fitRating ?? undefined,
+              title,
+              body,
+              authorName,
+              photoPaths,
+              website,
+            });
           }}
         >
           <fieldset disabled={submitting} className="space-y-4">
@@ -89,6 +101,8 @@ export default function ReviewItemForm({ token, item, defaultAuthorName }: Revie
               />
               <FieldError id={fieldErrorId('rating')}>{fieldErrors.rating}</FieldError>
             </div>
+
+            <ReviewFitField itemId={item.productId} value={fitRating} onChange={setFitRating} />
 
             <div>
               <label

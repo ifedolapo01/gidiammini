@@ -10,6 +10,7 @@
  *
  * Pure, and the most heavily tested part of the feature for that reason.
  */
+import type { FitRating } from './size-guide';
 
 /** One row of product_review_stats. Zero-filled when a product has no reviews. */
 export interface ReviewStats {
@@ -22,6 +23,11 @@ export interface ReviewStats {
   two_star: number;
   one_star: number;
   verified_count: number;
+  /** How many published reviews answered the fit question with each rating.
+   *  Not every review answers it, so these do not have to sum to review_count. */
+  runs_small_count: number;
+  true_to_size_count: number;
+  runs_large_count: number;
 }
 
 export const NO_REVIEWS: ReviewStats = {
@@ -33,6 +39,9 @@ export const NO_REVIEWS: ReviewStats = {
   two_star: 0,
   one_star: 0,
   verified_count: 0,
+  runs_small_count: 0,
+  true_to_size_count: 0,
+  runs_large_count: 0,
 };
 
 /**
@@ -59,6 +68,9 @@ export function toReviewStats(row: Partial<Record<keyof ReviewStats, unknown>> |
     two_star: int(row.two_star),
     one_star: int(row.one_star),
     verified_count: int(row.verified_count),
+    runs_small_count: int(row.runs_small_count),
+    true_to_size_count: int(row.true_to_size_count),
+    runs_large_count: int(row.runs_large_count),
   };
 }
 
@@ -130,4 +142,47 @@ export function ratingDistribution(stats: ReviewStats): RatingBar[] {
 export function starFractions(average: number): number[] {
   const value = clampRating(average);
   return [0, 1, 2, 3, 4].map((index) => Math.min(1, Math.max(0, value - index)));
+}
+
+export interface FitSignal {
+  rating: FitRating;
+  /** Share of fit-answering reviews that picked this rating, 0-100 rounded. */
+  percent: number;
+  /** How many reviews answered the fit question at all. */
+  responses: number;
+}
+
+/** Only three fit-answering reviews and a 3-0 split says something; three
+ * reviews split 2-1 says nothing yet. */
+const MIN_RESPONSES = 3;
+/** A near-even split between "runs small" and "true to size" is not a claim
+ * worth printing — it has to be a clear majority, not merely the largest of
+ * three roughly equal piles. */
+const MAJORITY_THRESHOLD = 0.6;
+
+/**
+ * The one fit signal worth surfacing — "most buyers say this runs small" — or
+ * null when there either isn't enough fit feedback yet or it doesn't agree
+ * with itself enough to print. Takes just the three counts, not a full
+ * ReviewStats, so both the PDP (which has one) and the admin edit page
+ * (which reads them straight off product_review_stats) can call it the same
+ * way.
+ */
+export function dominantFitSignal(
+  counts: Pick<ReviewStats, 'runs_small_count' | 'true_to_size_count' | 'runs_large_count'>,
+  minResponses = MIN_RESPONSES
+): FitSignal | null {
+  const entries: Array<[FitRating, number]> = [
+    ['runs_small', counts.runs_small_count],
+    ['true_to_size', counts.true_to_size_count],
+    ['runs_large', counts.runs_large_count],
+  ];
+  const responses = entries.reduce((sum, [, count]) => sum + count, 0);
+  if (responses < minResponses) return null;
+
+  const [topRating, topCount] = entries.reduce((best, current) => (current[1] > best[1] ? current : best));
+  const share = topCount / responses;
+  if (share < MAJORITY_THRESHOLD) return null;
+
+  return { rating: topRating, percent: Math.round(share * 100), responses };
 }

@@ -10,6 +10,14 @@ import { variantKeyFor } from '@/lib/commerce/product-variants';
 import type { SizingType } from '@/lib/commerce/product-form-schema';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
+/** The customer side of the fit story — product_review_stats' fit counts for
+ *  this one product, next to the admin's own claim on the form. */
+export interface ReviewFitStats {
+  runs_small_count: number;
+  true_to_size_count: number;
+  runs_large_count: number;
+}
+
 interface UseEditProductDataArgs {
   productId: string;
   reset: UseFormReset<ProductFormValues>;
@@ -24,6 +32,7 @@ interface UseEditProductDataArgs {
 export function useEditProductData(args: UseEditProductDataArgs) {
   const { productId, reset, setImages, setHasVariants, setHasSizes, setHasColors, setSizingType, setVariants } = args;
   const [product, setProduct] = useState<Product | null>(null);
+  const [reviewFitStats, setReviewFitStats] = useState<ReviewFitStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -51,6 +60,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
       if (!result.success) throw new Error(result.error || 'Failed to load product');
 
       const productData: Product | null = result.product ?? null;
+      setReviewFitStats(result.reviewFitStats ?? null);
 
       if (productData) {
         setProduct(productData);
@@ -181,5 +191,5 @@ export function useEditProductData(args: UseEditProductDataArgs) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
-  return { product, isLoading, loadError, refetch: () => fetchProduct(productId) };
+  return { product, reviewFitStats, isLoading, loadError, refetch: () => fetchProduct(productId) };
 }

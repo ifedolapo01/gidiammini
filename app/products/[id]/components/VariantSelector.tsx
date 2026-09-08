@@ -15,7 +15,9 @@
 import { useState } from 'react';
 import { Ruler } from 'lucide-react';
 import { isFitRating, sizeSelectorLabel } from '@/lib/commerce/size-guide';
+import { dominantFitSignal, type ReviewStats } from '@/lib/commerce/rating-math';
 import type { Product } from '@/types/product';
+import CustomerFitSignal from './CustomerFitSignal';
 import FitNote from './FitNote';
 import SizeGuideDrawer from './SizeGuideDrawer';
 import SizeRecommender from './SizeRecommender';
@@ -35,6 +37,9 @@ interface VariantSelectorProps {
   currentStock: number;
   /** categories.size_guidance, loaded with the product. */
   categoryGuidance?: string | null;
+  /** The published-review aggregate — feeds the "most buyers say this runs
+   *  small" line and the size recommender's fit offset. */
+  reviewStats: ReviewStats;
 }
 
 function titleCase(value: string): string {
@@ -50,6 +55,7 @@ export default function VariantSelector({
   onSelectColor,
   currentStock,
   categoryGuidance,
+  reviewStats,
 }: VariantSelectorProps) {
   const [guideOpen, setGuideOpen] = useState(false);
 
@@ -57,6 +63,7 @@ export default function VariantSelector({
   const sizeLabel = sizeSelectorLabel(product.sizing_type);
   const fitRating = isFitRating(product.fit_rating) ? product.fit_rating : null;
   const fitNote = product.fit_note ?? null;
+  const customerFitSignal = dominantFitSignal(reviewStats);
 
   return (
     <>
@@ -86,6 +93,7 @@ export default function VariantSelector({
               <SizeRecommender
                 product={{ sizes, sizing_type: product.sizing_type, category: product.category }}
                 onSelectSize={onSelectSize}
+                fitRating={customerFitSignal?.rating}
               />
             </div>
           </div>
@@ -111,6 +119,7 @@ export default function VariantSelector({
           {/* Under the buttons, not behind the drawer. This is the one fact
               that changes which button they press. */}
           <FitNote rating={fitRating} note={fitNote} tone="inline" />
+          <CustomerFitSignal reviewStats={reviewStats} />
 
           <SizeGuideDrawer
             open={guideOpen}
