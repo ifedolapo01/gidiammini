@@ -20,22 +20,7 @@ import CategoryFacet from './CategoryFacet';
 import CheckboxFacet from './CheckboxFacet';
 import PriceFacet from './PriceFacet';
 import AvailabilityFacet from './AvailabilityFacet';
-
-/**
- * A dot of the colour itself. An admin types these freely, so the value is fed
- * straight to CSS and anything unrecognised ("Multicolour") simply resolves to
- * nothing — which is why the swatch keeps a border and never carries the
- * meaning on its own. The name is always spelled out beside it.
- */
-function ColorSwatch({ value }: { value: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-4 shrink-0 rounded-full border border-border-strong"
-      style={{ backgroundColor: value.toLowerCase().replace(/\s+/g, '') }}
-    />
-  );
-}
+import ColorSwatch from '@/components/commerce/ColorSwatch';
 
 interface FilterFacetsProps {
   categories: CategoryWithSubcategories[];

@@ -36,6 +36,7 @@ export type AuditEntityType =
   | 'category'
   | 'subcategory'
   | 'homepage_slide'
+  | 'search_synonym'
   | 'customer'
   | 'subscriber'
   /** A person's admin account: invited, re-roled, revoked, restored. */

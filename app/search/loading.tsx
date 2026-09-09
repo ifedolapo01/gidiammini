@@ -1,14 +1,7 @@
-/** STOREFRONT layer — GidiamMini branding. Depends on Core (tokens + primitives) and Commerce. */
-import { Skeleton } from '@/components/ui';
-import { ProductGridSkeleton } from '@/components/commerce/ProductCardSkeleton';
-
-export default function SearchLoading() {
-  return (
-    <div className="min-h-screen bg-background-secondary">
-      <div className="container mx-auto px-3 sm:px-4 py-6">
-        <Skeleton className="mb-6 h-7 w-64" />
-        <ProductGridSkeleton count={6} />
-      </div>
-    </div>
-  );
-}
+/** STOREFRONT layer — GidiamMini branding. What /search shows while the server is still querying. */
+// Re-export, not a second skeleton: /search now renders through the exact same
+// ProductsBrowser shell /products does, so it waits behind the exact same
+// shape — see ProductsListingSkeleton's own note on why a loading.tsx here
+// would otherwise wrap /search/[anything] too, which does not exist, so unlike
+// /products this file is safe to keep as a plain loading.tsx.
+export { default } from '../products/components/ProductsListingSkeleton';

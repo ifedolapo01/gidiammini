@@ -1825,6 +1825,27 @@ export type Database = {
         }
         Relationships: []
       }
+      search_synonyms: {
+        Row: {
+          created_at: string
+          expansion: string
+          id: string
+          term: string
+        }
+        Insert: {
+          created_at?: string
+          expansion: string
+          id?: string
+          term: string
+        }
+        Update: {
+          created_at?: string
+          expansion?: string
+          id?: string
+          term?: string
+        }
+        Relationships: []
+      }
       shipping_zone_exceptions: {
         Row: {
           created_at: string | null
@@ -2377,6 +2398,15 @@ export type Database = {
         }
         Relationships: []
       }
+      zero_result_searches: {
+        Row: {
+          has_synonym: boolean | null
+          last_searched_at: string | null
+          query: string | null
+          times_searched: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       adjust_order_stock: {
@@ -2388,6 +2418,7 @@ export type Database = {
         }
         Returns: Json
       }
+      build_search_tsquery: { Args: { p_query: string }; Returns: unknown }
       check_rate_limit: {
         Args: {
           p_count?: boolean
@@ -2410,6 +2441,7 @@ export type Database = {
           p_in_stock_only?: boolean
           p_max_price?: number
           p_min_price?: number
+          p_search?: string
           p_sizes?: string[]
           p_subcategory?: string
         }
@@ -2441,14 +2473,17 @@ export type Database = {
           p_limit?: number
           p_max_price?: number
           p_min_price?: number
+          p_search?: string
           p_sizes?: string[]
           p_sort?: string
           p_subcategory?: string
         }
         Returns: {
           category: string
+          colors: string[]
           description: string
           id: string
+          images: string[]
           main_image: string
           name: string
           price: number
@@ -2467,6 +2502,7 @@ export type Database = {
           p_in_stock_only?: boolean
           p_max_price?: number
           p_min_price?: number
+          p_search?: string
           p_sizes?: string[]
           p_subcategory?: string
         }
@@ -2563,6 +2599,8 @@ export type Database = {
         }
         Returns: Json
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       storefront_funnel: {
         Args: { p_window_days?: number }
         Returns: {
@@ -2582,6 +2620,15 @@ export type Database = {
           views: number
         }[]
       }
+      suggest_products: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          id: string
+          main_image: string
+          name: string
+          similarity: number
+        }[]
+      }
       sync_product_stock_total: {
         Args: { p_product_id: string }
         Returns: undefined
@@ -2589,6 +2636,14 @@ export type Database = {
       sync_variants_from_pricing_config: {
         Args: { p_product_id: string }
         Returns: Json
+      }
+      top_categories: {
+        Args: { p_limit?: number }
+        Returns: {
+          name: string
+          product_count: number
+          slug: string
+        }[]
       }
       variant_key: {
         Args: { p_color: string; p_size: string }

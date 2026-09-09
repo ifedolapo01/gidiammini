@@ -49,6 +49,7 @@ function cacheKey(filters: ProductFilters, cursor: string | null): string {
     filters.maxPrice,
     [...filters.sizes].sort(),
     [...filters.colors].sort(),
+    filters.query,
     filters.onSale,
     filters.inStockOnly,
     filters.sort,

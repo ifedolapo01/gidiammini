@@ -17,9 +17,11 @@
  *      These values arrive from a pasted link and a stale bookmark is not an
  *      error condition.
  *
- * Pure and dependency-free, so the whole round trip is testable without a
- * router or a browser.
+ * Pure and dependency-free (aside from search-query.ts, itself pure), so the
+ * whole round trip is testable without a router or a browser.
  */
+
+import { normaliseSearchQuery } from './search-query';
 
 /** Sort orders the listing offers. `value` is what list_products() expects. */
 export const SORT_OPTIONS = [
@@ -46,6 +48,13 @@ export interface ProductFilters {
   maxPrice: number | null;
   sizes: string[];
   colors: string[];
+  /**
+   * Empty on /products. On /search this is the reason the page exists, not a
+   * facet the shopper toggled — see countActiveFilters, which deliberately
+   * does not count it, and useProductFilterNav's clearFilters, which keeps it
+   * while resetting everything else.
+   */
+  query: string;
   /** Applied in the browser via getBestDiscount — see the migration's note. */
   onSale: boolean;
   /**
@@ -65,6 +74,7 @@ export const DEFAULT_FILTERS: ProductFilters = {
   maxPrice: null,
   sizes: [],
   colors: [],
+  query: '',
   onSale: false,
   inStockOnly: false,
   sort: 'newest',
@@ -115,6 +125,7 @@ export function parseProductFilters(params: ParamsLike | null | undefined): Prod
     maxPrice: swap ? minPrice : maxPrice,
     sizes: parseList(params, 'size'),
     colors: parseList(params, 'color'),
+    query: normaliseSearchQuery(params.get('q')),
     onSale: params.get('sale') === '1',
     // Only the explicit opt-in flips it; anything else keeps the default.
     inStockOnly: params.get('stock') === 'in',
@@ -129,6 +140,7 @@ export function parseProductFilters(params: ParamsLike | null | undefined): Prod
 export function productFiltersToQuery(filters: ProductFilters): URLSearchParams {
   const params = new URLSearchParams();
 
+  if (filters.query) params.set('q', filters.query);
   if (filters.category !== 'all') params.set('category', filters.category);
   if (filters.subcategory !== 'all') params.set('subcategory', filters.subcategory);
   if (filters.minPrice !== null) params.set('min', String(filters.minPrice));
@@ -144,16 +156,40 @@ export function productFiltersToQuery(filters: ProductFilters): URLSearchParams 
   return params;
 }
 
-/** `/products?...`, ready for router.push. */
-export function productFiltersToHref(filters: ProductFilters): string {
+/** `/products?...` by default, ready for router.push. /search passes its own
+ *  basePath so a facet change there stays on /search instead of jumping over
+ *  to the category listing. */
+export function productFiltersToHref(filters: ProductFilters, basePath: string = '/products'): string {
   const query = productFiltersToQuery(filters).toString();
-  return query === '' ? '/products' : `/products?${query}`;
+  return query === '' ? basePath : `${basePath}?${query}`;
+}
+
+/**
+ * Next hands searchParams as a plain object with repeated keys collapsed into
+ * arrays; parseProductFilters wants URLSearchParams' get/getAll. Shared by
+ * /products and /search so the two server pages parse identically to
+ * /api/products.
+ */
+export function searchParamsFromNext(
+  raw: Record<string, string | string[] | undefined>
+): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    if (Array.isArray(value)) {
+      for (const item of value) params.append(key, item);
+    } else if (value !== undefined) {
+      params.set(key, value);
+    }
+  }
+  return params;
 }
 
 /**
  * How many facets are narrowing the list — the number on the mobile "Filters"
  * button. Sort is excluded: it hides nothing, and a badge reading "1" on an
- * untouched page would be a lie.
+ * untouched page would be a lie. Query is excluded too, for the same reason —
+ * on /search it is the page's whole reason to exist, not something layered on
+ * top of it, so it should never itself trip "no active filters" messaging.
  */
 export function countActiveFilters(filters: ProductFilters): number {
   return (

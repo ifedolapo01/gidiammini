@@ -15,6 +15,7 @@ import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { PRODUCTS_CACHE_TAG } from './product-cache';
 import { attachReviewStats } from './review-query';
+import { attachCardMedia } from './product-media';
 import type { ListingProduct } from './product-listing-query';
 import type { Discount } from './discounts';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -48,7 +49,10 @@ async function cardsFor(supabase: SupabaseClient, ids: string[]): Promise<Recomm
   // Same star row as the listing grid, from the same helper — a rail and the
   // grid showing different ratings for one product is the kind of detail that
   // makes both look made up.
-  return attachReviewStats((data ?? []) as RecommendedProduct[], supabase);
+  const withStats = await attachReviewStats((data ?? []) as RecommendedProduct[], supabase);
+  // Same swatches and hover image the grid gets, merged the same way: see
+  // product-media.ts for why this isn't a column on product_cards() itself.
+  return attachCardMedia(withStats, supabase);
 }
 
 async function idsFrom(

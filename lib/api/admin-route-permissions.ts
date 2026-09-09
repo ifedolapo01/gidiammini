@@ -82,6 +82,11 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/admin/shipping-zones', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/homepage-slides', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/homepage-slides/*', read: 'store:read', write: 'catalog:write' },
+  // Synonyms are a merchandising control over how the catalogue is found,
+  // same split as Categories and Homepage: everyone who works here can see
+  // what a search matches, only catalog:write can teach it a new word.
+  { pattern: '/api/admin/search', read: 'store:read', write: 'catalog:write' },
+  { pattern: '/api/admin/search/*', read: 'store:read', write: 'catalog:write' },
 
   // Moderation.
   { pattern: '/api/admin/reviews', read: 'store:read', write: 'moderation:write' },

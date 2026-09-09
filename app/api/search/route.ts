@@ -17,6 +17,7 @@ import {
   isSearchable,
   MIN_QUERY_LENGTH,
 } from '@/lib/commerce/search-query';
+import { logSearchQuery } from '@/lib/commerce/search-log';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** Typeahead wants a handful; the results page wants a page's worth. */
@@ -27,24 +28,6 @@ function parseLimit(value: string | null): number {
   const limit = Number(value);
   if (!Number.isFinite(limit) || limit < 1) return DEFAULT_LIMIT;
   return Math.min(Math.trunc(limit), MAX_LIMIT);
-}
-
-/**
- * Records what was searched for and how many results it returned.
- *
- * Best-effort and never awaited on the critical path's behalf — a failed log
- * write must not cost the visitor their results. The zero-result rows are the
- * point: they are a list, in customers' own words, of what the catalogue does
- * not cover or does not name the way people say it.
- */
-async function logSearch(supabase: SupabaseClient, query: string, resultCount: number): Promise<void> {
-  const { error } = await supabase
-    .from('search_queries')
-    .insert({ query, result_count: resultCount });
-
-  if (error) {
-    console.error(`Search log failed for "${query}": ${error.message}`);
-  }
 }
 
 /**
@@ -115,7 +98,7 @@ async function search(request: NextRequest) {
   const categories = await matchingCategories(supabase, query);
 
   // Awaited so the log is durable, but its failure is swallowed inside.
-  await logSearch(supabase, query, products.length);
+  await logSearchQuery(supabase, query, products.length);
 
   return NextResponse.json({
     success: true,

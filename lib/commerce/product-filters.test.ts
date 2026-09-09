@@ -6,6 +6,7 @@ import {
   countActiveFilters,
   applyFilterChange,
   toggleFacetValue,
+  searchParamsFromNext,
   DEFAULT_FILTERS,
 } from './product-filters';
 import { compareSizes, sortSizes } from './size-order';
@@ -24,7 +25,7 @@ describe('parseProductFilters', () => {
 
   it('reads every facet', () => {
     const filters = parse(
-      'category=gowns&subcategory=christening&min=5000&max=9999&size=S&size=M&color=Blue&sale=1&stock=in&sort=price_asc'
+      'category=gowns&subcategory=christening&min=5000&max=9999&size=S&size=M&color=Blue&q=gown&sale=1&stock=in&sort=price_asc'
     );
 
     expect(filters).toEqual({
@@ -34,10 +35,16 @@ describe('parseProductFilters', () => {
       maxPrice: 9999,
       sizes: ['S', 'M'],
       colors: ['Blue'],
+      query: 'gown',
       onSale: true,
       inStockOnly: true,
       sort: 'price_asc',
     });
+  });
+
+  it('normalises the search term the same way search-query.ts does', () => {
+    expect(parse('q=Baby%20Gown!').query).toBe('baby gown');
+    expect(parse('').query).toBe('');
   });
 
   it('shows sold-out products by default; hiding them is an explicit opt-in', () => {
@@ -85,6 +92,21 @@ describe('productFiltersToQuery', () => {
     const query = productFiltersToQuery({ ...DEFAULT_FILTERS, category: 'gowns' }).toString();
     expect(query).toBe('category=gowns');
   });
+
+  it('defaults to /products, but /search reuses the same href builder', () => {
+    const filters = { ...DEFAULT_FILTERS, query: 'gown', colors: ['Blue'] };
+    expect(productFiltersToHref(filters)).toBe('/products?q=gown&color=Blue');
+    expect(productFiltersToHref(filters, '/search')).toBe('/search?q=gown&color=Blue');
+  });
+});
+
+describe('searchParamsFromNext', () => {
+  it('collapses Next\'s array-shaped repeated params back into one URLSearchParams', () => {
+    const params = searchParamsFromNext({ q: 'gown', size: ['S', 'M'], page: undefined });
+    expect(params.get('q')).toBe('gown');
+    expect(params.getAll('size')).toEqual(['S', 'M']);
+    expect(params.has('page')).toBe(false);
+  });
 });
 
 describe('countActiveFilters', () => {
@@ -97,6 +119,10 @@ describe('countActiveFilters', () => {
     expect(
       countActiveFilters({ ...DEFAULT_FILTERS, sizes: ['S', 'M'], colors: ['Blue'], onSale: true })
     ).toBe(4);
+  });
+
+  it('does not count the search term — /search should not read as "filtered"', () => {
+    expect(countActiveFilters({ ...DEFAULT_FILTERS, query: 'gown' })).toBe(0);
   });
 });
 

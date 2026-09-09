@@ -37,6 +37,9 @@ function facetArgs(filters: ProductFilters) {
     p_sizes: filters.sizes.length > 0 ? filters.sizes : null,
     p_colors: filters.colors.length > 0 ? filters.colors : null,
     p_in_stock_only: filters.inStockOnly,
+    // '' means "no search" to product_candidates() too — same NULL convention
+    // as every other facet here.
+    p_search: filters.query || null,
   };
 }
 

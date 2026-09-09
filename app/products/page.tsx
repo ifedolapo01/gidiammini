@@ -13,7 +13,7 @@
 // renders the new first page rather than the browser refetching it.
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { parseProductFilters, type ProductFilters } from '@/lib/commerce/product-filters';
+import { parseProductFilters, searchParamsFromNext, type ProductFilters } from '@/lib/commerce/product-filters';
 import { loadListingPage, loadListingShell, withoutCursorKey } from '@/lib/commerce/product-listing';
 import ProductsBrowser from './components/ProductsBrowser';
 import ProductsListingSkeleton from './components/ProductsListingSkeleton';
@@ -41,7 +41,7 @@ function canonicalListingPath(filters: ProductFilters): string {
 }
 
 export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
-  const filters = parseProductFilters(toSearchParams(await searchParams));
+  const filters = parseProductFilters(searchParamsFromNext(await searchParams));
   const shell = await loadListingShell(filters);
 
   const category = shell.categories.find((entry) => entry.slug === filters.category);
@@ -62,26 +62,8 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
   };
 }
 
-/**
- * Next hands searchParams as a plain object with repeated keys collapsed into
- * arrays; parseProductFilters wants URLSearchParams' get/getAll. Rebuilding one
- * is cheaper than teaching the codec a second input shape, and keeps the parse
- * identical to the one /api/products runs.
- */
-function toSearchParams(raw: Record<string, string | string[] | undefined>): URLSearchParams {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(raw)) {
-    if (Array.isArray(value)) {
-      for (const item of value) params.append(key, item);
-    } else if (value !== undefined) {
-      params.set(key, value);
-    }
-  }
-  return params;
-}
-
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const filters = parseProductFilters(toSearchParams(await searchParams));
+  const filters = parseProductFilters(searchParamsFromNext(await searchParams));
 
   // The queries live in the child, behind Suspense, so the response starts
   // flushing before the database has answered — the visitor gets the layout and

@@ -22,6 +22,10 @@ export interface ListingProduct {
   stock: number;
   price_min: number;
   price_max: number;
+  /** list_products() already returns both — the grid just never read them
+   *  until the card grew swatches and a hover image. */
+  colors?: string[];
+  images?: string[];
   /** Merged in from product_review_stats — see attachReviewStats. Absent when
    *  the product has no published reviews. */
   rating_average?: number;

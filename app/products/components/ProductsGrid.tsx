@@ -23,6 +23,14 @@ interface ProductsGridProps {
   discounts: Discount[];
   hasActiveFilters: boolean;
   onClearFilters: () => void;
+  /**
+   * Replaces the default "No products in this collection yet" message when
+   * there are no active facets — i.e. the base list itself is empty, not just
+   * narrowed to nothing. /search uses this for its did-you-mean fallback; a
+   * facet narrowing a real result set to zero still gets the default message
+   * and its "Clear all filters" button below.
+   */
+  noResultsContent?: React.ReactNode;
 }
 
 export default function ProductsGrid({
@@ -30,8 +38,13 @@ export default function ProductsGrid({
   discounts,
   hasActiveFilters,
   onClearFilters,
+  noResultsContent,
 }: ProductsGridProps) {
   if (products.length === 0) {
+    if (!hasActiveFilters && noResultsContent) {
+      return <>{noResultsContent}</>;
+    }
+
     return (
       <div className="rounded-surface border border-primary/10 bg-surface p-8 py-16 text-center shadow-elevation-1">
         <p className="text-body-lg font-medium text-text-secondary">

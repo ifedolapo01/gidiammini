@@ -33,6 +33,13 @@ interface ProductsBrowserProps {
   discounts: Discount[];
   facets: FacetOptions;
   filters: ProductFilters;
+  /** '/products' for the category listing, '/search' for results — see
+   *  useProductFilterNav. */
+  basePath?: string;
+  /** Defaults to "Our Collection". /search passes its own results heading. */
+  heading?: React.ReactNode;
+  /** Passed straight through to ProductsGrid — see its own doc. */
+  noResultsContent?: React.ReactNode;
 }
 
 export default function ProductsBrowser({
@@ -43,9 +50,12 @@ export default function ProductsBrowser({
   discounts,
   facets,
   filters,
+  basePath = '/products',
+  heading = 'Our Collection',
+  noResultsContent,
 }: ProductsBrowserProps) {
   const [showFilters, setShowFilters] = useState(false);
-  const { pending, updateFilters, clearFilters, navigateToCategory } = useProductFilterNav(filters);
+  const { pending, updateFilters, clearFilters, navigateToCategory } = useProductFilterNav(filters, basePath);
   const { products, loading, error, hasMore, loadMore } = useLoadMoreProducts({
     filters,
     initialProducts,
@@ -95,7 +105,7 @@ export default function ProductsBrowser({
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="text-h3 font-extrabold tracking-tight text-text-primary">
-                Our Collection
+                {heading}
               </h1>
               {/* aria-live, because after a filter change this line is the only
                   thing that says how many results there now are. */}
@@ -142,6 +152,7 @@ export default function ProductsBrowser({
               discounts={discounts}
               hasActiveFilters={activeFilterCount > 0}
               onClearFilters={clearFilters}
+              noResultsContent={noResultsContent}
             />
           </div>
 

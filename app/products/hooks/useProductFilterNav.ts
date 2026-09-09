@@ -13,26 +13,36 @@ import { useRouter } from 'next/navigation';
 import {
   applyFilterChange,
   productFiltersToHref,
+  DEFAULT_FILTERS,
   type ProductFilters,
 } from '@/lib/commerce/product-filters';
 
-export function useProductFilterNav(filters: ProductFilters) {
+/**
+ * `basePath` lets /search reuse this unchanged: a facet change there should
+ * stay on /search (keeping `q`), not jump over to the plain category listing.
+ */
+export function useProductFilterNav(filters: ProductFilters, basePath: string = '/products') {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const updateFilters = useCallback(
     (change: Partial<ProductFilters>) => {
-      const href = productFiltersToHref(applyFilterChange(filters, change));
+      const href = productFiltersToHref(applyFilterChange(filters, change), basePath);
       // scroll: false — re-sorting a grid the shopper is halfway down should
       // not throw them back to the top.
       startTransition(() => router.push(href, { scroll: false }));
     },
-    [filters, router]
+    [filters, router, basePath]
   );
 
   const clearFilters = useCallback(() => {
-    startTransition(() => router.push('/products', { scroll: false }));
-  }, [router]);
+    // Resets every facet but keeps the search term: on /products that term is
+    // always '' anyway, so this is identical to the old hardcoded '/products'.
+    // On /search, "clear filters" narrowing the search should not also throw
+    // away the search itself.
+    const href = productFiltersToHref({ ...DEFAULT_FILTERS, query: filters.query }, basePath);
+    startTransition(() => router.push(href, { scroll: false }));
+  }, [filters.query, router, basePath]);
 
   /** Category and subcategory move together, so picking a category drops the
    *  subcategory that belonged to the previous one. */

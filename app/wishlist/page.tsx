@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useWishlist } from '@/components/WishlistProvider';
-import WishlistItemCard from './components/WishlistItemCard';
+import ProductCard from '@/components/commerce/ProductCard';
 import { ProductCardSkeleton } from '@/components/commerce/ProductCardSkeleton';
 import { useWishlistCards } from './hooks/useWishlistCards';
 
@@ -49,7 +49,7 @@ export default function WishlistPage() {
       {loaded && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((product) => (
-            <WishlistItemCard key={product.id} product={product} discounts={discounts} />
+            <ProductCard key={product.id} product={product} discounts={discounts} />
           ))}
         </div>
       )}
