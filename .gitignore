@@ -66,3 +66,7 @@ test-*.js
 # Supabase CLI local state (never the migrations themselves)
 supabase/.temp/
 supabase/.branches/
+
+# Playwright MCP debug output (console logs, page snapshots) from ad-hoc
+# browser testing during a session — not build or app artefacts.
+.playwright-mcp/

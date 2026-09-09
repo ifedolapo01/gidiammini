@@ -21,6 +21,7 @@ export interface SettingsDraft {
   taxPercent: string;
   freeShippingThreshold: string;
   lowStockThreshold: string;
+  returnWindowDays: string;
   orderNumberPrefix: string;
   reorderLeadDays: string;
   reorderCoverDays: string;
@@ -45,6 +46,7 @@ export function toDraft(settings: StoreSettings): SettingsDraft {
     taxPercent: String(Number((settings.taxRate * 100).toFixed(3))),
     freeShippingThreshold: String(settings.freeShippingThreshold),
     lowStockThreshold: String(settings.lowStockThreshold),
+    returnWindowDays: String(settings.returnWindowDays),
     orderNumberPrefix: settings.orderNumberPrefix,
     reorderLeadDays: String(settings.reorderLeadDays),
     reorderCoverDays: String(settings.reorderCoverDays),
@@ -113,6 +115,11 @@ export function toPayload(draft: SettingsDraft): PayloadResult {
     fieldErrors.reorderCoverDays = 'Enter a whole number of days, up to 365.';
   }
 
+  const returnWindow = wholeNumber(draft.returnWindowDays);
+  if (returnWindow === null || returnWindow < 1 || returnWindow > 365) {
+    fieldErrors.returnWindowDays = 'Enter a whole number of days, from 1 to 365.';
+  }
+
   const prefix = draft.orderNumberPrefix.trim().toUpperCase();
   if (!/^[A-Z0-9]{1,6}$/.test(prefix)) {
     fieldErrors.orderNumberPrefix = 'Use up to 6 letters and digits, with no spaces.';
@@ -136,6 +143,7 @@ export function toPayload(draft: SettingsDraft): PayloadResult {
       taxRate: Number((percent / 100).toFixed(5)),
       freeShippingThreshold: freeShipping!,
       lowStockThreshold: lowStock!,
+      returnWindowDays: returnWindow!,
       orderNumberPrefix: prefix,
       reorderLeadDays: leadDays!,
       reorderCoverDays: coverDays!,

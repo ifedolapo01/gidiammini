@@ -25,6 +25,7 @@ import OrderStatusHistory from './OrderStatusHistory';
 import OrderSummaryTab from './OrderSummaryTab';
 import OrderEditPanel from './OrderEditPanel';
 import RefundPanel from './RefundPanel';
+import ReturnsPanel from './ReturnsPanel';
 import OrderPrintDocument, { type PrintDocumentKind } from './OrderPrintDocument';
 import OrderNotificationsTab from './OrderNotificationsTab';
 import OrderMessageThread from './OrderMessageThread';
@@ -33,6 +34,7 @@ const TABS = [
   { id: 'summary', label: 'Summary' },
   { id: 'edit', label: 'Edit items' },
   { id: 'refunds', label: 'Refunds' },
+  { id: 'returns', label: 'Returns' },
   { id: 'messages', label: 'Messages' },
   { id: 'history', label: 'History' },
 ] as const;
@@ -53,12 +55,7 @@ interface OrderDetailsModalProps {
   onNotificationMessageChange: (message: string) => void;
   onSendNotification: (orderId: string) => void;
   onUpdateShipping: (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => void;
-  onResolveChangeRequest: (
-    requestId: string,
-    decision: 'approved' | 'rejected',
-    adminResponse?: string,
-    refundAmount?: number
-  ) => void;
+  onResolveChangeRequest: (requestId: string, decision: 'approved' | 'rejected', adminResponse?: string) => void;
 }
 
 export default function OrderDetailsModal(props: OrderDetailsModalProps) {
@@ -70,6 +67,10 @@ export default function OrderDetailsModal(props: OrderDetailsModalProps) {
   // would defeat loading them on demand. The refunded total is already on the
   // order, so the dot uses that instead.
   const hasRefunds = Number(selectedOrder.amount_refunded ?? 0) > 0;
+  // Same reasoning for returns: has_active_return is a boolean the admin
+  // orders list already carries (see admin-orders-query.ts), so the dot needs
+  // no extra fetch of its own.
+  const hasActiveReturn = Boolean(selectedOrder.has_active_return);
 
   return (
     <Modal
@@ -107,7 +108,7 @@ export default function OrderDetailsModal(props: OrderDetailsModalProps) {
             )}
           >
             {entry.label}
-            {entry.id === 'refunds' && hasRefunds && (
+            {((entry.id === 'refunds' && hasRefunds) || (entry.id === 'returns' && hasActiveReturn)) && (
               <span
                 aria-hidden="true"
                 className="ml-1.5 inline-block size-1.5 rounded-full bg-current align-middle"
@@ -140,6 +141,15 @@ export default function OrderDetailsModal(props: OrderDetailsModalProps) {
 
       {tab === 'refunds' && (
         <RefundPanel orderId={selectedOrder.id} showToast={showToast} onChanged={onRefresh} />
+      )}
+
+      {tab === 'returns' && (
+        <ReturnsPanel
+          orderId={selectedOrder.id}
+          orderItems={selectedOrder.order_items ?? []}
+          showToast={showToast}
+          onChanged={onRefresh}
+        />
       )}
 
       {tab === 'messages' && <OrderMessageThread orderId={selectedOrder.id} />}

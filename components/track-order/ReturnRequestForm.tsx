@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { Modal, Button, Checkbox, Textarea, FieldError, fieldErrorId } from '@/components/ui';
-import { useOrderChangeRequest } from './hooks/useOrderChangeRequest';
+import { useReturnRequest } from './hooks/useReturnRequest';
 import type { OrderItem } from '@/types/order';
 
 interface ReturnRequestFormProps {
@@ -19,7 +19,7 @@ interface ReturnRequestFormProps {
 export default function ReturnRequestForm({ orderNumber, contact, orderItems, onClose, onSubmitted }: ReturnRequestFormProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [reason, setReason] = useState('');
-  const { submitChangeRequest, submitting, error, fieldErrors } = useOrderChangeRequest();
+  const { submitReturnRequest, submitting, error, fieldErrors } = useReturnRequest();
 
   const toggle = (id: string) => {
     setSelected((current) => {
@@ -32,12 +32,13 @@ export default function ReturnRequestForm({ orderNumber, contact, orderItems, on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await submitChangeRequest({
-      orderNumber,
-      contact,
-      requestType: 'return_request',
-      details: { orderItemIds: [...selected], reason },
-    });
+    // Returns the full line quantity for each item picked — this form has no
+    // per-line quantity control yet, so a partial-quantity return (supported
+    // by the schema and lib/commerce/returns.ts) isn't reachable from here.
+    const items = orderItems
+      .filter((item) => item.id && selected.has(item.id))
+      .map((item) => ({ orderItemId: item.id as string, quantity: item.quantity }));
+    const ok = await submitReturnRequest({ orderNumber, contact, reason, items });
     if (ok) onSubmitted();
   };
 
@@ -66,7 +67,7 @@ export default function ReturnRequestForm({ orderNumber, contact, orderItems, on
               </div>
             ))}
           </div>
-          <FieldError id={fieldErrorId('orderItemIds')}>{fieldErrors.orderItemIds}</FieldError>
+          <FieldError id={fieldErrorId('items')}>{fieldErrors.items}</FieldError>
         </div>
         <div>
           <label htmlFor="return-reason" className="block text-body-sm font-medium text-text-primary mb-1.5">Why is it coming back?</label>

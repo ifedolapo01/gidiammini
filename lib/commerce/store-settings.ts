@@ -33,6 +33,9 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   // Was the default argument of getStockStatus(), and the literal in three
   // other places.
   lowStockThreshold: 5,
+  // Was RETURN_WINDOW_DAYS in lib/commerce/order-status.ts, and the "7 days"
+  // hardcoded again in ProductDetailsAccordion.tsx and app/returns/page.tsx.
+  returnWindowDays: 7,
   // Was the literal inside reserve_order_number().
   orderNumberPrefix: 'UT',
   // Two weeks from order to shelf, a month of cover on top — what a shop
@@ -86,6 +89,7 @@ export function publicSettingsFromRow(row: any): PublicStoreSettings {
     taxRate: num(row.tax_rate, d.taxRate),
     freeShippingThreshold: Math.max(0, Math.round(num(row.free_shipping_threshold, d.freeShippingThreshold))),
     lowStockThreshold: Math.max(0, Math.round(num(row.low_stock_threshold, d.lowStockThreshold))),
+    returnWindowDays: Math.max(1, Math.round(num(row.return_window_days, d.returnWindowDays))),
   };
 }
 
@@ -123,6 +127,7 @@ export function toPublicSettings(settings: StoreSettings): PublicStoreSettings {
     taxRate: settings.taxRate,
     freeShippingThreshold: settings.freeShippingThreshold,
     lowStockThreshold: settings.lowStockThreshold,
+    returnWindowDays: settings.returnWindowDays,
   };
 }
 
@@ -139,6 +144,7 @@ export function settingsToRow(input: StoreSettingsInput) {
     tax_rate: input.taxRate,
     free_shipping_threshold: input.freeShippingThreshold,
     low_stock_threshold: input.lowStockThreshold,
+    return_window_days: input.returnWindowDays,
     order_number_prefix: input.orderNumberPrefix.trim().toUpperCase(),
     reorder_lead_days: input.reorderLeadDays,
     reorder_cover_days: input.reorderCoverDays,

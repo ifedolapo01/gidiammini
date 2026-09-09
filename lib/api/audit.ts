@@ -31,6 +31,7 @@ export type AuditEntityType =
   | 'product_question'
   | 'order'
   | 'order_change_request'
+  | 'return'
   | 'discount'
   | 'shipping_zone'
   | 'category'

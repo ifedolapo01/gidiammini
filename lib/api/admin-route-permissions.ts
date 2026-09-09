@@ -52,6 +52,10 @@ const ROUTES: RoutePermission[] = [
   // shape of the actual job.
   { pattern: '/api/orders/*/refunds', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/orders/*/refunds/*', read: 'orders:read', write: 'orders:write' },
+  // A return moves stock and, eventually, money — same permission as the
+  // refund it produces.
+  { pattern: '/api/orders/*/returns', read: 'orders:read', write: 'orders:write' },
+  { pattern: '/api/orders/*/returns/*', read: 'orders:read', write: 'orders:write' },
   // Correcting a waybill after the fact. Same permission as shipping the order
   // it belongs to — it is the same act, done a day late.
   { pattern: '/api/orders/*/tracking', read: 'orders:read', write: 'orders:write' },

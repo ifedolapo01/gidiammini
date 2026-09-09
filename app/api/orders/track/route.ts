@@ -3,6 +3,7 @@
 // number alone (guessable — it's just "UT" + a timestamp) can't be used to
 // view someone else's name, address, and items.
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
 import { deliveredAtFrom } from '@/lib/commerce/order-status';
@@ -10,6 +11,22 @@ import { withRateLimit } from '@/lib/api/rate-limit';
 import { RATE_LIMITS } from '@/lib/api/rate-limit-rules';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { trackOrderSchema } from '@/lib/api/schemas/public-orders';
+import type { ActiveReturnSummary } from '@/types/return';
+
+/** The one non-terminal return on this order, narrowed to what a customer's
+ *  browser needs — never the item list or an admin actor. Typed loosely until
+ *  `npm run db:types` reruns against a database that has this migration. */
+async function activeReturnFor(supabase: SupabaseClient, orderId: string): Promise<ActiveReturnSummary | null> {
+  const { data } = await supabase
+    .from('returns')
+    .select('id, rma_number, status, requested_at')
+    .eq('order_id', orderId)
+    .not('status', 'in', '(rejected,refunded)')
+    .order('requested_at', { ascending: false })
+    .maybeSingle();
+
+  return (data as ActiveReturnSummary | null) ?? null;
+}
 
 const NOT_FOUND_MESSAGE = "We couldn't find an order matching that order number and email/phone.";
 
@@ -39,10 +56,15 @@ async function trackOrder(request: NextRequest) {
     }
 
     const { order_status_history, ...publicOrder } = order;
+    const activeReturn = await activeReturnFor(supabase as unknown as SupabaseClient, order.id);
 
     return NextResponse.json({
       success: true,
-      order: { ...publicOrder, delivered_at: deliveredAtFrom(order_status_history) },
+      order: {
+        ...publicOrder,
+        delivered_at: deliveredAtFrom(order_status_history),
+        active_return: activeReturn,
+      },
     });
   } catch (error: any) {
     console.error('Error tracking order:', error);

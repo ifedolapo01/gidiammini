@@ -1,9 +1,10 @@
 // components/CartProvider.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { CartItem } from '@/types/order';
 import { cartLineKey } from '@/lib/commerce/cart-input';
+import { useCartSync } from './hooks/useCartSync';
 
 /** A server-priced line, as returned by /api/checkout/quote. Only the fields
  * needed to match it back to a cart line and correct its price. */
@@ -50,6 +51,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('gidiammini_cart', JSON.stringify(items));
     }
   }, [items, isLoaded]);
+
+  // Signed in, the cart also lives on the account and follows the customer to
+  // their other devices. Signed out — the normal case — none of this fires
+  // and the cart behaves exactly as it always has.
+  const onMerged = useCallback((merged: CartItem[]) => setItems(merged), []);
+  useCartSync({ items, ready: isLoaded, onMerged });
 
   const addToCart = (item: CartItem) => {
     setItems(current => {

@@ -88,6 +88,25 @@ export const ALERT_SOURCES: AlertSource[] = [
   }),
 
   /**
+   * Returns not yet at a terminal status (rejected or refunded).
+   *
+   * No `task`: unlike the sources above, expanding this into the specific
+   * orders behind it would need a dedicated worklist route this feature
+   * doesn't add yet — an ambient count that links to Orders is still useful
+   * without one.
+   */
+  counted({
+    type: 'pending-returns',
+    url: '/api/admin/alerts/pending-returns',
+    field: 'pendingCount',
+    link: '/admin/orders',
+    tone: 'warning',
+    priority: 5,
+    group: 'customers',
+    message: (count) => `↩️ ${count} return${plural(count, ' is', 's are')} in progress`,
+  }),
+
+  /**
    * Reviews waiting to be published.
    *
    * On the list because an unpublished review is invisible to shoppers: a

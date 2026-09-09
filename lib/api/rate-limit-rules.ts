@@ -47,6 +47,14 @@ export const RATE_LIMITS = {
    */
   changeRequest: { bucket: 'change-request', limit: 10, windowSeconds: HOUR },
 
+  /**
+   * Return requests. Its own bucket rather than changeRequest's, since a
+   * return is no longer one of the eight order_change_requests types — same
+   * budget, though: it emails the store owner, and one active return per
+   * order is already enforced.
+   */
+  returnRequest: { bucket: 'return-request', limit: 10, windowSeconds: HOUR },
+
   /** Contact form. Sends mail on your quota from your domain. */
   contact: { bucket: 'contact', limit: 3, windowSeconds: HOUR },
 

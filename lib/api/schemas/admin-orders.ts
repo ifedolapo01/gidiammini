@@ -125,3 +125,22 @@ export const refundSettleSchema = z.object({
 });
 
 export type RefundSettleBody = z.infer<typeof refundSettleSchema>;
+
+/** One transition on a return — see return-status.ts's RETURN_TRANSITIONS for
+ *  which actions are legal from which status. `refundAmount` is only read for
+ *  'restock', where it becomes the pending refund's amount; it is required
+ *  there and meaningless everywhere else, so the check lives in the route
+ *  rather than the schema, alongside the other transition-specific checks. */
+export const returnActionSchema = z.object({
+  action: z.enum(['approve', 'reject', 'receive', 'inspect', 'restock'], {
+    error: 'Choose a valid action.',
+  }),
+  adminResponse: optionalText('Response', MAX_LENGTHS.note),
+  refundAmount: z
+    .number({ error: 'Enter the refund amount.' })
+    .positive('The refund amount must be more than zero.')
+    .max(100_000_000, 'That amount is not plausible.')
+    .nullish(),
+});
+
+export type ReturnActionBody = z.infer<typeof returnActionSchema>;

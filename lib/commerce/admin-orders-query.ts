@@ -84,6 +84,27 @@ async function pendingChangeRequestIds(supabase: SupabaseClient, orderIds: strin
   return new Set((data ?? []).map((row: any) => row.order_id));
 }
 
+/** Which of these orders have a return not yet at a terminal status —
+ *  same one-extra-query-for-the-page shape as pendingChangeRequestIds above,
+ *  and for the same reason: the card needs one boolean, the Returns tab
+ *  fetches the real rows on demand. */
+async function activeReturnIds(supabase: SupabaseClient, orderIds: string[]): Promise<Set<string>> {
+  if (orderIds.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from('returns')
+    .select('order_id')
+    .not('status', 'in', '(rejected,refunded)')
+    .in('order_id', orderIds);
+
+  if (error) {
+    console.error('Error loading active returns:', error);
+    return new Set();
+  }
+
+  return new Set((data ?? []).map((row: any) => row.order_id));
+}
+
 /** An ISO timestamp from an untrusted query string, or null. */
 function asTimestamp(value: string | null): string | null {
   if (!value) return null;
@@ -160,12 +181,17 @@ export async function fetchAdminOrders(supabase: SupabaseClient, url: URL): Prom
   if (error) throw error;
 
   const orders = data ?? [];
-  const pending = await pendingChangeRequestIds(supabase, orders.map((order: any) => order.id));
+  const orderIds = orders.map((order: any) => order.id);
+  const [pending, activeReturns] = await Promise.all([
+    pendingChangeRequestIds(supabase, orderIds),
+    activeReturnIds(supabase, orderIds),
+  ]);
 
   return {
     orders: orders.map((order: any) => ({
       ...order,
       has_pending_change_request: pending.has(order.id),
+      has_active_return: activeReturns.has(order.id),
     })),
     meta: listMeta(params, count ?? 0),
   };

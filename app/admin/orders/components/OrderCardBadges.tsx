@@ -50,6 +50,7 @@ export default function OrderCardBadges({
       {/* A boolean from the list projection. The full change-request rows are
           only fetched for the order somebody actually opens. */}
       {order.has_pending_change_request && <Badge tone="warning">Pending Request</Badge>}
+      {order.has_active_return && <Badge tone="warning">Return in Progress</Badge>}
       {overdueInfo && (
         <Badge tone="destructive">
           <Truck className="w-3 h-3" />

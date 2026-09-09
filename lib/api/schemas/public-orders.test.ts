@@ -195,21 +195,17 @@ describe('orderChangeRequestSchema — details is an allowlist, not a passthroug
     })).toEqual(['details.quantity']);
   });
 
-  it('requires at least one item and a reason on a return request', () => {
+  // 'return_request' is no longer one of this schema's types — a return now
+  // goes through POST /api/orders/returns and lib/api/schemas/return-request.ts
+  // instead (see returns.ts and 20260909130000_returns.sql for why). This
+  // schema must refuse it outright rather than silently accept it as some
+  // other type.
+  it('rejects return_request — returns have their own endpoint now', () => {
     expect(errorFields(orderChangeRequestSchema, {
       ...base,
       requestType: 'return_request',
-      details: { orderItemIds: [], reason: '' },
-    }).sort()).toEqual(['details.orderItemIds', 'details.reason']);
-  });
-
-  it('accepts a return request naming the items and why', () => {
-    const result = parsed<any>(orderChangeRequestSchema, {
-      ...base,
-      requestType: 'return_request',
-      details: { orderItemIds: ['item-1', 'item-2'], reason: 'Wrong size arrived' },
-    });
-    expect(result.details).toEqual({ orderItemIds: ['item-1', 'item-2'], reason: 'Wrong size arrived' });
+      details: { orderItemIds: ['item-1'], reason: 'Wrong size arrived' },
+    })).toEqual(['requestType']);
   });
 
   it('requires a date on a hold-until request', () => {

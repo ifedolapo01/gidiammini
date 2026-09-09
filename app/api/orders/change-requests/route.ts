@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { verifyOrderContact } from '@/lib/commerce/order-lookup';
-import { canRequestOrderChange, canCancelOrder, canRequestReturn, deliveredAtFrom } from '@/lib/commerce/order-status';
+import { canRequestOrderChange, canCancelOrder } from '@/lib/commerce/order-status';
 import { asOrderStatus } from '@/lib/commerce/db-narrowing';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
 import { sendOrderEmail } from '@/lib/email';
@@ -21,22 +21,23 @@ import type { OrderChangeRequestType } from '@/types/orderChangeRequest';
 type ChangeRequestDetails = OrderChangeRequestBody['details'];
 
 /** One clause per request type — kept as a lookup rather than another if/else
- *  chain, since this is the third place (the others being the schema and the
- *  approval dispatcher) that has to know all eight of them. */
-const REQUEST_SUMMARIES: Record<OrderChangeRequestType, (details: any) => string> = {
+ *  chain, since this is the second place (the other being the schema) that
+ *  has to know all of them. 'return_request' is deliberately absent: new
+ *  returns go through /api/orders/returns instead — see returns.ts — this
+ *  endpoint's schema no longer accepts that requestType at all. */
+const REQUEST_SUMMARIES: Record<Exclude<OrderChangeRequestType, 'return_request'>, (details: any) => string> = {
   reschedule: (d) => `reschedule to ${escapeHtml(d.preferredDate)}`,
   delivery_method_change: (d) => `switch to ${escapeHtml(d.newDeliveryOption)}`,
   cancel: () => 'cancel their order',
   address_correction: (d) => `correct their address to ${escapeHtml(d.newAddress)}`,
   item_swap: (d) => `swap an item for size/colour "${escapeHtml(d.newSize || d.newColor || 'unspecified')}"`,
   add_item: (d) => `add ${d.quantity} more of an item already on the order`,
-  return_request: (d) => `return an item — ${escapeHtml(d.reason)}`,
   hold_until: (d) => `hold the order until ${escapeHtml(d.holdUntilDate)}`,
 };
 
 async function notifyOwner(
   order: any,
-  requestType: OrderChangeRequestType,
+  requestType: Exclude<OrderChangeRequestType, 'return_request'>,
   details: any,
   customerNote?: string
 ) {
@@ -79,15 +80,9 @@ async function submitChangeRequest(request: NextRequest) {
     }
 
     const orderStatus = asOrderStatus(order.status);
-    const isEligible =
-      requestType === 'cancel' ? canCancelOrder(orderStatus)
-      : requestType === 'return_request' ? canRequestReturn(orderStatus, deliveredAtFrom(order.order_status_history))
-      : canRequestOrderChange(orderStatus);
+    const isEligible = requestType === 'cancel' ? canCancelOrder(orderStatus) : canRequestOrderChange(orderStatus);
     if (!isEligible) {
-      const error =
-        requestType === 'cancel' ? 'This order can no longer be cancelled.'
-        : requestType === 'return_request' ? 'This order is not eligible for a return. It must have been delivered within the last 7 days.'
-        : 'This order can no longer be changed.';
+      const error = requestType === 'cancel' ? 'This order can no longer be cancelled.' : 'This order can no longer be changed.';
       return NextResponse.json({ success: false, error }, { status: 400 });
     }
 
@@ -106,18 +101,6 @@ async function submitChangeRequest(request: NextRequest) {
       if (!onOrder) {
         return NextResponse.json(
           { success: false, error: 'That item is not on this order.' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Likewise for a return: only items actually on the order can be named.
-    if (requestType === 'return_request' && 'orderItemIds' in details) {
-      const orderItemIds = new Set((order.order_items ?? []).map((item: any) => item.id));
-      const allOnOrder = details.orderItemIds.every((id: string) => orderItemIds.has(id));
-      if (!allOnOrder) {
-        return NextResponse.json(
-          { success: false, error: 'One of those items is not on this order.' },
           { status: 400 }
         );
       }

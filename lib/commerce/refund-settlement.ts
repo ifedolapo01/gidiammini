@@ -33,7 +33,7 @@ export type SettleRefundResult =
   | { ok: false; error: string; status: number };
 
 const REFUND_COLUMNS =
-  'id, order_id, status, amount, method, reason_code, note, reference, actor_id, actor_email';
+  'id, order_id, status, amount, method, reason_code, note, reference, actor_id, actor_email, return_id';
 
 export async function settleOrderRefund(
   supabase: SupabaseClient,
@@ -84,6 +84,20 @@ export async function settleOrderRefund(
   if (updateError) {
     console.error(`Could not settle refund ${row.id}:`, updateError.message);
     return { ok: false, error: 'Could not update this refund. Nothing was changed.', status: 500 };
+  }
+
+  // The only place 'restocked' advances to 'refunded' — see return-status.ts.
+  // Best-effort: a failure here leaves the refund settled but the return's own
+  // status stale, which the admin can still see and correct from the refund
+  // itself; it must not undo money that has already gone out.
+  if (completed && row.return_id) {
+    const { error: returnError } = await supabase
+      .from('returns')
+      .update({ status: 'refunded', refunded_at: new Date().toISOString() })
+      .eq('id', row.return_id);
+    if (returnError) {
+      console.error(`Could not mark return ${row.return_id} refunded:`, returnError.message);
+    }
   }
 
   const { data: order } = await supabase

@@ -32,12 +32,7 @@ interface OrderSummaryTabProps {
   onNotificationMessageChange: (message: string) => void;
   onSendNotification: (orderId: string) => void;
   onUpdateShipping: (orderId: string, shippingZoneId: string, deliveryOption: 'pickup' | 'delivery') => void;
-  onResolveChangeRequest: (
-    requestId: string,
-    decision: 'approved' | 'rejected',
-    adminResponse?: string,
-    refundAmount?: number
-  ) => void;
+  onResolveChangeRequest: (requestId: string, decision: 'approved' | 'rejected', adminResponse?: string) => void;
 }
 
 export default function OrderSummaryTab({
@@ -153,14 +148,9 @@ export default function OrderSummaryTab({
       {pendingChangeRequest && (
         <ChangeRequestReviewCard
           changeRequest={pendingChangeRequest}
-          orderItems={order.order_items ?? []}
           isResolving={resolvingRequestId === pendingChangeRequest.id}
-          onApprove={(adminResponse, refundAmount) =>
-            onResolveChangeRequest(pendingChangeRequest.id, 'approved', adminResponse, refundAmount)
-          }
-          onReject={(adminResponse) =>
-            onResolveChangeRequest(pendingChangeRequest.id, 'rejected', adminResponse)
-          }
+          onApprove={(adminResponse) => onResolveChangeRequest(pendingChangeRequest.id, 'approved', adminResponse)}
+          onReject={(adminResponse) => onResolveChangeRequest(pendingChangeRequest.id, 'rejected', adminResponse)}
         />
       )}
 

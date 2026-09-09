@@ -160,17 +160,23 @@ describe('canRequestReturn', () => {
 
   it('is true within the return window', () => {
     const now = new Date(new Date(deliveredAt).getTime() + (RETURN_WINDOW_DAYS - 1) * 86_400_000);
-    expect(canRequestReturn('delivered', deliveredAt, now)).toBe(true);
+    expect(canRequestReturn('delivered', deliveredAt, RETURN_WINDOW_DAYS, now)).toBe(true);
   });
 
   it('is true right at the edge of the window', () => {
     const now = new Date(new Date(deliveredAt).getTime() + RETURN_WINDOW_DAYS * 86_400_000);
-    expect(canRequestReturn('delivered', deliveredAt, now)).toBe(true);
+    expect(canRequestReturn('delivered', deliveredAt, RETURN_WINDOW_DAYS, now)).toBe(true);
   });
 
   it('is false once the window has passed', () => {
     const now = new Date(new Date(deliveredAt).getTime() + (RETURN_WINDOW_DAYS + 1) * 86_400_000);
-    expect(canRequestReturn('delivered', deliveredAt, now)).toBe(false);
+    expect(canRequestReturn('delivered', deliveredAt, RETURN_WINDOW_DAYS, now)).toBe(false);
+  });
+
+  it('respects a custom window', () => {
+    const now = new Date(new Date(deliveredAt).getTime() + 20 * 86_400_000);
+    expect(canRequestReturn('delivered', deliveredAt, 30, now)).toBe(true);
+    expect(canRequestReturn('delivered', deliveredAt, 10, now)).toBe(false);
   });
 });
 

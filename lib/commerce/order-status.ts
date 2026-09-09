@@ -202,17 +202,24 @@ export function deliveredAtFrom(
   return row?.changed_at ?? null;
 }
 
-/** Matches the "7-day return policy" copy already shown on the product page
- *  (ProductDetailsAccordion.tsx) — a return can be requested only once the
- *  order has actually been delivered, and only within that window afterwards. */
+/** Falls back to DEFAULT_STORE_SETTINGS.returnWindowDays (also 7) when a
+ *  caller has no settings in hand — see store-settings.ts. Kept here too so
+ *  every existing call site that doesn't pass windowDays keeps working. */
 export const RETURN_WINDOW_DAYS = 7;
 
+/** A return can be requested only once the order has actually been
+ *  delivered, and only within windowDays afterwards — that window is a real
+ *  setting (store_settings.return_window_days) the caller reads and passes
+ *  in; this stays synchronous and pure rather than reaching for settings
+ *  itself, so it works identically for a caller that already has them (the
+ *  common case) and one that doesn't. */
 export function canRequestReturn(
   status: OrderStatus,
   deliveredAt: string | null,
+  windowDays: number = RETURN_WINDOW_DAYS,
   now: Date = new Date()
 ): boolean {
   if (status !== 'delivered' || !deliveredAt) return false;
   const daysSinceDelivery = (now.getTime() - new Date(deliveredAt).getTime()) / 86_400_000;
-  return daysSinceDelivery <= RETURN_WINDOW_DAYS;
+  return daysSinceDelivery <= windowDays;
 }

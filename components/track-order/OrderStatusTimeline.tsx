@@ -3,9 +3,11 @@
  * step (e.g. "Ready for Pickup" on a delivery order). */
 'use client';
 
-import { CheckCircle, XCircle, CalendarClock } from 'lucide-react';
+import { CheckCircle, XCircle, CalendarClock, Undo2 } from 'lucide-react';
 import { formatCustomerStatusLabel } from '@/lib/commerce/order-status';
+import { formatReturnStatus, getReturnStatusColor } from '@/lib/commerce/return-status';
 import type { Order } from '@/types/order';
+import type { ReturnStatus } from '@/types/return';
 
 const DELIVERY_STEPS: Order['status'][] = ['pending', 'confirmed', 'shipped', 'delivered'];
 const PICKUP_STEPS: Order['status'][] = ['pending', 'confirmed', 'ready_for_pickup', 'picked_up'];
@@ -13,9 +15,14 @@ const PICKUP_STEPS: Order['status'][] = ['pending', 'confirmed', 'ready_for_pick
 interface OrderStatusTimelineProps {
   status: Order['status'];
   deliveryOption: 'pickup' | 'delivery';
+  /** A return in progress isn't a forward step in the delivery/pickup
+   *  sequence — the order itself stays 'delivered' — so, like 'rescheduled'
+   *  below, it renders as its own banner rather than a new step. Null/absent
+   *  when there is no non-terminal return on this order. */
+  returnStatus?: ReturnStatus | null;
 }
 
-export default function OrderStatusTimeline({ status, deliveryOption }: OrderStatusTimelineProps) {
+export default function OrderStatusTimeline({ status, deliveryOption, returnStatus }: OrderStatusTimelineProps) {
   if (status === 'cancelled') {
     return (
       <div className="flex items-center gap-2 p-4 bg-destructive-background border border-destructive-border rounded-surface">
@@ -62,6 +69,16 @@ export default function OrderStatusTimeline({ status, deliveryOption }: OrderSta
             <p className="text-body-sm text-text-secondary">
               Your delivery timing has changed. Call us at 0809 653 9067 if you’d like to arrange a new time.
             </p>
+          </div>
+        </div>
+      )}
+
+      {returnStatus && (
+        <div className={`mt-4 p-3 rounded-control flex items-start gap-2 ${getReturnStatusColor(returnStatus)}`}>
+          <Undo2 className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-body-sm">Return {formatReturnStatus(returnStatus)}</p>
+            <p className="text-body-sm text-text-secondary">We&rsquo;ll update this as your return moves along.</p>
           </div>
         </div>
       )}

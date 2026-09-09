@@ -12,7 +12,6 @@ import {
 import { applyOrderShippingTransition } from '@/lib/commerce/order-shipping-transition';
 import { resolveOrderShippingZone } from '@/lib/commerce/order-shipping-zone';
 import { editOrderItems } from '@/lib/commerce/order-edit';
-import { recordOrderRefund } from '@/lib/commerce/order-refunds';
 import { findVariant, ADMIN_VARIANTS_SELECT } from '@/lib/commerce/product-variants';
 import { getVariantPrice } from '@/lib/commerce/pricing';
 import type { OrderLine } from '@/lib/commerce/order-edit-diff';
@@ -22,7 +21,6 @@ import type {
   AddressCorrectionDetails,
   ItemSwapDetails,
   AddItemDetails,
-  ReturnRequestDetails,
   HoldUntilDetails,
 } from '@/types/orderChangeRequest';
 
@@ -136,33 +134,6 @@ async function applyAddItem(supabase: any, order: any, details: AddItemDetails):
   return { success: true, delivery: emailOnlyOutcome(result.notified) };
 }
 
-async function applyReturnRequest(
-  supabase: any,
-  order: any,
-  details: ReturnRequestDetails,
-  refundAmount: number | undefined,
-  actor: StatusChangeActor
-): Promise<ApprovalResult> {
-  if (!refundAmount || refundAmount <= 0) {
-    return { success: false, error: 'Enter the refund amount before approving.', status: 400 };
-  }
-
-  const result = await recordOrderRefund(
-    supabase,
-    {
-      orderId: order.id,
-      amount: refundAmount,
-      method: 'transfer',
-      reasonCode: 'customer_return',
-      note: details.reason,
-      settled: false,
-    },
-    actor
-  );
-  if (!result.ok) return { success: false, error: result.error, status: result.status };
-  return { success: true, delivery: emailOnlyOutcome(result.notified) };
-}
-
 async function applyHoldUntil(supabase: any, order: any, details: HoldUntilDetails): Promise<ApprovalResult> {
   const requested = new Date(details.holdUntilDate);
   if (Number.isNaN(requested.getTime())) {
@@ -207,8 +178,7 @@ async function applyApprovedChange(
   supabase: any,
   order: any,
   changeRequest: any,
-  actor: StatusChangeActor,
-  refundAmount: number | undefined
+  actor: StatusChangeActor
 ): Promise<ApprovalResult> {
   const reason = `Approved the customer's ${changeRequest.request_type} request.`;
 
@@ -272,10 +242,6 @@ async function applyApprovedChange(
     return applyAddItem(supabase, order, changeRequest.details as AddItemDetails);
   }
 
-  if (changeRequest.request_type === 'return_request') {
-    return applyReturnRequest(supabase, order, changeRequest.details as ReturnRequestDetails, refundAmount, actor);
-  }
-
   return applyHoldUntil(supabase, order, changeRequest.details as HoldUntilDetails);
 }
 
@@ -285,7 +251,7 @@ async function applyApprovedChange(
 export const PUT = withAdminAuth(async (request, { supabase, params, actor, audit }) => {
   try {
     const { id } = await params;
-    const { decision, adminResponse, refundAmount } = await request.json();
+    const { decision, adminResponse } = await request.json();
 
     if (!['approved', 'rejected'].includes(decision)) {
       return NextResponse.json(
@@ -320,8 +286,7 @@ export const PUT = withAdminAuth(async (request, { supabase, params, actor, audi
         supabase,
         order,
         changeRequest,
-        { id: actor.id, email: actor.email },
-        typeof refundAmount === 'number' ? refundAmount : Number(refundAmount) || undefined
+        { id: actor.id, email: actor.email }
       );
       if (!applyResult.success) {
         return NextResponse.json({ success: false, error: applyResult.error }, { status: applyResult.status || 500 });

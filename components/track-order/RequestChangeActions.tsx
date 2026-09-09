@@ -9,8 +9,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { canRequestOrderChange, canCancelOrder, canRequestReturn } from '@/lib/commerce/order-status';
+import { formatReturnStatus } from '@/lib/commerce/return-status';
 import { isPickupAvailable } from '@/lib/commerce/checkout';
 import { useActiveShippingZones } from '@/components/checkout/hooks/useActiveShippingZones';
+import { useStoreSettings } from '@/components/StoreSettingsProvider';
 import type { Order } from '@/types/order';
 import type {
   RescheduleDetails,
@@ -63,6 +65,7 @@ function PendingRequestBanner({ request }: { request: NonNullable<Order['order_c
 export default function RequestChangeActions({ order, orderNumber, contact, onOrderUpdate }: RequestChangeActionsProps) {
   const [openForm, setOpenForm] = useState<OpenForm>(null);
   const { zones } = useActiveShippingZones();
+  const { returnWindowDays } = useStoreSettings();
 
   const pendingRequest = order.order_change_requests?.find((r) => r.status === 'pending');
 
@@ -70,9 +73,22 @@ export default function RequestChangeActions({ order, orderNumber, contact, onOr
     return <PendingRequestBanner request={pendingRequest} />;
   }
 
+  // A return in progress is its own resource now (types/return.ts), not a
+  // pending order_change_requests row — same early-return shape as above.
+  if (order.active_return) {
+    return (
+      <div className="bg-warning-background border border-warning-border p-4 rounded-surface">
+        <p className="font-semibold text-warning text-body-sm">
+          Return {order.active_return.rma_number}: {formatReturnStatus(order.active_return.status)}
+        </p>
+        <p className="text-body-sm text-text-secondary mt-1">We&rsquo;ll update this page as it moves along.</p>
+      </div>
+    );
+  }
+
   const canChangeSchedule = canRequestOrderChange(order.status);
   const canCancel = canCancelOrder(order.status);
-  const canReturn = canRequestReturn(order.status, order.delivered_at ?? null);
+  const canReturn = canRequestReturn(order.status, order.delivered_at ?? null, returnWindowDays);
   const hasNamedProducts = (order.order_items ?? []).some((item) => item.product_id);
 
   if (!canChangeSchedule && !canCancel && !canReturn) return null;

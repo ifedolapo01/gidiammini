@@ -35,7 +35,11 @@ export default function TrackedOrderSummary({ order, orderNumber, contact, onOrd
           </span>
         </div>
 
-        <OrderStatusTimeline status={order.status} deliveryOption={order.delivery_option} />
+        <OrderStatusTimeline
+          status={order.status}
+          deliveryOption={order.delivery_option}
+          returnStatus={order.active_return?.status ?? null}
+        />
 
         <ShareOnWhatsAppLink order={order} />
       </div>

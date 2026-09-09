@@ -136,6 +136,14 @@ export interface Order {
   order_change_requests?: OrderChangeRequest[];
   /** Set by the admin orders list. See order_change_requests above. */
   has_pending_change_request?: boolean;
+  /** Set by the admin orders list: a return on this order has not yet reached
+   *  a terminal status (rejected/refunded). See admin-orders-query.ts and
+   *  types/return.ts. */
+  has_active_return?: boolean;
+  /** Attached only by the public track-order lookup, narrowed to what a
+   *  customer needs to see — never the full return-items list or an admin
+   *  actor. Null when there is no non-terminal return on this order. */
+  active_return?: import('./return').ActiveReturnSummary | null;
   /** Embedded via the orders -> order_status_history relation. Present only
    *  on the admin detail fetch — the public track-order lookup computes
    *  `delivered_at` below instead of exposing the raw history (which carries

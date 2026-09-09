@@ -30,6 +30,8 @@ export interface PublicStoreSettings {
   freeShippingThreshold: number;
   /** The single definition of "low stock", everywhere. */
   lowStockThreshold: number;
+  /** Days after delivery a customer may request a return. */
+  returnWindowDays: number;
 }
 
 export interface StoreSettings extends PublicStoreSettings {

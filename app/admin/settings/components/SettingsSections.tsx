@@ -155,6 +155,16 @@ export function OperationsSection({ draft, setField, errors }: SectionProps) {
         onChange={(value) => setField('reorderCoverDays', value)}
       />
       <SettingsField
+        id="returnWindowDays"
+        label="Return window"
+        hint="Days after delivery a customer may request a return. Shown on the product page and the returns policy page."
+        inputMode="numeric"
+        suffix="days"
+        value={draft.returnWindowDays}
+        error={errors.returnWindowDays}
+        onChange={(value) => setField('returnWindowDays', value)}
+      />
+      <SettingsField
         id="orderNumberPrefix"
         label="Order number prefix"
         hint="Goes in front of every new order number. Existing orders keep the prefix they were issued with."

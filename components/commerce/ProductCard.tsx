@@ -109,12 +109,21 @@ export default function ProductCard({ product, discounts = [], priority = false 
             }`}
           />
           {hoverImageUrl && (
-            <ProductImage
-              src={hoverImageUrl}
-              alt=""
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
-              className="absolute inset-0 w-full aspect-[4/3] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            />
+            // A positioning wrapper of its own, rather than handing `absolute
+            // inset-0` to ProductImage's className: ProductImage's root div is
+            // hardcoded `relative` (it needs that for its own `fill` image),
+            // and cn() here is a plain class-string joiner, not tailwind-merge
+            // — it can't resolve `relative` vs `absolute` landing on the same
+            // element, and `relative` was winning, so the "hover" image sat in
+            // normal document flow below the first one instead of over it.
+            <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <ProductImage
+                src={hoverImageUrl}
+                alt=""
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
+                className="w-full h-full"
+              />
+            </div>
           )}
           {bestDiscount && (
             <Badge tone="destructive" variant="solid" className="absolute top-12 right-2 z-10 animate-pulse">

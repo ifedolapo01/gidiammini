@@ -40,6 +40,7 @@ export interface AlertItem {
     | 'overdue-shipping'
     | 'pending-orders'
     | 'pending-change-requests'
+    | 'pending-returns'
     | 'pending-reviews'
     | 'pending-questions'
     | 'payment-verification'

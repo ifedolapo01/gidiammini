@@ -5,6 +5,7 @@ import { ChevronLeft, Truck, Shield } from 'lucide-react';
 import { useActiveShippingZones } from '@/components/checkout/hooks/useActiveShippingZones';
 import { aggregateEtaRange } from '@/lib/commerce/shipping-eta';
 import { computeDeliveryWindow, formatDeliveryWindow, minutesUntilCutoffToday } from '@/lib/commerce/delivery-promise';
+import { useStoreSettings } from '@/components/StoreSettingsProvider';
 import { useNow } from '../hooks/useNow';
 
 interface ProductDetailsAccordionProps {
@@ -13,6 +14,7 @@ interface ProductDetailsAccordionProps {
 
 export default function ProductDetailsAccordion({ details }: ProductDetailsAccordionProps) {
   const { zones } = useActiveShippingZones();
+  const { returnWindowDays } = useStoreSettings();
   const now = useNow(60_000);
   const primaryZone = zones.find((z) => z.is_primary);
   const otherZones = zones.filter((z) => !z.is_primary);
@@ -64,7 +66,7 @@ export default function ProductDetailsAccordion({ details }: ProductDetailsAccor
           <Shield className="w-5 h-5 text-success mr-3 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-text-primary">Easy Returns</p>
-            <p className="text-body-sm text-text-secondary">7-day return policy</p>
+            <p className="text-body-sm text-text-secondary">{returnWindowDays}-day return policy</p>
           </div>
         </div>
       </div>

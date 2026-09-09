@@ -343,6 +343,62 @@ export type Database = {
           },
         ]
       }
+      customer_cart: {
+        Row: {
+          color: string
+          customer_id: string
+          product_id: string
+          quantity: number
+          size: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          customer_id: string
+          product_id: string
+          quantity: number
+          size?: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          customer_id?: string
+          product_id?: string
+          quantity?: number
+          size?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_cart_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_cart_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_cart_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "most_wishlisted"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "customer_cart_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_sessions: {
         Row: {
           created_at: string
@@ -1080,6 +1136,7 @@ export type Database = {
           reason_code: string
           reference: string | null
           refunded_at: string | null
+          return_id: string | null
           status: string
           updated_at: string
         }
@@ -1095,6 +1152,7 @@ export type Database = {
           reason_code: string
           reference?: string | null
           refunded_at?: string | null
+          return_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -1110,6 +1168,7 @@ export type Database = {
           reason_code?: string
           reference?: string | null
           refunded_at?: string | null
+          return_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -1126,6 +1185,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_refunds_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
             referencedColumns: ["id"]
           },
         ]
@@ -1804,6 +1870,130 @@ export type Database = {
         }
         Relationships: []
       }
+      return_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_item_id: string
+          quantity: number
+          restocked: boolean
+          return_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_item_id: string
+          quantity: number
+          restocked?: boolean
+          return_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_item_id?: string
+          quantity?: number
+          restocked?: boolean
+          return_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_items_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      returns: {
+        Row: {
+          actor_id: string | null
+          admin_response: string | null
+          approved_at: string | null
+          created_at: string
+          id: string
+          inspected_at: string | null
+          order_id: string
+          reason: string
+          received_at: string | null
+          refund_id: string | null
+          refunded_at: string | null
+          rejected_at: string | null
+          requested_at: string
+          restocked_at: string | null
+          rma_number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actor_id?: string | null
+          admin_response?: string | null
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          inspected_at?: string | null
+          order_id: string
+          reason: string
+          received_at?: string | null
+          refund_id?: string | null
+          refunded_at?: string | null
+          rejected_at?: string | null
+          requested_at?: string
+          restocked_at?: string | null
+          rma_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actor_id?: string | null
+          admin_response?: string | null
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          inspected_at?: string | null
+          order_id?: string
+          reason?: string
+          received_at?: string | null
+          refund_id?: string | null
+          refunded_at?: string | null
+          rejected_at?: string | null
+          requested_at?: string
+          restocked_at?: string | null
+          rma_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_cancellations"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "returns_refund_id_fkey"
+            columns: ["refund_id"]
+            isOneToOne: false
+            referencedRelation: "order_refunds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_queries: {
         Row: {
           created_at: string
@@ -2027,6 +2217,7 @@ export type Database = {
           order_number_prefix: string
           reorder_cover_days: number
           reorder_lead_days: number
+          return_window_days: number
           store_name: string
           support_email: string | null
           tax_rate: number
@@ -2049,6 +2240,7 @@ export type Database = {
           order_number_prefix?: string
           reorder_cover_days?: number
           reorder_lead_days?: number
+          return_window_days?: number
           store_name?: string
           support_email?: string | null
           tax_rate?: number
@@ -2071,6 +2263,7 @@ export type Database = {
           order_number_prefix?: string
           reorder_cover_days?: number
           reorder_lead_days?: number
+          return_window_days?: number
           store_name?: string
           support_email?: string | null
           tax_rate?: number
@@ -2368,6 +2561,7 @@ export type Database = {
           contact_phone: string | null
           free_shipping_threshold: number | null
           low_stock_threshold: number | null
+          return_window_days: number | null
           store_name: string | null
           support_email: string | null
           tax_rate: number | null
@@ -2380,6 +2574,7 @@ export type Database = {
           contact_phone?: string | null
           free_shipping_threshold?: number | null
           low_stock_threshold?: number | null
+          return_window_days?: number | null
           store_name?: string | null
           support_email?: string | null
           tax_rate?: number | null
@@ -2392,6 +2587,7 @@ export type Database = {
           contact_phone?: string | null
           free_shipping_threshold?: number | null
           low_stock_threshold?: number | null
+          return_window_days?: number | null
           store_name?: string | null
           support_email?: string | null
           tax_rate?: number | null
@@ -2446,6 +2642,10 @@ export type Database = {
           p_subcategory?: string
         }
         Returns: number
+      }
+      create_return: {
+        Args: { p_items: Json; p_order_id: string; p_reason: string }
+        Returns: Json
       }
       edit_order_items: {
         Args: {
@@ -2565,6 +2765,10 @@ export type Database = {
         Returns: string
       }
       reset_rate_limit: { Args: { p_key: string }; Returns: undefined }
+      restock_return_item: {
+        Args: { p_actor_id?: string; p_return_id: string }
+        Returns: Json
+      }
       search_products: {
         Args: { p_limit?: number; p_query: string }
         Returns: {

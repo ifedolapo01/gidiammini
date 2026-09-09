@@ -2,7 +2,7 @@
 // app/admin/orders/components/ChangeRequestReviewCard.tsx
 import { useState } from 'react';
 import { CalendarClock, Truck, XCircle, MapPin, Repeat, PackagePlus, Undo2, PauseCircle } from 'lucide-react';
-import { Badge, Button, Input, Textarea } from '@/components/ui';
+import { Badge, Button, Textarea } from '@/components/ui';
 import type {
   OrderChangeRequest,
   DeliveryMethodChangeDetails,
@@ -13,16 +13,12 @@ import type {
   ReturnRequestDetails,
   HoldUntilDetails,
 } from '@/types/orderChangeRequest';
-import type { OrderItem } from '@/types/order';
-import { formatCurrency } from '@/lib/commerce/pricing';
 import { formatDate } from '@/lib/commerce/format-date';
 
 interface ChangeRequestReviewCardProps {
   changeRequest: OrderChangeRequest;
-  /** Named order items, for a return request's default refund amount. */
-  orderItems: OrderItem[];
   isResolving: boolean;
-  onApprove: (adminResponse?: string, refundAmount?: number) => void;
+  onApprove: (adminResponse?: string) => void;
   onReject: (adminResponse?: string) => void;
 }
 
@@ -121,28 +117,13 @@ function RequestSummary({ changeRequest }: { changeRequest: OrderChangeRequest }
   }
 }
 
-/** Sum of the named lines' price × quantity — the starting point for the
- *  refund amount, never the final word: a partial return, a restocking
- *  deduction, all still need a human to confirm the figure. */
-function defaultReturnAmount(details: ReturnRequestDetails, orderItems: OrderItem[]): number {
-  const named = new Set(details.orderItemIds);
-  return orderItems
-    .filter((item) => item.id && named.has(item.id))
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
-}
-
 export default function ChangeRequestReviewCard({
   changeRequest,
-  orderItems,
   isResolving,
   onApprove,
   onReject,
 }: ChangeRequestReviewCardProps) {
   const [adminResponse, setAdminResponse] = useState('');
-  const isReturn = changeRequest.request_type === 'return_request';
-  const [refundAmount, setRefundAmount] = useState(() =>
-    isReturn ? defaultReturnAmount(changeRequest.details as ReturnRequestDetails, orderItems) : 0
-  );
 
   const Icon = REQUEST_TYPE_ICONS[changeRequest.request_type];
 
@@ -164,25 +145,6 @@ export default function ChangeRequestReviewCard({
         <p className="text-caption-md text-text-secondary">Requested {formatDate(changeRequest.created_at)}</p>
       </div>
 
-      {isReturn && (
-        <div className="mt-3">
-          <label className="block text-body-sm font-medium text-text-primary mb-1.5">
-            Refund amount (₦): confirm before approving
-          </label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            value={refundAmount}
-            onChange={(e) => setRefundAmount(Math.max(0, Number(e.target.value) || 0))}
-          />
-          <p className="mt-1 text-caption-md text-text-secondary">
-            Defaulted to the named lines&rsquo; value ({formatCurrency(refundAmount)}). Adjust for a restocking
-            deduction or a partial return.
-          </p>
-        </div>
-      )}
-
       <div className="mt-3">
         <label className="block text-body-sm font-medium text-text-primary mb-1.5">
           Response to customer (optional)
@@ -197,8 +159,8 @@ export default function ChangeRequestReviewCard({
 
       <div className="flex gap-3 mt-3">
         <Button
-          onClick={() => onApprove(adminResponse || undefined, isReturn ? refundAmount : undefined)}
-          disabled={isResolving || (isReturn && refundAmount <= 0)}
+          onClick={() => onApprove(adminResponse || undefined)}
+          disabled={isResolving}
           loading={isResolving}
           className="flex-1 font-semibold"
         >

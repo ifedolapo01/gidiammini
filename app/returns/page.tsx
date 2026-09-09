@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, PackageCheck, PackageX, RotateCcw, MessageCircle } from 'lucide-react';
+import { useStoreSettings } from '@/components/StoreSettingsProvider';
 
 interface PolicyItem {
   icon: typeof PackageCheck;
@@ -10,23 +11,28 @@ interface PolicyItem {
   body: string;
 }
 
-const ELIGIBLE: PolicyItem[] = [
-  {
-    icon: PackageCheck,
-    title: 'Within 7 days of delivery',
-    body: 'Contact us within 7 days of receiving your order to request a return or exchange.',
-  },
-  {
-    icon: PackageCheck,
-    title: 'Unused and unworn',
-    body: 'Items must be unworn, unwashed and in their original condition with tags attached.',
-  },
-  {
-    icon: PackageCheck,
-    title: 'Original packaging',
-    body: 'Please return items in their original packaging where possible.',
-  },
-];
+/** The window is the only entry that depends on a setting — see
+ *  return_window_days in store_settings — so this builds the list rather than
+ *  a module-level constant. */
+function eligibleItems(returnWindowDays: number): PolicyItem[] {
+  return [
+    {
+      icon: PackageCheck,
+      title: `Within ${returnWindowDays} days of delivery`,
+      body: `Contact us within ${returnWindowDays} days of receiving your order to request a return or exchange.`,
+    },
+    {
+      icon: PackageCheck,
+      title: 'Unused and unworn',
+      body: 'Items must be unworn, unwashed and in their original condition with tags attached.',
+    },
+    {
+      icon: PackageCheck,
+      title: 'Original packaging',
+      body: 'Please return items in their original packaging where possible.',
+    },
+  ];
+}
 
 const NOT_ELIGIBLE: PolicyItem[] = [
   {
@@ -52,6 +58,9 @@ function PolicyCard({ icon: Icon, title, body, tone }: PolicyItem & { tone: 'suc
 }
 
 export default function ReturnsPage() {
+  const { returnWindowDays } = useStoreSettings();
+  const eligible = eligibleItems(returnWindowDays);
+
   return (
     <div className="min-h-screen bg-background-secondary overflow-x-hidden">
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-3xl">
@@ -75,7 +84,7 @@ export default function ReturnsPage() {
         <section className="mb-6 md:mb-8">
           <h2 className="font-bold text-body-md md:text-body-lg text-text-primary mb-3">Return eligibility</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {ELIGIBLE.map((item) => (
+            {eligible.map((item) => (
               <PolicyCard key={item.title} {...item} tone="success" />
             ))}
           </div>

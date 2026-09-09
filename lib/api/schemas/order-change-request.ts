@@ -58,11 +58,6 @@ const addItemDetails = z.object({
   quantity: z.coerce.number().int().min(1).max(20),
 });
 
-const returnRequestDetails = z.object({
-  orderItemIds: z.array(idField).min(1, 'Choose at least one item to return.'),
-  reason: requiredText('A reason', MAX_LENGTHS.note),
-});
-
 const holdUntilDetails = z.object({
   holdUntilDate: requiredText('A date', MAX_LENGTHS.date),
 });
@@ -108,11 +103,6 @@ export const orderChangeRequestSchema = z.discriminatedUnion(
       ...changeRequestBase,
       requestType: z.literal('add_item'),
       details: addItemDetails,
-    }),
-    z.object({
-      ...changeRequestBase,
-      requestType: z.literal('return_request'),
-      details: returnRequestDetails,
     }),
     z.object({
       ...changeRequestBase,

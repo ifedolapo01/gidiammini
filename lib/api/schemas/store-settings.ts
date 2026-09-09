@@ -56,6 +56,13 @@ export const storeSettingsSchema = z.object({
     // and make the alert meaningless, which is worth catching at the form.
     .max(1000, 'A low-stock threshold above 1000 would flag the whole catalogue.'),
 
+  /** Bounded at a year, matching the CHECK. */
+  returnWindowDays: z
+    .number({ error: 'The return window must be a number.' })
+    .int('The return window must be a whole number of days.')
+    .min(1, 'The return window must be at least 1 day.')
+    .max(365, 'A return window over a year is almost certainly a typo.'),
+
   orderNumberPrefix: requiredText('Order number prefix', 6)
     .toUpperCase()
     .regex(/^[A-Z0-9]{1,6}$/, 'The prefix may use up to 6 letters and digits, with no spaces.'),

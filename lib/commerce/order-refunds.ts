@@ -39,6 +39,10 @@ export interface RecordRefundInput {
    * which is what a cash refund over the counter actually is. */
   settled?: boolean;
   notify?: boolean;
+  /** Set when this refund is a return's — see return-lifecycle.ts's
+   *  restockReturn. Lets settling it (refund-settlement.ts) flip the return
+   *  to 'refunded' without string-matching a note. */
+  returnId?: string;
 }
 
 export type RefundResult =
@@ -124,6 +128,7 @@ export async function recordOrderRefund(
       refunded_at: settled ? new Date().toISOString() : null,
       actor_id: actor?.id ?? null,
       actor_email: actor?.email ?? null,
+      return_id: input.returnId ?? null,
     })
     .select('id')
     .maybeSingle();
