@@ -36,6 +36,7 @@ export type AuditEntityType =
   | 'shipping_zone'
   | 'category'
   | 'subcategory'
+  | 'subsubcategory'
   | 'homepage_slide'
   | 'search_synonym'
   | 'customer'

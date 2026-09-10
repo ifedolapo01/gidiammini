@@ -3,7 +3,7 @@
 
 import { FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Input, Textarea, Select } from '@/components/ui';
-import { Category } from '@/types/product';
+import { Category, Subcategory } from '@/types/product';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 
 export interface ProductInfoSectionProps {
@@ -13,6 +13,7 @@ export interface ProductInfoSectionProps {
   categories: Category[];
   loadingCategories: boolean;
   selectedCategory?: Category;
+  selectedSubCategory?: Subcategory;
 }
 
 export function ProductInfoSection({
@@ -22,6 +23,7 @@ export function ProductInfoSection({
   categories,
   loadingCategories,
   selectedCategory,
+  selectedSubCategory,
 }: ProductInfoSectionProps) {
   return (
     <div className="space-y-6">
@@ -73,6 +75,20 @@ export function ProductInfoSection({
               {selectedCategory.subcategories.map((sub) => (
                 <option key={sub.id} value={sub.slug}>
                   {sub.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+
+        {selectedSubCategory && selectedSubCategory.subsubcategories && selectedSubCategory.subsubcategories.length > 0 && (
+          <div>
+            <label className="block text-body-sm font-bold text-text-primary mb-2">Sub-subcategory</label>
+            <Select {...register('sub_sub_category')} invalid={!!errors.sub_sub_category}>
+              <option value="">No sub-subcategory (optional)</option>
+              {selectedSubCategory.subsubcategories.map((subSub) => (
+                <option key={subSub.id} value={subSub.slug}>
+                  {subSub.name}
                 </option>
               ))}
             </Select>

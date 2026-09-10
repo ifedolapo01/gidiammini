@@ -52,16 +52,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 0.7,
     },
-    ...category.subcategories.map((subcategory) => ({
-      url: sitemapLoc(
-        absoluteUrl(
-          `/products?category=${encodeURIComponent(category.slug)}&subcategory=${encodeURIComponent(subcategory)}`
-        )
-      ),
-      lastModified: now,
-      changeFrequency: 'daily' as const,
-      priority: 0.6,
-    })),
+    ...category.subcategories.flatMap((subcategory) => [
+      {
+        url: sitemapLoc(
+          absoluteUrl(
+            `/products?category=${encodeURIComponent(category.slug)}&subcategory=${encodeURIComponent(subcategory.slug)}`
+          )
+        ),
+        lastModified: now,
+        changeFrequency: 'daily' as const,
+        priority: 0.6,
+      },
+      ...subcategory.subsubcategories.map((subsubcategorySlug) => ({
+        url: sitemapLoc(
+          absoluteUrl(
+            `/products?category=${encodeURIComponent(category.slug)}&subcategory=${encodeURIComponent(subcategory.slug)}&subsubcategory=${encodeURIComponent(subsubcategorySlug)}`
+          )
+        ),
+        lastModified: now,
+        changeFrequency: 'daily' as const,
+        priority: 0.5,
+      })),
+    ]),
   ]);
 
   const productEntries: MetadataRoute.Sitemap = products.map((product) => ({

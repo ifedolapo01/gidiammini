@@ -145,12 +145,23 @@ export function buildPricingConfigFromVariants(params: BuildPricingConfigParams)
  * Posts (create) or puts (update, when `id` is provided) a product payload
  * to the shared admin products API, throwing on any failure so callers can
  * surface the message via their own error state.
+ *
+ * Takes its fetch implementation as an argument rather than importing
+ * adminFetch directly: this is COMMERCE layer, and adminFetch lives in the
+ * ADMIN layer — importing it here would invert that dependency. The one
+ * caller (useProductSubmit) passes adminFetch, so a 401 still reaches the
+ * admin section's session-expiry handling instead of surfacing as a bare
+ * "Unauthorized" banner with nobody logged out.
  */
-export async function saveProduct(productData: Record<string, unknown>, id?: string): Promise<void> {
+export async function saveProduct(
+  productData: Record<string, unknown>,
+  id?: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<void> {
   const method = id ? 'PUT' : 'POST';
   const body = id ? { id, ...productData } : productData;
 
-  const response = await fetch('/api/admin/products', {
+  const response = await fetchImpl('/api/admin/products', {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

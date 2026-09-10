@@ -19,7 +19,7 @@ interface VariantTargetingProps {
 }
 
 interface DiscountTargetFieldProps {
-  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT' | 'VARIANT';
+  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'SUBSUBCATEGORY' | 'PRODUCT' | 'VARIANT';
   targetId: string;
   onTargetIdChange: (value: string) => void;
   categories: Category[];
@@ -61,6 +61,22 @@ export function DiscountTargetField({
           {categories.flatMap(c => c.subcategories || []).map(s => (
             <option key={s.id} value={s.slug}>{s.name}</option>
           ))}
+        </Select>
+      )}
+
+      {scope === 'SUBSUBCATEGORY' && (
+        <Select
+          value={targetId}
+          onChange={(e) => onTargetIdChange(e.target.value)}
+          required
+        >
+          <option value="">Select a sub-subcategory...</option>
+          {categories
+            .flatMap(c => c.subcategories || [])
+            .flatMap(s => s.subsubcategories || [])
+            .map(ss => (
+              <option key={ss.id} value={ss.slug}>{ss.name}</option>
+            ))}
         </Select>
       )}
 

@@ -37,6 +37,20 @@ export function setAdminSessionExpiredHandler(handler: (() => void) | null): voi
 }
 
 /**
+ * The same "please log in again" handling adminFetch triggers on a 401 —
+ * exposed for the handful of admin write paths that cannot go through
+ * adminFetch because they are not an HTTP fetch at all (a Next.js Server
+ * Action, e.g. app/actions/upload.ts). Those still check the session
+ * themselves and can return an "unauthorized" result; calling this is how
+ * that result gets the same toast, cookie clear and redirect a 401 from a
+ * real fetch would, instead of surfacing as inert error text with nobody
+ * actually logged out.
+ */
+export function notifyAdminSessionExpired(): void {
+  onSessionExpired?.();
+}
+
+/**
  * `fetch`, plus "a 401 means the session is gone".
  *
  * Deliberately the same signature as fetch, so a call site changes by name

@@ -24,6 +24,7 @@ import {
   DERIVED_FIELDS,
   type ColumnMapping,
   type ImportProduct,
+  type CategoryOverrides,
 } from '@/lib/commerce/product-import';
 import { buildProductCreatePayload } from '@/lib/commerce/product-payload';
 import { syncVariants, applyVariantCosts } from '../product-write';
@@ -146,6 +147,7 @@ export const POST = withAdminAuth(async (request, { supabase, audit }) => {
 
   const csv = typeof body?.csv === 'string' ? body.csv : '';
   const mapping = (body?.mapping ?? {}) as ColumnMapping;
+  const categoryOverrides = (body?.categoryOverrides ?? undefined) as CategoryOverrides | undefined;
   const commit = body?.mode === 'commit';
 
   if (!csv.trim()) {
@@ -167,7 +169,18 @@ export const POST = withAdminAuth(async (request, { supabase, audit }) => {
     );
   }
 
-  const { products, issues, provided } = parseProductRows(table.rows, mapping);
+  // Fetched fresh for both preview and commit — not just to resolve the
+  // categories the operator was explicitly asked about, but so an exact
+  // match (the file says "Babies", a category is literally named Babies)
+  // resolves to its slug on its own. Relying solely on categoryOverrides for
+  // that case ties correctness to the browser's timing (an effect that fills
+  // in exact matches automatically, with nothing forcing it to finish before
+  // the request goes out); this makes the server the authority regardless.
+  const { data: categoriesData } = await (supabase as any)
+    .from('categories')
+    .select('*, subcategories(*, subsubcategories(*))');
+
+  const { products, issues, provided } = parseProductRows(table.rows, mapping, categoriesData ?? [], categoryOverrides);
 
   if (products.length > MAX_PRODUCTS) {
     return NextResponse.json(

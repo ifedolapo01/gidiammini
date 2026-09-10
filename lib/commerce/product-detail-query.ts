@@ -118,14 +118,17 @@ export async function loadSitemapProducts(): Promise<
   return data ?? [];
 }
 
-/** Category and subcategory slugs, for the sitemap's filtered listing URLs. */
+/** Category, subcategory and sub-subcategory slugs, for the sitemap's filtered listing URLs. */
 export async function loadSitemapCategories(): Promise<
-  Array<{ slug: string; subcategories: string[] }>
+  Array<{ slug: string; subcategories: Array<{ slug: string; subsubcategories: string[] }> }>
 > {
   const supabase = createPublicClient();
-  const [categories, subcategories] = await Promise.all([
+  const [categories, subcategories, subsubcategories] = await Promise.all([
     supabase.from('categories').select('slug'),
     supabase.from('subcategories').select('slug,category_slug'),
+    // subsubcategories isn't in the generated types until `npm run db:types`
+    // is rerun against a database that has this migration applied.
+    (supabase as any).from('subsubcategories').select('slug,subcategory_slug'),
   ]);
 
   if (categories.error) {
@@ -133,10 +136,17 @@ export async function loadSitemapCategories(): Promise<
     return [];
   }
 
-  const children = new Map<string, string[]>();
+  const grandchildren = new Map<string, string[]>();
+  for (const row of subsubcategories.data ?? []) {
+    const list = grandchildren.get(row.subcategory_slug) ?? [];
+    list.push(row.slug);
+    grandchildren.set(row.subcategory_slug, list);
+  }
+
+  const children = new Map<string, Array<{ slug: string; subsubcategories: string[] }>>();
   for (const row of subcategories.data ?? []) {
     const list = children.get(row.category_slug) ?? [];
-    list.push(row.slug);
+    list.push({ slug: row.slug, subsubcategories: grandchildren.get(row.slug) ?? [] });
     children.set(row.category_slug, list);
   }
 

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { supabaseImageHostname } from "./lib/image-placeholder";
 
 /**
  * The hostname product images actually come from.
@@ -6,28 +7,29 @@ import type { NextConfig } from "next";
  * Derived from NEXT_PUBLIC_SUPABASE_URL rather than hardcoded, because the
  * project ref differs between the local, preview and production databases and a
  * hostname that is missing from this list does not degrade — next/image refuses
- * the URL outright and the image does not render at all.
+ * the URL outright and the image does not render at all. Read through
+ * lib/image-placeholder.ts's supabaseImageHostname() rather than parsed again
+ * here, so this allowlist and ProductImage's own "is this host allowed"
+ * runtime check share one source of truth.
  *
  * remotePatterns is an allowlist against someone pointing our optimiser at
  * arbitrary third-party images, so it stays narrow: this project's public
  * storage prefix only.
  */
 function supabaseImagePattern() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!url) return [];
-
-  try {
-    return [
-      {
-        protocol: "https" as const,
-        hostname: new URL(url).hostname,
-        pathname: "/storage/v1/object/public/**",
-      },
-    ];
-  } catch {
-    console.warn("NEXT_PUBLIC_SUPABASE_URL is not a valid URL; product images will not be optimised.");
+  const hostname = supabaseImageHostname();
+  if (!hostname) {
+    console.warn("NEXT_PUBLIC_SUPABASE_URL is not set or not a valid URL; product images will not be optimised.");
     return [];
   }
+
+  return [
+    {
+      protocol: "https" as const,
+      hostname,
+      pathname: "/storage/v1/object/public/**",
+    },
+  ];
 }
 
 const nextConfig: NextConfig = {

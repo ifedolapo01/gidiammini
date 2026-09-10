@@ -9,7 +9,11 @@
 export interface CategoryWithSubcategories {
   name: string;
   slug: string;
-  subcategories?: { name: string; slug: string }[];
+  subcategories?: {
+    name: string;
+    slug: string;
+    subsubcategories?: { name: string; slug: string }[];
+  }[];
 }
 
 /** Which facet values exist within the current category scope. */

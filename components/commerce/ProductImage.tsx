@@ -19,7 +19,7 @@
  */
 import Image from 'next/image';
 import { ImageOff } from 'lucide-react';
-import { IMAGE_BLUR_DATA_URL, hasImageSrc } from '@/lib/image-placeholder';
+import { IMAGE_BLUR_DATA_URL, hasImageSrc, isAllowedImageHost } from '@/lib/image-placeholder';
 import { cn } from '@/lib/utils';
 
 interface ProductImageProps {
@@ -84,16 +84,25 @@ export default function ProductImage({
     );
   }
 
+  const trimmedSrc = src.trim();
+  // A host outside next.config.ts's remotePatterns (a CSV import from
+  // someone else's system, a pasted URL that was never uploaded here) makes
+  // <Image> throw synchronously rather than fail just this one image — for
+  // an admin table that's every row on the page. `unoptimized` skips that
+  // check: the browser fetches the URL directly, unoptimised but rendered.
+  const unoptimized = !isAllowedImageHost(trimmedSrc);
+
   return (
     <div className={box}>
       <Image
-        src={src.trim()}
+        src={trimmedSrc}
         alt={alt}
         fill
         sizes={sizes}
         priority={priority}
-        placeholder="blur"
-        blurDataURL={IMAGE_BLUR_DATA_URL}
+        unoptimized={unoptimized}
+        placeholder={unoptimized ? undefined : 'blur'}
+        blurDataURL={unoptimized ? undefined : IMAGE_BLUR_DATA_URL}
         onError={onError}
         className={cn(fit === 'cover' ? 'object-cover' : 'object-contain', imageClassName)}
       />

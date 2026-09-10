@@ -12,11 +12,11 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { readCsvTable } from '@/lib/commerce/csv-parse';
-import { autoMapColumns, type ColumnMapping, type ImportIssue } from '@/lib/commerce/product-import';
+import { readCsvTable, type CsvTable } from '@/lib/commerce/csv-parse';
+import { autoMapColumns, type ColumnMapping, type ImportIssue, type CategoryOverrides } from '@/lib/commerce/product-import';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
-export type ImportStep = 'file' | 'map' | 'preview' | 'done';
+export type ImportStep = 'file' | 'map' | 'categories' | 'preview' | 'done';
 
 export interface ImportPlanEntry {
   name: string;
@@ -45,6 +45,7 @@ export function useProductImport() {
   const [filename, setFilename] = useState('');
   const [csv, setCsv] = useState('');
   const [headers, setHeaders] = useState<string[]>([]);
+  const [rows, setRows] = useState<CsvTable['rows']>([]);
   const [rowCount, setRowCount] = useState(0);
   const [mapping, setMapping] = useState<ColumnMapping>({});
 
@@ -61,6 +62,7 @@ export function useProductImport() {
     setFilename('');
     setCsv('');
     setHeaders([]);
+    setRows([]);
     setRowCount(0);
     setMapping({});
     setSummary(null);
@@ -89,6 +91,7 @@ export function useProductImport() {
       setFilename(file.name);
       setCsv(text);
       setHeaders(table.headers);
+      setRows(table.rows);
       setRowCount(table.rows.length);
       // Guessed, then shown for confirmation — the common case is a file this
       // admin exported, where every column already matches.
@@ -105,7 +108,7 @@ export function useProductImport() {
   }, []);
 
   const send = useCallback(
-    async (mode: 'preview' | 'commit') => {
+    async (mode: 'preview' | 'commit', categoryOverrides?: CategoryOverrides) => {
       setBusy(true);
       setError('');
 
@@ -113,7 +116,7 @@ export function useProductImport() {
         const response = await adminFetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode, csv, mapping }),
+          body: JSON.stringify({ mode, csv, mapping, categoryOverrides }),
         });
 
         const payload = await response.json().catch(() => null);
@@ -155,6 +158,7 @@ export function useProductImport() {
     setStep,
     filename,
     headers,
+    rows,
     rowCount,
     mapping,
     setColumn,
@@ -165,8 +169,8 @@ export function useProductImport() {
     busy,
     error,
     loadFile,
-    runPreview: useCallback(() => send('preview'), [send]),
-    commit: useCallback(() => send('commit'), [send]),
+    runPreview: useCallback((categoryOverrides?: CategoryOverrides) => send('preview', categoryOverrides), [send]),
+    commit: useCallback((categoryOverrides?: CategoryOverrides) => send('commit', categoryOverrides), [send]),
     reset,
   };
 }

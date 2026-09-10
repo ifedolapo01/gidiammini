@@ -32,6 +32,7 @@ function facetArgs(filters: ProductFilters) {
     // 'all' is the sidebar's word for "no filter"; the function's word is NULL.
     p_category: filters.category === 'all' ? null : filters.category,
     p_subcategory: filters.subcategory === 'all' ? null : filters.subcategory,
+    p_subsubcategory: filters.subsubcategory === 'all' ? null : filters.subsubcategory,
     p_min_price: filters.minPrice,
     p_max_price: filters.maxPrice,
     p_sizes: filters.sizes.length > 0 ? filters.sizes : null,
@@ -162,11 +163,15 @@ export async function fetchListingShell(filters: ProductFilters): Promise<Listin
   const supabase: SupabaseClient = createAdminClient();
 
   const [categoriesRes, discountsRes, facetsRes] = await Promise.all([
-    supabase.from('categories').select('name, slug, subcategories(name, slug)').order('name'),
+    supabase
+      .from('categories')
+      .select('name, slug, subcategories(name, slug, subsubcategories(name, slug))')
+      .order('name'),
     supabase.from('discounts').select('*').eq('is_active', true),
     supabase.rpc('product_facet_options', {
       p_category: filters.category === 'all' ? null : filters.category,
       p_subcategory: filters.subcategory === 'all' ? null : filters.subcategory,
+      p_subsubcategory: filters.subsubcategory === 'all' ? null : filters.subsubcategory,
     }),
   ]);
 

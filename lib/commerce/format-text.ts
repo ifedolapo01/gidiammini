@@ -12,17 +12,32 @@ export function capitalizeText(text: string | undefined | null): string {
 }
 
 /**
- * Formats "Category" or "Category > Subcategory" for display. Title-cases both, strips hyphens from the
- * subcategory, and drops a subcategory prefix that duplicates the category name.
+ * Formats "Category", "Category > Subcategory" or
+ * "Category > Subcategory > Sub-subcategory" for display. Title-cases each
+ * level, strips hyphens, and drops a level's prefix when it duplicates its
+ * parent's name — the same de-duplication a subcategory slug like
+ * `mens-clothing-gear` already needed one level up.
  */
-export function formatCategoryStr(cat: string, sub: string | undefined | null): string {
-  const catTitle = cat.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+export function formatCategoryStr(cat: string, sub: string | undefined | null, subSub?: string | undefined | null): string {
+  const titleCase = (text: string) => text.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  const catTitle = titleCase(cat);
   if (!sub) return catTitle;
-  const subClean = sub.replace(/-/g, ' ');
-  const subTitle = subClean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  const subTitle = titleCase(sub.replace(/-/g, ' '));
   let formattedSub = subTitle;
   if (subTitle.toLowerCase().startsWith(catTitle.toLowerCase())) {
     formattedSub = subTitle.substring(catTitle.length).trim();
   }
-  return formattedSub ? `${catTitle} > ${formattedSub}` : catTitle;
+
+  const withSub = formattedSub ? `${catTitle} > ${formattedSub}` : catTitle;
+  if (!subSub) return withSub;
+
+  const subSubTitle = titleCase(subSub.replace(/-/g, ' '));
+  let formattedSubSub = subSubTitle;
+  if (subSubTitle.toLowerCase().startsWith(subTitle.toLowerCase())) {
+    formattedSubSub = subSubTitle.substring(subTitle.length).trim();
+  }
+
+  return formattedSubSub ? `${withSub} > ${formattedSubSub}` : withSub;
 }

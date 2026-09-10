@@ -70,7 +70,10 @@ export default function ProductsBrowser({
     const labels: Record<string, string> = {};
     for (const category of categories) {
       labels[category.slug] = category.name;
-      for (const sub of category.subcategories ?? []) labels[sub.slug] = sub.name;
+      for (const sub of category.subcategories ?? []) {
+        labels[sub.slug] = sub.name;
+        for (const subSub of sub.subsubcategories ?? []) labels[subSub.slug] = subSub.name;
+      }
     }
     return labels;
   }, [categories]);

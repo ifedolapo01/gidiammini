@@ -65,7 +65,10 @@ export const POST = withAdminAuth(async (request, { supabase, audit, actor }) =>
       const subCategory = typeof body?.subCategory === 'string' && body.subCategory.trim()
         ? body.subCategory.trim()
         : null;
-      handle = (id) => moveProductCategory(supabase, id, category, subCategory, labelFor(id), audit);
+      const subSubCategory = typeof body?.subSubCategory === 'string' && body.subSubCategory.trim()
+        ? body.subSubCategory.trim()
+        : null;
+      handle = (id) => moveProductCategory(supabase, id, category, subCategory, subSubCategory, labelFor(id), audit);
       break;
     }
 

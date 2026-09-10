@@ -8,6 +8,7 @@ import { slugify } from '@/lib/commerce/format-text';
 import type { Category } from '@/types/product';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import { useSubcategoryForm } from './useSubcategoryForm';
+import { useSubSubcategoryForm } from './useSubSubcategoryForm';
 import { useCategoryPatch } from './useCategoryPatch';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
@@ -29,6 +30,11 @@ export function useCategories() {
   // destructure. It needs only a way to refresh the list and the shared
   // per-row deleting flag.
   const subcategories = useSubcategoryForm({
+    refresh: () => fetchCategories(),
+    setPendingDeleteId,
+  });
+
+  const subsubcategories = useSubSubcategoryForm({
     refresh: () => fetchCategories(),
     setPendingDeleteId,
   });
@@ -173,5 +179,6 @@ export function useCategories() {
     handleSaveGuidance: guidance.save,
     handleSaveDisplayName: displayName.save,
     ...subcategories,
+    ...subsubcategories,
   };
 }

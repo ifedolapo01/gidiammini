@@ -44,6 +44,7 @@ export interface ProductFilters {
    *  existing sidebar contract, which has always compared against 'all'. */
   category: string;
   subcategory: string;
+  subsubcategory: string;
   minPrice: number | null;
   maxPrice: number | null;
   sizes: string[];
@@ -70,6 +71,7 @@ export interface ProductFilters {
 export const DEFAULT_FILTERS: ProductFilters = {
   category: 'all',
   subcategory: 'all',
+  subsubcategory: 'all',
   minPrice: null,
   maxPrice: null,
   sizes: [],
@@ -121,6 +123,7 @@ export function parseProductFilters(params: ParamsLike | null | undefined): Prod
   return {
     category: params.get('category')?.trim() || 'all',
     subcategory: params.get('subcategory')?.trim() || 'all',
+    subsubcategory: params.get('subsubcategory')?.trim() || 'all',
     minPrice: swap ? maxPrice : minPrice,
     maxPrice: swap ? minPrice : maxPrice,
     sizes: parseList(params, 'size'),
@@ -143,6 +146,7 @@ export function productFiltersToQuery(filters: ProductFilters): URLSearchParams 
   if (filters.query) params.set('q', filters.query);
   if (filters.category !== 'all') params.set('category', filters.category);
   if (filters.subcategory !== 'all') params.set('subcategory', filters.subcategory);
+  if (filters.subsubcategory !== 'all') params.set('subsubcategory', filters.subsubcategory);
   if (filters.minPrice !== null) params.set('min', String(filters.minPrice));
   if (filters.maxPrice !== null) params.set('max', String(filters.maxPrice));
 
@@ -195,6 +199,7 @@ export function countActiveFilters(filters: ProductFilters): number {
   return (
     (filters.category !== 'all' ? 1 : 0) +
     (filters.subcategory !== 'all' ? 1 : 0) +
+    (filters.subsubcategory !== 'all' ? 1 : 0) +
     (filters.minPrice !== null || filters.maxPrice !== null ? 1 : 0) +
     filters.sizes.length +
     filters.colors.length +

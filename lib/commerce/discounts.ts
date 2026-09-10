@@ -9,7 +9,7 @@ export interface Discount {
   name: string;
   type: DiscountType;
   value: number;
-  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT' | 'VARIANT';
+  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'SUBSUBCATEGORY' | 'PRODUCT' | 'VARIANT';
   target_id: string | null;
   is_active: boolean;
   start_date: string | null;
@@ -126,6 +126,7 @@ export function getBestDiscount(product: any, discounts: Discount[], currentPric
     if (d.scope === 'SITEWIDE') return true;
     if (d.scope === 'CATEGORY' && d.target_id === product.category) return true;
     if (d.scope === 'SUBCATEGORY' && d.target_id === product.sub_category) return true;
+    if (d.scope === 'SUBSUBCATEGORY' && d.target_id === product.sub_sub_category) return true;
     if (d.scope === 'PRODUCT' && d.target_id === product.id) return true;
     if (d.scope === 'VARIANT' && d.target_id) {
       const variantTargets = parseVariantTargets(d.target_id);

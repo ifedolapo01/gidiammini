@@ -206,6 +206,7 @@ keeps them from running again.
 | `20260905190300` | cancellation reason codes, and the `order_cancellations` view | **not yet — pending `db push`** |
 | `20260905190400` | courier, waybill and tracking link on orders | **not yet — pending `db push`** |
 | `20260905190500` | `customers.tags`, `customer_addresses`, refund-aware `customer_stats` | **not yet — pending `db push`** |
+| `20260910120000` | `subsubcategories` table; `products.sub_sub_category`; `product_candidates`/`count_products`/`list_products`/`product_facet_options` gain `p_subsubcategory`; discounts scope allows `SUBSUBCATEGORY` | **not yet — pending `db push`** |
 
 The rows between `20251101004000` and `20260905190000` predate this table being
 kept up to date; `npm run db:status` is the authority on what the remote has

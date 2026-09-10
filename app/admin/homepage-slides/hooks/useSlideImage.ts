@@ -11,6 +11,7 @@
 import { useRef, useState } from 'react';
 import { uploadProductImage } from '@/app/actions/upload';
 import { compressImage } from '@/lib/commerce/image-compression';
+import { notifyAdminSessionExpired } from '@/app/admin/lib/admin-fetch';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -66,7 +67,10 @@ export function useSlideImage(initialUrl: string = '') {
     const formData = new FormData();
     formData.append('image', image.file);
     const result = await uploadProductImage(formData);
-    if (result.error || !result.url) throw new Error(result.error || 'Upload failed');
+    if (result.error || !result.url) {
+      if (result.unauthorized) notifyAdminSessionExpired();
+      throw new Error(result.error || 'Upload failed');
+    }
     return result.url;
   };
 

@@ -61,18 +61,24 @@ export async function moveProductCategory(
   id: string,
   category: string,
   subCategory: string | null,
+  subSubCategory: string | null,
   label: string,
   audit: AuditRecorder
 ): Promise<BulkRowOutcome> {
   const { data: previous } = await supabase
     .from('products')
-    .select('category, sub_category')
+    .select('category, sub_category, sub_sub_category')
     .eq('id', id)
     .maybeSingle();
 
   const { error } = await supabase
     .from('products')
-    .update({ category, sub_category: subCategory, updated_at: new Date().toISOString() })
+    .update({
+      category,
+      sub_category: subCategory,
+      sub_sub_category: subSubCategory,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id);
 
   if (error) return { ok: false, label, error: error.message };
@@ -82,7 +88,7 @@ export async function moveProductCategory(
     entityId: id,
     action: 'update',
     before: previous,
-    after: { category, sub_category: subCategory },
+    after: { category, sub_category: subCategory, sub_sub_category: subSubCategory },
     reason: 'Bulk category move',
   });
 

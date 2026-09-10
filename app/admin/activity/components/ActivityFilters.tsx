@@ -18,6 +18,7 @@ const ENTITY_TYPES = [
   'shipping_zone',
   'category',
   'subcategory',
+  'subsubcategory',
   'customer',
   'admin_user',
   'admin_session',

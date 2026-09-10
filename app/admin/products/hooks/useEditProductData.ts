@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { UseFormReset } from 'react-hook-form';
+import type { UseFormReset, UseFormSetValue } from 'react-hook-form';
 import { Product } from '@/types/product';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { ImageFile, VariantColor, VariantSize } from '@/lib/commerce/product-form-helpers';
@@ -21,6 +21,10 @@ export interface ReviewFitStats {
 interface UseEditProductDataArgs {
   productId: string;
   reset: UseFormReset<ProductFormValues>;
+  setValue: UseFormSetValue<ProductFormValues>;
+  /** Whether the category select's options (fetched separately, in parallel
+   *  with this product) have finished loading. */
+  categoriesReady: boolean;
   setImages: (images: ImageFile[]) => void;
   setHasVariants: (value: boolean) => void;
   setHasSizes: (value: boolean) => void;
@@ -30,7 +34,7 @@ interface UseEditProductDataArgs {
 }
 
 export function useEditProductData(args: UseEditProductDataArgs) {
-  const { productId, reset, setImages, setHasVariants, setHasSizes, setHasColors, setSizingType, setVariants } = args;
+  const { productId, reset, setValue, categoriesReady, setImages, setHasVariants, setHasSizes, setHasColors, setSizingType, setVariants } = args;
   const [product, setProduct] = useState<Product | null>(null);
   const [reviewFitStats, setReviewFitStats] = useState<ReviewFitStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,6 +84,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
           price: productData.price,
           category: productData.category || '',
           sub_category: (productData as any).sub_category || '',
+          sub_sub_category: (productData as any).sub_sub_category || '',
           singleSize: productData.pricing_config?.singleSize || '',
           singleColor: productData.pricing_config?.singleColor || '',
           stock: productData.stock,
@@ -190,6 +195,21 @@ export function useEditProductData(args: UseEditProductDataArgs) {
     if (productId) fetchProduct(productId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
+
+  // reset() above fires as soon as the product loads, but the category
+  // <select> is native and uncontrolled — if the product arrives before the
+  // categories list has rendered its <option>s (the two fetches run in
+  // parallel, and either can win), setting its value to a slug with no
+  // matching option yet is silently dropped and never retried. Re-applying
+  // once the options actually exist closes that gap, whichever fetch was
+  // slower.
+  useEffect(() => {
+    if (!product || !categoriesReady) return;
+    setValue('category', product.category || '');
+    setValue('sub_category', (product as any).sub_category || '');
+    setValue('sub_sub_category', (product as any).sub_sub_category || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, categoriesReady]);
 
   return { product, reviewFitStats, isLoading, loadError, refetch: () => fetchProduct(productId) };
 }

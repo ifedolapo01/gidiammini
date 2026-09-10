@@ -42,7 +42,15 @@ export interface ListingPage {
 }
 
 export interface ListingShell {
-  categories: Array<{ name: string; slug: string; subcategories?: { name: string; slug: string }[] }>;
+  categories: Array<{
+    name: string;
+    slug: string;
+    subcategories?: Array<{
+      name: string;
+      slug: string;
+      subsubcategories?: { name: string; slug: string }[];
+    }>;
+  }>;
   discounts: Discount[];
   facets: { sizes: string[]; colors: string[]; minPrice: number; maxPrice: number };
 }

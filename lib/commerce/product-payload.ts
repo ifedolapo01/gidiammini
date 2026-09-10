@@ -56,6 +56,7 @@ const FIELDS: Record<string, (value: unknown) => unknown> = {
   },
   details: asStringArray,
   sub_category: (v) => (v === null || v === undefined || v === '' ? null : String(v)),
+  sub_sub_category: (v) => (v === null || v === undefined || v === '' ? null : String(v)),
   pricing_config: (v) => v ?? null,
   stock: asStock,
 };
@@ -73,6 +74,7 @@ const CREATE_DEFAULTS: Payload = {
   fit_rating: null,
   fit_note: null,
   sub_category: null,
+  sub_sub_category: null,
   pricing_config: null,
   stock: 0,
 };

@@ -11,7 +11,11 @@ export async function uploadProductImage(formData: FormData) {
     // page it's imported into. Without this check, the service-role key below
     // let any visitor write arbitrary files into the project's storage.
     if (!(await isAdminRequest())) {
-      return { error: 'Not authorised. Please log in again.' };
+      // Not reachable through adminFetch's 401 interception — this is a
+      // Server Action, not a fetch — so callers check `unauthorized` and
+      // trigger the same session-expiry handling themselves. See
+      // notifyAdminSessionExpired in app/admin/lib/admin-fetch.ts.
+      return { error: 'Not authorised. Please log in again.', unauthorized: true };
     }
 
     const supabaseAdmin = createClient(

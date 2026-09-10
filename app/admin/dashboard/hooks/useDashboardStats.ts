@@ -61,23 +61,30 @@ export function useDashboardStats() {
 
       // Fetch dashboard stats
       const response = await adminFetch('/api/admin/dashboard');
-      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        // 401 means the admin session itself is invalid/expired (e.g. JWT_SECRET
-        // rotated) — surface that distinctly from a genuine server-side failure,
-        // since "failed to fetch" reads as a bug when the real fix is re-login.
         if (response.status === 401) {
-          throw new Error('Your admin session has expired. Please log in again.');
+          // adminFetch has already triggered the session-expiry toast, cookie
+          // clear and redirect to /admin/login. Deliberately leaving `loading`
+          // true (skipping the finally below) rather than resetting it: the
+          // alternative is a flash of either the empty/zeroed stats or this
+          // hook's own "Error Loading Dashboard" banner with a Retry button
+          // that would just 401 again, in the moment before the redirect
+          // actually completes. The skeleton is the more honest thing to show
+          // for a page that is about to be navigated away from anyway.
+          return;
         }
+
+        const data = await response.json().catch(() => null);
         throw new Error(data?.error || 'Failed to fetch dashboard statistics');
       }
 
+      const data = await response.json();
       setStats(data);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
       setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
-    } finally {
       setLoading(false);
     }
   };

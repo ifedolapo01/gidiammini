@@ -27,7 +27,7 @@ interface FilterFacetsProps {
   facets: FacetOptions;
   filters: ProductFilters;
   onChange: (change: Partial<ProductFilters>) => void;
-  onNavigateCategory: (categorySlug: string, subCategorySlug?: string) => void;
+  onNavigateCategory: (categorySlug: string, subCategorySlug?: string, subSubCategorySlug?: string) => void;
 }
 
 export default function FilterFacets({
@@ -44,7 +44,8 @@ export default function FilterFacets({
           categories={categories}
           selectedCategory={filters.category}
           selectedSubCategory={filters.subcategory}
-          onSelectAll={() => onNavigateCategory('all', 'all')}
+          selectedSubSubCategory={filters.subsubcategory}
+          onSelectAll={() => onNavigateCategory('all', 'all', 'all')}
           onNavigate={onNavigateCategory}
         />
       </FacetSection>

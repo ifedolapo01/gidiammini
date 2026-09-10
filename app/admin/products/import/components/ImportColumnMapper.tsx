@@ -44,42 +44,58 @@ export function ImportColumnMapper({ headers, mapping, onChange }: ImportColumnM
             </tr>
           </thead>
           <tbody className="divide-y divide-divider">
-            {IMPORT_FIELDS.map((field) => {
-              const selectId = `import-map-${field.key}`;
-
-              return (
-                <tr key={field.key}>
-                  <td className="px-4 py-3 align-top">
-                    <label htmlFor={selectId} className="text-body-sm font-medium text-text-primary">
-                      {field.label}
-                      {field.required && <span className="ml-1 text-destructive">*</span>}
-                    </label>
-                    {field.hint && (
-                      <p className="mt-0.5 text-caption-md text-text-secondary">{field.hint}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Select
-                      id={selectId}
-                      size="sm"
-                      className="w-full max-w-xs"
-                      value={typeof mapping[field.key] === 'number' ? String(mapping[field.key]) : ''}
-                      invalid={field.required && typeof mapping[field.key] !== 'number'}
-                      onChange={(event) =>
-                        onChange(field.key, event.target.value === '' ? null : Number(event.target.value))
-                      }
-                    >
-                      <option value="">(not in this file)</option>
-                      {headers.map((header, index) => (
-                        <option key={`${header}-${index}`} value={index}>
-                          {header || `Column ${index + 1}`}
-                        </option>
-                      ))}
-                    </Select>
-                  </td>
-                </tr>
+            {/* Columns already claimed by another field, so each dropdown only
+                offers what is still free to pick — plus, always, whatever this
+                field itself is currently pointed at. */}
+            {(() => {
+              const usedElsewhere = new Set(
+                Object.entries(mapping)
+                  .filter(([, index]) => typeof index === 'number')
+                  .map(([, index]) => index as number)
               );
-            })}
+
+              return IMPORT_FIELDS.map((field) => {
+                const selectId = `import-map-${field.key}`;
+                const currentIndex = mapping[field.key];
+
+                const availableHeaders = headers
+                  .map((header, index) => ({ header, index }))
+                  .filter(({ index }) => index === currentIndex || !usedElsewhere.has(index));
+
+                return (
+                  <tr key={field.key}>
+                    <td className="px-4 py-3 align-top">
+                      <label htmlFor={selectId} className="text-body-sm font-medium text-text-primary">
+                        {field.label}
+                        {field.required && <span className="ml-1 text-destructive">*</span>}
+                      </label>
+                      {field.hint && (
+                        <p className="mt-0.5 text-caption-md text-text-secondary">{field.hint}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Select
+                        id={selectId}
+                        size="sm"
+                        className="w-full max-w-xs"
+                        value={typeof currentIndex === 'number' ? String(currentIndex) : ''}
+                        invalid={field.required && typeof currentIndex !== 'number'}
+                        onChange={(event) =>
+                          onChange(field.key, event.target.value === '' ? null : Number(event.target.value))
+                        }
+                      >
+                        <option value="">(not in this file)</option>
+                        {availableHeaders.map(({ header, index }) => (
+                          <option key={`${header}-${index}`} value={index}>
+                            {header || `Column ${index + 1}`}
+                          </option>
+                        ))}
+                      </Select>
+                    </td>
+                  </tr>
+                );
+              });
+            })()}
           </tbody>
         </table>
       </div>

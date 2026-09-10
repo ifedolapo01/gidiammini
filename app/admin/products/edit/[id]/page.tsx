@@ -23,15 +23,18 @@ export default function EditProductPage(props: PageProps) {
     watch,
     formState: { errors },
     reset,
+    setValue,
     detailFields,
     appendDetail,
     removeDetail,
     handleTitleCaseBlur,
     selectedCategorySlug,
+    selectedSubCategorySlug,
   } = useProductForm();
 
   const { categories, loadingCategories } = useProductCategories();
   const selectedCategory = categories.find((c) => c.slug === selectedCategorySlug);
+  const selectedSubCategory = selectedCategory?.subcategories.find((s) => s.slug === selectedSubCategorySlug);
 
   const variantsApi = useProductVariants();
   const {
@@ -56,6 +59,8 @@ export default function EditProductPage(props: PageProps) {
   const { product, reviewFitStats, isLoading, loadError, refetch } = useEditProductData({
     productId: params.id,
     reset,
+    setValue,
+    categoriesReady: !loadingCategories,
     setImages,
     setHasVariants,
     setHasSizes,
@@ -103,6 +108,7 @@ export default function EditProductPage(props: PageProps) {
           categories={categories}
           loadingCategories={loadingCategories}
           selectedCategory={selectedCategory}
+          selectedSubCategory={selectedSubCategory}
         />
 
         <hr className="border-border-light" />

@@ -17,6 +17,14 @@
  */
 import { providedFields, type ColumnMapping } from './product-import-fields';
 import { validateProduct } from './product-import-validate';
+import {
+  resolveCategoryValue,
+  resolveCategorySplit,
+  resolveSubCategoryValue,
+  resolveSubSubCategoryValue,
+  type CategoryOverrides,
+} from './product-import-categories';
+import type { Category } from '@/types/product';
 
 export {
   IMPORT_FIELDS,
@@ -28,6 +36,7 @@ export {
 } from './product-import-fields';
 
 export { toProductPayload, type ProductWritePayload } from './product-import-payload';
+export type { CategoryOverrides } from './product-import-categories';
 
 export interface ImportIssue {
   /** Line number in the original file, so it matches what the person sees. */
@@ -53,6 +62,7 @@ export interface ImportProduct {
   productId: string | null;
   category: string;
   subCategory: string | null;
+  subSubCategory: string | null;
   description: string;
   mainImage: string;
   variants: ImportVariantRow[];
@@ -88,7 +98,14 @@ function parseNumber(raw: string): number | null {
 
 export function parseProductRows(
   rows: Array<{ line: number; cells: string[] }>,
-  mapping: ColumnMapping
+  mapping: ColumnMapping,
+  /** The real category tree, so an exact match ("Babies" against a category
+   *  literally named Babies) resolves to its slug even if categoryOverrides
+   *  doesn't (yet) say so — see resolveCategoryValue's own doc for why that
+   *  matters. Defaults to none, for callers (tests) that only care about the
+   *  raw-text passthrough behaviour. */
+  categories: Category[] = [],
+  categoryOverrides?: CategoryOverrides
 ): ParsedImport {
   const issues: ImportIssue[] = [];
   const byKey = new Map<string, ImportProduct>();
@@ -140,12 +157,50 @@ export function parseProductRows(
     let product = byKey.get(key);
 
     if (!product) {
+      // Raw cell text goes through the resolver the import wizard's category
+      // step built, so "Men's Wear" becomes the real `mens-clothing` slug
+      // rather than free text the edit form's category <select> can never
+      // match — same reason the operator was asked in the first place.
+      const rawCategory = cellAt(cells, mapping.category) || 'babies';
+      const category = resolveCategoryValue(rawCategory, categories, categoryOverrides);
+      const rawSubCategory = cellAt(cells, mapping.sub_category);
+      const rawSubSubCategory = cellAt(cells, mapping.sub_sub_category);
+
+      // A confirmed split ("Baby Gear" -> Babies + Gear) means the category
+      // cell already claimed the sub-category level. Whatever this row's own
+      // sub-category cell says is then one level further down — a
+      // sub-subcategory of the split's subcategory, not a sibling
+      // sub-category of the resolved category. A genuinely mapped
+      // sub_sub_category column is only consulted when there was no split,
+      // since the split case has already spent that column's meaning on the
+      // sub-category cell.
+      const splitSubcategorySlug = resolveCategorySplit(rawCategory, categoryOverrides);
+
+      let subCategory: string | null;
+      let subSubCategory: string | null;
+
+      if (splitSubcategorySlug) {
+        subCategory = splitSubcategorySlug;
+        subSubCategory = rawSubCategory
+          ? resolveSubSubCategoryValue(splitSubcategorySlug, rawSubCategory, categories, categoryOverrides)
+          : null;
+      } else {
+        subCategory = rawSubCategory
+          ? resolveSubCategoryValue(category, rawSubCategory, categories, categoryOverrides)
+          : null;
+        subSubCategory =
+          subCategory && rawSubSubCategory
+            ? resolveSubSubCategoryValue(subCategory, rawSubSubCategory, categories, categoryOverrides)
+            : null;
+      }
+
       product = {
         key,
         name,
         productId,
-        category: cellAt(cells, mapping.category) || 'babies',
-        subCategory: cellAt(cells, mapping.sub_category) || null,
+        category,
+        subCategory,
+        subSubCategory,
         description: cellAt(cells, mapping.description).slice(0, MAX_DESCRIPTION),
         mainImage: cellAt(cells, mapping.main_image),
         variants: [],

@@ -32,6 +32,7 @@ export function useProductForm() {
   };
 
   const selectedCategorySlug = useWatch({ control, name: 'category' });
+  const selectedSubCategorySlug = useWatch({ control, name: 'sub_category' });
 
   return {
     ...form,
@@ -40,5 +41,6 @@ export function useProductForm() {
     removeDetail,
     handleTitleCaseBlur,
     selectedCategorySlug,
+    selectedSubCategorySlug,
   };
 }

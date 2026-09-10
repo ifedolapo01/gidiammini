@@ -1797,6 +1797,7 @@ export type Database = {
           sizing_type: string | null
           stock: number
           sub_category: string | null
+          sub_sub_category: string | null
           updated_at: string
         }
         Insert: {
@@ -1821,6 +1822,7 @@ export type Database = {
           sizing_type?: string | null
           stock?: number
           sub_category?: string | null
+          sub_sub_category?: string | null
           updated_at?: string
         }
         Update: {
@@ -1845,6 +1847,7 @@ export type Database = {
           sizing_type?: string | null
           stock?: number
           sub_category?: string | null
+          sub_sub_category?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2379,6 +2382,38 @@ export type Database = {
         }
         Relationships: []
       }
+      subsubcategories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+          subcategory_slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+          subcategory_slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          subcategory_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subsubcategories_subcategory_slug_fkey"
+            columns: ["subcategory_slug"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
@@ -2640,6 +2675,7 @@ export type Database = {
           p_search?: string
           p_sizes?: string[]
           p_subcategory?: string
+          p_subsubcategory?: string
         }
         Returns: number
       }
@@ -2677,6 +2713,7 @@ export type Database = {
           p_sizes?: string[]
           p_sort?: string
           p_subcategory?: string
+          p_subsubcategory?: string
         }
         Returns: {
           category: string
@@ -2705,6 +2742,7 @@ export type Database = {
           p_search?: string
           p_sizes?: string[]
           p_subcategory?: string
+          p_subsubcategory?: string
         }
         Returns: {
           eff_price: number
@@ -2731,7 +2769,11 @@ export type Database = {
         }[]
       }
       product_facet_options: {
-        Args: { p_category?: string; p_subcategory?: string }
+        Args: {
+          p_category?: string
+          p_subcategory?: string
+          p_subsubcategory?: string
+        }
         Returns: Json
       }
       prune_audit_log: { Args: { p_older_than_days?: number }; Returns: number }

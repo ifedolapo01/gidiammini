@@ -1,11 +1,15 @@
 /** ADMIN layer — CSV catalogue import.
  *
- * Four steps, and the wizard exists for the third one: nothing reaches the
- * database until a dry run has named every product that would be created, every
- * one that would be updated, and every row that cannot be read. Onboarding a
- * 200-item catalogue was days of typing before this; the reason to make it a
- * wizard rather than a single upload button is that a bulk write nobody
- * previewed is a bulk write nobody trusts.
+ * The wizard exists for the review step: nothing reaches the database until a
+ * dry run has named every product that would be created, every one that would
+ * be updated, and every row that cannot be read. Onboarding a 200-item
+ * catalogue was days of typing before this; the reason to make it a wizard
+ * rather than a single upload button is that a bulk write nobody previewed is
+ * a bulk write nobody trusts.
+ *
+ * The categories step between mapping and review is conditional — it only
+ * appears when the file uses category or sub-category text that doesn't match
+ * anything that exists, and is skipped outright otherwise.
  */
 'use client';
 
@@ -13,25 +17,46 @@ import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useProductImport } from './hooks/useProductImport';
+import { useCategoryResolution } from './hooks/useCategoryResolution';
+import { useProductCategories } from '../hooks';
 import { ImportFilePicker } from './components/ImportFilePicker';
 import { ImportColumnMapper } from './components/ImportColumnMapper';
+import { ImportCategoryResolver } from './components/ImportCategoryResolver';
 import { ImportPreview } from './components/ImportPreview';
 import { IMPORT_FIELDS } from '@/lib/commerce/product-import';
 
 const STEPS = [
   { key: 'file', label: 'Choose file' },
   { key: 'map', label: 'Match columns' },
+  { key: 'categories', label: 'Match categories' },
   { key: 'preview', label: 'Review' },
   { key: 'done', label: 'Done' },
 ] as const;
 
 export default function ProductImportPage() {
   const wizard = useProductImport();
+  const { categories, loadingCategories, refetchCategories } = useProductCategories();
+  const categoryResolution = useCategoryResolution(wizard.rows, wizard.mapping, categories, loadingCategories);
   const currentStep = STEPS.findIndex((step) => step.key === wizard.step);
 
   const mappingComplete = IMPORT_FIELDS.filter((field) => field.required).every(
     (field) => typeof wizard.mapping[field.key] === 'number'
   );
+
+  const startOver = () => {
+    wizard.reset();
+    categoryResolution.reset();
+  };
+
+  // Skips the categories step entirely when nothing needs a look — the
+  // common case, a file whose categories already match by slug or name.
+  const continueFromMap = () => {
+    if (categoryResolution.hasUnresolved) {
+      wizard.setStep('categories');
+    } else {
+      wizard.runPreview(categoryResolution.overrides);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -97,10 +122,45 @@ export default function ProductImportPage() {
           />
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button onClick={wizard.runPreview} loading={wizard.busy} disabled={!mappingComplete}>
+            <Button onClick={continueFromMap} loading={wizard.busy} disabled={!mappingComplete || loadingCategories}>
+              {categoryResolution.hasUnresolved ? 'Continue' : 'Preview changes'}
+            </Button>
+            <Button variant="ghost" onClick={startOver} disabled={wizard.busy}>
+              Start over
+            </Button>
+          </div>
+        </>
+      )}
+
+      {wizard.step === 'categories' && (
+        <>
+          <ImportCategoryResolver
+            categories={categories}
+            loadingCategories={loadingCategories}
+            overrides={categoryResolution.overrides}
+            reviewCategories={categoryResolution.reviewCategories}
+            reviewSubcategories={categoryResolution.reviewSubcategories}
+            reviewSubSubcategories={categoryResolution.reviewSubSubcategories}
+            categorySplitSuggestions={categoryResolution.categorySplitSuggestions}
+            onSetCategoryOverride={categoryResolution.setCategoryOverride}
+            onSetCategorySplitOverride={categoryResolution.setCategorySplitOverride}
+            onSetSubCategoryOverride={categoryResolution.setSubCategoryOverride}
+            onSetSubSubCategoryOverride={categoryResolution.setSubSubCategoryOverride}
+            onCategoriesChanged={refetchCategories}
+          />
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button
+              onClick={() => wizard.runPreview(categoryResolution.overrides)}
+              loading={wizard.busy}
+              disabled={categoryResolution.hasUnresolved}
+            >
               Preview changes
             </Button>
-            <Button variant="ghost" onClick={wizard.reset} disabled={wizard.busy}>
+            <Button variant="outline" onClick={() => wizard.setStep('map')} disabled={wizard.busy}>
+              Back to columns
+            </Button>
+            <Button variant="ghost" onClick={startOver} disabled={wizard.busy}>
               Start over
             </Button>
           </div>
@@ -113,7 +173,7 @@ export default function ProductImportPage() {
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Button
-              onClick={wizard.commit}
+              onClick={() => wizard.commit(categoryResolution.overrides)}
               loading={wizard.busy}
               disabled={wizard.issues.length > 0 || wizard.summary.products === 0}
             >
@@ -122,7 +182,7 @@ export default function ProductImportPage() {
             <Button variant="outline" onClick={() => wizard.setStep('map')} disabled={wizard.busy}>
               Back to columns
             </Button>
-            <Button variant="ghost" onClick={wizard.reset} disabled={wizard.busy}>
+            <Button variant="ghost" onClick={startOver} disabled={wizard.busy}>
               Start over
             </Button>
           </div>
@@ -173,7 +233,7 @@ export default function ProductImportPage() {
             >
               View products
             </Link>
-            <Button variant="outline" onClick={wizard.reset}>
+            <Button variant="outline" onClick={startOver}>
               Import another file
             </Button>
           </div>

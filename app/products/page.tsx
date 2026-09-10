@@ -23,9 +23,10 @@ interface ProductsPageProps {
 }
 
 /**
- * The canonical URL for a filtered view: category and subcategory only.
+ * The canonical URL for a filtered view: category, subcategory and
+ * sub-subcategory only.
  *
- * Those two are the facets the sitemap lists and the ones a search actually
+ * Those are the facets the sitemap lists and the ones a search actually
  * expresses ("baby bodysuits"), so they get to be their own indexable page.
  * Size, colour, price, sort and the sale toggle multiply into thousands of
  * near-identical URLs, so every combination of them folds back onto the
@@ -35,6 +36,7 @@ function canonicalListingPath(filters: ProductFilters): string {
   const params = new URLSearchParams();
   if (filters.category !== 'all') params.set('category', filters.category);
   if (filters.subcategory !== 'all') params.set('subcategory', filters.subcategory);
+  if (filters.subsubcategory !== 'all') params.set('subsubcategory', filters.subsubcategory);
 
   const query = params.toString();
   return query === '' ? '/products' : `/products?${query}`;
@@ -46,7 +48,8 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
 
   const category = shell.categories.find((entry) => entry.slug === filters.category);
   const subcategory = category?.subcategories?.find((entry) => entry.slug === filters.subcategory);
-  const name = subcategory?.name ?? category?.name;
+  const subsubcategory = subcategory?.subsubcategories?.find((entry) => entry.slug === filters.subsubcategory);
+  const name = subsubcategory?.name ?? subcategory?.name ?? category?.name;
 
   const title = name ? `${name}: Our Collection` : 'Our Collection';
   const description = name

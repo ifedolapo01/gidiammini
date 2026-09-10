@@ -19,10 +19,12 @@ export default function AddProductPage() {
     removeDetail,
     handleTitleCaseBlur,
     selectedCategorySlug,
+    selectedSubCategorySlug,
   } = useProductForm();
 
   const { categories, loadingCategories } = useProductCategories();
   const selectedCategory = categories.find((c) => c.slug === selectedCategorySlug);
+  const selectedSubCategory = selectedCategory?.subcategories.find((s) => s.slug === selectedSubCategorySlug);
 
   const variantsApi = useProductVariants();
   const { hasVariants, hasSizes, hasColors, sizingType, variants, uniqueColorsArray, uniqueColorsCount } = variantsApi;
@@ -92,6 +94,7 @@ export default function AddProductPage() {
           categories={categories}
           loadingCategories={loadingCategories}
           selectedCategory={selectedCategory}
+          selectedSubCategory={selectedSubCategory}
         />
 
         <hr className="border-border-light" />

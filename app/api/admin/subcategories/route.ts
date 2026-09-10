@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth, type AuditRecorder } from '@/lib/api/with-admin-auth';
 import { readForAudit } from '@/lib/api/audit';
+import { describeCategoryWriteError } from '@/lib/api/category-write-errors';
 
 export const maxDuration = 30;
 
@@ -27,7 +28,10 @@ async function createSubcategory(supabase: SupabaseClient, request: NextRequest,
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    const { message, status } = describeCategoryWriteError(error, { noun: 'subcategory', parentNoun: 'category' });
+    return NextResponse.json({ success: false, error: message }, { status });
+  }
 
   audit({ entityType: 'subcategory', entityId: data.id, action: 'create', after: data });
 

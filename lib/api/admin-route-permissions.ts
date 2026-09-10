@@ -81,6 +81,7 @@ const ROUTES: RoutePermission[] = [
 
   { pattern: '/api/admin/categories', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/subcategories', read: 'store:read', write: 'catalog:write' },
+  { pattern: '/api/admin/subsubcategories', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/discounts', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/discounts/notify', read: 'store:read', write: 'catalog:write' },
   { pattern: '/api/admin/shipping-zones', read: 'store:read', write: 'catalog:write' },

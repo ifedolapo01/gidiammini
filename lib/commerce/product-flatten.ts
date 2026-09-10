@@ -23,6 +23,7 @@ export interface FlattenedProduct {
   variantLabel: string; // A human-readable label like "1-2 months / Red"
   category: string;
   sub_category?: string;
+  sub_sub_category?: string;
   price: number;
   stock: number;
   main_image: string | undefined;
@@ -61,6 +62,7 @@ function buildVariantEntry(
     variantLabel,
     category: p.category,
     sub_category: p.sub_category,
+    sub_sub_category: p.sub_sub_category,
     price,
     stock,
     main_image: p.main_image || (p.images && p.images[0]),

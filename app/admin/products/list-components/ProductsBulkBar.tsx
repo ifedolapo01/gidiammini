@@ -21,7 +21,7 @@ interface ProductsBulkBarProps {
   pending: PendingBulkAction | null;
   running: boolean;
   onSetActive: (ids: string[], isActive: boolean) => void;
-  onMoveCategory: (ids: string[], category: string, subCategory: string | null) => void;
+  onMoveCategory: (ids: string[], category: string, subCategory: string | null, subSubCategory: string | null) => void;
   onAdjustPrice: (ids: string[], percent: number) => void;
   onSetFeatured: (ids: string[], isFeatured: boolean) => void;
   onUndo: () => void;
@@ -44,11 +44,13 @@ export function ProductsBulkBar({
 }: ProductsBulkBarProps) {
   const [categorySlug, setCategorySlug] = useState('');
   const [subCategorySlug, setSubCategorySlug] = useState('');
+  const [subSubCategorySlug, setSubSubCategorySlug] = useState('');
   const [percentText, setPercentText] = useState('');
 
   const percent = Number(percentText);
   const percentValid = percentText.trim() !== '' && isValidPercent(percent);
   const subcategories = categories.find((category) => category.slug === categorySlug)?.subcategories ?? [];
+  const subsubcategories = subcategories.find((sub) => sub.slug === subCategorySlug)?.subsubcategories ?? [];
 
   return (
     <BulkActionBar
@@ -88,6 +90,7 @@ export function ProductsBulkBar({
           onChange={(event) => {
             setCategorySlug(event.target.value);
             setSubCategorySlug('');
+            setSubSubCategorySlug('');
           }}
           aria-label="Category to move the selected products into"
         >
@@ -102,7 +105,10 @@ export function ProductsBulkBar({
             size="sm"
             className="w-36"
             value={subCategorySlug}
-            onChange={(event) => setSubCategorySlug(event.target.value)}
+            onChange={(event) => {
+              setSubCategorySlug(event.target.value);
+              setSubSubCategorySlug('');
+            }}
             aria-label="Subcategory to move the selected products into"
           >
             <option value="">No subcategory</option>
@@ -112,11 +118,26 @@ export function ProductsBulkBar({
           </Select>
         )}
 
+        {subsubcategories.length > 0 && (
+          <Select
+            size="sm"
+            className="w-36"
+            value={subSubCategorySlug}
+            onChange={(event) => setSubSubCategorySlug(event.target.value)}
+            aria-label="Sub-subcategory to move the selected products into"
+          >
+            <option value="">No sub-subcategory</option>
+            {subsubcategories.map((subsubcategory) => (
+              <option key={subsubcategory.id} value={subsubcategory.slug}>{subsubcategory.name}</option>
+            ))}
+          </Select>
+        )}
+
         <Button
           size="sm"
           variant="outline"
           disabled={!categorySlug}
-          onClick={() => onMoveCategory(selectedIds, categorySlug, subCategorySlug || null)}
+          onClick={() => onMoveCategory(selectedIds, categorySlug, subCategorySlug || null, subSubCategorySlug || null)}
         >
           Move
         </Button>

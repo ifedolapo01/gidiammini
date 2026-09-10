@@ -13,7 +13,7 @@ export interface DiscountFormData {
    *  Ignored entirely for FREE_SHIPPING, whose amount is whatever the zone
    *  charges. */
   value: string;
-  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'PRODUCT' | 'VARIANT';
+  scope: 'SITEWIDE' | 'CATEGORY' | 'SUBCATEGORY' | 'SUBSUBCATEGORY' | 'PRODUCT' | 'VARIANT';
   target_id: string;
   is_active: boolean;
   start_date: string;

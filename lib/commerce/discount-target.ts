@@ -31,14 +31,26 @@ export function formatTarget(
   if (!discount.target_id) return '';
 
   if (discount.scope === 'CATEGORY') {
-    const cat = categories.find(c => c.id === discount.target_id);
+    // Keyed by slug, matching what DiscountTargetField actually writes into
+    // target_id for this scope — comparing against `id` here never matched it.
+    const cat = categories.find(c => c.slug === discount.target_id);
     return cat ? cat.name : discount.target_id;
   }
 
   if (discount.scope === 'SUBCATEGORY') {
     for (const cat of categories) {
-      const sub = cat.subcategories?.find(s => s.id === discount.target_id);
+      const sub = cat.subcategories?.find(s => s.slug === discount.target_id);
       if (sub) return `${cat.name} > ${sub.name}`;
+    }
+    return discount.target_id;
+  }
+
+  if (discount.scope === 'SUBSUBCATEGORY') {
+    for (const cat of categories) {
+      for (const sub of cat.subcategories ?? []) {
+        const subSub = sub.subsubcategories?.find(s => s.slug === discount.target_id);
+        if (subSub) return `${cat.name} > ${sub.name} > ${subSub.name}`;
+      }
     }
     return discount.target_id;
   }

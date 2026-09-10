@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { uploadProductImage } from '@/app/actions/upload';
 import { compressImage } from '@/lib/commerce/image-compression';
 import { ImageFile } from '@/lib/commerce/product-form-helpers';
+import { notifyAdminSessionExpired } from '@/app/admin/lib/admin-fetch';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -126,7 +127,13 @@ export function useProductImages(options: UseProductImagesOptions = {}) {
         const uploadFormData = new FormData();
         uploadFormData.append('image', image.file);
         const uploadResult = await uploadProductImage(uploadFormData);
-        if (uploadResult.error) throw new Error(uploadResult.error);
+        if (uploadResult.error) {
+          // A Server Action, not a fetch — adminFetch never sees this 401
+          // equivalent, so the same "log in again" handling is triggered by
+          // hand rather than leaving the admin looking signed in.
+          if (uploadResult.unauthorized) notifyAdminSessionExpired();
+          throw new Error(uploadResult.error);
+        }
         imageUrl = uploadResult.url!;
       }
       uploadedImages.push(imageUrl);

@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/with-admin-auth';
 import { parseCategoryEdit } from '@/lib/commerce/category-edit';
+import { describeCategoryWriteError } from '@/lib/api/category-write-errors';
 
 export const maxDuration = 30;
 
@@ -21,7 +22,12 @@ const DEFAULT_COLORS = [
 ];
 
 export const GET = withAdminAuth(async (_request, { supabase }) => {
-  const { data, error } = await supabase.from('categories').select('*, subcategories(*)');
+  // subsubcategories isn't in the generated types until `npm run db:types` is
+  // rerun against a database that has the migration applied — same
+  // loose-typing convention product-listing-query.ts already documents.
+  const { data, error } = await (supabase as any)
+    .from('categories')
+    .select('*, subcategories(*, subsubcategories(*))');
 
   if (error) {
     console.error('Error fetching categories:', error);
@@ -56,10 +62,8 @@ export const POST = withAdminAuth(async (request, { supabase, audit }) => {
 
   if (error) {
     console.error('Error creating category:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create category', details: error.message },
-      { status: 500 }
-    );
+    const { message, status } = describeCategoryWriteError(error, { noun: 'category' });
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 
   audit({ entityType: 'category', entityId: data.id, action: 'create', after: data });

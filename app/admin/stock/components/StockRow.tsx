@@ -66,7 +66,7 @@ export function SingleStockRow({
       {isVisible('category') && (
         <td className={cell(density, 'whitespace-nowrap')}>
           <span className="px-2 py-1 text-caption-md rounded-full bg-background-tertiary text-text-primary font-medium capitalize">
-            {formatCategoryStr(product.category, product.sub_category)}
+            {formatCategoryStr(product.category, product.sub_category, product.sub_sub_category)}
           </span>
         </td>
       )}

@@ -7,6 +7,7 @@ import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { buildPricingConfigFromVariants, ImageFile, saveProduct, VariantSize } from '@/lib/commerce/product-form-helpers';
 import { buildVariantCosts } from '@/lib/commerce/variant-costs';
 import type { SizingType } from '@/lib/commerce/product-form-schema';
+import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
 interface UseProductSubmitArgs {
   /** Present (and truthy) only on the edit page; triggers a PUT instead of a POST. */
@@ -95,6 +96,7 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
           price: minPrice === Infinity ? 0 : minPrice,
           category: data.category,
           sub_category: data.sub_category,
+          sub_sub_category: data.sub_sub_category,
           main_image: mainImageUrl,
           images: additionalImages,
           variant_costs: variantCosts,
@@ -111,6 +113,7 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
           pricing_config: pricingConfig,
         },
         productId,
+        adminFetch,
       );
 
       setSuccess(true);

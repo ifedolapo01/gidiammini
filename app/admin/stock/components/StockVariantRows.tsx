@@ -69,7 +69,7 @@ export function ParentStockRow({
       {isVisible('category') && (
         <td className={cell(density, 'whitespace-nowrap')}>
           <span className="px-2 py-1 text-caption-md rounded-full bg-background-tertiary text-text-primary font-medium capitalize">
-            {formatCategoryStr(parent.category, parent.sub_category)}
+            {formatCategoryStr(parent.category, parent.sub_category, parent.sub_sub_category)}
           </span>
         </td>
       )}

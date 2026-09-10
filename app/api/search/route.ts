@@ -37,9 +37,9 @@ function parseLimit(value: string | null): number {
  * typing "gown" may want the whole gowns section rather than one product.
  */
 async function matchingCategories(supabase: SupabaseClient, query: string) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('categories')
-    .select('name, slug, subcategories(name, slug, category_slug)');
+    .select('name, slug, subcategories(name, slug, category_slug, subsubcategories(name, slug, subcategory_slug))');
 
   if (error || !data) return [];
 
@@ -56,6 +56,15 @@ async function matchingCategories(supabase: SupabaseClient, query: string) {
           label: `${category.name} › ${sub.name}`,
           href: `/products?category=${category.slug}&subcategory=${sub.slug}`,
         });
+      }
+
+      for (const subSub of sub.subsubcategories ?? []) {
+        if (subSub.name?.toLowerCase().includes(query)) {
+          suggestions.push({
+            label: `${category.name} › ${sub.name} › ${subSub.name}`,
+            href: `/products?category=${category.slug}&subcategory=${sub.slug}&subsubcategory=${subSub.slug}`,
+          });
+        }
       }
     }
   }

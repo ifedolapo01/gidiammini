@@ -45,3 +45,37 @@ export const IMAGE_FALLBACK_SRC = '/placeholder.svg';
 export function hasImageSrc(src: string | null | undefined): src is string {
   return typeof src === 'string' && src.trim() !== '';
 }
+
+/** The hostname product images actually come from — this project's Supabase
+ *  storage bucket, when configured. Shared with next.config.ts's
+ *  remotePatterns so the two can never drift apart. */
+export function supabaseImageHostname(): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return null;
+
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether next/image's optimiser is configured to accept this URL's host.
+ *
+ * A CSV import, or a pasted URL in the admin form, can point `main_image` at
+ * any host — a demo placeholder, a competitor's CDN, a typo. next/image
+ * throws synchronously for a host outside remotePatterns rather than failing
+ * the one image, which without this check takes down every page that renders
+ * the product (the whole admin catalogue table, a product grid). Callers use
+ * this to render such an image `unoptimized` instead: not run through the
+ * optimiser, but not a crash either.
+ */
+export function isAllowedImageHost(src: string): boolean {
+  try {
+    const hostname = new URL(src).hostname;
+    return hostname === supabaseImageHostname() || hostname === 'images.unsplash.com';
+  } catch {
+    return false;
+  }
+}

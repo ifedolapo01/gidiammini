@@ -27,6 +27,9 @@ export interface Product {
   /** The category slug's child, when the product has one. Nullable in the
    *  database; getBestDiscount matches SUBCATEGORY-scoped discounts on it. */
   sub_category?: string | null;
+  /** The sub_category slug's child, when the product has one. Nullable in the
+   *  database; getBestDiscount matches SUBSUBCATEGORY-scoped discounts on it. */
+  sub_sub_category?: string | null;
   main_image: string;
   images: string[];
   colors: string[];
@@ -72,6 +75,10 @@ export interface ProductCardProduct extends Pick<Product,
   /** Present on rows from list_products(); getBestDiscount needs it to match a
    *  SUBCATEGORY-scoped discount. */
   sub_category?: string | null;
+  /** getBestDiscount needs it to match a SUBSUBCATEGORY-scoped discount. Not
+   *  yet returned by list_products()/product_cards() — see the sub-subcategory
+   *  migration's notes on what was deliberately left untouched. */
+  sub_sub_category?: string | null;
   /**
    * The variant price range, precomputed by list_products().
    *
@@ -101,11 +108,19 @@ export interface ProductCardProduct extends Pick<Product,
   updated_at?: string;
 }
 
+export interface SubSubcategory {
+  id: string;
+  name: string;
+  slug: string;
+  subcategory_slug: string;
+}
+
 export interface Subcategory {
   id: string;
   name: string;
   slug: string;
   category_slug: string;
+  subsubcategories: SubSubcategory[];
 }
 
 export interface Category {

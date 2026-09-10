@@ -20,6 +20,7 @@ interface ProductLike {
   name: string;
   category?: string | null;
   sub_category?: string | null;
+  sub_sub_category?: string | null;
   is_active?: boolean;
   product_variants?: ProductVariant[] | null;
 }
@@ -70,6 +71,9 @@ function affectedVariants(
 
     case 'SUBCATEGORY':
       return pairs(active.filter((product) => product.sub_category === discount.target_id));
+
+    case 'SUBSUBCATEGORY':
+      return pairs(active.filter((product) => product.sub_sub_category === discount.target_id));
 
     case 'PRODUCT':
       return pairs(active.filter((product) => product.id === discount.target_id));

@@ -30,11 +30,11 @@ export function useProductsBulk(onApplied: () => void | Promise<void>) {
   );
 
   const moveCategory = useCallback(
-    (ids: string[], category: string, subCategory: string | null) => {
+    (ids: string[], category: string, subCategory: string | null, subSubCategory: string | null) => {
       schedule({
-        description: `Move to ${category}${subCategory ? ` / ${subCategory}` : ''}`,
+        description: `Move to ${category}${subCategory ? ` / ${subCategory}` : ''}${subSubCategory ? ` / ${subSubCategory}` : ''}`,
         count: ids.length,
-        run: () => postBulkBatched(ENDPOINT, ids, { action: 'category', category, subCategory }),
+        run: () => postBulkBatched(ENDPOINT, ids, { action: 'category', category, subCategory, subSubCategory }),
       });
     },
     [schedule]

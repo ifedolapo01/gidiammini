@@ -37,9 +37,9 @@ function buildChips(filters: ProductFilters, labels: Record<string, string>): Ch
     chips.push({
       key: 'category',
       label: labels[filters.category] ?? filters.category,
-      // Dropping a category drops its subcategory with it: a subcategory
-      // without its parent selects nothing.
-      clear: { category: 'all', subcategory: 'all' },
+      // Dropping a category drops its subcategory and sub-subcategory with
+      // it: neither means anything without their parent.
+      clear: { category: 'all', subcategory: 'all', subsubcategory: 'all' },
     });
   }
 
@@ -47,7 +47,16 @@ function buildChips(filters: ProductFilters, labels: Record<string, string>): Ch
     chips.push({
       key: 'subcategory',
       label: labels[filters.subcategory] ?? filters.subcategory,
-      clear: { subcategory: 'all' },
+      // Same reasoning one level down.
+      clear: { subcategory: 'all', subsubcategory: 'all' },
+    });
+  }
+
+  if (filters.subsubcategory !== 'all') {
+    chips.push({
+      key: 'subsubcategory',
+      label: labels[filters.subsubcategory] ?? filters.subsubcategory,
+      clear: { subsubcategory: 'all' },
     });
   }
 

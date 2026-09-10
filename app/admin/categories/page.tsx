@@ -5,6 +5,7 @@ import { CategoriesSkeleton } from './components/CategoriesSkeleton';
 import { useCategories } from './hooks/useCategories';
 import { AddCategoryForm } from './components/AddCategoryForm';
 import { AddSubcategoryForm } from './components/AddSubcategoryForm';
+import { AddSubSubcategoryForm } from './components/AddSubSubcategoryForm';
 import { CategoryList } from './components/CategoryList';
 
 export default function CategoriesPage() {
@@ -20,16 +21,26 @@ export default function CategoriesPage() {
     newSubName,
     newSubSlug,
     isAddingSub,
+    selectedCategoryForSubSub,
+    selectedSubcategoryForSubSub,
+    newSubSubName,
+    newSubSubSlug,
+    isAddingSubSub,
     pendingDeleteId,
     savingGuidanceId,
     savingDisplayNameId,
     handleCatNameChange,
     handleSubNameChange,
     handleParentCategoryChange,
+    handleCategoryForSubSubChange,
+    handleSubcategoryForSubSubChange,
+    handleSubSubNameChange,
     handleAddCategory,
     handleDeleteCategory,
     handleAddSubcategory,
     handleDeleteSubcategory,
+    handleAddSubSubcategory,
+    handleDeleteSubSubcategory,
     handleSaveGuidance,
     handleSaveDisplayName,
   } = useCategories();
@@ -74,6 +85,19 @@ export default function CategoriesPage() {
             onNameChange={handleSubNameChange}
             onSubmit={handleAddSubcategory}
           />
+
+          <AddSubSubcategoryForm
+            categories={categories}
+            selectedCategoryForSubSub={selectedCategoryForSubSub}
+            selectedSubcategoryForSubSub={selectedSubcategoryForSubSub}
+            newSubSubName={newSubSubName}
+            newSubSubSlug={newSubSubSlug}
+            isAddingSubSub={isAddingSubSub}
+            onCategoryChange={handleCategoryForSubSubChange}
+            onSubcategoryChange={handleSubcategoryForSubSubChange}
+            onNameChange={handleSubSubNameChange}
+            onSubmit={handleAddSubSubcategory}
+          />
         </div>
 
         {/* Categories List Section */}
@@ -85,6 +109,7 @@ export default function CategoriesPage() {
             savingDisplayNameId={savingDisplayNameId}
             onDeleteCategory={handleDeleteCategory}
             onDeleteSubcategory={handleDeleteSubcategory}
+            onDeleteSubSubcategory={handleDeleteSubSubcategory}
             onSaveGuidance={handleSaveGuidance}
             onSaveDisplayName={handleSaveDisplayName}
           />

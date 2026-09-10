@@ -17,6 +17,7 @@ interface CategoryListProps {
   onDeleteCategory: (id: string) => void;
   /** The name is passed so the confirmation can say which one. */
   onDeleteSubcategory: (id: string, name: string) => void;
+  onDeleteSubSubcategory: (id: string, name: string) => void;
   onSaveGuidance: (id: string, guidance: string) => void;
   onSaveDisplayName: (id: string, displayName: string) => void;
 }
@@ -28,6 +29,7 @@ export function CategoryList({
   savingDisplayNameId,
   onDeleteCategory,
   onDeleteSubcategory,
+  onDeleteSubSubcategory,
   onSaveGuidance,
   onSaveDisplayName,
 }: CategoryListProps) {
@@ -93,20 +95,44 @@ export function CategoryList({
                 {category.subcategories && category.subcategories.length > 0 ? (
                   <ul className="space-y-2 ml-4">
                     {category.subcategories.map(sub => (
-                      <li key={sub.id} className="flex justify-between items-center bg-surface border border-border-light p-3 rounded-control shadow-elevation-1">
-                        <div>
-                          <span className="font-medium text-text-primary">{sub.name}</span>
-                          <span className="text-caption-md text-text-muted font-mono ml-2">/{sub.slug}</span>
+                      <li key={sub.id} className="bg-surface border border-border-light p-3 rounded-control shadow-elevation-1">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-medium text-text-primary">{sub.name}</span>
+                            <span className="text-caption-md text-text-muted font-mono ml-2">/{sub.slug}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteSubcategory(sub.id, sub.name)}
+                            disabled={pendingDeleteId === sub.id}
+                            aria-label={`Delete ${sub.name}`}
+                            className="text-text-muted hover:text-destructive p-1 disabled:opacity-60 disabled:pointer-events-none"
+                          >
+                            {pendingDeleteId === sub.id ? <Spinner size="xs" /> : <Trash2 size={16} />}
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteSubcategory(sub.id, sub.name)}
-                          disabled={pendingDeleteId === sub.id}
-                          aria-label={`Delete ${sub.name}`}
-                          className="text-text-muted hover:text-destructive p-1 disabled:opacity-60 disabled:pointer-events-none"
-                        >
-                          {pendingDeleteId === sub.id ? <Spinner size="xs" /> : <Trash2 size={16} />}
-                        </button>
+
+                        {sub.subsubcategories && sub.subsubcategories.length > 0 && (
+                          <ul className="mt-2 space-y-1.5 pl-4 ml-1 border-l-2 border-border-light">
+                            {sub.subsubcategories.map(subSub => (
+                              <li key={subSub.id} className="flex justify-between items-center bg-background-secondary p-2 rounded-control">
+                                <div>
+                                  <span className="text-body-sm font-medium text-text-primary">{subSub.name}</span>
+                                  <span className="text-caption-md text-text-muted font-mono ml-2">/{subSub.slug}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => onDeleteSubSubcategory(subSub.id, subSub.name)}
+                                  disabled={pendingDeleteId === subSub.id}
+                                  aria-label={`Delete ${subSub.name}`}
+                                  className="text-text-muted hover:text-destructive p-1 disabled:opacity-60 disabled:pointer-events-none"
+                                >
+                                  {pendingDeleteId === subSub.id ? <Spinner size="xs" /> : <Trash2 size={14} />}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </li>
                     ))}
                   </ul>

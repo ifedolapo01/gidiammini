@@ -101,6 +101,7 @@ const ENTITY_LABELS: Record<string, string> = {
   shipping_zone: 'Shipping zone',
   category: 'Category',
   subcategory: 'Subcategory',
+  subsubcategory: 'Sub-subcategory',
   customer: 'Customer',
   subscriber: 'Subscriber',
   admin_user: 'Admin account',

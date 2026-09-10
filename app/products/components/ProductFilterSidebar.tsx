@@ -28,7 +28,7 @@ interface ProductFilterSidebarProps {
   setShowFilters: (show: boolean) => void;
   onChange: (change: Partial<ProductFilters>) => void;
   onClearAll: () => void;
-  onNavigateCategory: (categorySlug: string, subCategorySlug?: string) => void;
+  onNavigateCategory: (categorySlug: string, subCategorySlug?: string, subSubCategorySlug?: string) => void;
 }
 
 /** "Clear all", shown only when there is something to clear. */

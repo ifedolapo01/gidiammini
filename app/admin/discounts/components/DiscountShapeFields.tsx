@@ -74,6 +74,7 @@ export default function DiscountShapeFields({
                 <option value="SITEWIDE">Sitewide</option>
                 <option value="CATEGORY">Category</option>
                 <option value="SUBCATEGORY">Subcategory</option>
+                <option value="SUBSUBCATEGORY">Sub-subcategory</option>
                 <option value="PRODUCT">Specific Product</option>
                 <option value="VARIANT">Product Variant</option>
               </Select>

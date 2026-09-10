@@ -70,7 +70,7 @@ export function SingleProductRow({
       {isVisible('category') && (
         <td className={cell(density, 'whitespace-nowrap')}>
           <Badge tone="primary" className="font-semibold capitalize">
-            {formatCategoryStr(product.category, product.sub_category)}
+            {formatCategoryStr(product.category, product.sub_category, product.sub_sub_category)}
           </Badge>
         </td>
       )}
@@ -152,7 +152,7 @@ export function GroupedParentRow({
       {isVisible('category') && (
         <td className={cell(density, 'whitespace-nowrap')}>
           <Badge tone="primary" className="font-semibold">
-            {formatCategoryStr(parent.category, parent.sub_category)}
+            {formatCategoryStr(parent.category, parent.sub_category, parent.sub_sub_category)}
           </Badge>
         </td>
       )}

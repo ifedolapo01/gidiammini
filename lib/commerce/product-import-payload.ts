@@ -15,6 +15,7 @@ export interface ProductWritePayload {
   name: string;
   category: string;
   sub_category: string | null;
+  sub_sub_category: string | null;
   description: string;
   main_image: string;
   price: number;
@@ -90,6 +91,7 @@ export function toProductPayload(product: ImportProduct): ProductWritePayload {
     name: product.name,
     category: product.category,
     sub_category: product.subCategory,
+    sub_sub_category: product.subSubCategory,
     description: product.description,
     main_image: product.mainImage,
     price: Number.isFinite(minPrice) ? minPrice : first.price,

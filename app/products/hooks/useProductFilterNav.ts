@@ -44,11 +44,12 @@ export function useProductFilterNav(filters: ProductFilters, basePath: string = 
     startTransition(() => router.push(href, { scroll: false }));
   }, [filters.query, router, basePath]);
 
-  /** Category and subcategory move together, so picking a category drops the
-   *  subcategory that belonged to the previous one. */
+  /** Category, subcategory and sub-subcategory move together, so picking a
+   *  category drops the subcategory (and sub-subcategory) that belonged to
+   *  the previous one, and picking a subcategory drops its sub-subcategory. */
   const navigateToCategory = useCallback(
-    (categorySlug: string, subCategorySlug: string = 'all') => {
-      updateFilters({ category: categorySlug, subcategory: subCategorySlug });
+    (categorySlug: string, subCategorySlug: string = 'all', subSubCategorySlug: string = 'all') => {
+      updateFilters({ category: categorySlug, subcategory: subCategorySlug, subsubcategory: subSubCategorySlug });
     },
     [updateFilters]
   );

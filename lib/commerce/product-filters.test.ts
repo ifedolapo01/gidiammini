@@ -25,12 +25,13 @@ describe('parseProductFilters', () => {
 
   it('reads every facet', () => {
     const filters = parse(
-      'category=gowns&subcategory=christening&min=5000&max=9999&size=S&size=M&color=Blue&q=gown&sale=1&stock=in&sort=price_asc'
+      'category=gowns&subcategory=christening&subsubcategory=lace&min=5000&max=9999&size=S&size=M&color=Blue&q=gown&sale=1&stock=in&sort=price_asc'
     );
 
     expect(filters).toEqual({
       category: 'gowns',
       subcategory: 'christening',
+      subsubcategory: 'lace',
       minPrice: 5000,
       maxPrice: 9999,
       sizes: ['S', 'M'],
