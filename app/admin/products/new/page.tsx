@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { useProductForm, useProductVariants, useProductImages, useProductCategories, useProductSubmit } from '../hooks';
-import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductFitSection, ProductDetailsEditor, ProductImageUploader } from '../components';
+import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductFitSection, ProductDetailsEditor, ProductImageUploader, FormErrorBanner } from '../components';
 
 export default function AddProductPage() {
   const {
@@ -57,7 +57,6 @@ export default function AddProductPage() {
     <ProductFormShell
       title="Add New Product"
       subtitle="Fill out the details to add a new product to your inventory."
-      submitError={submitError}
       success={success}
       successTitle="Success!"
       successMessage="Your product has been beautifully added to the store."
@@ -128,6 +127,7 @@ export default function AddProductPage() {
         />
 
         <div className="pt-6">
+          <FormErrorBanner message={submitError} />
           <Button
             type="submit"
             size="lg"

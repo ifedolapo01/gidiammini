@@ -96,6 +96,15 @@ async function writeProduct(
     // Only what the file actually spoke about. Anything it had no column for
     // keeps the value it already had.
     const writable = new Set<string>([...DERIVED_FIELDS, ...provided]);
+
+    // sub_sub_category is never its own independently-typed value — it is
+    // always resolved *from* the category/sub_category text (a confirmed
+    // split, or a match against existing sub-subcategories). So whenever
+    // either of those was actually supplied, the resolved third level has to
+    // be written too, or a re-import that only touched category/sub_category
+    // would silently null out an already-correct classification.
+    if (writable.has('category') || writable.has('sub_category')) writable.add('sub_sub_category');
+
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
     for (const [key, value] of Object.entries(payload)) {

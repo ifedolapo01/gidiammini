@@ -30,7 +30,6 @@ export interface ProductFormShellProps {
   successTitle?: string;
   successMessage?: string;
   successActions?: ReactNode;
-  submitError?: string;
   children: ReactNode;
 }
 
@@ -45,7 +44,6 @@ export function ProductFormShell({
   successTitle,
   successMessage,
   successActions,
-  submitError,
   children,
 }: ProductFormShellProps) {
   if (isLoading) {
@@ -113,18 +111,7 @@ export function ProductFormShell({
             <p className="text-text-secondary mt-1">{subtitle}</p>
           </div>
 
-          <div className="p-8">
-            {submitError && (
-              <div className="mb-8 p-4 bg-destructive-background border border-destructive-border rounded-surface flex items-start gap-3">
-                <div className="bg-destructive/10 p-1.5 rounded-full mt-0.5">
-                  <X size={16} className="text-destructive" />
-                </div>
-                <p className="text-destructive font-medium whitespace-pre-line leading-relaxed">{submitError}</p>
-              </div>
-            )}
-
-            {children}
-          </div>
+          <div className="p-8">{children}</div>
         </div>
       </div>
     </div>

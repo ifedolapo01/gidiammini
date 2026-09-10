@@ -137,6 +137,13 @@ export function VariantGroupCard({
               <Plus size={14} /> Add Color
             </button>
           </div>
+          <div className="hidden sm:flex gap-2 items-center px-2 mb-1.5 text-caption-md font-bold text-text-secondary uppercase tracking-wider">
+            <span className="flex-1 min-w-[120px]">Color</span>
+            <span className="w-28 sm:w-32">Price (₦)</span>
+            <span className="w-20 sm:w-24">Stock</span>
+            <span className="w-24 sm:w-28">Cost (₦)</span>
+            <span className="w-4" aria-hidden="true" />
+          </div>
           <div className="space-y-2">
             {variant.colors.map((color, cIdx) => (
               <VariantColorRow

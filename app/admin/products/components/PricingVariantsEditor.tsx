@@ -100,7 +100,7 @@ export function PricingVariantsEditor({
                 invalid={!!errors.price}
                 className="pl-8"
                 min="0"
-                step="100"
+                step="1"
                 placeholder="0"
               />
             </div>

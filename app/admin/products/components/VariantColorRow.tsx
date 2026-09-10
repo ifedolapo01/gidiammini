@@ -29,9 +29,10 @@ export function VariantColorRow({
   onRemove,
 }: VariantColorRowProps) {
   return (
-    <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center bg-background-secondary/50 p-2 rounded-control border border-border-light">
+    <div className="flex flex-wrap sm:flex-nowrap gap-2 items-start bg-background-secondary/50 p-2 rounded-control border border-border-light">
       <input
         type="text"
+        aria-label="Color name"
         value={color.name}
         onChange={(e) => onUpdateName(vIdx, cIdx, e.target.value)}
         onBlur={() => onBlurName(vIdx, cIdx)}
@@ -39,9 +40,10 @@ export function VariantColorRow({
         placeholder="Color Name"
       />
       <div className="relative w-28 sm:w-32">
-        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary text-caption-md">₦</span>
+        <span aria-hidden="true" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary text-caption-md">₦</span>
         <input
           type="number"
+          aria-label="Selling price"
           onFocus={(e) => e.target.select()}
           value={color.price || ''}
           onChange={(e) => onUpdatePrice(vIdx, cIdx, Number(e.target.value))}
@@ -51,6 +53,7 @@ export function VariantColorRow({
       </div>
       <input
         type="number"
+        aria-label="Stock quantity"
         onFocus={(e) => e.target.select()}
         value={color.stock || ''}
         onChange={(e) => onUpdateStock(vIdx, cIdx, Number(e.target.value))}
@@ -61,6 +64,7 @@ export function VariantColorRow({
         price={color.price}
         cost={color.cost}
         onChange={(cost) => onUpdateCost(vIdx, cIdx, cost)}
+        aria-label="Cost price"
       />
       <button
         type="button"

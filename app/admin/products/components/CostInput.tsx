@@ -30,9 +30,10 @@ interface CostInputProps {
    * block, which has room for a label and the margin in naira. */
   variant?: 'compact' | 'full';
   id?: string;
+  'aria-label'?: string;
 }
 
-export default function CostInput({ price, cost, onChange, variant = 'compact', id }: CostInputProps) {
+export default function CostInput({ price, cost, onChange, variant = 'compact', id, 'aria-label': ariaLabel }: CostInputProps) {
   const marginPercent = unitMarginPercent(price, cost ?? null);
   const tone = TONE_CLASS[marginTone(marginPercent)];
   const belowCost = marginPercent !== null && marginPercent < 0;
@@ -54,9 +55,10 @@ export default function CostInput({ price, cost, onChange, variant = 'compact', 
       </span>
       <input
         id={id}
+        aria-label={!id ? ariaLabel : undefined}
         type="number"
         min="0"
-        step="100"
+        step="1"
         // A controlled empty string, not 0 — see the note about blank above.
         value={cost ?? ''}
         onFocus={(e) => e.target.select()}

@@ -38,7 +38,11 @@ export interface ProductWritePayload {
 export function toProductPayload(product: ImportProduct): ProductWritePayload {
   const hasSizes = product.variants.some((v) => v.size !== '');
   const hasColors = product.variants.some((v) => v.color !== '');
-  const hasVariants = product.variants.length > 1 || hasSizes || hasColors;
+  // Multiple options means multiple rows to choose between — a single row
+  // that happens to name its one size/colour (e.g. "One Size" / "Multi")
+  // is still a single-variant product, same as the manual admin form lets
+  // you record a size/colour without ticking "Product has multiple options".
+  const hasVariants = product.variants.length > 1;
 
   const bySize = new Map<string, VariantSize>();
 

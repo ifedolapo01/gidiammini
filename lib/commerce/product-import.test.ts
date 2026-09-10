@@ -173,6 +173,17 @@ describe('toProductPayload', () => {
     expect(payload.stock).toBe(7);
   });
 
+  it('treats a single row with a named size and colour as single-variant, not multi-option', () => {
+    const { products } = parse('name,size,color,price,stock\nBib,One Size,Multi,2000,10\n');
+    const payload = toProductPayload(products[0]);
+
+    expect(payload.pricing_config.mode).toBe('single');
+    expect(payload.pricing_config.singleSize).toBe('One Size');
+    expect(payload.pricing_config.singleColor).toBe('Multi');
+    expect(payload.sizes).toEqual(['One Size']);
+    expect(payload.colors).toEqual(['Multi']);
+  });
+
   it('keys costs the way the variant rows are keyed', () => {
     const { products } = parse(
       'name,size,color,price,cost\nRomper,0-3m,Red,1500,700\nRomper,3-6m,Blue,1800,\n'

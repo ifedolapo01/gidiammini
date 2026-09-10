@@ -1,5 +1,6 @@
 /** ADMIN layer — barrel export for product-form components shared by new/edit pages. */
 export { ProductFormShell } from './ProductFormShell';
+export { FormErrorBanner } from './FormErrorBanner';
 export { ProductInfoSection } from './ProductInfoSection';
 export { PricingVariantsEditor } from './PricingVariantsEditor';
 export { SizingTypeToggle } from './SizingTypeToggle';

@@ -204,3 +204,45 @@ rather than the shop's.
   domain-verification `403`.
 
 ---
+
+## Session-expiry feedback for signed-in customers
+
+**Status:** not started. Found while fixing the equivalent admin-side gap (a
+"session expired" message with no accompanying logout) on 2026-09-10.
+
+The admin section has `adminFetch`/`useAdminSessionGuard`
+(`app/admin/lib/admin-fetch.ts`, `app/admin/hooks/useAdminSessionGuard.ts`):
+any 401 from an admin API triggers a toast, clears the cookie, and redirects
+to login, all together. Customers have no equivalent. `app/account/page.tsx`
+is the only place that reacts to an expired `customer-session` cookie, and it
+does so silently and server-side only — `readSession()` fails,
+`redirect('/account/login')` fires, with no message shown at all. Every
+client-side hook that calls a customer API (`useCheckoutIdentity`,
+`useCheckoutPrefill`, `useCartSync`, `useWishlistSync`) treats a 401 as the
+ordinary "guest" case by design, since a customer who has never signed in
+looks identical over the wire to one whose session just expired. A customer
+sitting on `/account`, checkout, or anywhere client-heavy when their session
+dies sees nothing: no toast, no redirect, no explanation — they just keep
+clicking as a guest until something finally notices.
+
+**Left because** building this properly needs to distinguish "never signed
+in" from "was signed in, now expired" at the point a 401 arrives, which the
+current customer API responses don't mark either way — and blindly toasting
+"session expired" on every 401 would turn checkout, cart sync and wishlist
+sync (all designed to fail quietly for guests) into a page full of false
+alarms for every anonymous shopper. That is a response-shape decision worth
+making deliberately, not a copy-paste of the admin mechanism.
+
+**Done means:**
+- Customer API routes distinguish "no session" from "session expired" in
+  their 401 response (e.g. a `reason` field), so a client can tell a guest
+  from a customer who was logged out by expiry.
+- A customer-side fetch wrapper (mirroring `app/admin/lib/admin-fetch.ts`)
+  that reacts only to the "expired" case — clearing any local cart/wishlist
+  state that assumed a signed-in identity, telling the person their session
+  ended, and sending them to `/account/login` — while a genuine guest 401
+  stays silent exactly as today.
+- Covers the pages where staying signed in for a while is normal: `/account`,
+  checkout, cart.
+
+---

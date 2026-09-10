@@ -6,7 +6,7 @@ import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { useProductForm, useProductVariants, useProductImages, useProductCategories, useProductSubmit, useEditProductData } from '../../hooks';
-import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductFitSection, ProductDetailsEditor, ProductImageUploader } from '../../components';
+import { ProductFormShell, ProductInfoSection, PricingVariantsEditor, ProductFitSection, ProductDetailsEditor, ProductImageUploader, FormErrorBanner } from '../../components';
 import EntityHistory from '@/app/admin/components/EntityHistory';
 
 type PageProps = {
@@ -95,7 +95,6 @@ export default function EditProductPage(props: PageProps) {
       loadError={!product ? loadError : ''}
       loadErrorContext={`Product ID: ${params?.id || 'Not available'}`}
       onRetryLoad={() => params?.id && refetch()}
-      submitError={submitError}
       success={success}
       successTitle="Successfully Updated!"
       successMessage="Your product has been updated. Redirecting back to products list..."
@@ -142,6 +141,7 @@ export default function EditProductPage(props: PageProps) {
         />
 
         <div className="pt-6">
+          <FormErrorBanner message={submitError} />
           <Button
             type="submit"
             size="lg"

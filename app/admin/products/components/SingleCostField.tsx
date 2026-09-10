@@ -53,7 +53,7 @@ export default function SingleCostField({ register, errors, watch }: SingleCostF
           invalid={!!errors.cost || belowCost}
           className="pl-8"
           min="0"
-          step="100"
+          step="1"
           placeholder="Leave blank if unknown"
         />
       </div>
