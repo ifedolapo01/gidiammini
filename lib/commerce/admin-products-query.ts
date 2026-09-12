@@ -24,7 +24,7 @@ export const ADMIN_PRODUCT_SORTABLE = ['created_at', 'name', 'price', 'stock'] a
 const SEARCH_COLUMNS = ['name'] as const;
 
 const PRODUCT_COLUMNS =
-  'id, name, category, sub_category, price, stock, is_active, is_featured, main_image, images, pricing_config, created_at, updated_at';
+  'id, name, category, sub_category, price, stock, is_active, is_featured, main_image, images, created_at, updated_at';
 
 const VARIANT_COLUMNS = 'id, product_id, size, color, variant_key, price, stock, image_url, is_active, sku, cost';
 

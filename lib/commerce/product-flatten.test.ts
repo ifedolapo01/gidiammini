@@ -2,11 +2,8 @@
  * flattenProducts is the read interface for variants: the admin products table,
  * the stock page and the admin products API all consume its output.
  *
- * Variants have moved from products.pricing_config into the product_variants
- * table, and this file is where both models meet. The tests that matter are the
- * equivalence ones — the same catalogue, expressed either way, must flatten to
- * the same thing. If it doesn't, the admin stock page shows different numbers
- * depending on whether the query happened to embed the rows.
+ * One flattened entry per product_variants row — the sole source of truth for
+ * variant price/stock/images since pricing_config was dropped.
  *
  * The fixtures are the real production shapes, read out of the database.
  */
@@ -23,15 +20,9 @@ const combinationProduct = {
   stock: 15,
   main_image: 'main.jpg',
   images: ['main.jpg'],
-  pricing_config: {
-    mode: 'combination',
-    colorImages: { red: 'red.jpg', brown: 'brown.jpg', Yellow: 'yellow.png' },
-    combinationPrices: { '1-2 months|red': 13000, '3-5 months|brown': 16000, '3-5 months|Yellow': 16500 },
-    combinationStock: { '1-2 months|red': 4, '3-5 months|brown': 10, '3-5 months|Yellow': 1 },
-  },
 };
 
-/** The same product as rows, exactly as the migration's backfill produces. */
+/** Attaches product_variants rows, exactly as the migration's backfill produces. */
 const asVariantRows = (product: any, rows: Array<[string | null, string | null, number, number, string | null]>) => ({
   ...product,
   product_variants: rows.map(([size, color, price, stock, image_url], index) => ({
@@ -47,23 +38,9 @@ const asVariantRows = (product: any, rows: Array<[string | null, string | null, 
   })),
 });
 
-/** Compares only the fields both paths can populate. */
-const comparable = (entry: FlattenedProduct) => ({
-  id: entry.id,
-  productId: entry.productId,
-  variantKey: entry.variantKey,
-  variantLabel: entry.variantLabel,
-  price: entry.price,
-  stock: entry.stock,
-});
-
-const byKey = (entries: FlattenedProduct[]) =>
-  [...entries].sort((a, b) => a.variantKey.localeCompare(b.variantKey)).map(comparable);
-
-describe('flattenProducts — the relational and JSONB models agree', () => {
-  it('flattens a combination product identically either way', () => {
-    const fromJson = flattenProducts([combinationProduct]);
-    const fromRows = flattenProducts([
+describe('flattenProducts', () => {
+  it('flattens a combination product, one entry per variant', () => {
+    const entries = flattenProducts([
       asVariantRows(combinationProduct, [
         ['1-2 months', 'red', 13000, 4, 'red.jpg'],
         ['3-5 months', 'brown', 16000, 10, 'brown.jpg'],
@@ -71,54 +48,26 @@ describe('flattenProducts — the relational and JSONB models agree', () => {
       ]),
     ]);
 
-    expect(fromRows).toHaveLength(3);
-    expect(byKey(fromRows)).toEqual(byKey(fromJson));
+    expect(entries).toHaveLength(3);
+    const byKey = new Map(entries.map((e) => [e.variantKey, e]));
+    expect(byKey.get('1-2 months|red')?.price).toBe(13000);
+    expect(byKey.get('3-5 months|brown')?.stock).toBe(10);
   });
 
-  it('gives a lone variant the same price, stock and label either way', () => {
-    // The KEY deliberately differs here — see the test below. Everything the
-    // admin tables actually display is identical.
-    const single = {
-      id: 'p-bracelet',
-      name: 'Pickard Bracelet',
-      category: 'accessories',
-      price: 5000,
-      stock: 14,
-      main_image: 'b.jpg',
-      images: [],
-      pricing_config: { mode: 'single', singleSize: 'S', singleColor: 'Multicolour', singleStock: 14 },
-    };
+  it('addresses a lone variant with a size and a colour by its axes, not "single"', () => {
+    // An intentional behaviour of the row model: the old JSONB model called
+    // every single-mode product 'single' even when it recorded a size and a
+    // colour, so the key said nothing about what the variant was. Nothing
+    // persists a variant key — it is derived per request and handed straight
+    // back to set_variant_stock — so no stored data depends on the old
+    // spelling. findVariant() resolves both, because the product page reads
+    // stock before any selection is made.
+    const single = { id: 'p-bracelet', name: 'Pickard Bracelet', category: 'accessories', price: 5000, stock: 14 };
+    const [entry] = flattenProducts([asVariantRows(single, [['S', 'Multicolour', 5000, 14, null]])]);
 
-    const [fromJson] = flattenProducts([single]);
-    const [fromRows] = flattenProducts([asVariantRows(single, [['S', 'Multicolour', 5000, 14, null]])]);
-
-    expect(fromRows.price).toBe(fromJson.price);
-    expect(fromRows.stock).toBe(fromJson.stock);
-    expect(fromRows.variantLabel).toBe(fromJson.variantLabel);
-    expect(fromRows.size).toBe(fromJson.size);
-    expect(fromRows.color).toBe(fromJson.color);
-  });
-
-  it('addresses a lone variant by its axes rather than as "single"', () => {
-    // An intentional change. The JSONB model called every single-mode product
-    // 'single' even when it recorded a size and a colour, so the key said
-    // nothing about what the variant was. As a row it is addressed by what it
-    // actually is. Nothing persists a variant key — it is derived per request
-    // and handed straight back to set_variant_stock — so no stored data
-    // depends on the old spelling. findVariant() resolves both, because the
-    // product page reads stock before any selection is made.
-    const single = {
-      id: 'p-bracelet',
-      name: 'Pickard Bracelet',
-      category: 'accessories',
-      price: 5000,
-      stock: 14,
-      pricing_config: { mode: 'single', singleSize: 'S', singleColor: 'Multicolour', singleStock: 14 },
-    };
-
-    expect(flattenProducts([single])[0].variantKey).toBe('single');
-    expect(flattenProducts([asVariantRows(single, [['S', 'Multicolour', 5000, 14, null]])])[0].variantKey)
-      .toBe('S|Multicolour');
+    expect(entry.variantKey).toBe('S|Multicolour');
+    expect(entry.price).toBe(5000);
+    expect(entry.stock).toBe(14);
   });
 
   it('still keys a variant with no axes as "single"', () => {
@@ -126,41 +75,15 @@ describe('flattenProducts — the relational and JSONB models agree', () => {
     expect(flattenProducts([asVariantRows(bare, [[null, null, 100, 3, null]])])[0].variantKey).toBe('single');
   });
 
-  it('flattens a size-only product identically', () => {
-    const sized = {
-      id: 'p-sized',
-      name: 'Sized Thing',
-      category: 'kids',
-      price: 2000,
-      stock: 7,
-      pricing_config: { mode: 'size', sizePrices: { S: 2000, M: 2500 }, sizeStock: { S: 3, M: 4 } },
-    };
-
-    expect(byKey(flattenProducts([asVariantRows(sized, [['S', null, 2000, 3, null], ['M', null, 2500, 4, null]])])))
-      .toEqual(byKey(flattenProducts([sized])));
+  it('produces no entries for a product with no variant rows', () => {
+    // A query that didn't embed product_variants, or a product that somehow
+    // has none — post-backfill this shouldn't happen, but an empty result is
+    // the honest answer rather than fabricating a row.
+    const bare = { id: 'p-bare', name: 'Bare', category: 'x', price: 100, stock: 2 };
+    expect(flattenProducts([bare])).toHaveLength(0);
+    expect(flattenProducts([{ ...bare, product_variants: [] }])).toHaveLength(0);
   });
 
-  it('flattens a colour-only product identically', () => {
-    const coloured = {
-      id: 'p-coloured',
-      name: 'Coloured Thing',
-      category: 'kids',
-      price: 3000,
-      stock: 9,
-      pricing_config: {
-        mode: 'color',
-        colorPrices: { red: 3000, blue: 3200 },
-        colorStock: { red: 5, blue: 4 },
-        colorImages: { red: 'r.jpg', blue: 'b.jpg' },
-      },
-    };
-
-    expect(byKey(flattenProducts([asVariantRows(coloured, [[null, 'red', 3000, 5, 'r.jpg'], [null, 'blue', 3200, 4, 'b.jpg']])])))
-      .toEqual(byKey(flattenProducts([coloured])));
-  });
-});
-
-describe('flattenProducts — the relational path adds what JSONB could not carry', () => {
   it('surfaces the variant id, sku and cost', () => {
     const withExtras = {
       ...combinationProduct,
@@ -187,11 +110,12 @@ describe('flattenProducts — the relational path adds what JSONB could not carr
     expect(entry.cost).toBe(8000);
   });
 
-  it('prefers the variant image over the product image', () => {
+  it('prefers the variant image over the product image, and flags it as its own', () => {
     const [entry] = flattenProducts([
       asVariantRows(combinationProduct, [['1-2 months', 'red', 13000, 4, 'red.jpg']]),
     ]);
     expect(entry.main_image).toBe('red.jpg');
+    expect(entry.hasOwnImage).toBe(true);
   });
 
   it('falls back to the product image when the variant has none', () => {
@@ -199,6 +123,7 @@ describe('flattenProducts — the relational path adds what JSONB could not carr
       asVariantRows(combinationProduct, [['1-2 months', 'red', 13000, 4, null]]),
     ]);
     expect(entry.main_image).toBe('main.jpg');
+    expect(entry.hasOwnImage).toBe(false);
   });
 
   it('orders variants stably, so admin tables do not reshuffle', () => {
@@ -207,29 +132,7 @@ describe('flattenProducts — the relational path adds what JSONB could not carr
       ['1-2 months', 'red', 13000, 4, null],
       ['3-5 months', 'Yellow', 16500, 1, null],
     ]);
-    const keys = flattenProducts([shuffled]).map((entry) => entry.variantKey);
+    const keys = flattenProducts([shuffled]).map((entry: FlattenedProduct) => entry.variantKey);
     expect(keys).toEqual([...keys].sort((a, b) => a.localeCompare(b)));
-  });
-});
-
-describe('flattenProducts — the fallback is still reachable', () => {
-  it('uses pricing_config when the embed is absent', () => {
-    // A query that does not ask for product_variants returns products without
-    // them; that must render, not blank out.
-    expect(flattenProducts([combinationProduct])).toHaveLength(3);
-  });
-
-  it('uses pricing_config when the embed is present but empty', () => {
-    // An empty array is indistinguishable from "not loaded" at the type level,
-    // so the fallback covers it rather than showing a product with no variants.
-    expect(flattenProducts([{ ...combinationProduct, product_variants: [] }])).toHaveLength(3);
-  });
-
-  it('produces a Standard entry for a product with no variant data at all', () => {
-    const bare = { id: 'p-bare', name: 'Bare', category: 'x', price: 100, stock: 2 };
-    const [entry] = flattenProducts([bare]);
-    expect(entry.variantKey).toBe('single');
-    expect(entry.variantLabel).toBe('Standard');
-    expect(entry.stock).toBe(2);
   });
 });

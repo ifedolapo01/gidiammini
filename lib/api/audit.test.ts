@@ -102,17 +102,17 @@ describe('diffForAudit', () => {
   });
 
   it('compares nested objects by value, not identity', () => {
-    const before = { pricing_config: { mode: 'single', singleStock: 4 } };
-    const after = { pricing_config: { mode: 'single', singleStock: 4 } };
+    const before = { shipping_address: { city: 'Lagos', zone: 4 } };
+    const after = { shipping_address: { city: 'Lagos', zone: 4 } };
     expect(isEmptyDiff(diffForAudit(before, after))).toBe(true);
   });
 
   it('reports a nested change', () => {
     const diff = diffForAudit(
-      { pricing_config: { mode: 'single', singleStock: 4 } },
-      { pricing_config: { mode: 'single', singleStock: 9 } }
+      { shipping_address: { city: 'Lagos', zone: 4 } },
+      { shipping_address: { city: 'Lagos', zone: 9 } }
     );
-    expect(diff.after).toHaveProperty('pricing_config');
+    expect(diff.after).toHaveProperty('shipping_address');
   });
 
   it('includes a field present on only one side', () => {

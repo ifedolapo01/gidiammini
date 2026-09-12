@@ -1951,7 +1951,6 @@ export type Database = {
           main_image: string
           name: string
           price: number
-          pricing_config: Json | null
           search_vector: unknown
           sizes: string[] | null
           sizing_type: string | null
@@ -1977,7 +1976,6 @@ export type Database = {
           main_image: string
           name: string
           price: number
-          pricing_config?: Json | null
           search_vector?: unknown
           sizes?: string[] | null
           sizing_type?: string | null
@@ -2003,7 +2001,6 @@ export type Database = {
           main_image?: string
           name?: string
           price?: number
-          pricing_config?: Json | null
           search_vector?: unknown
           sizes?: string[] | null
           sizing_type?: string | null
@@ -3114,10 +3111,6 @@ export type Database = {
       sync_product_stock_total: {
         Args: { p_product_id: string }
         Returns: undefined
-      }
-      sync_variants_from_pricing_config: {
-        Args: { p_product_id: string }
-        Returns: Json
       }
       top_categories: {
         Args: { p_limit?: number }

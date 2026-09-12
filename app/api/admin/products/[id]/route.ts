@@ -21,8 +21,7 @@ async function getProduct(supabase: SupabaseClient, id: string) {
   // Get product
   const { data, error } = await supabase
     .from('products')
-    // Variants embedded: the edit form reads cost from them, which
-    // pricing_config cannot carry.
+    // Variants embedded: the edit form reads price/stock/cost/images from them.
     .select('*, product_variants(*)')
     .eq('id', id)
     .eq('is_active', true)

@@ -1,6 +1,7 @@
 /** STOREFRONT layer — size/color variant selection state for the product detail page. */
 import { useState, useEffect, useMemo } from 'react';
 import { Product } from '@/types/product';
+import { variantsOf } from '@/lib/commerce/product-variants';
 
 export function useProductVariantSelection(product: Product | null) {
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -19,20 +20,16 @@ export function useProductVariantSelection(product: Product | null) {
     }
   }, [product]);
 
-  // Derive available colors based on selected size for combination mode
+  // Derive available colors for the selected size from the variant rows.
   const availableColors = useMemo(() => {
-    if (!product || !product.pricing_config) return product?.colors || [];
-    const config = product.pricing_config as any;
+    const variants = variantsOf(product);
+    if (variants.length === 0 || !selectedSize) return product?.colors || [];
 
-    if (config.mode === 'combination' && selectedSize) {
-      const combinationPrices = config.combinationPrices || {};
-      const colorsForSize = Object.keys(combinationPrices)
-        .filter(key => key.startsWith(`${selectedSize}|`))
-        .map(key => key.split('|')[1]);
-      return colorsForSize.length > 0 ? colorsForSize : (product.colors || []);
-    }
+    const colorsForSize = variants
+      .filter((v) => v.is_active && v.size === selectedSize && v.color)
+      .map((v) => v.color as string);
 
-    return product.colors || [];
+    return colorsForSize.length > 0 ? colorsForSize : (product?.colors || []);
   }, [product, selectedSize]);
 
   // When selected size changes, ensure selected color is valid for that size
@@ -44,16 +41,15 @@ export function useProductVariantSelection(product: Product | null) {
 
   // When selected color changes, swap the main image if a mapped image exists
   useEffect(() => {
-    if (product && selectedColor && product.pricing_config) {
-      const config = product.pricing_config as any;
-      if (config.colorImages && config.colorImages[selectedColor]) {
-        const targetUrl = config.colorImages[selectedColor];
-        const allImages = [product.main_image, ...(product.images || [])].filter(Boolean);
-        const index = allImages.indexOf(targetUrl);
-        if (index !== -1) {
-          setCurrentImageIndex(index);
-        }
-      }
+    if (!product || !selectedColor) return;
+
+    const targetUrl = variantsOf(product).find((v) => v.color === selectedColor && v.image_url)?.image_url;
+    if (!targetUrl) return;
+
+    const allImages = [product.main_image, ...(product.images || [])].filter(Boolean);
+    const index = allImages.indexOf(targetUrl);
+    if (index !== -1) {
+      setCurrentImageIndex(index);
     }
   }, [selectedColor, product]);
 

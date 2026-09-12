@@ -139,9 +139,10 @@ describe('toProductPayload', () => {
 
     const payload = toProductPayload(products[0]);
 
-    expect(payload.pricing_config.mode).toBe('combination');
-    expect(payload.pricing_config.combinationPrices).toEqual({ '0-3m|Red': 150_000, '3-6m|Blue': 180_000 });
-    expect(payload.pricing_config.combinationStock).toEqual({ '0-3m|Red': 4, '3-6m|Blue': 2 });
+    expect(payload.variants).toEqual([
+      { size: '0-3m', color: 'Red', price: 150_000, stock: 4, cost: null },
+      { size: '3-6m', color: 'Blue', price: 180_000, stock: 2, cost: null },
+    ]);
     // The card shows the cheapest variant, and stock is the sum.
     expect(payload.price).toBe(150_000);
     expect(payload.stock).toBe(6);
@@ -153,8 +154,10 @@ describe('toProductPayload', () => {
     const { products } = parse('name,size,price,stock\nRomper,0-3m,1500,4\nRomper,3-6m,1800,2\n');
     const payload = toProductPayload(products[0]);
 
-    expect(payload.pricing_config.mode).toBe('size');
-    expect(payload.pricing_config.sizePrices).toEqual({ '0-3m': 150_000, '3-6m': 180_000 });
+    expect(payload.variants).toEqual([
+      { size: '0-3m', color: null, price: 150_000, stock: 4, cost: null },
+      { size: '3-6m', color: null, price: 180_000, stock: 2, cost: null },
+    ]);
     expect(payload.stock).toBe(6);
   });
 
@@ -162,8 +165,10 @@ describe('toProductPayload', () => {
     const { products } = parse('name,color,price,stock\nHat,Red,900,3\nHat,Blue,900,1\n');
     const payload = toProductPayload(products[0]);
 
-    expect(payload.pricing_config.mode).toBe('color');
-    expect(payload.pricing_config.colorPrices).toEqual({ Red: 90_000, Blue: 90_000 });
+    expect(payload.variants).toEqual([
+      { size: null, color: 'Red', price: 90_000, stock: 3, cost: null },
+      { size: null, color: 'Blue', price: 90_000, stock: 1, cost: null },
+    ]);
     expect(payload.stock).toBe(4);
   });
 
@@ -171,7 +176,7 @@ describe('toProductPayload', () => {
     const { products } = parse('name,price,stock\nBlanket,2500,7\n');
     const payload = toProductPayload(products[0]);
 
-    expect(payload.pricing_config.mode).toBe('single');
+    expect(payload.variants).toEqual([{ size: null, color: null, price: 250_000, stock: 7, cost: null }]);
     expect(payload.price).toBe(250_000);
     expect(payload.stock).toBe(7);
   });
@@ -180,20 +185,20 @@ describe('toProductPayload', () => {
     const { products } = parse('name,size,color,price,stock\nBib,One Size,Multi,2000,10\n');
     const payload = toProductPayload(products[0]);
 
-    expect(payload.pricing_config.mode).toBe('single');
-    expect(payload.pricing_config.singleSize).toBe('One Size');
-    expect(payload.pricing_config.singleColor).toBe('Multi');
+    expect(payload.variants).toEqual([{ size: 'One Size', color: 'Multi', price: 200_000, stock: 10, cost: null }]);
     expect(payload.sizes).toEqual(['One Size']);
     expect(payload.colors).toEqual(['Multi']);
   });
 
-  it('keys costs the way the variant rows are keyed', () => {
+  it('carries cost on the row it belongs to', () => {
     const { products } = parse(
       'name,size,color,price,cost\nRomper,0-3m,Red,1500,700\nRomper,3-6m,Blue,1800,\n'
     );
     // Only the recorded one. A blank cost stays unknown rather than becoming 0,
     // which would report the whole sale price as profit.
-    expect(toProductPayload(products[0]).variant_costs).toEqual({ '0-3m|Red': 70_000 });
+    const payload = toProductPayload(products[0]);
+    expect(payload.variants.find((v) => v.size === '0-3m')?.cost).toBe(70_000);
+    expect(payload.variants.find((v) => v.size === '3-6m')?.cost).toBeNull();
   });
 
   it('defaults the category so a minimal file still imports', () => {

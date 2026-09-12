@@ -2,13 +2,12 @@
  * COMMERCE layer — turning parsed import rows into the body the products API
  * already accepts.
  *
- * Goes through buildPricingConfigFromVariants rather than assembling the JSONB
- * by hand: that function is what the admin form uses, and a second
+ * Goes through buildVariantRowsFromForm rather than assembling the variant
+ * rows by hand: that function is what the admin form uses, and a second
  * implementation of the same mapping is how the two drift into disagreeing
  * about what a "size" product looks like.
  */
-import type { PricingConfig } from '@/types/product';
-import { buildPricingConfigFromVariants, type VariantSize } from './product-form-helpers';
+import { buildVariantRowsFromForm, type VariantRowInput, type VariantSize } from './product-form-helpers';
 import type { ImportProduct } from './product-import';
 import { toMinorUnits } from './money';
 
@@ -23,16 +22,14 @@ export interface ProductWritePayload {
   stock: number;
   sizes: string[];
   colors: string[];
-  pricing_config: PricingConfig;
-  /** Keyed by variant key, for applyVariantCosts. */
-  variant_costs: Record<string, number>;
+  variants: VariantRowInput[];
 }
 
 /**
  * The body the products API already accepts.
  *
- * Goes through buildPricingConfigFromVariants rather than assembling the JSONB
- * by hand: that function is what the admin form uses, and a second
+ * Goes through buildVariantRowsFromForm rather than assembling the variant
+ * rows by hand: that function is what the admin form uses, and a second
  * implementation of the same mapping is how the two drift into disagreeing
  * about what a "size" product looks like.
  */
@@ -82,8 +79,8 @@ export function toProductPayload(product: ImportProduct): ProductWritePayload {
 
   const first = variants[0];
 
-  const { pricingConfig, totalStock, minPrice, uniqueSizes, uniqueColors } =
-    buildPricingConfigFromVariants({
+  const { variants: variantRows, totalStock, minPrice, uniqueSizes, uniqueColors } =
+    buildVariantRowsFromForm({
       hasVariants,
       hasSizes,
       hasColors,
@@ -94,13 +91,6 @@ export function toProductPayload(product: ImportProduct): ProductWritePayload {
       singleColor: hasColors ? first.color : undefined,
       singleCost: first.cost,
     });
-
-  const variantCosts: Record<string, number> = {};
-  for (const variant of variants) {
-    if (variant.cost === null) continue;
-    const key = [variant.size, variant.color].filter(Boolean).join('|') || 'single';
-    variantCosts[key] = variant.cost;
-  }
 
   return {
     name: product.name,
@@ -113,7 +103,6 @@ export function toProductPayload(product: ImportProduct): ProductWritePayload {
     stock: totalStock,
     sizes: [...uniqueSizes],
     colors: [...uniqueColors],
-    pricing_config: pricingConfig,
-    variant_costs: variantCosts,
+    variants: variantRows,
   };
 }

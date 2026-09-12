@@ -97,7 +97,7 @@ export function variantsOf(product: ProductWithVariants | null | undefined): Pro
 
 /** True when this product's variants were loaded — as opposed to loaded and
  * empty, or never requested. Callers use it to decide whether the relational
- * data is available or they must fall back to pricing_config. */
+ * data is available to read at all. */
 export function hasVariantRows(product: ProductWithVariants | null | undefined): boolean {
   return variantsOf(product).length > 0;
 }

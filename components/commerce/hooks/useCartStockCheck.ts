@@ -33,7 +33,7 @@ export function useCartStockCheck() {
         .from('products')
         // Anon key: the columns are named because `product_variants(*)` would
         // be refused — anon has no grant on cost.
-        .select(`id,stock,pricing_config,${PUBLIC_VARIANTS_SELECT}` as const)
+        .select(`id,stock,${PUBLIC_VARIANTS_SELECT}` as const)
         .in('id', productIds);
 
       if (error) throw error;

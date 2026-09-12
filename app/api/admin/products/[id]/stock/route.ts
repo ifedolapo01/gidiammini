@@ -114,7 +114,7 @@ async function updateProductStock(
     );
   }
 
-  const result = (data ?? {}) as { stock?: number; pricing_config?: unknown };
+  const result = (data ?? {}) as { stock?: number };
 
   audit({
     entityType: 'product_variant',
@@ -140,7 +140,7 @@ async function updateProductStock(
 
   return NextResponse.json({
     success: true,
-    product: { id: productId, stock: result.stock, pricing_config: result.pricing_config },
+    product: { id: productId, stock: result.stock },
     // Surfaced so the Stock page can tell the admin their restock just mailed
     // eleven people — the feature is invisible otherwise, and an invisible
     // feature is one nobody trusts.

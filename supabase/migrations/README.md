@@ -1261,6 +1261,44 @@ hoc `${size}|${color}` key-joins scattered outside `variantKeyFor` (cart,
 discount variant targeting, order editing) are real follow-up work, tracked
 in `BACKLOG.md` rather than left as a silent gap.
 
+## `pricing_config` dropped (`20260912120000`)
+
+Closes the gap `20251101002600` deliberately left open: "removing the now-dead
+price and stock maps is a later, separate migration." This is that migration.
+
+By this point `pricing_config` was down to three jobs: fallback price/stock
+source for a product with no `product_variants` rows, the shape the admin
+form still submitted on every save, and the only home for `colorImages`. The
+first was closed by backfilling every remaining product with zero variant
+rows (calling `sync_variants_from_pricing_config` one last time, in this same
+migration, before it is dropped — reusing its derivation rather than
+reimplementing single/size/color/combination a second time in a one-off
+script). The second and third were closed on the application side: the admin
+form now posts a flat variant array straight to `replace_product_variants`
+(added, but unreferenced, in `20260912110000`) instead of round-tripping
+through a JSONB blob a SQL function then had to re-derive rows from, and
+`colorImages` is just `product_variants.image_url` per row — a column that
+already existed and was already backfilled from it.
+
+**`replace_product_variants` gets one fix before it becomes the live write
+path.** Its upsert did a plain `SET` for every column, including `sku`,
+`barcode` and `image_url`. Nothing in the admin form can express `sku` or
+`barcode`, and `image_url` is only sent for a color whose photo is currently
+assigned in the form — not for every color on every save. Applied as written,
+the very first ordinary product save after cutover would have silently
+nulled out any `sku`/`barcode`/`image_url` set some other way (a CSV import
+with a barcode, a photo assigned once and never re-touched). It now protects
+those three the same way `sync_variants_from_pricing_config` always did:
+`COALESCE(EXCLUDED.x, product_variants.x)`. `price`, `stock`, `cost` and
+`is_active` stay plain overwrites — the form always sends a real value for
+those.
+
+`sync_variants_from_pricing_config()` is dropped once the backfill above has
+run, and `products.pricing_config` is dropped with it. The two untracked
+migrations that still referenced the function (`20260912100000`,
+`20260912110000`) are left as they were — this migration supersedes the
+function rather than editing either of them.
+
 ## After applying these
 
 `types/database.ts` is generated from the linked project. Run `npm run db:push`

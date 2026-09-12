@@ -26,15 +26,10 @@ export function useDiscountVariantTargeting(
   useEffect(() => {
     if (variantProductId && variantSize && variantColor) {
       const selectedProduct = products.find(p => p.id === variantProductId);
-      const config = selectedProduct?.pricing_config;
-      let availableColors = selectedProduct?.colors || [];
-
-      if (config && config.mode === 'combination') {
-        const combinationPrices = config.combinationPrices || {};
-        availableColors = Object.keys(combinationPrices)
-          .filter(key => key.startsWith(`${variantSize}|`))
-          .map(key => key.split('|')[1]);
-      }
+      const colorsForSize = (selectedProduct?.product_variants ?? [])
+        .filter(v => v.size === variantSize && v.color)
+        .map(v => v.color as string);
+      const availableColors = colorsForSize.length > 0 ? colorsForSize : (selectedProduct?.colors || []);
 
       if (!availableColors.includes(variantColor) && availableColors.length > 0) {
         setVariantColor('');

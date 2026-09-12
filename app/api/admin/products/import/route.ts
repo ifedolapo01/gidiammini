@@ -10,9 +10,9 @@
 // the preview showed — and a client that tampered with the rows in between
 // cannot write something the operator never saw.
 //
-// Writes go through the same buildProductCreatePayload / syncVariants /
-// applyVariantCosts path the admin form uses. A second way to create a product
-// is how the two drift into disagreeing about what pricing_config means.
+// Writes go through the same buildProductCreatePayload / writeVariants path
+// the admin form uses. A second way to create a product is how the two drift
+// into disagreeing about what a variant is.
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth, type AuditRecorder } from '@/lib/api/with-admin-auth';
@@ -27,7 +27,7 @@ import {
   type CategoryOverrides,
 } from '@/lib/commerce/product-import';
 import { buildProductCreatePayload } from '@/lib/commerce/product-payload';
-import { syncVariants, applyVariantCosts } from '../product-write';
+import { writeVariants } from '../product-write';
 
 export const maxDuration = 60;
 
@@ -108,14 +108,13 @@ async function writeProduct(
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
     for (const [key, value] of Object.entries(payload)) {
-      if (key !== 'variant_costs' && writable.has(key)) update[key] = value;
+      if (key !== 'variants' && writable.has(key)) update[key] = value;
     }
 
     const { error } = await supabase.from('products').update(update).eq('id', existingId);
     if (error) return { ok: false, label, error: error.message };
 
-    await syncVariants(supabase, existingId);
-    await applyVariantCosts(supabase, existingId, payload.variant_costs);
+    await writeVariants(supabase, existingId, payload.variants);
 
     audit({
       entityType: 'product',
@@ -128,7 +127,7 @@ async function writeProduct(
     return { ok: true, label };
   }
 
-  const { variant_costs: costs, ...rest } = payload;
+  const { variants, ...rest } = payload;
   const { data, error } = await supabase
     .from('products')
     .insert([buildProductCreatePayload(rest)])
@@ -137,8 +136,7 @@ async function writeProduct(
 
   if (error) return { ok: false, label, error: error.message };
 
-  await syncVariants(supabase, data.id);
-  await applyVariantCosts(supabase, data.id, costs);
+  await writeVariants(supabase, data.id, variants);
 
   audit({
     entityType: 'product',

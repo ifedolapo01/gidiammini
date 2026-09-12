@@ -13,10 +13,8 @@ import type { FlattenedProduct } from '@/lib/commerce/product-flatten';
 import type { ColumnVisibility } from '@/app/admin/hooks/useColumnVisibility';
 import { actionsCell, numericCell, type TableDensity } from '@/app/admin/components/table';
 
-function variantImageCount(product: FlattenedProduct & { extractedColor?: string }) {
-  return product.extractedColor
-    ? (product.colorImages?.[product.extractedColor] ? 1 : 0)
-    : (product.colorImages?.[product.variantKey] ? 1 : 0);
+function variantImageCount(product: FlattenedProduct) {
+  return product.hasOwnImage ? 1 : 0;
 }
 
 /** The price / stock / images run, identical on all three variant row shapes. */

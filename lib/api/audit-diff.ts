@@ -93,7 +93,7 @@ export function diffForAudit(
     const from = before?.[key];
     const to = after?.[key];
 
-    // JSON comparison, so nested objects (pricing_config) compare by value.
+    // JSON comparison, so nested objects and arrays compare by value.
     if (JSON.stringify(from ?? null) === JSON.stringify(to ?? null)) continue;
 
     // The key has to be tested here. redact() decides by key name, and passing

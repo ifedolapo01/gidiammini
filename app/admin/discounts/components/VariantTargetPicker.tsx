@@ -47,17 +47,21 @@ export function VariantTargetPicker({
 
         {variantProductId && (() => {
           const selectedProduct = products.find(p => p.id === variantProductId);
-          const config = selectedProduct?.pricing_config;
+          const variants = selectedProduct?.product_variants ?? [];
+          const isCombinationLike = variants.some(v => v.size && v.color);
+          const hasSizedVariants = variantSize
+            ? variants.some(v => v.size === variantSize && v.color)
+            : false;
 
-          let availableSizes = selectedProduct?.sizes || [];
+          const availableSizes = selectedProduct?.sizes || [];
           let availableColors = selectedProduct?.colors || [];
 
-          // If it's combination mode and a size is selected, filter colors
-          if (config && config.mode === 'combination' && variantSize) {
-            const combinationPrices = config.combinationPrices || {};
-            availableColors = Object.keys(combinationPrices)
-              .filter(key => key.startsWith(`${variantSize}|`))
-              .map(key => key.split('|')[1]);
+          // If a size is selected and its variants carry distinct colors,
+          // narrow the color list to just those.
+          if (hasSizedVariants) {
+            availableColors = variants
+              .filter(v => v.size === variantSize && v.color)
+              .map(v => v.color as string);
           }
 
           return (
@@ -85,9 +89,9 @@ export function VariantTargetPicker({
                     size="sm"
                     value={variantColor}
                     onChange={(e) => setVariantColor(e.target.value)}
-                    disabled={config?.mode === 'combination' && !variantSize}
+                    disabled={isCombinationLike && !variantSize}
                   >
-                    <option value="" disabled>{config?.mode === 'combination' && !variantSize ? 'Select size first...' : 'Choose color...'}</option>
+                    <option value="" disabled>{isCombinationLike && !variantSize ? 'Select size first...' : 'Choose color...'}</option>
                     {availableColors.map(color => (
                       <option key={color} value={color}>{color}</option>
                     ))}

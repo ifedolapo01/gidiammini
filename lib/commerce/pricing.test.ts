@@ -5,43 +5,61 @@
  */
 import { describe, it, expect } from 'vitest';
 import { getVariantPrice, getVariantStock, getProductPriceRange, formatCurrency, formatPriceRange } from './pricing';
+import { variantKeyFor } from './product-variants';
 import type { Product } from '@/types/product';
 
 const product = (over: Partial<Product>): Product => ({
   id: 'p1', name: 'Gown', description: null, price: 10000, category: 'babies',
   main_image: 'x', images: [], colors: [], sizes: [], details: [],
-  stock: 14, is_active: true, pricing_config: null,
+  stock: 14, is_active: true,
   created_at: '', updated_at: '', ...over,
 });
 
-const combo = product({
-  pricing_config: {
-    mode: 'combination',
-    combinationPrices: { 'S|red': 13000, 'M|brown': 16000 },
-    combinationStock: { 'S|red': 4, 'M|brown': 10 },
-  },
-});
+/** Attaches product_variants rows, exactly as the migration's backfill produces. */
+const withVariants = (
+  base: Partial<Product>,
+  rows: Array<[string | null, string | null, number, number]>
+): Product =>
+  product({
+    ...base,
+    product_variants: rows.map(([size, color, price, stock], index) => ({
+      id: `v${index}`,
+      product_id: 'p1',
+      size,
+      color,
+      variant_key: variantKeyFor(size, color),
+      price,
+      stock,
+      image_url: null,
+      is_active: true,
+    })),
+  });
+
+const combo = withVariants({ price: 10000 }, [
+  ['S', 'red', 13000, 4],
+  ['M', 'brown', 16000, 10],
+]);
 
 describe('getVariantPrice', () => {
-  it('uses the base price when there is no config', () => {
-    expect(getVariantPrice(product({ pricing_config: null }))).toBe(10000);
+  it('uses the base price when there are no variant rows', () => {
+    expect(getVariantPrice(product({}))).toBe(10000);
   });
 
-  it('uses the base price in single mode', () => {
-    expect(getVariantPrice(product({ pricing_config: { mode: 'single', singleStock: 5 } }))).toBe(10000);
+  it('uses the base price for a lone variant with no axes', () => {
+    expect(getVariantPrice(withVariants({}, [[null, null, 10000, 5]]))).toBe(10000);
   });
 
-  it('reads the size bucket', () => {
-    const p = product({ pricing_config: { mode: 'size', sizePrices: { S: 8000, M: 9000 } } });
+  it('reads the size-only variant', () => {
+    const p = withVariants({}, [['S', null, 8000, 3], ['M', null, 9000, 4]]);
     expect(getVariantPrice(p, 'M')).toBe(9000);
   });
 
-  it('reads the colour bucket', () => {
-    const p = product({ pricing_config: { mode: 'color', colorPrices: { red: 7000 } } });
+  it('reads the colour-only variant', () => {
+    const p = withVariants({}, [[null, 'red', 7000, 3]]);
     expect(getVariantPrice(p, null, 'red')).toBe(7000);
   });
 
-  it('reads the combination bucket', () => {
+  it('reads the combination variant', () => {
     expect(getVariantPrice(combo, 'M', 'brown')).toBe(16000);
   });
 
@@ -56,60 +74,46 @@ describe('getVariantPrice', () => {
 });
 
 describe('getVariantStock', () => {
-  it('uses the product total when there is no config', () => {
-    expect(getVariantStock(product({ pricing_config: null }))).toBe(14);
+  it('returns zero when there are no variant rows', () => {
+    expect(getVariantStock(product({ stock: 14 }))).toBe(0);
   });
 
-  it('prefers singleStock over the product total in single mode', () => {
-    const p = product({ stock: 13, pricing_config: { mode: 'single', singleStock: 14 } });
-    expect(getVariantStock(p)).toBe(14);
+  it('reads the lone variant with no axes', () => {
+    expect(getVariantStock(withVariants({ stock: 13 }, [[null, null, 10000, 14]]))).toBe(14);
   });
 
-  it('reads the combination bucket', () => {
+  it('reads the combination variant', () => {
     expect(getVariantStock(combo, 'S', 'red')).toBe(4);
     expect(getVariantStock(combo, 'M', 'brown')).toBe(10);
   });
 
   it('returns zero for a sold-out variant rather than the product total', () => {
-    const soldOut = product({
-      stock: 10,
-      pricing_config: { mode: 'combination', combinationStock: { 'S|red': 0 }, combinationPrices: { 'S|red': 1 } },
-    });
+    const soldOut = withVariants({ stock: 10 }, [['S', 'red', 1, 0]]);
     expect(getVariantStock(soldOut, 'S', 'red')).toBe(0);
   });
 
-  it('falls back to the product total for an unknown variant', () => {
-    expect(getVariantStock(combo, 'XL', 'gold')).toBe(14);
+  it('falls back to zero for an unknown variant', () => {
+    expect(getVariantStock(combo, 'XL', 'gold')).toBe(0);
   });
 });
 
 describe('getProductPriceRange', () => {
-  it('is a single point with no config', () => {
-    expect(getProductPriceRange(product({ pricing_config: null }))).toEqual({ min: 10000, max: 10000 });
+  it('is a single point with no variant rows', () => {
+    expect(getProductPriceRange(product({ price: 10000 }))).toEqual({ min: 10000, max: 10000 });
   });
 
   it('spans the combination prices', () => {
     expect(getProductPriceRange(combo)).toEqual({ min: 13000, max: 16000 });
   });
 
-  it('spans the size prices', () => {
-    const p = product({ pricing_config: { mode: 'size', sizePrices: { S: 8000, M: 12000, L: 9000 } } });
+  it('spans the size-only prices', () => {
+    const p = withVariants({}, [['S', null, 8000, 1], ['M', null, 12000, 1], ['L', null, 9000, 1]]);
     expect(getProductPriceRange(p)).toEqual({ min: 8000, max: 12000 });
   });
 
-  it('falls back to the base price when the buckets are empty', () => {
-    const p = product({ pricing_config: { mode: 'combination', combinationPrices: {} } });
+  it('falls back to the base price when there are no active variants', () => {
+    const p = withVariants({ price: 10000 }, []);
     expect(getProductPriceRange(p)).toEqual({ min: 10000, max: 10000 });
-  });
-
-  it('ignores non-numeric bucket values rather than producing NaN', () => {
-    const p = product({
-      pricing_config: { mode: 'size', sizePrices: { S: 8000, M: undefined as any, L: 'x' as any } },
-    });
-    const range = getProductPriceRange(p);
-    expect(Number.isNaN(range.min)).toBe(false);
-    expect(Number.isNaN(range.max)).toBe(false);
-    expect(range).toEqual({ min: 8000, max: 8000 });
   });
 });
 

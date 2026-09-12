@@ -6,7 +6,6 @@ import type { UseFormReset, UseFormSetValue } from 'react-hook-form';
 import { Product } from '@/types/product';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { ImageFile, VariantColor, VariantSize } from '@/lib/commerce/product-form-helpers';
-import { variantKeyFor } from '@/lib/commerce/product-variants';
 import { fromMinorUnits } from '@/lib/commerce/money';
 import type { SizingType } from '@/lib/commerce/product-form-schema';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
@@ -70,16 +69,14 @@ export function useEditProductData(args: UseEditProductDataArgs) {
       if (productData) {
         setProduct(productData);
 
-        // Cost lives on product_variants, not in pricing_config, so it is
-        // reloaded from the embedded rows and keyed the same way the database
-        // keys them. Converted here, at the boundary where the database's
-        // minor units become the Naira the form displays and edits — see
-        // lib/commerce/money.ts and the matching conversion in useProductSubmit.
-        const costFor = (size: string | null, color: string | null): number | null => {
-          const key = variantKeyFor(size, color);
-          const row = (productData?.product_variants ?? []).find((v) => v.variant_key === key);
-          return typeof row?.cost === 'number' ? fromMinorUnits(row.cost) : null;
-        };
+        // The grid this form edits is reconstructed from product_variants
+        // rows directly — grouped by size, then color — rather than from a
+        // stored "mode": which of size/color actually vary across the rows
+        // *is* the mode, so nothing needs to say so separately.
+        const rows = productData.product_variants ?? [];
+        const soleRow = rows.length <= 1 ? rows[0] : undefined;
+        const costOf = (cost: number | null | undefined): number | null =>
+          typeof cost === 'number' ? fromMinorUnits(cost) : null;
 
         reset({
           name: productData.name,
@@ -88,15 +85,12 @@ export function useEditProductData(args: UseEditProductDataArgs) {
           category: productData.category || '',
           sub_category: (productData as any).sub_category || '',
           sub_sub_category: (productData as any).sub_sub_category || '',
-          singleSize: productData.pricing_config?.singleSize || '',
-          singleColor: productData.pricing_config?.singleColor || '',
+          singleSize: soleRow?.size || '',
+          singleColor: soleRow?.color || '',
           stock: productData.stock,
           // '' rather than 0 for an unrecorded cost — see the note in
           // lib/commerce/product-form-schema.ts.
-          cost: costFor(
-            productData.pricing_config?.singleSize ?? null,
-            productData.pricing_config?.singleColor ?? null,
-          ) ?? '',
+          cost: costOf(soleRow?.cost) ?? '',
           sizing_type: productData.sizing_type || 'size',
           fit_rating: (productData as any).fit_rating || '',
           fit_note: (productData as any).fit_note || '',
@@ -105,7 +99,10 @@ export function useEditProductData(args: UseEditProductDataArgs) {
           details: productData.details.length > 0 ? productData.details.map((d) => ({ value: d })) : [{ value: '' }],
         });
 
-        const colorImagesMap = productData.pricing_config?.colorImages || {};
+        const colorImagesMap: Record<string, string> = {};
+        for (const row of rows) {
+          if (row.color && row.image_url) colorImagesMap[row.color] = row.image_url;
+        }
         const getAssignedColor = (url: string) => {
           for (const [color, mappedUrl] of Object.entries(colorImagesMap)) {
             if (mappedUrl === url) return color;
@@ -119,72 +116,58 @@ export function useEditProductData(args: UseEditProductDataArgs) {
         ];
         setImages(initialImages);
 
-        if (productData.pricing_config) {
-          const config = productData.pricing_config;
-          setSizingType(productData.sizing_type || 'size');
+        setSizingType(productData.sizing_type || 'size');
 
-          if (config.mode === 'single') {
-            setHasVariants(false);
-            setHasSizes(false);
-            setHasColors(false);
-            setVariants([{ size: '', price: fromMinorUnits(productData.price), stock: config.singleStock || productData.stock, cost: null, colors: [] }]);
-          } else {
-            setHasVariants(true);
-            const newVariants: VariantSize[] = [];
+        const distinctSizes = new Set(rows.map((r) => r.size).filter(Boolean));
+        const distinctColors = new Set(rows.map((r) => r.color).filter(Boolean));
 
-            if (config.mode === 'combination') {
-              setHasSizes(true);
-              setHasColors(true);
-
-              const prices = config.combinationPrices || {};
-              const stocks = config.combinationStock || {};
-              const sizeMap = new Map<string, VariantColor[]>();
-
-              Object.keys(prices).forEach((key) => {
-                const [size, color] = key.split('|');
-                if (size && color) {
-                  if (!sizeMap.has(size)) sizeMap.set(size, []);
-                  sizeMap.get(size)!.push({ name: color, price: fromMinorUnits(prices[key] || 0), stock: stocks[key] || 0, cost: costFor(size, color) });
-                }
-              });
-
-              sizeMap.forEach((colors, size) => {
-                newVariants.push({ size, price: 0, stock: 0, cost: null, colors });
-              });
-
-              if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, cost: null, colors: [] });
-            } else if (config.mode === 'size') {
-              setHasSizes(true);
-              setHasColors(false);
-
-              const prices = config.sizePrices || {};
-              const stocks = config.sizeStock || {};
-
-              Object.keys(prices).forEach((size) => {
-                newVariants.push({ size, price: fromMinorUnits(prices[size] || 0), stock: stocks[size] || 0, cost: costFor(size, null), colors: [] });
-              });
-
-              if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, cost: null, colors: [] });
-            } else if (config.mode === 'color') {
-              setHasSizes(false);
-              setHasColors(true);
-
-              const prices = config.colorPrices || {};
-              const stocks = config.colorStock || {};
-              const colors: VariantColor[] = [];
-
-              Object.keys(prices).forEach((color) => {
-                colors.push({ name: color, price: fromMinorUnits(prices[color] || 0), stock: stocks[color] || 0, cost: costFor(null, color) });
-              });
-
-              newVariants.push({ size: '', price: 0, stock: 0, colors });
-            }
-
-            setVariants(newVariants);
-          }
-        } else {
+        if (rows.length <= 1) {
           setHasVariants(false);
-          setVariants([{ size: '', price: fromMinorUnits(productData.price), stock: productData.stock, colors: [] }]);
+          setHasSizes(false);
+          setHasColors(false);
+          setVariants([{
+            size: '',
+            price: fromMinorUnits(soleRow?.price ?? productData.price),
+            stock: soleRow?.stock ?? productData.stock,
+            cost: costOf(soleRow?.cost),
+            colors: [],
+          }]);
+        } else {
+          setHasVariants(true);
+          const hasSizes = distinctSizes.size > 0;
+          const hasColors = distinctColors.size > 0;
+          setHasSizes(hasSizes);
+          setHasColors(hasColors);
+
+          const newVariants: VariantSize[] = [];
+
+          if (hasSizes && hasColors) {
+            const sizeMap = new Map<string, VariantColor[]>();
+            rows.forEach((row) => {
+              if (!row.size || !row.color) return;
+              if (!sizeMap.has(row.size)) sizeMap.set(row.size, []);
+              sizeMap.get(row.size)!.push({
+                name: row.color,
+                price: fromMinorUnits(row.price),
+                stock: row.stock,
+                cost: costOf(row.cost),
+              });
+            });
+            sizeMap.forEach((colors, size) => newVariants.push({ size, price: 0, stock: 0, cost: null, colors }));
+          } else if (hasSizes) {
+            rows.forEach((row) => {
+              if (!row.size) return;
+              newVariants.push({ size: row.size, price: fromMinorUnits(row.price), stock: row.stock, cost: costOf(row.cost), colors: [] });
+            });
+          } else if (hasColors) {
+            const colors: VariantColor[] = rows
+              .filter((row) => row.color)
+              .map((row) => ({ name: row.color as string, price: fromMinorUnits(row.price), stock: row.stock, cost: costOf(row.cost) }));
+            newVariants.push({ size: '', price: 0, stock: 0, colors });
+          }
+
+          if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, cost: null, colors: [] });
+          setVariants(newVariants);
         }
       }
     } catch (error: any) {

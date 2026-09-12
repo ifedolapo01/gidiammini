@@ -2,7 +2,6 @@
  * COMMERCE layer — pure helpers shared by the admin product create/edit forms.
  * No React; safe to unit test in isolation.
  */
-import { PricingConfig } from '@/types/product';
 
 export interface VariantColor {
   name: string;
@@ -39,7 +38,16 @@ export function toTitleCase(value: string): string {
     .join(' ');
 }
 
-export interface BuildPricingConfigParams {
+/** One product_variants row as the write path (replace_product_variants) expects it. */
+export interface VariantRowInput {
+  size: string | null;
+  color: string | null;
+  price: number;
+  stock: number;
+  cost?: number | null;
+}
+
+export interface BuildVariantRowsParams {
   hasVariants: boolean;
   hasSizes: boolean;
   hasColors: boolean;
@@ -53,8 +61,8 @@ export interface BuildPricingConfigParams {
   singleCost?: number | null;
 }
 
-export interface BuildPricingConfigResult {
-  pricingConfig: PricingConfig;
+export interface BuildVariantRowsResult {
+  variants: VariantRowInput[];
   totalStock: number;
   minPrice: number;
   uniqueSizes: Set<string>;
@@ -62,33 +70,33 @@ export interface BuildPricingConfigResult {
 }
 
 /**
- * Turns the admin form's variant state into the `pricing_config` shape the
- * products API expects, branching on single/size/color/combination mode.
- * Pure function — identical logic previously duplicated in both product
- * create and edit `onSubmit` handlers.
+ * Turns the admin form's variant state into the flat row array
+ * replace_product_variants() expects, branching on single/size/color/
+ * combination mode. Pure function — identical logic previously duplicated in
+ * both product create and edit `onSubmit` handlers.
  */
-export function buildPricingConfigFromVariants(params: BuildPricingConfigParams): BuildPricingConfigResult {
-  const { hasVariants, hasSizes, hasColors, variants, singlePrice, singleStock, singleSize, singleColor } = params;
+export function buildVariantRowsFromForm(params: BuildVariantRowsParams): BuildVariantRowsResult {
+  const { hasVariants, hasSizes, hasColors, variants, singlePrice, singleStock, singleSize, singleColor, singleCost } = params;
 
   let totalStock = 0;
   let minPrice = Infinity;
-  const pricingConfig: PricingConfig = { mode: 'single' };
+  const rows: VariantRowInput[] = [];
   const uniqueSizes = new Set<string>();
   const uniqueColors = new Set<string>();
 
   if (!hasVariants) {
     totalStock = singleStock;
-    pricingConfig.singleStock = totalStock;
-    if (singleSize) pricingConfig.singleSize = singleSize;
-    if (singleColor) pricingConfig.singleColor = singleColor;
     if (singleSize) uniqueSizes.add(singleSize);
     if (singleColor) uniqueColors.add(singleColor);
     minPrice = singlePrice;
+    rows.push({
+      size: singleSize || null,
+      color: singleColor || null,
+      price: singlePrice,
+      stock: singleStock,
+      cost: singleCost ?? null,
+    });
   } else if (hasSizes && hasColors) {
-    pricingConfig.mode = 'combination';
-    pricingConfig.combinationPrices = {};
-    pricingConfig.combinationStock = {};
-
     variants.forEach((v) => {
       const s = v.size.trim();
       if (s) uniqueSizes.add(s);
@@ -96,41 +104,29 @@ export function buildPricingConfigFromVariants(params: BuildPricingConfigParams)
         const cn = c.name.trim();
         if (cn) uniqueColors.add(cn);
         if (s && cn) {
-          const key = `${s}|${cn}`;
-          pricingConfig.combinationPrices![key] = c.price;
-          pricingConfig.combinationStock![key] = c.stock;
+          rows.push({ size: s, color: cn, price: c.price, stock: c.stock, cost: c.cost ?? null });
           totalStock += c.stock;
           if (c.price < minPrice) minPrice = c.price;
         }
       });
     });
   } else if (hasSizes && !hasColors) {
-    pricingConfig.mode = 'size';
-    pricingConfig.sizePrices = {};
-    pricingConfig.sizeStock = {};
-
     variants.forEach((v) => {
       const s = v.size.trim();
       if (s) {
         uniqueSizes.add(s);
-        pricingConfig.sizePrices![s] = v.price;
-        pricingConfig.sizeStock![s] = v.stock;
+        rows.push({ size: s, color: null, price: v.price, stock: v.stock, cost: v.cost ?? null });
         totalStock += v.stock;
         if (v.price < minPrice) minPrice = v.price;
       }
     });
   } else if (!hasSizes && hasColors) {
-    pricingConfig.mode = 'color';
-    pricingConfig.colorPrices = {};
-    pricingConfig.colorStock = {};
-
     variants.forEach((v) => {
       v.colors.forEach((c) => {
         const cn = c.name.trim();
         if (cn) {
           uniqueColors.add(cn);
-          pricingConfig.colorPrices![cn] = c.price;
-          pricingConfig.colorStock![cn] = c.stock;
+          rows.push({ size: null, color: cn, price: c.price, stock: c.stock, cost: c.cost ?? null });
           totalStock += c.stock;
           if (c.price < minPrice) minPrice = c.price;
         }
@@ -138,7 +134,7 @@ export function buildPricingConfigFromVariants(params: BuildPricingConfigParams)
     });
   }
 
-  return { pricingConfig, totalStock, minPrice, uniqueSizes, uniqueColors };
+  return { variants: rows, totalStock, minPrice, uniqueSizes, uniqueColors };
 }
 
 /**

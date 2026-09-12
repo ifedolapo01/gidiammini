@@ -2,7 +2,7 @@
  * COMMERCE layer — the single pricing authority for a checkout cart.
  *
  * Every naira a customer is charged is computed here, on the server, from the
- * catalogue: variant price from pricing_config, the best currently-valid
+ * catalogue: variant price from product_variants, the best currently-valid
  * discount, tax, and the delivery fee of the shipping zone their address
  * actually resolves to. The client sends only *what* is being bought
  * (product/size/color/quantity, parsed by cart-input.ts) and where it is

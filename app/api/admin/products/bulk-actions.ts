@@ -7,14 +7,13 @@
  * reportable: a product that cannot be re-priced does not stop the other 59.
  *
  * Where an equivalent single-row endpoint already exists, these go through the
- * same machinery it does (set_variant_stock, sync_variants_from_pricing_config)
- * rather than writing the tables directly. A second, weaker write path for the
- * same data is how prices and stock drift apart.
+ * same machinery it does (set_variant_stock) rather than writing the tables
+ * directly. A second, weaker write path for the same data is how prices and
+ * stock drift apart.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AuditRecorder } from '@/lib/api/with-admin-auth';
 import { adjustPricing, describePercent } from '@/lib/commerce/price-adjust';
-import { syncVariants } from './product-write';
 
 export interface BulkRowOutcome {
   ok: boolean;
@@ -96,10 +95,8 @@ export async function moveProductCategory(
 }
 
 /**
- * A percentage move applied to the product price and to every variant price in
- * its pricing_config, then re-synced into product_variants — the same two-step
- * an ordinary product save performs. Writing product_variants alone would look
- * right until the next save re-derived them from the untouched config.
+ * A percentage move applied to the product price and to every variant price —
+ * both places a price lives, moved together in one action.
  */
 export async function adjustProductPrice(
   supabase: SupabaseClient,
@@ -108,32 +105,41 @@ export async function adjustProductPrice(
   label: string,
   audit: AuditRecorder
 ): Promise<BulkRowOutcome> {
-  const { data: product, error: readError } = await supabase
-    .from('products')
-    .select('price, pricing_config')
-    .eq('id', id)
-    .maybeSingle();
+  const [{ data: product, error: readError }, { data: variants, error: variantsError }] = await Promise.all([
+    supabase.from('products').select('price').eq('id', id).maybeSingle(),
+    supabase.from('product_variants').select('variant_key, price').eq('product_id', id),
+  ]);
 
   if (readError) return { ok: false, label, error: readError.message };
   if (!product) return { ok: false, label, error: 'Product not found' };
+  if (variantsError) return { ok: false, label, error: variantsError.message };
 
   const next = adjustPricing(
-    { price: Number(product.price) || 0, pricing_config: product.pricing_config as any },
+    {
+      price: Number(product.price) || 0,
+      variants: (variants ?? []).map((v: any) => ({ variantKey: v.variant_key, price: Number(v.price) || 0 })),
+    },
     percent
   );
 
   const { error } = await supabase
     .from('products')
-    .update({
-      price: next.price,
-      pricing_config: next.pricing_config as any,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ price: next.price, updated_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) return { ok: false, label, error: error.message };
 
-  await syncVariants(supabase, id);
+  for (const variant of next.variants) {
+    const { error: variantError } = await supabase
+      .from('product_variants')
+      .update({ price: variant.price })
+      .eq('product_id', id)
+      .eq('variant_key', variant.variantKey);
+
+    if (variantError) {
+      console.error(`Could not adjust price for ${id} / ${variant.variantKey}: ${variantError.message}`);
+    }
+  }
 
   audit({
     entityType: 'product',

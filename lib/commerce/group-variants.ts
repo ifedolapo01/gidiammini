@@ -31,8 +31,8 @@ export interface SizeGroupedVariant extends FlattenedProduct {
 /** Groups combination variants by size, surfacing size/color on each entry. */
 export function groupBySize(variants: FlattenedProduct[]): Record<string, SizeGroupedVariant[]> {
   return variants.reduce((acc, v) => {
-    // Falls back to splitting the key only for entries built from the legacy
-    // pricing_config path, which has no separate size/color to read.
+    // size/color come straight off the variant row today; splitting the key
+    // is a defensive fallback for any caller that didn't have them to hand.
     const [keySize, keyColor] = v.variantKey.split('|');
     const size = v.size ?? keySize ?? '';
     const color = v.color ?? keyColor ?? '';

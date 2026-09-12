@@ -12,7 +12,7 @@ import { text, type DatasetResult } from './export-types';
 
 const CATALOGUE_SELECT =
   'id, name, category, sub_category, price, stock, is_active, main_image, images,' +
-  ' pricing_config, product_variants ( id, product_id, size, color, variant_key,' +
+  ' product_variants ( id, product_id, size, color, variant_key,' +
   ' price, stock, sku, cost, image_url, is_active )';
 
 /** Every variant of every product, which is the row shape both catalogue

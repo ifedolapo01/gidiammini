@@ -2,22 +2,6 @@
 
 import type { ProductVariant } from '@/lib/commerce/product-variants';
 
-export type PricingMode = 'single' | 'size' | 'color' | 'combination';
-
-export interface PricingConfig {
-  mode: PricingMode;
-  singleStock?: number;
-  singleSize?: string;
-  singleColor?: string;
-  sizePrices?: Record<string, number>;
-  sizeStock?: Record<string, number>;
-  colorPrices?: Record<string, number>;
-  colorStock?: Record<string, number>;
-  combinationPrices?: Record<string, number>;
-  combinationStock?: Record<string, number>;
-  colorImages?: Record<string, string>;
-}
-
 export interface Product {
   id: string;
   name: string;
@@ -48,12 +32,6 @@ export interface Product {
   fit_rating?: 'runs_small' | 'true_to_size' | 'runs_large' | null;
   /** One sentence of specifics under the rating. */
   fit_note?: string | null;
-  /**
-   * Legacy variant storage. Still written by the admin form and still the
-   * source for colorImages, but no longer the source of truth for variant
-   * price or stock — see product_variants below.
-   */
-  pricing_config?: PricingConfig | null;
   /**
    * The sellable combinations, one row each. Present only when the query
    * embedded them; absent is not the same as empty, so read it through
@@ -102,7 +80,6 @@ export interface ProductCardProduct extends Pick<Product,
   images?: string[];
   details?: string[];
   sizing_type?: 'size' | 'age' | 'maternity' | null;
-  pricing_config?: PricingConfig | null;
   product_variants?: ProductVariant[] | null;
   created_at?: string;
   updated_at?: string;

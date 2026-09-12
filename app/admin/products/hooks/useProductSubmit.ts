@@ -1,11 +1,10 @@
-/** ADMIN layer — shared validate + build-pricing-config + upload + save orchestration for product create/edit. */
+/** ADMIN layer — shared validate + build-variant-rows + upload + save orchestration for product create/edit. */
 'use client';
 
 import { useState } from 'react';
 import { SubmitHandler } from 'react-hook-form';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
-import { buildPricingConfigFromVariants, ImageFile, saveProduct, VariantSize } from '@/lib/commerce/product-form-helpers';
-import { buildVariantCosts } from '@/lib/commerce/variant-costs';
+import { buildVariantRowsFromForm, ImageFile, saveProduct, VariantSize } from '@/lib/commerce/product-form-helpers';
 import { toMinorUnits } from '@/lib/commerce/money';
 import type { SizingType } from '@/lib/commerce/product-form-schema';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
@@ -76,16 +75,17 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
       singleSize: data.singleSize,
       singleColor: data.singleColor,
       // An empty cost field means "not recorded", so it must reach
-      // buildVariantCosts as null rather than being coerced to 0.
+      // buildVariantRowsFromForm as null rather than being coerced to 0.
       singleCost: data.cost === '' || data.cost === undefined ? null : toMinorUnits(Number(data.cost)),
     };
 
-    const { pricingConfig, totalStock, minPrice, uniqueSizes, uniqueColors } =
-      buildPricingConfigFromVariants(variantParams);
+    const { variants: variantRows, totalStock, minPrice, uniqueSizes, uniqueColors } =
+      buildVariantRowsFromForm(variantParams);
 
-    // Costs travel beside pricing_config, not inside it — see
-    // lib/commerce/variant-costs.ts.
-    const variantCosts = buildVariantCosts(variantParams);
+    if (variantRows.length === 0) {
+      setSubmitError('Please add at least one size, colour or price.');
+      return;
+    }
 
     if (hasVariants && hasColors && uniqueColors.size > 0 && images.length < uniqueColors.size) {
       setSubmitError(
@@ -100,9 +100,16 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
 
     try {
       const { mainImageUrl, additionalImages, colorImagesMap } = await uploadAllForSubmit();
-      if (Object.keys(colorImagesMap).length > 0) {
-        pricingConfig.colorImages = colorImagesMap;
-      }
+
+      // A row's image_url comes from whichever photo the form currently has
+      // assigned to its colour. A colour with no assigned photo sends no
+      // image_url at all (rather than null), so replace_product_variants
+      // leaves whatever was stored there before untouched.
+      const variantsWithImages = variantRows.map((row) =>
+        row.color && colorImagesMap[row.color]
+          ? { ...row, image_url: colorImagesMap[row.color] }
+          : row
+      );
 
       await saveProduct(
         {
@@ -114,7 +121,7 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
           sub_sub_category: data.sub_sub_category,
           main_image: mainImageUrl,
           images: additionalImages,
-          variant_costs: variantCosts,
+          variants: variantsWithImages,
           colors: Array.from(uniqueColors),
           sizes: Array.from(uniqueSizes),
           sizing_type: sizingType,
@@ -125,7 +132,6 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
           // fit claim nobody made.
           fit_rating: data.fit_rating,
           fit_note: data.fit_note,
-          pricing_config: pricingConfig,
         },
         productId,
         adminFetch,

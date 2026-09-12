@@ -14,7 +14,7 @@
  *    Postgres rolls back the whole adjustment.
  *
  * Claiming and releasing are exact inverses inside that one function, so
- * pricing_config can't drift from products.stock. The JS mirror of this
+ * product_variants.stock can't drift from products.stock. The JS mirror of this
  * arithmetic (stock-adjustment.ts) was deleted once the SQL became
  * authoritative — two copies with nothing comparing them would have drifted
  * apart while both looked correct.

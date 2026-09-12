@@ -32,7 +32,7 @@ const sitewide = (value: number): Discount =>
 
 describe('getCardPricing', () => {
   it('prefers the precomputed range from the listing', () => {
-    // list_products() derives these in SQL; re-deriving from pricing_config
+    // list_products() derives these in SQL; re-deriving from product_variants
     // here would be the second implementation the extraction exists to avoid.
     const pricing = getCardPricing(card({ price_min: 4000, price_max: 9000, price: 5000 }));
     expect(pricing).toMatchObject({ min: 4000, max: 9000 });

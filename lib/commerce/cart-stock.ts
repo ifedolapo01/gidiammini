@@ -18,10 +18,10 @@ import { cartLineKey } from './cart-input';
 import { getVariantStock } from './pricing';
 
 /** The catalogue columns a stock check needs. Variants must be embedded —
- * getVariantStock prefers them, and dropping them silently falls back to the
- * legacy pricing_config maps. */
+ * getVariantStock reads them exclusively; a product fetched without them
+ * reports no stock for every selection. */
 export type CartStockProduct = Pick<Product, 'id' | 'stock'> &
-  Partial<Pick<Product, 'pricing_config' | 'product_variants'>>;
+  Partial<Pick<Product, 'product_variants'>>;
 
 /** Stock for a line whose product is not in the catalogue at all — deleted or
  * deactivated — which is a different message from a stock of zero. */

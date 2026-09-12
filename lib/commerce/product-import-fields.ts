@@ -69,7 +69,7 @@ export function autoMapColumns(headers: string[]): ColumnMapping {
 
 /** Always written on an update, because they are derived from the variant
  * rows rather than read from a single column. */
-export const DERIVED_FIELDS = ['price', 'stock', 'pricing_config', 'sizes', 'colors'] as const;
+export const DERIVED_FIELDS = ['price', 'stock', 'sizes', 'colors'] as const;
 
 /** The columns a file supplied, ignoring the ones that only identify a row. */
 export function providedFields(mapping: ColumnMapping): string[] {

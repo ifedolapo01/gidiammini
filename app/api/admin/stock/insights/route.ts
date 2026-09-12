@@ -30,10 +30,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function getInsights(request: NextRequest, { supabase }: AdminRouteContext) {
   const url = new URL(request.url);
 
-  // Filtered rather than validated-and-refused: a row built from the legacy
-  // pricing_config maps carries no variant id, and those arrive empty.
-  // Dropping them decorates the rows that can be, which beats a 400 that
-  // blanks the column for the whole page.
+  // Filtered rather than validated-and-refused: dropping a malformed id
+  // decorates the rows that can be, which beats a 400 that blanks the column
+  // for the whole page.
   const variantIds = [
     ...new Set(
       (url.searchParams.get('variantIds') ?? '')

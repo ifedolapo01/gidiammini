@@ -5,7 +5,7 @@
  *
  *   - `variantKeyFor` must produce byte-for-byte what the database's generated
  *     column produces. If they disagree, every lookup silently finds nothing
- *     and the app falls back to stale pricing_config numbers.
+ *     and reports a variant as unavailable that is actually in stock.
  *   - `PUBLIC_VARIANT_COLUMNS` must match the column-level GRANT in the
  *     migration. Grant a column here that the database withholds and every
  *     storefront query fails; withhold one the database grants and a field

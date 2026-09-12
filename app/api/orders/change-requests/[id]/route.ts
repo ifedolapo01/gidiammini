@@ -53,7 +53,7 @@ async function resolveRequestedVariant(
 ): Promise<{ ok: true; line: OrderLine } | { ok: false; error: string }> {
   const { data: product, error } = await supabase
     .from('products')
-    .select(`id, name, price, pricing_config, ${ADMIN_VARIANTS_SELECT}`)
+    .select(`id, name, price, ${ADMIN_VARIANTS_SELECT}`)
     .eq('id', productId)
     .maybeSingle();
 

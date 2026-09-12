@@ -128,11 +128,11 @@ describe('fieldChanges', () => {
 
   it('renders an object compactly instead of [object Object]', () => {
     const changes = fieldChanges(entry({
-      before: { pricing_config: { mode: 'single' } },
-      after: { pricing_config: { mode: 'size' } },
+      before: { shipping_address: { city: 'Lagos' } },
+      after: { shipping_address: { city: 'Abuja' } },
     }));
-    expect(changes[0].from).toBe('{"mode":"single"}');
-    expect(changes[0].to).toBe('{"mode":"size"}');
+    expect(changes[0].from).toBe('{"city":"Lagos"}');
+    expect(changes[0].to).toBe('{"city":"Abuja"}');
   });
 
   it('truncates a very large value rather than filling the row', () => {

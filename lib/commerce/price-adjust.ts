@@ -6,31 +6,31 @@
  * products" should be one action, not 60 form submissions.
  *
  * Both places a price lives are moved together. products.price is what the
- * card shows; pricing_config's per-size / per-colour / per-combination maps are
- * what sync_variants_from_pricing_config derives product_variants from. Writing
- * only one of them looks correct until the next ordinary product save re-syncs
- * from the config and quietly restores the old prices.
+ * card shows; product_variants.price is what is actually charged. Writing
+ * only one of them looks correct until the storefront reads the other.
  *
  * Pure, so the arithmetic is testable without a database — and so the caller
  * can show a preview before committing anything.
  */
-import type { PricingConfig } from '@/types/product';
+
+export interface AdjustableVariant {
+  variantKey: string;
+  price: number;
+}
 
 export interface AdjustablePricing {
   price: number;
-  pricing_config?: PricingConfig | null;
+  variants: AdjustableVariant[];
 }
 
 export interface AdjustedPricing {
   price: number;
-  pricing_config: PricingConfig | null;
+  variants: AdjustableVariant[];
 }
 
-/** The maps in pricing_config that hold money, as opposed to stock or images. */
-const PRICE_MAPS = ['sizePrices', 'colorPrices', 'combinationPrices'] as const;
-
-/** The store prices in whole naira — products.price and product_variants.price
- * are both integer columns, so a fractional result is not representable. */
+/** The store prices in whole minor units — products.price and
+ * product_variants.price are both integer columns, so a fractional result is
+ * not representable. */
 function applyPercent(value: number, percent: number): number {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
@@ -52,26 +52,13 @@ export function isValidPercent(percent: unknown): percent is number {
 }
 
 export function adjustPricing(source: AdjustablePricing, percent: number): AdjustedPricing {
-  const config = source.pricing_config ?? null;
-
-  if (!config) {
-    return { price: applyPercent(source.price, percent), pricing_config: null };
-  }
-
-  const next: PricingConfig = { ...config };
-
-  for (const mapName of PRICE_MAPS) {
-    const map = config[mapName];
-    if (!map || typeof map !== 'object') continue;
-
-    const adjusted: Record<string, number> = {};
-    for (const [key, value] of Object.entries(map)) {
-      adjusted[key] = applyPercent(value as number, percent);
-    }
-    next[mapName] = adjusted;
-  }
-
-  return { price: applyPercent(source.price, percent), pricing_config: next };
+  return {
+    price: applyPercent(source.price, percent),
+    variants: source.variants.map((v) => ({
+      variantKey: v.variantKey,
+      price: applyPercent(v.price, percent),
+    })),
+  };
 }
 
 /** "30% off" / "10% increase" — the wording used in the confirmation and in

@@ -27,7 +27,7 @@ describe('buildProductUpdatePayload — omitted means "leave alone"', () => {
   it('does not clear the fields that were wiped in the incident', () => {
     const payload = buildProductUpdatePayload({ id: 'p1', name: 'X', price: 1, category: 'kids' });
 
-    for (const field of ['sizes', 'colors', 'stock', 'sub_category', 'main_image', 'pricing_config', 'images', 'details']) {
+    for (const field of ['sizes', 'colors', 'stock', 'sub_category', 'main_image', 'images', 'details']) {
       expect(payload, `${field} must be absent, not defaulted`).not.toHaveProperty(field);
     }
   });
@@ -68,7 +68,6 @@ describe('buildProductCreatePayload — absent means "use a default"', () => {
       sizing_type: 'size',
       details: [],
       sub_category: null,
-      pricing_config: null,
       stock: 0,
       is_active: true,
     });

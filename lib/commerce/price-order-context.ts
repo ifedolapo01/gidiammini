@@ -72,9 +72,9 @@ export async function loadPricingContext(
   const productIds = [...new Set(lines.map((line) => line.product_id))];
 
   const [productsResult, discountsResult, zonesResult, settings] = await Promise.all([
-    // Variants must be embedded: getVariantPrice/getVariantStock read them, and
-    // without the embed they would silently fall back to the stale
-    // pricing_config maps and price against the wrong numbers.
+    // Variants must be embedded: getVariantPrice/getVariantStock read them
+    // exclusively, and without the embed every stock lookup would silently
+    // report zero (out of stock) rather than the real number.
     supabase.from('products').select(`*, ${ADMIN_VARIANTS_SELECT}`).in('id', productIds).eq('is_active', true),
     supabase.from('discounts').select('*').eq('is_active', true),
     supabase.from('shipping_zones').select('*, shipping_zone_exceptions(*)').eq('is_active', true),

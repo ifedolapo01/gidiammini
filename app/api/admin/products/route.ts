@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminAuth, type AuditRecorder } from '@/lib/api/with-admin-auth';
 import { diffForAudit, isEmptyDiff, withoutTimestamps } from '@/lib/api/audit';
-import { syncVariants, applyVariantCosts } from './product-write';
+import { writeVariants } from './product-write';
 import {
   buildProductCreatePayload,
   buildProductUpdatePayload,
@@ -65,8 +65,7 @@ async function createProduct(supabase: SupabaseClient, request: NextRequest, aud
 
   if (error) throw error;
 
-  await syncVariants(supabase, data.id);
-  await applyVariantCosts(supabase, data.id, body.variant_costs);
+  await writeVariants(supabase, data.id, body.variants);
 
   audit({ entityType: 'product', entityId: data.id, action: 'create', after: data });
 
@@ -111,8 +110,7 @@ async function updateProduct(supabase: SupabaseClient, request: NextRequest, aud
 
   if (error) throw error;
 
-  await syncVariants(supabase, body.id);
-  await applyVariantCosts(supabase, body.id, body.variant_costs);
+  await writeVariants(supabase, body.id, body.variants);
 
   // Only the fields that moved. A save that changed nothing records nothing,
   // so the feed shows real edits rather than every time someone opened a form
