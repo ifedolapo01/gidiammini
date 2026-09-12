@@ -1575,6 +1575,85 @@ export type Database = {
           },
         ]
       }
+      product_attribute_values: {
+        Row: {
+          attribute_id: string
+          created_at: string
+          id: string
+          sort_order: number
+          swatch_hex: string | null
+          value: string
+        }
+        Insert: {
+          attribute_id: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          swatch_hex?: string | null
+          value: string
+        }
+        Update: {
+          attribute_id?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          swatch_hex?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_attribute_values_attribute_id_fkey"
+            columns: ["attribute_id"]
+            isOneToOne: false
+            referencedRelation: "product_attributes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_attributes: {
+        Row: {
+          created_at: string
+          id: string
+          input_type: string
+          is_system: boolean
+          key: string
+          name: string
+          sort_order: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          input_type?: string
+          is_system?: boolean
+          key: string
+          name: string
+          sort_order?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          input_type?: string
+          is_system?: boolean
+          key?: string
+          name?: string
+          sort_order?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_attributes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_pairs: {
         Row: {
           co_purchase_count: number
@@ -1788,6 +1867,7 @@ export type Database = {
       }
       product_variants: {
         Row: {
+          attributes: Json
           barcode: string | null
           color: string | null
           cost: number | null
@@ -1804,6 +1884,7 @@ export type Database = {
           variant_key: string | null
         }
         Insert: {
+          attributes?: Json
           barcode?: string | null
           color?: string | null
           cost?: number | null
@@ -1820,6 +1901,7 @@ export type Database = {
           variant_key?: string | null
         }
         Update: {
+          attributes?: Json
           barcode?: string | null
           color?: string | null
           cost?: number | null
@@ -2828,6 +2910,10 @@ export type Database = {
         }
         Returns: number
       }
+      create_product_attribute: {
+        Args: { p_input_type?: string; p_key: string; p_name: string }
+        Returns: string
+      }
       create_return: {
         Args: { p_items: Json; p_order_id: string; p_reason: string }
         Returns: Json
@@ -3043,6 +3129,10 @@ export type Database = {
       }
       variant_key: {
         Args: { p_color: string; p_size: string }
+        Returns: string
+      }
+      variant_key_from_attributes: {
+        Args: { p_attributes: Json; p_store_id: string }
         Returns: string
       }
     }

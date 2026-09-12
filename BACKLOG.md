@@ -8,6 +8,64 @@ Anything else found along the way is raised in conversation, not filed here.
 
 ---
 
+## Application layer for the attribute engine
+
+**Status:** not started. The DB side landed in `20260912110000`; this is
+everything above it.
+
+The migration made the variant axis set data — `product_attributes` /
+`product_attribute_values` / `product_variants.attributes`, with `size` and
+`color` as the two seeded system attributes — and kept every existing
+consumer working via a generated-column bridge
+(`size`/`color`/`variant_key`). Nothing in the application actually offers a
+third axis yet, because the TypeScript layer is built around exactly two
+named fields in a dozen places, not a loop over an attribute list:
+
+- The admin variant editor (`useProductVariants.ts`, `PricingVariantsEditor.tsx`)
+  models size as the outer grouping and colour as a nested leaf
+  (`VariantSize[]` containing `VariantColor[]`) — an asymmetric shape a third
+  axis cannot fit into without a redesign, not a rename.
+- The storefront selector (`VariantSelector.tsx`,
+  `useProductVariantSelection.ts`) renders two hardcoded, separately-coded
+  blocks ("Select {size}" / "Select Color") and parses `combinationPrices`
+  keys by splitting on `|` and assuming size is segment one, colour segment
+  two.
+- At least six independent, ad hoc reimplementations of "join size and
+  colour into a key" exist outside `variantKeyFor()` in
+  `lib/commerce/product-variants.ts` — in `pricing.ts`,
+  `product-form-helpers.ts`, `product-import-payload.ts`,
+  `useProductVariantSelection.ts`, `useDiscountVariantTargeting.ts`, and
+  `group-variants.ts` — none of which import the canonical function. A
+  fourth, unrelated key format lives in `cart-input.ts`'s `cartLineKey()`,
+  and a fifth in `discount-target.ts`'s colon-delimited, position-based
+  `VariantTarget` wire format (which cannot address a fourth axis at all
+  without a version bump to its own encoding).
+- `useAddProductToCart.ts` unconditionally requires *both* size and colour
+  before allowing add-to-cart, which already looks wrong for a
+  single-axis product today, and will be actively wrong once a third axis
+  exists.
+
+**Left because** this is a UI redesign, not a schema change, and shipping it
+piecemeal (rename one selector, leave the other five key-joins drifting) is
+how the size/colour drift bugs this project has already fixed once
+(`variant_key` computed five different ways, repaired in `20251101002600`)
+come back in TypeScript instead of SQL.
+
+**Done means:**
+- One canonical attribute-key builder in `lib/commerce/product-variants.ts`,
+  and every ad hoc `${a}|${b}` join listed above replaced with a call to it.
+- The admin variant editor edits an arbitrary set of axes (a per-axis value
+  list feeding a generated cartesian grid), not a size-outer/colour-inner
+  pair.
+- The storefront selector loops over whatever axes a product's variants
+  actually vary on, instead of two hand-copied blocks.
+- `discount-target.ts` and `cartLineKey()` converge on the same key format
+  the DB now uses, extensible to N axes without another wire-format version.
+- `useAddProductToCart.ts` requires exactly the axes a product has, not
+  "size and colour" unconditionally.
+
+---
+
 ## Editable notification templates, with preview
 
 **Status:** not started. Part 5 of the notifications work (`20260906140000`).

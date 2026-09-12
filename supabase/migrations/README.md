@@ -209,6 +209,8 @@ keeps them from running again.
 | `20260910120000` | `subsubcategories` table; `products.sub_sub_category`; `product_candidates`/`count_products`/`list_products`/`product_facet_options` gain `p_subsubcategory`; discounts scope allows `SUBSUBCATEGORY` | **not yet — pending `db push`** |
 | `20260910130000` | every money column becomes `bigint` minor units; `store_settings.currency` + `orders.currency` | **not yet — pending `db push`** |
 | `20260911100000` | `stores`; `current_store_id()`; `store_id` on every root table; `app_service` role + RLS scoping | **not yet — pending `db push`** |
+| `20260912100000` | reassigns the SECURITY DEFINER product/order/return functions to `app_service`, so RLS applies inside them too | **not yet — pending `db push`** |
+| `20260912110000` | `product_attributes` + `product_attribute_values`; `product_variants.attributes`; size/color become generated columns, `variant_key` becomes trigger-maintained; `create_product_attribute()` | **not yet — pending `db push`** |
 
 The rows between `20251101004000` and `20260905190000` predate this table being
 kept up to date; `npm run db:status` is the authority on what the remote has
@@ -1134,24 +1136,130 @@ in each of them. `createSuperAdminClient()` keeps the real key, for the rare
 case that must genuinely cross store boundaries; nothing in this codebase
 needs it today.
 
-**Not covered yet, on purpose:**
+**Not covered here** -- the `SECURITY DEFINER` functions elsewhere in this
+file (`list_products`, `search_products`, `edit_order_items`,
+`set_variant_stock`, `rebuild_product_pairs`, and the rest) run with their
+*owner's* privileges, not the caller's, and every one of them is owned by
+`postgres`, a superuser, which bypasses RLS regardless of any policy above.
+`20260912100000` is that follow-up.
 
-- The `SECURITY DEFINER` functions elsewhere in this file (`list_products`,
-  `search_products`, `edit_order_items`, `set_variant_stock`,
-  `rebuild_product_pairs`, and the rest) run with their *owner's* privileges,
-  not the caller's -- today that owner is `postgres`, a superuser, which
-  bypasses RLS regardless of any policy here. Making RLS apply inside them
-  means reassigning their ownership to a non-bypassing role (no signature or
-  body changes needed), which is real blast radius on checkout, stock and
-  order-editing paths that could not be verified against a staging copy of
-  the live database in this pass.
-- `admin_users`, `audit_log`, `notifications`, `payment_events`,
-  `rate_limits`, `subscribers`, `search_queries`, `storefront_events` and
-  `order_number_reservations` keep exactly today's access for `app_service`
-  (unconditional -- the same thing `service_role`'s bypass already gave them),
-  rather than being store-scoped. They are operational/log tables and staff
-  identity, not customer or financial records, and scoping them is separable
-  follow-up.
+`admin_users`, `audit_log`, `notifications`, `payment_events`, `rate_limits`,
+`subscribers`, `search_queries`, `storefront_events` and
+`order_number_reservations` keep exactly today's access for `app_service`
+(unconditional -- the same thing `service_role`'s bypass already gave them),
+rather than being store-scoped. They are operational/log tables and staff
+identity, not customer or financial records, and scoping them is separable
+follow-up.
+
+## Scoping the SECURITY DEFINER functions (`20260912100000`)
+
+`20260911100000` named this gap rather than papering over it: a `SECURITY
+DEFINER` function runs as its owner regardless of who calls it, every such
+function here was owned by `postgres`, and a superuser bypasses RLS
+unconditionally. `list_products()`, `search_products()`, `edit_order_items()`,
+`set_variant_stock()` and the rest were reading and writing every store's rows
+no matter which role called them.
+
+The fix is `ALTER FUNCTION ... OWNER TO app_service` -- no signature or body
+change, so nothing about what these functions do is touched, only whose
+privileges their internal queries run under. Once app_service owns them,
+their queries hit the exact store-scoping policies `20260911100000` already
+wrote, with no new grants needed (app_service's table access was already
+blanket).
+
+Signatures are looked up through `pg_proc` rather than hand-typed, the same
+defence `20260910130000` already uses and for the identical reason: several of
+these functions (`list_products`, `product_candidates`, `count_products`,
+`product_facet_options`, `search_products`, `product_cards`,
+`storefront_traffic_without_sales`) have had their signature replaced outright
+via an explicit `DROP FUNCTION` at least once, precisely because
+`CREATE OR REPLACE` cannot change a return or argument type. A hand-typed,
+mistyped signature would make the `ALTER` silently match nothing.
+
+**Left owned by `postgres`, deliberately:** `is_active_admin()` (admin
+identity is a different question from store scope, and it must keep reading
+the locked-down `admin_users` table regardless of store context); anything
+touching only the tables `20260911100000` already left unscoped
+(`check_rate_limit`, `prune_audit_log`, and the like -- reassigning them would
+be a no-op at best); and the plain `touch_*_updated_at` triggers, which write
+only the row already being changed by the caller's own statement and touch no
+other table.
+
+**Still not verified against a live database.** The `ALTER FUNCTION` itself is
+inert as a schema change (same signature, same body), but this session cannot
+run checkout, stock adjustment or order editing against a staging copy of the
+real data to confirm every one of these functions' internal queries succeeds
+under app_service's grants and policies. Exercise the checkout, stock-save,
+order-edit and returns flows once this is pushed, before trusting them in
+production.
+
+## The attribute engine (`20260912110000`)
+
+`product_variants` hardcoded exactly two axes, `size` and `color`, since
+`20251101002600`. A store selling anything not describable as size-and-colour
+— a candle needing "Scent", a phone case needing "Model" — had no way to add
+that axis without another schema migration and another round of two-axis
+logic in every function that touches a variant.
+
+**The axis set becomes data.** Two new tables, `product_attributes` (the
+catalogue: key, display name, input type, sort order) and
+`product_attribute_values` (known values per attribute, e.g. every colour
+ever used), seeded with `size` and `color` as system attributes so every
+existing product validates against the catalogue with zero data changes.
+`product_variants.attributes jsonb` — e.g. `{"size":"M","color":"Red"}` — is
+now the per-variant source of truth, GIN-indexed for containment queries.
+
+**No join table.** A `variant_attribute_values` table recording the same
+per-variant assignment a second time was considered and dropped —
+`product_variants.attributes` already *is* that assignment.
+`product_attribute_values` holds only the catalogue of values seen so far,
+populated automatically the first time a value is used.
+
+**`size` and `color` become real `GENERATED ALWAYS AS ... STORED` columns**
+— `attributes ->> 'size'` / `->> 'color'`. JSONB extraction on the row's own
+column is IMMUTABLE with no subquery, so this is legal, and it is literally
+the technique `20251101002600` already used for `variant_key`. Every existing
+SQL function, the RLS column-level GRANT, and every TypeScript file that
+reads `.size`/`.color` — including `PUBLIC_VARIANT_COLUMNS` in
+`lib/commerce/product-variants.ts`, which a test asserts matches the GRANT
+byte-for-byte — needed zero changes.
+
+**`variant_key` stops being generated and becomes trigger-maintained.**
+Composing a key from an arbitrary, catalogue-ordered set of attributes needs
+a join against `product_attributes.sort_order`, which is no longer
+expressible as a subquery-free IMMUTABLE generated-column expression — the
+same reason `products.search_vector` (`20251101002800`) is a trigger and not
+a generated column. A `BEFORE INSERT OR UPDATE OF attributes` trigger
+(`product_variants_set_key`) requires every attribute key present to already
+have a catalogue row for that variant's store — catalogue-first, so you
+cannot set a value for an attribute that doesn't exist — then joins the
+present keys to their `sort_order` and pipe-joins the values, falling back to
+`'single'`. With only `size` (sort_order 1) and `color` (sort_order 2)
+present, this reproduces the old `size|color` ordering byte-for-byte for
+every existing row.
+
+**`replace_product_variants` becomes the real generic write path.** Per its
+own `20251101002600` comment it was unreferenced by any application code, so
+this is where a future caller can post `{"attributes": {"size":"M","material":
+"Cotton"}}` per item, while today's flat `{"size":.., "color":..}` shape
+keeps working unchanged (resolved to the same `attributes` object either
+way). `sync_variants_from_pricing_config` only changes its INSERT target
+(`attributes` instead of `size, color`) — it stays a legacy two-axis importer
+by nature, since `pricing_config` itself has no notion of a third axis.
+
+**`create_product_attribute()`** is the one new admin entry point: declares a
+new axis (key, display name, input type) for the current store. Everything
+else — the values themselves — auto-populates the first time a variant uses
+them, via a second, `AFTER`, trigger.
+
+**Deliberately not done here:** no anon/authenticated grant on either new
+table (nothing in the storefront reads the catalogue yet), and no
+TypeScript changes at all — the generated-column bridge is what makes that
+true. The admin variant editor's asymmetric size-outer/colour-inner data
+model, the storefront's hardcoded two-block selector, and the half-dozen ad
+hoc `${size}|${color}` key-joins scattered outside `variantKeyFor` (cart,
+discount variant targeting, order editing) are real follow-up work, tracked
+in `BACKLOG.md` rather than left as a silent gap.
 
 ## After applying these
 
