@@ -10,6 +10,7 @@
 import type { PricingConfig } from '@/types/product';
 import { buildPricingConfigFromVariants, type VariantSize } from './product-form-helpers';
 import type { ImportProduct } from './product-import';
+import { toMinorUnits } from './money';
 
 export interface ProductWritePayload {
   name: string;
@@ -44,9 +45,19 @@ export function toProductPayload(product: ImportProduct): ProductWritePayload {
   // you record a size/colour without ticking "Product has multiple options".
   const hasVariants = product.variants.length > 1;
 
+  // The CSV is Naira throughout — parsed, previewed and validated that way
+  // (see product-import.ts) — and converts to minor units right here, at the
+  // boundary where a row becomes part of the write payload. Same boundary
+  // useProductSubmit.ts applies for the manual form.
+  const variants = product.variants.map((v) => ({
+    ...v,
+    price: toMinorUnits(v.price),
+    cost: v.cost === null ? null : toMinorUnits(v.cost),
+  }));
+
   const bySize = new Map<string, VariantSize>();
 
-  for (const variant of product.variants) {
+  for (const variant of variants) {
     const size = variant.size;
     let entry = bySize.get(size);
 
@@ -69,7 +80,7 @@ export function toProductPayload(product: ImportProduct): ProductWritePayload {
     }
   }
 
-  const first = product.variants[0];
+  const first = variants[0];
 
   const { pricingConfig, totalStock, minPrice, uniqueSizes, uniqueColors } =
     buildPricingConfigFromVariants({
@@ -85,7 +96,7 @@ export function toProductPayload(product: ImportProduct): ProductWritePayload {
     });
 
   const variantCosts: Record<string, number> = {};
-  for (const variant of product.variants) {
+  for (const variant of variants) {
     if (variant.cost === null) continue;
     const key = [variant.size, variant.color].filter(Boolean).join('|') || 'single';
     variantCosts[key] = variant.cost;

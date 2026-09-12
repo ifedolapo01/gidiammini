@@ -6,6 +6,7 @@ import { SubmitHandler } from 'react-hook-form';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { buildPricingConfigFromVariants, ImageFile, saveProduct, VariantSize } from '@/lib/commerce/product-form-helpers';
 import { buildVariantCosts } from '@/lib/commerce/variant-costs';
+import { toMinorUnits } from '@/lib/commerce/money';
 import type { SizingType } from '@/lib/commerce/product-form-schema';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
@@ -51,18 +52,32 @@ export function useProductSubmit(args: UseProductSubmitArgs) {
       return;
     }
 
+    // The form displays and edits Naira throughout — see useEditProductData's
+    // matching fromMinorUnits on load. This is the one place it becomes minor
+    // units, right before anything is built for the API.
+    const minorVariants: VariantSize[] = variants.map((v) => ({
+      ...v,
+      price: toMinorUnits(v.price),
+      cost: v.cost == null ? null : toMinorUnits(v.cost),
+      colors: v.colors.map((c) => ({
+        ...c,
+        price: toMinorUnits(c.price),
+        cost: c.cost == null ? null : toMinorUnits(c.cost),
+      })),
+    }));
+
     const variantParams = {
       hasVariants,
       hasSizes,
       hasColors,
-      variants,
-      singlePrice: data.price,
+      variants: minorVariants,
+      singlePrice: toMinorUnits(data.price),
       singleStock: data.stock,
       singleSize: data.singleSize,
       singleColor: data.singleColor,
       // An empty cost field means "not recorded", so it must reach
       // buildVariantCosts as null rather than being coerced to 0.
-      singleCost: data.cost === '' || data.cost === undefined ? null : Number(data.cost),
+      singleCost: data.cost === '' || data.cost === undefined ? null : toMinorUnits(Number(data.cost)),
     };
 
     const { pricingConfig, totalStock, minPrice, uniqueSizes, uniqueColors } =

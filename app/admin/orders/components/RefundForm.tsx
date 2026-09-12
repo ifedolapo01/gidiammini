@@ -27,6 +27,7 @@
 import { useState } from 'react';
 import { Button, Input, Select, Textarea, FieldError, fieldErrorId } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 import {
   REFUND_REASONS,
   REFUND_METHODS,
@@ -55,14 +56,18 @@ export default function RefundForm({ totals, saving, onSubmit }: RefundFormProps
 
   const reason = findRefundReason(reasonCode);
   const value = Number(amount);
-  const amountValid = Number.isFinite(value) && value > 0 && value <= totals.refundable;
+  // The field is Naira, like every other amount an admin types; totals come
+  // from the server in minor units (20260910130000), so the comparison and
+  // the submitted amount both convert once, here.
+  const valueMinor = toMinorUnits(value);
+  const amountValid = Number.isFinite(value) && valueMinor > 0 && valueMinor <= totals.refundable;
 
   const chooseReason = (code: string) => {
     setReasonCode(code);
     // A ground that normally means the whole order pre-fills the whole
     // refundable balance. Still editable — "normally" is not "always".
     const chosen = findRefundReason(code);
-    if (chosen?.usuallyFull && !amount) setAmount(String(totals.refundable));
+    if (chosen?.usuallyFull && !amount) setAmount(String(fromMinorUnits(totals.refundable)));
   };
 
   const submit = async (event: React.FormEvent) => {
@@ -71,7 +76,7 @@ export default function RefundForm({ totals, saving, onSubmit }: RefundFormProps
     if (!amountValid || !reasonCode) return;
 
     const ok = await onSubmit({
-      amount: value,
+      amount: valueMinor,
       method,
       reason_code: reasonCode,
       reference: reference.trim() || undefined,
@@ -106,7 +111,7 @@ export default function RefundForm({ totals, saving, onSubmit }: RefundFormProps
             id="refund-amount"
             type="number"
             min={0}
-            max={totals.refundable}
+            max={fromMinorUnits(totals.refundable)}
             step="0.01"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}

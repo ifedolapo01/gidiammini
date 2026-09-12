@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui';
 import { useDiscountStatus } from './useDiscountStatus';
 import { Discount } from '@/lib/commerce/discounts';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 import { emptyFormData, type DiscountFormData } from './useDiscounts.types';
 
 export type { DiscountFormData };
@@ -31,12 +32,19 @@ export function useDiscounts() {
 
   const openModal = (discount?: Discount, isReuse: boolean = false) => {
     if (discount) {
+      // discount.value is money only for FIXED (minor units); PERCENTAGE is
+      // 0-100 and FREE_SHIPPING is always 0 — neither is a currency amount, so
+      // neither converts. min_order_value is always a basket minimum in minor
+      // units, whatever the type.
+      const displayValue = discount.type === 'FIXED' ? fromMinorUnits(discount.value) : discount.value;
+      const displayMinOrderValue = discount.min_order_value ? fromMinorUnits(discount.min_order_value) : null;
+
       if (isReuse) {
         setEditingId(null);
         setFormData({
           name: discount.name,
           type: discount.type,
-          value: discount.value.toString(),
+          value: displayValue.toString(),
           scope: discount.scope,
           target_id: discount.target_id || '',
           is_active: true,
@@ -50,21 +58,21 @@ export function useDiscounts() {
           code: '',
           max_redemptions: '',
           per_customer_limit: '',
-          min_order_value: discount.min_order_value ? String(discount.min_order_value) : '',
+          min_order_value: displayMinOrderValue !== null ? String(displayMinOrderValue) : '',
         });
       } else {
         setEditingId(discount.id);
         setFormData({
           name: discount.name,
           type: discount.type,
-          value: discount.value.toString(),
+          value: displayValue.toString(),
           scope: discount.scope,
           target_id: discount.target_id || '',
           is_active: discount.is_active,
           code: discount.code ?? '',
           max_redemptions: discount.max_redemptions ? String(discount.max_redemptions) : '',
           per_customer_limit: discount.per_customer_limit ? String(discount.per_customer_limit) : '',
-          min_order_value: discount.min_order_value ? String(discount.min_order_value) : '',
+          min_order_value: displayMinOrderValue !== null ? String(displayMinOrderValue) : '',
           start_date: discount.start_date ? format(new Date(discount.start_date), "yyyy-MM-dd'T'HH:mm") : '',
           end_date: discount.end_date ? format(new Date(discount.end_date), "yyyy-MM-dd'T'HH:mm") : ''
         });
@@ -93,7 +101,11 @@ export function useDiscounts() {
       const payload = {
         ...formData,
         id: editingId,
-        value: Number(formData.value),
+        // Converted here, at the boundary where the owner's typed Naira
+        // becomes minor units — see the same note in openModal. Only FIXED's
+        // value is money; min_order_value always is.
+        value: formData.type === 'FIXED' ? toMinorUnits(Number(formData.value)) : Number(formData.value),
+        min_order_value: toMinorUnits(Number(formData.min_order_value) || 0),
         start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
         end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
       };

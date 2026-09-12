@@ -20,10 +20,10 @@
  */
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { round2 } from './payment-outcome';
 import { isRefundCode, isRefundMethod, type RefundMethod } from './refund-reasons';
 import { announceRefund } from './refund-notify';
 import type { StatusChangeActor } from './order-status-transition';
+import { formatCurrency } from './pricing';
 
 const ORDER_COLUMNS =
   'id, order_number, customer_name, customer_email, total_amount, amount_paid, amount_refunded';
@@ -57,11 +57,14 @@ export type RefundResult =
     }
   | { ok: false; error: string; status: number };
 
-/** Naira figure from an untrusted body, or null when it is not one. */
+/** Minor-units figure from an untrusted body, or null when it is not one.
+ *  The admin types Naira; the client converts to minor units before this is
+ *  ever reached (see RefundForm.tsx / ReturnsPanel.tsx) — this only guards
+ *  against a stray float. */
 function readAmount(value: unknown): number | null {
   const amount = typeof value === 'string' ? Number(value) : value;
   if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) return null;
-  return round2(amount);
+  return Math.round(amount);
 }
 
 export async function recordOrderRefund(
@@ -94,7 +97,7 @@ export async function recordOrderRefund(
   // optional — `'12000.00' - 0` would work and `'12000.00' > 5000` would not.
   const paid = Number(order.amount_paid ?? 0);
   const alreadyRefunded = Number(order.amount_refunded ?? 0);
-  const refundable = round2(paid - alreadyRefunded);
+  const refundable = paid - alreadyRefunded;
 
   if (paid <= 0) {
     return {
@@ -107,7 +110,7 @@ export async function recordOrderRefund(
   if (amount > refundable) {
     return {
       ok: false,
-      error: `Only ${refundable.toFixed(2)} can be refunded — that is what was received, less what has already gone back.`,
+      error: `Only ${formatCurrency(refundable)} can be refunded — that is what was received, less what has already gone back.`,
       status: 400,
     };
   }
@@ -147,7 +150,7 @@ export async function recordOrderRefund(
     ? false
     : await announceRefund(order, {
         amount,
-        refundedTotal: settled ? refundedTotal : round2(alreadyRefunded + amount),
+        refundedTotal: settled ? refundedTotal : alreadyRefunded + amount,
         settled,
         reasonCode: input.reasonCode,
         note: input.note ?? null,
@@ -159,7 +162,7 @@ export async function recordOrderRefund(
     ok: true,
     refundId: (inserted as any).id,
     refundedTotal,
-    refundable: round2(paid - (settled ? refundedTotal : alreadyRefunded)),
+    refundable: paid - (settled ? refundedTotal : alreadyRefunded),
     notified,
   };
 }
@@ -178,5 +181,5 @@ async function readRefundedTotal(
     .eq('id', orderId)
     .maybeSingle();
 
-  return round2(Number((data as any)?.amount_refunded ?? projected));
+  return Number((data as any)?.amount_refunded ?? projected);
 }

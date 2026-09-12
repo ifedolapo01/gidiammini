@@ -68,7 +68,8 @@ describe('checkDiscountCode', () => {
   });
 
   it('says how far off a basket is from the minimum', () => {
-    const result = check(code({ min_order_value: 20_000 }), { subtotal: 15_000 });
+    // Minor units (20260910130000): ₦20,000 and ₦15,000, ₦5,000 short.
+    const result = check(code({ min_order_value: 2_000_000 }), { subtotal: 1_500_000 });
     expect(result).toMatchObject({ ok: false, reason: 'below_minimum' });
     // The customer can act on this one, so the number has to be in it.
     expect((result as { message: string }).message).toContain('5,000');

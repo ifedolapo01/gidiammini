@@ -111,12 +111,14 @@ describe('describeBalance', () => {
   });
 
   it('names the outstanding balance on a part payment', () => {
-    expect(describeBalance(order({ amount_paid: 20_000 }))).toBe('4500.00 still outstanding.');
+    // Every figure here is minor units (20260910130000) — describeBalance
+    // renders through formatCurrency, not toFixed(2).
+    expect(describeBalance(order({ amount_paid: 20_000 }))).toBe('₦45 still outstanding.');
   });
 
   it('names the amount owed back on an overpayment', () => {
     expect(describeBalance(order({ amount_paid: 25_000 }))).toBe(
-      'Overpaid by 500.00 — a refund is owed.'
+      'Overpaid by ₦5 — a refund is owed.'
     );
   });
 

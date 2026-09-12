@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MONEY_EPSILON,
   daysWaiting,
-  round2,
   settlement,
   suggestOutcome,
 } from './payment-outcome';
@@ -39,18 +37,11 @@ describe('settlement', () => {
     expect(result.overpaid).toBe(500);
   });
 
-  it('treats a floating-point shortfall inside the epsilon as settled', () => {
-    // The case this exists for: a total computed from unit prices plus
-    // shipping can land a fraction of a kobo above the sum received, which is
-    // a balance no customer can pay.
-    const result = settlement(20_000.0000001, 20_000);
-
-    expect(result.settled).toBe(true);
-    expect(result.outstanding).toBe(0);
-  });
-
-  it('still reports a shortfall larger than the epsilon', () => {
-    expect(settlement(20_000, 20_000 - MONEY_EPSILON * 4).settled).toBe(false);
+  it('reports a shortfall of a single minor unit as unsettled', () => {
+    // Every figure here is minor units (20260910130000) — an integer — so
+    // there is no fraction-of-a-kobo drift left to absorb. One minor unit
+    // short is a real, chaseable balance.
+    expect(settlement(20_000, 19_999).settled).toBe(false);
   });
 });
 
@@ -69,13 +60,6 @@ describe('suggestOutcome', () => {
 
   it('does not suggest verified for a zero or negative amount', () => {
     expect(suggestOutcome(20_000, 20_000, 0)).toBe('short_paid');
-  });
-});
-
-describe('round2', () => {
-  it('keeps naira to the kobo', () => {
-    expect(round2(1999.999)).toBe(2000);
-    expect(round2(0.005)).toBe(0.01);
   });
 });
 

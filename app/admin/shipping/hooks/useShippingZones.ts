@@ -10,6 +10,7 @@ import type { ZoneExceptionFormRow } from './useZoneExceptions';
 import { type ShippingZoneFormData, emptyFormData } from './useShippingZones.types';
 import { ADMIN_POLL_INTERVAL_MS } from '../../lib/adminPolling';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 
 export type { ShippingZoneFormData };
 
@@ -65,7 +66,7 @@ export function useShippingZones() {
         state: zone.state,
         lga: zone.lga || '',
         places: zone.places || '',
-        delivery_fee: zone.delivery_fee.toString(),
+        delivery_fee: fromMinorUnits(zone.delivery_fee).toString(),
         pickup_available: zone.pickup_available,
         pickup_address: zone.pickup_address || '',
         contact_phone: zone.contact_phone || '',
@@ -107,7 +108,7 @@ export function useShippingZones() {
         id: editingId,
         lga: formData.lga || null,
         places: formData.lga && formData.places.trim() ? formData.places.trim() : null,
-        delivery_fee: Number(formData.delivery_fee) || 0,
+        delivery_fee: toMinorUnits(Number(formData.delivery_fee) || 0),
         delivery_eta_min: Number(formData.delivery_eta_min) || 1,
         delivery_eta_max: Number(formData.delivery_eta_max) || Number(formData.delivery_eta_min) || 1,
         sort_order: Number(formData.sort_order) || 0,
@@ -115,7 +116,7 @@ export function useShippingZones() {
           id: row.id,
           lga: row.lga || null,
           places: row.places.trim() || null,
-          delivery_fee: row.delivery_fee ? Number(row.delivery_fee) : null,
+          delivery_fee: row.delivery_fee ? toMinorUnits(Number(row.delivery_fee)) : null,
           delivery_eta_min: row.delivery_eta_min ? Number(row.delivery_eta_min) : null,
           delivery_eta_max: row.delivery_eta_max ? Number(row.delivery_eta_max) : null,
           delivery_eta_unit: row.delivery_eta_unit || null,

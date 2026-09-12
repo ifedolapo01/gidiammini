@@ -9,36 +9,47 @@
  */
 import { Product } from '@/types/product';
 import { findVariant, hasVariantRows, variantsOf } from './product-variants';
+import { fromMinorUnits } from './money';
 
 /**
- * The one naira formatter. Built on Intl rather than a hand-written ₦ in front
- * of toLocaleString() for three reasons: the sign and the grouping come from
- * the same locale data instead of being assembled by hand, a negative renders
- * as -₦1,000 rather than ₦-1,000, and the minor units are stated explicitly
- * so a price never silently gains or loses kobo.
+ * Every price this function is handed is minor units (kobo, cents — see
+ * lib/commerce/money.ts), so the formatter is built per currency rather than
+ * once at module scope: a fixed NGN instance could not also format a USD
+ * amount once this store prices in more than one currency. Cached per code,
+ * because Intl.NumberFormat construction is the expensive part and an admin
+ * table calls this a few hundred times per render, almost always in the one
+ * currency the store actually charges in today.
  *
- * The formatter is built once at module scope. Intl.NumberFormat construction
- * is the expensive part, and an admin table calls this a few hundred times per
- * render.
+ * NGN keeps zero fraction digits (this store's prices have always read as
+ * ₦1,000, not ₦1,000.00); every other currency gets Intl's own default so a
+ * sub-unit price — the whole reason minor units exist — is actually visible.
  */
-const NAIRA = new Intl.NumberFormat('en-NG', {
-  style: 'currency',
-  currency: 'NGN',
-  // Prices in this store are whole naira. Stating both bounds stops Intl
-  // applying NGN's default of two, which would render every price as ₦1,000.00.
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
+const formatters = new Map<string, Intl.NumberFormat>();
 
-export function formatCurrency(amount: number): string {
-  // A total arriving as NaN from a bad sum should read as an obvious gap, not
-  // as "₦NaN" sitting in a column of real figures.
-  if (!Number.isFinite(amount)) return '—';
-  return NAIRA.format(amount);
+function formatterFor(currency: string): Intl.NumberFormat {
+  const existing = formatters.get(currency);
+  if (existing) return existing;
+
+  const formatter = new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency,
+    ...(currency === 'NGN' ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : {}),
+  });
+  formatters.set(currency, formatter);
+  return formatter;
 }
 
-export function formatPriceRange(min: number, max: number): string {
-  return min === max ? formatCurrency(min) : `${formatCurrency(min)} - ${formatCurrency(max)}`;
+export function formatCurrency(amountMinor: number, currency: string = 'NGN'): string {
+  // A total arriving as NaN from a bad sum should read as an obvious gap, not
+  // as "₦NaN" sitting in a column of real figures.
+  if (!Number.isFinite(amountMinor)) return '—';
+  return formatterFor(currency).format(fromMinorUnits(amountMinor));
+}
+
+export function formatPriceRange(min: number, max: number, currency: string = 'NGN'): string {
+  return min === max
+    ? formatCurrency(min, currency)
+    : `${formatCurrency(min, currency)} - ${formatCurrency(max, currency)}`;
 }
 
 export function getVariantPrice(

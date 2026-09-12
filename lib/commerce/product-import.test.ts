@@ -127,6 +127,9 @@ describe('parseProductRows', () => {
 });
 
 describe('toProductPayload', () => {
+  // Prices below are what the CSV cell says, in Naira. The payload is minor
+  // units (20260910130000) — toProductPayload converts, so every expected
+  // figure here is ×100.
   it('builds a combination product from size and colour rows', () => {
     const { products } = parse(
       'name,size,color,price,stock\n' +
@@ -137,10 +140,10 @@ describe('toProductPayload', () => {
     const payload = toProductPayload(products[0]);
 
     expect(payload.pricing_config.mode).toBe('combination');
-    expect(payload.pricing_config.combinationPrices).toEqual({ '0-3m|Red': 1500, '3-6m|Blue': 1800 });
+    expect(payload.pricing_config.combinationPrices).toEqual({ '0-3m|Red': 150_000, '3-6m|Blue': 180_000 });
     expect(payload.pricing_config.combinationStock).toEqual({ '0-3m|Red': 4, '3-6m|Blue': 2 });
     // The card shows the cheapest variant, and stock is the sum.
-    expect(payload.price).toBe(1500);
+    expect(payload.price).toBe(150_000);
     expect(payload.stock).toBe(6);
     expect(payload.sizes).toEqual(['0-3m', '3-6m']);
     expect(payload.colors).toEqual(['Red', 'Blue']);
@@ -151,7 +154,7 @@ describe('toProductPayload', () => {
     const payload = toProductPayload(products[0]);
 
     expect(payload.pricing_config.mode).toBe('size');
-    expect(payload.pricing_config.sizePrices).toEqual({ '0-3m': 1500, '3-6m': 1800 });
+    expect(payload.pricing_config.sizePrices).toEqual({ '0-3m': 150_000, '3-6m': 180_000 });
     expect(payload.stock).toBe(6);
   });
 
@@ -160,7 +163,7 @@ describe('toProductPayload', () => {
     const payload = toProductPayload(products[0]);
 
     expect(payload.pricing_config.mode).toBe('color');
-    expect(payload.pricing_config.colorPrices).toEqual({ Red: 900, Blue: 900 });
+    expect(payload.pricing_config.colorPrices).toEqual({ Red: 90_000, Blue: 90_000 });
     expect(payload.stock).toBe(4);
   });
 
@@ -169,7 +172,7 @@ describe('toProductPayload', () => {
     const payload = toProductPayload(products[0]);
 
     expect(payload.pricing_config.mode).toBe('single');
-    expect(payload.price).toBe(2500);
+    expect(payload.price).toBe(250_000);
     expect(payload.stock).toBe(7);
   });
 
@@ -190,7 +193,7 @@ describe('toProductPayload', () => {
     );
     // Only the recorded one. A blank cost stays unknown rather than becoming 0,
     // which would report the whole sale price as profit.
-    expect(toProductPayload(products[0]).variant_costs).toEqual({ '0-3m|Red': 700 });
+    expect(toProductPayload(products[0]).variant_costs).toEqual({ '0-3m|Red': 70_000 });
   });
 
   it('defaults the category so a minimal file still imports', () => {

@@ -59,7 +59,7 @@ async function startPayment(request: NextRequest) {
   // priced.
   const { data: order } = await supabase
     .from('orders')
-    .select('id, order_number, total_amount, customer_email, payment_verified')
+    .select('id, order_number, total_amount, currency, customer_email, payment_verified')
     .eq('id', created.order.id)
     .single();
 
@@ -81,7 +81,8 @@ async function startPayment(request: NextRequest) {
   try {
     const payment = await initializePayment({
       reference,
-      amountNaira: order.total_amount,
+      amountMinor: order.total_amount,
+      currency: order.currency,
       email: order.customer_email,
       orderNumber: order.order_number,
       // No reference in this URL: Paystack appends both `reference` and

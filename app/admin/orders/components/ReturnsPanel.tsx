@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Badge, Button, Input, Spinner, Textarea } from '@/components/ui';
 import { formatDate } from '@/lib/commerce/format-date';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 import { formatReturnStatus, getReturnStatusColorToken } from '@/lib/commerce/return-status';
 import { useOrderReturns, type ReturnAction } from '../hooks/useOrderReturns';
 import type { Return } from '@/types/return';
@@ -95,8 +96,8 @@ function ReturnCard({
             type="number"
             min="0"
             step="0.01"
-            value={refundAmount}
-            onChange={(e) => setRefundAmount(Math.max(0, Number(e.target.value) || 0))}
+            value={fromMinorUnits(refundAmount)}
+            onChange={(e) => setRefundAmount(Math.max(0, toMinorUnits(Number(e.target.value) || 0)))}
           />
           <p className="mt-1 text-caption-md text-text-secondary">
             Defaulted to the returned lines&rsquo; value ({formatCurrency(refundAmount)}).

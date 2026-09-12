@@ -13,6 +13,7 @@ import { Input } from '@/components/ui';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { unitMarginPercent, marginTone, formatMarginPercent } from '@/lib/commerce/margin';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { toMinorUnits } from '@/lib/commerce/money';
 
 const TONE_CLASS = {
   success: 'text-success',
@@ -65,8 +66,8 @@ export default function SingleCostField({ register, errors, watch }: SingleCostF
           {marginPercent === null
             ? 'No cost recorded. Margin cannot be shown.'
             : belowCost
-              ? `Selling below cost: ${formatCurrency(price - (cost ?? 0))} per unit (${formatMarginPercent(marginPercent)}).`
-              : `Margin ${formatMarginPercent(marginPercent)} · ${formatCurrency(price - (cost ?? 0))} per unit.`}
+              ? `Selling below cost: ${formatCurrency(toMinorUnits(price - (cost ?? 0)))} per unit (${formatMarginPercent(marginPercent)}).`
+              : `Margin ${formatMarginPercent(marginPercent)} · ${formatCurrency(toMinorUnits(price - (cost ?? 0)))} per unit.`}
         </p>
       )}
     </div>

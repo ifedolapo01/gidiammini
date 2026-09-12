@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { Check, HandCoins } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 import { settlement, suggestOutcome } from '@/lib/commerce/payment-outcome';
 import type { PaymentQueueItem, RecordPaymentInput } from '@/types/payment';
 import type { ReceiptOcrGuess } from '../hooks/useReceiptOcr';
@@ -38,8 +39,10 @@ interface VerifyFormProps {
 export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }: VerifyFormProps) {
   const balance = settlement(order.total_amount, order.amount_paid);
   // Prefilled with what is actually owed, not the order total: on a part-paid
-  // order those differ, and the figure being confirmed is the balance.
-  const suggestedAmount = balance.partial ? balance.outstanding : order.total_amount;
+  // order those differ, and the figure being confirmed is the balance. order
+  // fields are minor units; the field itself is Naira, like the receipt the
+  // verifier is reading from.
+  const suggestedAmount = fromMinorUnits(balance.partial ? balance.outstanding : order.total_amount);
 
   const [amount, setAmount] = useState(String(suggestedAmount));
   const [reference, setReference] = useState('');
@@ -72,14 +75,17 @@ export function VerifyForm({ order, saving, onSubmit, onStartReject, ocrGuess }:
 
   const typed = Number(amount);
   const valid = Number.isFinite(typed) && typed > 0;
-  const suggested = valid ? suggestOutcome(order.total_amount, order.amount_paid, typed) : null;
-  const shortfall = valid ? settlement(order.total_amount, order.amount_paid + typed) : null;
+  // Converted once, here, to minor units — everything downstream (the live
+  // preview and the submitted payload) stays in the same unit as order.total_amount.
+  const typedMinor = valid ? toMinorUnits(typed) : 0;
+  const suggested = valid ? suggestOutcome(order.total_amount, order.amount_paid, typedMinor) : null;
+  const shortfall = valid ? settlement(order.total_amount, order.amount_paid + typedMinor) : null;
 
   const submit = (status: 'verified' | 'short_paid') =>
     onSubmit({
       orderId: order.id,
       status,
-      amount: typed,
+      amount: typedMinor,
       method,
       reference: reference.trim() || null,
       receivedAt: toReceivedAt(receivedOn),

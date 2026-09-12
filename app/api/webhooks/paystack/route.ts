@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const outcome = await finalizePayment(supabase, {
       reference,
       status: String(data.status ?? ''),
-      amountKobo: Number(data.amount ?? 0),
+      amountMinor: Number(data.amount ?? 0),
       channel: data.channel ?? null,
       paidAt: data.paid_at ?? null,
       currency: String(data.currency ?? 'NGN'),

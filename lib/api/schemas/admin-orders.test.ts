@@ -125,8 +125,8 @@ describe('refundCreateSchema', () => {
     expect(parsed.notify).toBe(true);
   });
 
-  it('allows kobo — half of an odd total is not a whole Naira', () => {
-    expect(refundCreateSchema.parse({ ...valid, amount: 2_250.5 }).amount).toBe(2_250.5);
+  it('refuses a fractional amount — minor units are always whole numbers', () => {
+    expect(refundCreateSchema.safeParse({ ...valid, amount: 2_250.5 }).success).toBe(false);
   });
 
   it('refuses a refund of nothing', () => {

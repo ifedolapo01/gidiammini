@@ -81,4 +81,31 @@ describe('migration conventions', () => {
       }
     }
   });
+
+  /**
+   * A future migration that adds a tenant table without giving it a store_id
+   * column (or an explicit EXISTS-scoped policy against a parent) is exactly
+   * the class of mistake 20260911100000 exists to make impossible to miss --
+   * so it must fail here rather than be discovered the day a second store
+   * exists. Every table this migration made a "root" of the store dimension
+   * has to keep appearing with its own `store_id` column somewhere in the
+   * migration set.
+   */
+  it('every root tenant table still has its store_id column', () => {
+    const allSql = migrations.map((m) => stripComments(m.sql)).join('\n');
+    const rootTables = [
+      'products', 'categories', 'orders', 'customers', 'discounts',
+      'shipping_zones', 'store_settings', 'abandoned_carts',
+      'automation_rules', 'homepage_slides', 'search_synonyms',
+    ];
+
+    for (const table of rootTables) {
+      const addsColumn = new RegExp(
+        `ALTER TABLE public\\.${table}[\\s\\S]{0,80}ADD COLUMN[\\s\\S]{0,40}store_id|` +
+        `format\\('ALTER TABLE public\\.%I ADD COLUMN IF NOT EXISTS store_id`,
+        'i'
+      );
+      expect(addsColumn.test(allSql), `no migration adds store_id to ${table}`).toBe(true);
+    }
+  });
 });

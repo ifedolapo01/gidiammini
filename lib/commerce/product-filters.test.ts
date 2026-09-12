@@ -175,13 +175,15 @@ describe('compareSizes', () => {
 });
 
 describe('buildPriceBands', () => {
+  // The ladder is minor units now (20260910130000) — ₦1,500 and ₦60,000
+  // become 150,000 and 6,000,000.
   it('returns nothing when there is no range to divide', () => {
     expect(buildPriceBands(0, 0)).toEqual([]);
-    expect(buildPriceBands(5000, 5000)).toEqual([]);
+    expect(buildPriceBands(500_000, 500_000)).toEqual([]);
   });
 
   it('covers the range without overlapping', () => {
-    const bands = buildPriceBands(1500, 60000);
+    const bands = buildPriceBands(150_000, 6_000_000);
     expect(bands.length).toBeGreaterThan(1);
     expect(bands[0].min).toBeNull();
     expect(bands[bands.length - 1].max).toBeNull();
@@ -193,7 +195,7 @@ describe('buildPriceBands', () => {
   });
 
   it('matches a selection back to the band that produced it', () => {
-    const bands = buildPriceBands(1500, 60000);
+    const bands = buildPriceBands(150_000, 6_000_000);
     const band = bands[1];
     expect(matchPriceBand(bands, band.min, band.max)).toEqual(band);
     expect(matchPriceBand(bands, 123, 456)).toBeNull();
@@ -203,7 +205,7 @@ describe('buildPriceBands', () => {
 describe('describePriceRange', () => {
   it('describes open-ended and closed ranges', () => {
     expect(describePriceRange(null, null)).toBe('Any price');
-    expect(describePriceRange(5000, null)).toContain('5,000');
-    expect(describePriceRange(null, 4999)).toContain('Under');
+    expect(describePriceRange(500_000, null)).toContain('5,000');
+    expect(describePriceRange(null, 499_900)).toContain('Under');
   });
 });

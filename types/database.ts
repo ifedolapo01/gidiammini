@@ -28,6 +28,7 @@ export type Database = {
           phone: string | null
           recovered_at: string | null
           second_sent_at: string | null
+          store_id: string
           token_hash: string
           updated_at: string
         }
@@ -44,6 +45,7 @@ export type Database = {
           phone?: string | null
           recovered_at?: string | null
           second_sent_at?: string | null
+          store_id?: string
           token_hash: string
           updated_at?: string
         }
@@ -60,6 +62,7 @@ export type Database = {
           phone?: string | null
           recovered_at?: string | null
           second_sent_at?: string | null
+          store_id?: string
           token_hash?: string
           updated_at?: string
         }
@@ -76,6 +79,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abandoned_carts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -233,6 +243,7 @@ export type Database = {
           last_run_at: string | null
           last_run_note: string | null
           name: string
+          store_id: string
           trigger: string
           trigger_config: Json
           updated_at: string
@@ -249,6 +260,7 @@ export type Database = {
           last_run_at?: string | null
           last_run_note?: string | null
           name: string
+          store_id?: string
           trigger: string
           trigger_config?: Json
           updated_at?: string
@@ -265,11 +277,20 @@ export type Database = {
           last_run_at?: string | null
           last_run_note?: string | null
           name?: string
+          store_id?: string
           trigger?: string
           trigger_config?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -280,6 +301,7 @@ export type Database = {
           name: string
           size_guidance: string | null
           slug: string
+          store_id: string
         }
         Insert: {
           color?: string | null
@@ -289,6 +311,7 @@ export type Database = {
           name: string
           size_guidance?: string | null
           slug: string
+          store_id?: string
         }
         Update: {
           color?: string | null
@@ -298,8 +321,17 @@ export type Database = {
           name?: string
           size_guidance?: string | null
           slug?: string
+          store_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_auth_tokens: {
         Row: {
@@ -511,6 +543,7 @@ export type Database = {
           notes: string | null
           phone_e164: string | null
           phone_raw: string | null
+          store_id: string
           tags: string[]
           updated_at: string
         }
@@ -524,6 +557,7 @@ export type Database = {
           notes?: string | null
           phone_e164?: string | null
           phone_raw?: string | null
+          store_id?: string
           tags?: string[]
           updated_at?: string
         }
@@ -537,10 +571,19 @@ export type Database = {
           notes?: string | null
           phone_e164?: string | null
           phone_raw?: string | null
+          store_id?: string
           tags?: string[]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discount_redemptions: {
         Row: {
@@ -623,6 +666,7 @@ export type Database = {
           redemption_count: number
           scope: string
           start_date: string | null
+          store_id: string
           target_id: string | null
           type: string
           value: number
@@ -641,6 +685,7 @@ export type Database = {
           redemption_count?: number
           scope: string
           start_date?: string | null
+          store_id?: string
           target_id?: string | null
           type: string
           value: number
@@ -659,11 +704,20 @@ export type Database = {
           redemption_count?: number
           scope?: string
           start_date?: string | null
+          store_id?: string
           target_id?: string | null
           type?: string
           value?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "discounts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       homepage_slides: {
         Row: {
@@ -676,6 +730,7 @@ export type Database = {
           is_active: boolean
           sort_order: number
           starts_at: string | null
+          store_id: string
           subtitle: string
           title: string
           updated_at: string
@@ -690,6 +745,7 @@ export type Database = {
           is_active?: boolean
           sort_order?: number
           starts_at?: string | null
+          store_id?: string
           subtitle?: string
           title: string
           updated_at?: string
@@ -704,11 +760,20 @@ export type Database = {
           is_active?: boolean
           sort_order?: number
           starts_at?: string | null
+          store_id?: string
           subtitle?: string
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homepage_slides_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory_movements: {
         Row: {
@@ -1290,6 +1355,7 @@ export type Database = {
           carrier: string | null
           city: string | null
           created_at: string
+          currency: string
           customer_email: string
           customer_id: string | null
           customer_name: string
@@ -1322,6 +1388,7 @@ export type Database = {
           shipping_zone_id: string | null
           status: string
           stock_reserved: boolean
+          store_id: string
           tax_amount: number
           total_amount: number
           tracking_number: string | null
@@ -1335,6 +1402,7 @@ export type Database = {
           carrier?: string | null
           city?: string | null
           created_at?: string
+          currency?: string
           customer_email: string
           customer_id?: string | null
           customer_name: string
@@ -1367,6 +1435,7 @@ export type Database = {
           shipping_zone_id?: string | null
           status?: string
           stock_reserved?: boolean
+          store_id?: string
           tax_amount?: number
           total_amount: number
           tracking_number?: string | null
@@ -1380,6 +1449,7 @@ export type Database = {
           carrier?: string | null
           city?: string | null
           created_at?: string
+          currency?: string
           customer_email?: string
           customer_id?: string | null
           customer_name?: string
@@ -1412,6 +1482,7 @@ export type Database = {
           shipping_zone_id?: string | null
           status?: string
           stock_reserved?: boolean
+          store_id?: string
           tax_amount?: number
           total_amount?: number
           tracking_number?: string | null
@@ -1439,6 +1510,13 @@ export type Database = {
             columns: ["shipping_zone_id"]
             isOneToOne: false
             referencedRelation: "shipping_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -1796,6 +1874,7 @@ export type Database = {
           sizes: string[] | null
           sizing_type: string | null
           stock: number
+          store_id: string
           sub_category: string | null
           sub_sub_category: string | null
           updated_at: string
@@ -1821,6 +1900,7 @@ export type Database = {
           sizes?: string[] | null
           sizing_type?: string | null
           stock?: number
+          store_id?: string
           sub_category?: string | null
           sub_sub_category?: string | null
           updated_at?: string
@@ -1846,11 +1926,20 @@ export type Database = {
           sizes?: string[] | null
           sizing_type?: string | null
           stock?: number
+          store_id?: string
           sub_category?: string | null
           sub_sub_category?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
@@ -2023,21 +2112,32 @@ export type Database = {
           created_at: string
           expansion: string
           id: string
+          store_id: string
           term: string
         }
         Insert: {
           created_at?: string
           expansion: string
           id?: string
+          store_id?: string
           term: string
         }
         Update: {
           created_at?: string
           expansion?: string
           id?: string
+          store_id?: string
           term?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "search_synonyms_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipping_zone_exceptions: {
         Row: {
@@ -2110,6 +2210,7 @@ export type Database = {
           places: string | null
           sort_order: number
           state: string
+          store_id: string
           updated_at: string | null
           working_days: number[]
         }
@@ -2133,6 +2234,7 @@ export type Database = {
           places?: string | null
           sort_order?: number
           state: string
+          store_id?: string
           updated_at?: string | null
           working_days?: number[]
         }
@@ -2156,10 +2258,19 @@ export type Database = {
           places?: string | null
           sort_order?: number
           state?: string
+          store_id?: string
           updated_at?: string | null
           working_days?: number[]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shipping_zones_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_alerts: {
         Row: {
@@ -2210,6 +2321,7 @@ export type Database = {
           bank_name: string | null
           bank_sort_code: string | null
           contact_phone: string | null
+          currency: string
           free_shipping_threshold: number
           id: number
           low_stock_threshold: number
@@ -2221,6 +2333,7 @@ export type Database = {
           reorder_cover_days: number
           reorder_lead_days: number
           return_window_days: number
+          store_id: string
           store_name: string
           support_email: string | null
           tax_rate: number
@@ -2233,6 +2346,7 @@ export type Database = {
           bank_name?: string | null
           bank_sort_code?: string | null
           contact_phone?: string | null
+          currency?: string
           free_shipping_threshold?: number
           id?: number
           low_stock_threshold?: number
@@ -2244,6 +2358,7 @@ export type Database = {
           reorder_cover_days?: number
           reorder_lead_days?: number
           return_window_days?: number
+          store_id?: string
           store_name?: string
           support_email?: string | null
           tax_rate?: number
@@ -2256,6 +2371,7 @@ export type Database = {
           bank_name?: string | null
           bank_sort_code?: string | null
           contact_phone?: string | null
+          currency?: string
           free_shipping_threshold?: number
           id?: number
           low_stock_threshold?: number
@@ -2267,13 +2383,22 @@ export type Database = {
           reorder_cover_days?: number
           reorder_lead_days?: number
           return_window_days?: number
+          store_id?: string
           store_name?: string
           support_email?: string | null
           tax_rate?: number
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "store_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       storefront_events: {
         Row: {
@@ -2319,6 +2444,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stores: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       subcategories: {
         Row: {
@@ -2594,9 +2743,9 @@ export type Database = {
           bank_name: string | null
           bank_sort_code: string | null
           contact_phone: string | null
+          currency: string | null
           free_shipping_threshold: number | null
           low_stock_threshold: number | null
-          return_window_days: number | null
           store_name: string | null
           support_email: string | null
           tax_rate: number | null
@@ -2607,9 +2756,9 @@ export type Database = {
           bank_name?: string | null
           bank_sort_code?: string | null
           contact_phone?: string | null
+          currency?: string | null
           free_shipping_threshold?: number | null
           low_stock_threshold?: number | null
-          return_window_days?: number | null
           store_name?: string | null
           support_email?: string | null
           tax_rate?: number | null
@@ -2620,9 +2769,9 @@ export type Database = {
           bank_name?: string | null
           bank_sort_code?: string | null
           contact_phone?: string | null
+          currency?: string | null
           free_shipping_threshold?: number | null
           low_stock_threshold?: number | null
-          return_window_days?: number | null
           store_name?: string | null
           support_email?: string | null
           tax_rate?: number | null
@@ -2683,6 +2832,7 @@ export type Database = {
         Args: { p_items: Json; p_order_id: string; p_reason: string }
         Returns: Json
       }
+      current_store_id: { Args: never; Returns: string }
       edit_order_items: {
         Args: {
           p_discount?: number

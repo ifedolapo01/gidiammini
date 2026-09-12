@@ -15,6 +15,7 @@ import { Save, RotateCcw } from 'lucide-react';
 import { Button, Input, Textarea } from '@/components/ui';
 import type { Order } from '@/types/order';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 import { useOrderEdit } from '../hooks/useOrderEdit';
 import OrderEditLineRow from './OrderEditLineRow';
 import AddOrderLine from './AddOrderLine';
@@ -76,9 +77,9 @@ export default function OrderEditPanel({ order, showToast, onSaved }: OrderEditP
             id="edit-discount"
             type="number"
             min={0}
-            step={1}
-            value={edit.discount}
-            onChange={(event) => edit.setDiscount(Math.max(0, Math.round(Number(event.target.value) || 0)))}
+            step="0.01"
+            value={fromMinorUnits(edit.discount)}
+            onChange={(event) => edit.setDiscount(Math.max(0, toMinorUnits(Number(event.target.value) || 0)))}
           />
         </div>
         <div>

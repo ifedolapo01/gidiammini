@@ -20,10 +20,10 @@
  * send. A shop that has not signed up yet keeps working exactly as it did.
  */
 import 'server-only';
-import { KOBO_PER_NAIRA, secretKey } from './paystack-signature';
+import { secretKey } from './paystack-signature';
 
 // Re-exported so a route needs one import for the whole Paystack surface.
-export { isPaystackConfigured, isValidWebhookSignature, KOBO_PER_NAIRA } from './paystack-signature';
+export { isPaystackConfigured, isValidWebhookSignature } from './paystack-signature';
 
 const API = 'https://api.paystack.co';
 
@@ -36,8 +36,8 @@ export interface VerifiedPayment {
   reference: string;
   /** 'success' is the only one that means paid. */
   status: string;
-  /** In kobo, as the provider reports it. */
-  amountKobo: number;
+  /** Minor units, as the provider reports it. */
+  amountMinor: number;
   channel: string | null;
   paidAt: string | null;
   currency: string;
@@ -74,19 +74,22 @@ async function call(path: string, init?: RequestInit): Promise<any> {
  */
 export async function initializePayment(params: {
   reference: string;
-  amountNaira: number;
+  amountMinor: number;
   email: string;
   callbackUrl: string;
   orderNumber: string;
+  currency: string;
 }): Promise<InitializedPayment> {
   const data = await call('/transaction/initialize', {
     method: 'POST',
     body: JSON.stringify({
       reference: params.reference,
-      amount: Math.round(params.amountNaira * KOBO_PER_NAIRA),
+      // orders.total_amount is already minor units — see 20260910130000 —
+      // which is exactly what Paystack expects, so no conversion happens here.
+      amount: params.amountMinor,
       email: params.email,
       callback_url: params.callbackUrl,
-      currency: 'NGN',
+      currency: params.currency,
       // Shown on the provider's receipt and in their dashboard, which is where
       // a reconciliation question actually gets answered.
       metadata: { order_number: params.orderNumber },
@@ -105,7 +108,7 @@ export async function verifyPayment(reference: string): Promise<VerifiedPayment>
   return {
     reference: data.reference,
     status: data.status,
-    amountKobo: Number(data.amount ?? 0),
+    amountMinor: Number(data.amount ?? 0),
     channel: data.channel ?? null,
     paidAt: data.paid_at ?? data.paidAt ?? null,
     currency: data.currency ?? 'NGN',

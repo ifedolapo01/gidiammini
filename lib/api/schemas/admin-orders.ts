@@ -17,12 +17,13 @@ import { MAX_LENGTHS, optionalText, requiredText } from './common';
 import { CANCELLATION_CODES } from '@/lib/commerce/cancellation-reasons';
 import { REFUND_CODES, REFUND_METHODS } from '@/lib/commerce/refund-reasons';
 
-/** Naira. Integer, because every price column in this schema is one. */
-const nairaInt = z
-  .number({ error: 'Enter an amount in Naira.' })
-  .int('Amounts are whole Naira.')
+/** Minor units (e.g. kobo, cents) — every money column in this schema is one,
+ *  as of 20260910130000. Always a whole number: there is no fractional kobo. */
+const minorUnitAmount = z
+  .number({ error: 'Enter an amount.' })
+  .int('Amounts are whole minor units — no fractional kobo.')
   .min(0, 'An amount cannot be negative.')
-  .max(100_000_000, 'That amount is not plausible.');
+  .max(10_000_000_000, 'That amount is not plausible.');
 
 /**
  * One line of an edited order.
@@ -34,7 +35,7 @@ const nairaInt = z
 export const orderEditLineSchema = z.object({
   product_id: z.string().uuid('That is not a valid product.').nullish().transform((v) => v ?? null),
   product_name: requiredText('Product name', MAX_LENGTHS.name),
-  price: nairaInt,
+  price: minorUnitAmount,
   quantity: z
     .number({ error: 'Enter a quantity.' })
     .int('Quantity must be a whole number.')
@@ -51,7 +52,7 @@ export const orderEditSchema = z.object({
     .min(1, 'An order must keep at least one item. Cancel it instead of emptying it.')
     .max(50, 'An order cannot hold more than 50 lines.'),
   /** Omitted leaves any existing discount alone; 0 clears it. */
-  discount_amount: nairaInt.nullish(),
+  discount_amount: minorUnitAmount.nullish(),
   discount_reason: optionalText('Discount reason', MAX_LENGTHS.note),
   /** The admin's own words about the change, sent to the customer. */
   note: optionalText('Note', MAX_LENGTHS.note),
@@ -98,13 +99,16 @@ export const orderShipmentSchema = z.object({
 
 export type OrderShipmentBody = z.infer<typeof orderShipmentSchema>;
 
-/** Money going back. `amount` is numeric here, not integer: a partial refund
- * of an odd total genuinely has kobo in it. */
+/** Money going back, in minor units. Was numeric rather than integer, back
+ * when order_refunds.amount was numeric(12,2) — a partial refund of an odd
+ * total genuinely has fractional-Naira value in it, which minor units now
+ * represent exactly as a whole number (20260910130000). */
 export const refundCreateSchema = z.object({
   amount: z
     .number({ error: 'Enter the amount you are refunding.' })
+    .int('Amounts are whole minor units — no fractional kobo.')
     .positive('A refund must be more than zero.')
-    .max(100_000_000, 'That amount is not plausible.'),
+    .max(10_000_000_000, 'That amount is not plausible.'),
   method: z.enum(REFUND_METHODS).nullish().transform((v) => v ?? 'transfer'),
   reason_code: z.enum(REFUND_CODES, { error: 'Choose why this refund is being issued.' }),
   reference: optionalText('Reference', 120),
@@ -138,8 +142,9 @@ export const returnActionSchema = z.object({
   adminResponse: optionalText('Response', MAX_LENGTHS.note),
   refundAmount: z
     .number({ error: 'Enter the refund amount.' })
+    .int('Amounts are whole minor units — no fractional kobo.')
     .positive('The refund amount must be more than zero.')
-    .max(100_000_000, 'That amount is not plausible.')
+    .max(10_000_000_000, 'That amount is not plausible.')
     .nullish(),
 });
 

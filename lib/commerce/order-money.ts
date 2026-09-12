@@ -9,8 +9,10 @@
  * screen it was printed from.
  *
  * Pure and presentation-free: it returns labels and numbers, never markup, so
- * an HTML email and a React panel can both use it.
+ * an HTML email and a React panel can both use it. Every amount here is minor
+ * units (20260910130000) — formatCurrency() is what turns one into a string.
  */
+import { formatCurrency } from './pricing';
 
 export interface OrderMoney {
   items_subtotal?: number | null;
@@ -93,15 +95,11 @@ export interface OrderSettlement {
   overpaid: boolean;
 }
 
-/** Rounded to kobo, because amount_paid and amount_refunded are numeric(12,2)
- * and floating-point addition of two of them is not. */
-const round2 = (value: number): number => Math.round(value * 100) / 100;
-
 export function orderSettlement(order: OrderMoney): OrderSettlement {
-  const paid = round2(n(order.amount_paid));
-  const refunded = round2(n(order.amount_refunded));
-  const net = round2(paid - refunded);
-  const balance = round2(n(order.total_amount) - net);
+  const paid = n(order.amount_paid);
+  const refunded = n(order.amount_refunded);
+  const net = paid - refunded;
+  const balance = n(order.total_amount) - net;
 
   return {
     paid,
@@ -120,7 +118,7 @@ export function describeBalance(order: OrderMoney): string | null {
   const { paid, balance, overpaid } = orderSettlement(order);
 
   if (paid <= 0) return null;
-  if (overpaid) return `Overpaid by ${Math.abs(balance).toFixed(2)} — a refund is owed.`;
-  if (balance > 0) return `${balance.toFixed(2)} still outstanding.`;
+  if (overpaid) return `Overpaid by ${formatCurrency(Math.abs(balance))} — a refund is owed.`;
+  if (balance > 0) return `${formatCurrency(balance)} still outstanding.`;
   return 'Fully paid.';
 }

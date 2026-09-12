@@ -114,15 +114,27 @@ describe('getProductPriceRange', () => {
 });
 
 describe('formatting', () => {
+  // formatCurrency takes minor units (20260910130000) — ₦16,500 is 1,650,000
+  // kobo — and NGN still renders with no decimal places, as it always has.
   it('formats naira with thousands separators', () => {
-    expect(formatCurrency(16500)).toBe('₦16,500');
+    expect(formatCurrency(1_650_000)).toBe('₦16,500');
+  });
+
+  it('shows a sub-naira amount now that minor units can represent one', () => {
+    expect(formatCurrency(16_530)).toBe('₦165');
+  });
+
+  it('formats a non-NGN currency with its own default decimal places', () => {
+    // en-NG renders USD as "US$", not a bare "$" — that ambiguity is the
+    // locale doing its job once more than one currency is in play.
+    expect(formatCurrency(1_650_050, 'USD')).toBe('US$16,500.50');
   });
 
   it('collapses an equal range to one value', () => {
-    expect(formatPriceRange(10000, 10000)).toBe('₦10,000');
+    expect(formatPriceRange(1_000_000, 1_000_000)).toBe('₦10,000');
   });
 
   it('shows a real range', () => {
-    expect(formatPriceRange(13000, 16500)).toBe('₦13,000 - ₦16,500');
+    expect(formatPriceRange(1_300_000, 1_650_000)).toBe('₦13,000 - ₦16,500');
   });
 });

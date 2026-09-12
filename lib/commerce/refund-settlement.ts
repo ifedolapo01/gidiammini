@@ -14,7 +14,6 @@
  */
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { round2 } from './payment-outcome';
 import { announceRefund } from './refund-notify';
 import type { StatusChangeActor } from './order-status-transition';
 
@@ -106,7 +105,7 @@ export async function settleOrderRefund(
     .eq('id', row.order_id)
     .maybeSingle();
 
-  const refundedTotal = round2(Number((order as any)?.amount_refunded ?? 0));
+  const refundedTotal = Number((order as any)?.amount_refunded ?? 0);
 
   // Only a completed refund is worth an email. "Your refund failed" tells the
   // customer about a problem they cannot do anything about; the shop retries

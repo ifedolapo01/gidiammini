@@ -22,7 +22,7 @@ export interface OrderPayment {
   id: string;
   order_id: string;
   status: PaymentStatus;
-  /** Naira actually seen. 0 on a rejection. */
+  /** Minor units actually seen. 0 on a rejection. */
   amount: number;
   method: PaymentMethod;
   /** The bank's reference off the receipt, for reconciliation. */
@@ -43,7 +43,7 @@ export interface OrderPayment {
 export interface RecordPaymentInput {
   orderId: string;
   status: PaymentStatus;
-  /** Ignored for a rejection, required otherwise. */
+  /** Minor units. Ignored for a rejection, required otherwise. */
   amount?: number;
   method?: PaymentMethod;
   reference?: string | null;

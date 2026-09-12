@@ -157,10 +157,11 @@ describe('formatDiscountValue', () => {
   });
 
   it('formats a fixed amount with thousands separators', () => {
-    expect(formatDiscountValue({ type: 'FIXED', value: 2500 })).toBe('₦2,500 OFF');
+    // FIXED's value is minor units (20260910130000) — ₦2,500 is 250,000.
+    expect(formatDiscountValue({ type: 'FIXED', value: 250_000 })).toBe('₦2,500 OFF');
   });
 
   it('supports the "save" wording', () => {
-    expect(formatDiscountValue({ type: 'FIXED', value: 2500 }, 'save')).toBe('Save ₦2,500');
+    expect(formatDiscountValue({ type: 'FIXED', value: 250_000 }, 'save')).toBe('Save ₦2,500');
   });
 });

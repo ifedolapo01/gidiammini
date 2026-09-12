@@ -207,6 +207,8 @@ keeps them from running again.
 | `20260905190400` | courier, waybill and tracking link on orders | **not yet — pending `db push`** |
 | `20260905190500` | `customers.tags`, `customer_addresses`, refund-aware `customer_stats` | **not yet — pending `db push`** |
 | `20260910120000` | `subsubcategories` table; `products.sub_sub_category`; `product_candidates`/`count_products`/`list_products`/`product_facet_options` gain `p_subsubcategory`; discounts scope allows `SUBSUBCATEGORY` | **not yet — pending `db push`** |
+| `20260910130000` | every money column becomes `bigint` minor units; `store_settings.currency` + `orders.currency` | **not yet — pending `db push`** |
+| `20260911100000` | `stores`; `current_store_id()`; `store_id` on every root table; `app_service` role + RLS scoping | **not yet — pending `db push`** |
 
 The rows between `20251101004000` and `20260905190000` predate this table being
 kept up to date; `npm run db:status` is the authority on what the remote has
@@ -977,6 +979,179 @@ book kept beside the orders it came from is one that drifts from them.
 appended rather than reshaped — `CREATE OR REPLACE VIEW` may add columns to the
 end and may not change the ones already there, so `lifetime_value` keeps its
 exact definition and its type while the net figure arrives beside it.
+
+## Money moves to minor units (`20260910130000`)
+
+Every money column was `integer` whole Naira, including the premise stated
+outright in `20260905190000`: "a price this shop sets does not [have kobo]".
+That premise blocks two things at once -- a sub-unit price, and any market
+that isn't priced in whole Naira -- which is the whole reason this migration
+exists. It also fixes a real inconsistency already in the schema:
+`order_payments.amount` / `order_refunds.amount` were `numeric(12,2)` because
+a bank transfer genuinely lands with kobo on it, while everything else was a
+whole-number column of the same kind of value.
+
+**bigint, not integer.** `nairaInt` in `admin-orders.ts` already allowed
+amounts up to 100,000,000 Naira; x100 that's 10,000,000,000, past `integer`'s
+~2.1 billion ceiling. Every converted column widens to `bigint`.
+
+**Guarded by the column's own current type**, not a marker table: each
+`ALTER COLUMN ... TYPE bigint` is wrapped in a check against
+`information_schema.columns.data_type`, so a second run of the file finds
+`bigint` already there and does nothing. Two loops (one for plain integer
+columns, one for the `numeric(12,2)` pair) do this for ten-plus columns at
+once rather than repeating the same six lines with the names swapped.
+
+**`orders`' breakdown columns convert in one `ALTER TABLE`, not five.**
+`orders_total_matches_breakdown` (`20260905190000`) checks
+`total_amount = items_subtotal + tax_amount + shipping_amount - discount_amount`.
+Postgres validates a table's CHECK constraints once per `ALTER TABLE`
+statement, not deferred across several -- converting the five columns one
+statement at a time would fail the invariant the moment the first column had
+scaled and the rest had not. All five appear as separate `ALTER COLUMN`
+clauses inside a single statement instead, so the constraint is only ever
+compared after every column already agrees.
+
+**`discounts.value` scales only where it's money.** `PERCENTAGE` stores
+0-100 and `FREE_SHIPPING` is pinned to 0 by `discounts_free_shipping_value`
+(`20260906150000`); only a `FIXED` row's `value` is actually Naira. The
+column-type change and the conditional multiply happen in the same
+`USING` expression, keyed on `type`.
+
+**`pricing_config` converts too, and needs its own guard.** `getVariantPrice`
+/ `getProductPriceRange` (`lib/commerce/pricing.ts`) still fall back to this
+JSONB for any product with no `product_variants` rows, so leaving its
+`sizePrices` / `colorPrices` / `combinationPrices` maps unconverted would
+make exactly those products render at 1/100th price. JSONB carries no type to
+branch on, so the guard is a `_minorUnits: true` marker key written after
+conversion. The sibling stock maps (`sizeStock`, `colorStock`,
+`combinationStock`, `singleStock`) are quantities, not money, and are
+untouched.
+
+**Two currency columns, not one**, mirroring `20251101002500`'s reasoning for
+snapshotting customer identity onto the order rather than joining it live:
+`store_settings.currency` is the shop's current default (read the same way
+`tax_rate` already is, including through `store_settings_public`);
+`orders.currency` is frozen at checkout, so a later change to the shop's
+default currency cannot rewrite what a past order actually charged. Existing
+orders backfill to `'NGN'` -- every one of them was.
+
+**Scope.** This converts one database's existing values in place, which is
+correct for a single environment with no other reader of its raw columns. It
+is deliberately not the pattern for rewriting a live tenant without downtime
+-- that needs an online expand/backfill/contract sequence, which is the
+"coordinated rewrite" this migration's own ticket explicitly defers to later.
+A currency *picker*, exchange rates, and per-tenant currency configuration in
+the admin are equally out of scope here.
+
+### Failed first push: a view stood in the way
+
+`ERROR: cannot alter type of a column used by a view or rule (SQLSTATE 0A000)`,
+naming `most_wishlisted`'s dependency on `products.price`. Nothing was
+applied. Postgres refuses `ALTER COLUMN ... TYPE` outright when a view's rule
+reads that column, with no workaround short of dropping the view first --
+unlike a table's CHECK constraints, there is no deferred or per-statement
+option here.
+
+Three more views turned out to read a column this migration converts once the
+first was found and the rest were checked for the same thing:
+`customer_stats` and `order_cancellations` both read `orders.total_amount` /
+`amount_paid` / `amount_refunded`; `store_settings_public` reads
+`free_shipping_threshold` (and was already being recreated in step 6, to gain
+`currency`, so only needed the same early drop). Step 0 drops all four before
+any `ALTER COLUMN` runs; step 8 recreates the three not already handled,
+verbatim from their own migrations -- a view's SELECT list re-types itself
+from its now-bigint source columns, so nothing about their definition changes.
+
+### A second class the view error didn't warn about: functions
+
+A view blocks `ALTER COLUMN ... TYPE` outright, so the first failure was loud
+and immediate. A function does not -- `product_candidates()`, `count_products()`,
+`list_products()`, `product_cards()`, `search_products()` and
+`storefront_traffic_without_sales()` all declare a `RETURNS TABLE` price
+column as `integer` and `SELECT` straight from what is now a `bigint` source.
+That would not have failed the push at all: Postgres widens `bigint` into a
+declared `integer` output column with an implicit assignment cast, checked
+only at call time, against whatever a real price happens to be. For this
+shop's prices that cast would have kept working by coincidence -- silently,
+and on a bet ("nothing here costs more than ~21 million Naira") this
+migration's own bigint reasoning explicitly refuses to make anywhere else.
+`edit_order_items()` and `sync_variants_from_pricing_config()` have the same
+problem one level down, in a plain `integer` local variable and (for the
+former) an `integer` discount parameter, both fed values `admin-orders.ts`
+already validates up to 10,000,000,000 minor units -- a real edit near that
+ceiling would have overflowed rather than saved. `replace_product_variants()`
+matched the pattern too, and is fixed alongside the rest even though nothing
+in the application calls it today.
+
+Step 9 widens all eight. Six require `DROP FUNCTION` first --
+`CREATE OR REPLACE` cannot change a return type or an argument type, Postgres
+treats that as a different function -- found by name through `pg_proc` rather
+than hand-typed, the same defence `20260909120000` already uses for this
+exact trio: a mistyped signature makes `DROP ... IF EXISTS` silently do
+nothing, and the `CREATE` two statements later fails with "already exists".
+The other two (`sync_variants_from_pricing_config`, `replace_product_variants`)
+keep their signature and return type, so `CREATE OR REPLACE` was enough.
+
+## The store dimension (`20260911100000`)
+
+306+ call sites query these tables directly (`app/api`, `app/admin`), and
+nobody can keep auditing all of them by hand as more get added. So isolation
+has to live in Postgres, not in each call site -- which only works if the role
+those call sites run as is one RLS actually applies to.
+
+It was not. `20251101001700` documents, as a fact this migration does not
+undo, that `service_role` bypasses RLS -- and `createAdminClient()`
+(`lib/supabase/admin-server.ts`, 61 call sites) authenticated as exactly that.
+A `store_id` column and policy added without addressing this would have
+protected only the storefront's anon-key reads, the small minority of the
+306+ sites, while every admin and API route kept reading every store
+regardless.
+
+**`current_store_id()`** reads a `store_id` JWT claim if one is present, else
+falls back to the single default `stores` row. With one store, every caller
+resolves to it whether or not it ever mentions store_id -- a call site that
+forgets to scope gets the one store's data it would have gotten anyway. A
+second store later needs a JWT carrying its id; the function does not change.
+
+**Root tables get a real `store_id` column** (`products`, `categories`,
+`orders`, `customers`, `discounts`, `shipping_zones`, `store_settings`,
+`abandoned_carts`, `automation_rules`, `homepage_slides`,
+`search_synonyms`) -- these have no foreign key to another scoped table, so
+there is nothing to derive from. Everything else scopes transitively through
+an `EXISTS` against its parent (`order_items` through `orders`,
+`product_variants` through `products`, `return_items` through `returns`
+through `orders`, and so on) rather than duplicating the column, for the same
+reason `customer_stats` and `customer_addresses` are views instead of copied
+data: a derived value cannot drift from what it was derived from.
+
+**`app_service`** is a new Postgres role with the same table access as
+`service_role` but, deliberately, no `BYPASSRLS`. `createAdminClient()` now
+mints it a short-lived JWT (`lib/supabase/app-service-token.ts`, signed with
+`SUPABASE_JWT_SECRET`) instead of sending the raw service-role key -- the fix
+lives in the one factory function every call site already goes through, not
+in each of them. `createSuperAdminClient()` keeps the real key, for the rare
+case that must genuinely cross store boundaries; nothing in this codebase
+needs it today.
+
+**Not covered yet, on purpose:**
+
+- The `SECURITY DEFINER` functions elsewhere in this file (`list_products`,
+  `search_products`, `edit_order_items`, `set_variant_stock`,
+  `rebuild_product_pairs`, and the rest) run with their *owner's* privileges,
+  not the caller's -- today that owner is `postgres`, a superuser, which
+  bypasses RLS regardless of any policy here. Making RLS apply inside them
+  means reassigning their ownership to a non-bypassing role (no signature or
+  body changes needed), which is real blast radius on checkout, stock and
+  order-editing paths that could not be verified against a staging copy of
+  the live database in this pass.
+- `admin_users`, `audit_log`, `notifications`, `payment_events`,
+  `rate_limits`, `subscribers`, `search_queries`, `storefront_events` and
+  `order_number_reservations` keep exactly today's access for `app_service`
+  (unconditional -- the same thing `service_role`'s bypass already gave them),
+  rather than being store-scoped. They are operational/log tables and staff
+  identity, not customer or financial records, and scoping them is separable
+  follow-up.
 
 ## After applying these
 

@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import type { ShippingEtaUnit, ShippingZoneException } from '@/types/shipping';
+import { fromMinorUnits } from '@/lib/commerce/money';
 
 export interface ZoneExceptionFormRow {
   id?: string;
@@ -31,7 +32,7 @@ function toFormRow(exception: ShippingZoneException): ZoneExceptionFormRow {
     id: exception.id,
     lga: exception.lga || '',
     places: exception.places || '',
-    delivery_fee: exception.delivery_fee?.toString() ?? '',
+    delivery_fee: exception.delivery_fee != null ? fromMinorUnits(exception.delivery_fee).toString() : '',
     delivery_eta_min: exception.delivery_eta_min?.toString() ?? '',
     delivery_eta_max: exception.delivery_eta_max?.toString() ?? '',
     delivery_eta_unit: exception.delivery_eta_unit ?? '',

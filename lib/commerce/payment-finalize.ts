@@ -24,7 +24,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { applyOrderStatusTransition } from './order-status-transition';
-import { KOBO_PER_NAIRA, type VerifiedPayment } from '@/lib/payments/paystack';
+import type { VerifiedPayment } from '@/lib/payments/paystack';
 
 export type FinalizeOutcome =
   /** Money confirmed and the order moved to 'confirmed'. */
@@ -124,17 +124,19 @@ export async function finalizePayment(
     return { status: 'already_paid', orderNumber: order.order_number, orderId: order.id };
   }
 
-  const expectedKobo = Math.round(order.total_amount * KOBO_PER_NAIRA);
-  if (payment.amountKobo !== expectedKobo) {
+  // orders.total_amount is already minor units (20260910130000), the same
+  // unit Paystack reports in — no conversion needed here any more.
+  const expectedMinor = order.total_amount;
+  if (payment.amountMinor !== expectedMinor) {
     console.error(
-      `Amount mismatch on ${order.order_number}: charged ${payment.amountKobo} kobo, order is ${expectedKobo}.`
+      `Amount mismatch on ${order.order_number}: charged ${payment.amountMinor}, order is ${expectedMinor}.`
     );
     return {
       status: 'amount_mismatch',
       orderNumber: order.order_number,
       orderId: order.id,
-      expected: expectedKobo,
-      paid: payment.amountKobo,
+      expected: expectedMinor,
+      paid: payment.amountMinor,
     };
   }
 

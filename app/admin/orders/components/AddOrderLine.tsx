@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button, Input, Select } from '@/components/ui';
 import { formatCurrency } from '@/lib/commerce/pricing';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 import { useProductPicker, type PickerProduct } from '../hooks/useProductPicker';
 import ProductSearchList from './ProductSearchList';
 import type { DraftLine } from '../hooks/useOrderEdit';
@@ -43,14 +44,14 @@ export default function AddOrderLine({ onAdd }: AddOrderLineProps) {
     // One variant is not a choice — pre-select it and let the price fill in.
     const only = options.length === 1 ? options[0] : null;
     setVariantKey(only?.variant_key ?? '');
-    setPrice(String(only?.price ?? chosen.price));
+    setPrice(String(fromMinorUnits(only?.price ?? chosen.price)));
     setQuantity('1');
   };
 
   const chooseVariant = (key: string) => {
     setVariantKey(key);
     const chosen = variants.find((option) => option.variant_key === key);
-    if (chosen) setPrice(String(chosen.price ?? product?.price ?? 0));
+    if (chosen) setPrice(String(fromMinorUnits(chosen.price ?? product?.price ?? 0)));
   };
 
   const numericPrice = Number(price);
@@ -67,7 +68,7 @@ export default function AddOrderLine({ onAdd }: AddOrderLineProps) {
     onAdd({
       product_id: product.id,
       product_name: product.name,
-      price: Math.round(numericPrice),
+      price: toMinorUnits(numericPrice),
       quantity: numericQuantity,
       size: variant?.size ?? null,
       color: variant?.color ?? null,
@@ -139,7 +140,7 @@ export default function AddOrderLine({ onAdd }: AddOrderLineProps) {
                 id="add-price"
                 type="number"
                 min={0}
-                step={1}
+                step="0.01"
                 value={price}
                 onChange={(event) => setPrice(event.target.value)}
               />

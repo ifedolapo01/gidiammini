@@ -12,9 +12,6 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-/** Paystack works in kobo; every amount in this codebase is whole naira. */
-export const KOBO_PER_NAIRA = 100;
-
 export function isPaystackConfigured(): boolean {
   return Boolean(process.env.PAYSTACK_SECRET_KEY?.trim());
 }

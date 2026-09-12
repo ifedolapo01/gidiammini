@@ -14,6 +14,7 @@
 
 import { Trash2 } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
+import { fromMinorUnits, toMinorUnits } from '@/lib/commerce/money';
 import type { DraftLine } from '../hooks/useOrderEdit';
 
 interface OrderEditLineRowProps {
@@ -41,10 +42,10 @@ export default function OrderEditLineRow({ line, onChange, onRemove }: OrderEdit
           size="sm"
           type="number"
           min={0}
-          step={1}
-          value={line.price}
+          step="0.01"
+          value={fromMinorUnits(line.price)}
           onChange={(event) =>
-            onChange(line.key, { price: Math.max(0, Math.round(Number(event.target.value) || 0)) })
+            onChange(line.key, { price: Math.max(0, toMinorUnits(Number(event.target.value) || 0)) })
           }
         />
       </div>

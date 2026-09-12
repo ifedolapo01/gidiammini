@@ -11,15 +11,16 @@
 import type { PaymentStatus } from '@/types/payment';
 
 /**
- * How far apart two naira figures may be and still count as equal.
+ * How far apart two money figures may be and still count as equal.
  *
- * Half a naira. Order totals are computed from unit prices and a shipping fee
- * in floating point, so an exact `>=` comparison can leave an order one
- * hundredth of a kobo short of settled — a balance no customer can pay and no
- * verifier can explain. Nothing anybody in this shop transacts is smaller than
- * this, so no real shortfall is hidden by it.
+ * Zero. Every figure here is minor units (20260910130000) — an integer — so
+ * "expected" and "received" either match exactly or a real minor unit is
+ * missing. The float-drift problem this constant used to absorb (order
+ * totals computed from unit prices and a shipping fee in floating point,
+ * leaving a balance a hundredth of a kobo short) cannot happen once nothing
+ * is fractional to begin with.
  */
-export const MONEY_EPSILON = 0.5;
+export const MONEY_EPSILON = 0;
 
 export interface PaymentSettlement {
   /** What the order asked for. */
@@ -44,10 +45,10 @@ export function settlement(expected: number, received: number): PaymentSettlemen
   return {
     expected,
     received,
-    outstanding: settled ? 0 : round2(shortfall),
+    outstanding: settled ? 0 : shortfall,
     settled,
     partial: received > 0 && !settled,
-    overpaid: received - expected > MONEY_EPSILON ? round2(received - expected) : 0,
+    overpaid: received - expected > MONEY_EPSILON ? received - expected : 0,
   };
 }
 
@@ -65,11 +66,6 @@ export function suggestOutcome(
 ): Extract<PaymentStatus, 'verified' | 'short_paid'> {
   if (!(amountNow > 0)) return 'short_paid';
   return settlement(expected, alreadyReceived + amountNow).settled ? 'verified' : 'short_paid';
-}
-
-/** Naira, to the kobo. Keeps a displayed balance from reading 1999.9999999. */
-export function round2(value: number): number {
-  return Math.round(value * 100) / 100;
 }
 
 /**

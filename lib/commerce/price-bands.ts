@@ -23,11 +23,13 @@ export interface PriceBand {
   max: number | null;
 }
 
-/** Round numbers a shopper would name out loud, in naira. */
+/** Round numbers a shopper would name out loud, in naira — but every price
+ *  this module compares against is minor units (20260910130000), so the
+ *  ladder itself is ×100. */
 const LADDER = [
   1_000, 2_000, 2_500, 5_000, 7_500, 10_000, 15_000, 20_000, 25_000,
   30_000, 40_000, 50_000, 75_000, 100_000, 150_000, 200_000, 500_000,
-];
+].map((naira) => naira * 100);
 
 /** Enough to narrow a catalogue; more than this is a wall of radio buttons. */
 const MAX_BANDS = 5;

@@ -11,7 +11,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createHmac } from 'node:crypto';
-import { isPaystackConfigured, isValidWebhookSignature, KOBO_PER_NAIRA } from './paystack-signature';
+import { isPaystackConfigured, isValidWebhookSignature } from './paystack-signature';
 
 const SECRET = 'sk_test_pretend_secret';
 const BODY = JSON.stringify({ event: 'charge.success', data: { reference: 'UT12345678-abcd' } });
@@ -78,13 +78,5 @@ describe('configuration', () => {
 
     process.env.PAYSTACK_SECRET_KEY = SECRET;
     expect(isPaystackConfigured()).toBe(true);
-  });
-
-  it('knows what a naira is worth in kobo', () => {
-    // Every amount in this codebase is whole naira; the provider works in kobo.
-    // Getting this backwards charges a hundredth of the order, or a hundred
-    // times it.
-    expect(KOBO_PER_NAIRA).toBe(100);
-    expect(5000 * KOBO_PER_NAIRA).toBe(500000);
   });
 });

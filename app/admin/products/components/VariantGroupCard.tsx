@@ -88,6 +88,7 @@ export function VariantGroupCard({
               <Input
                 size="sm"
                 type="number"
+                step="0.01"
                 onFocus={(e) => e.target.select()}
                 value={variant.price || ''}
                 onChange={(e) => onUpdatePrice(vIdx, Number(e.target.value))}

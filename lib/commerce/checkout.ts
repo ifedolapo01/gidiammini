@@ -23,9 +23,9 @@ export { findShippingZone, getDistrictOptions, getAvailableStates };
  * quietly charge 7.5% forever, and the compiler is better placed to find those
  * than anybody reading a receipt.
  *
- * Rounded to the nearest whole Naira — orders.total_amount and order_items.price
- * are integer columns, and an unrounded rate (e.g. 7.5% of ₦236,500 = ₦17,737.5)
- * would fail the insert.
+ * Rounded to the nearest whole minor unit — orders.total_amount and
+ * order_items.price are bigint columns with no fractional kobo, and an
+ * unrounded rate (e.g. 7.5% of 23,650,000 = 1,773,750.0) would fail the insert.
  */
 export function calculateTax(subtotal: number, rate: number): number {
   return Math.round(subtotal * rate);

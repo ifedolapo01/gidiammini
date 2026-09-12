@@ -43,6 +43,7 @@ export function VariantColorRow({
         <span aria-hidden="true" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary text-caption-md">₦</span>
         <input
           type="number"
+          step="0.01"
           aria-label="Selling price"
           onFocus={(e) => e.target.select()}
           value={color.price || ''}

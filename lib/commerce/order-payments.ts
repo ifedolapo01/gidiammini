@@ -22,8 +22,9 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { StatusChangeActor } from './order-status-transition';
-import { settlement, round2 } from './payment-outcome';
+import { settlement } from './payment-outcome';
 import { isPaymentRejectionCode } from './payment-rejection';
+import { formatCurrency } from './pricing';
 import { applyDecisionToOrder, type PaymentOrderRow } from './payment-decision';
 import type { PaymentMethod, PaymentStatus, RecordPaymentInput } from '@/types/payment';
 
@@ -47,11 +48,15 @@ export type RecordPaymentResult =
     }
   | { ok: false; error: string; code: 'not_found' | 'invalid' | 'write_failed'; status: number };
 
-/** Naira figure from an untrusted body, or null when it is not one. */
+/** Minor-units figure from an untrusted body, or null when it is not one.
+ *  The verifier types Naira; the client converts to minor units before this
+ *  is ever reached (see VerifyForm.tsx) — this only guards against a stray
+ *  float, the way "a number in a request body is an assertion, never an
+ *  authority" is enforced everywhere else in this file. */
 function readAmount(value: unknown): number | null {
   const amount = typeof value === 'string' ? Number(value) : value;
   if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) return null;
-  return round2(amount);
+  return Math.round(amount);
 }
 
 const METHODS: PaymentMethod[] = ['transfer', 'paystack', 'cash', 'pos'];
@@ -103,7 +108,7 @@ export async function recordOrderPayment(
   if (input.status === 'verified' && !projected.settled) {
     return {
       ok: false,
-      error: `That leaves ${projected.outstanding.toFixed(2)} outstanding. Record it as a short payment instead.`,
+      error: `That leaves ${formatCurrency(projected.outstanding)} outstanding. Record it as a short payment instead.`,
       code: 'invalid',
       status: 400,
     };
@@ -144,7 +149,7 @@ export async function recordOrderPayment(
     .eq('id', order.id)
     .maybeSingle();
 
-  const receivedTotal = round2(Number(after?.amount_paid ?? alreadyPaid + (amount ?? 0)));
+  const receivedTotal = Number(after?.amount_paid ?? alreadyPaid + (amount ?? 0));
   const final = settlement(order.total_amount, receivedTotal);
 
   const outcome = await applyDecisionToOrder(supabase, order, {

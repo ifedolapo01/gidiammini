@@ -7,6 +7,7 @@ import { Product } from '@/types/product';
 import { ProductFormValues } from '@/lib/commerce/product-form-schema';
 import { ImageFile, VariantColor, VariantSize } from '@/lib/commerce/product-form-helpers';
 import { variantKeyFor } from '@/lib/commerce/product-variants';
+import { fromMinorUnits } from '@/lib/commerce/money';
 import type { SizingType } from '@/lib/commerce/product-form-schema';
 import { adminFetch } from '@/app/admin/lib/admin-fetch';
 
@@ -71,17 +72,19 @@ export function useEditProductData(args: UseEditProductDataArgs) {
 
         // Cost lives on product_variants, not in pricing_config, so it is
         // reloaded from the embedded rows and keyed the same way the database
-        // keys them.
+        // keys them. Converted here, at the boundary where the database's
+        // minor units become the Naira the form displays and edits — see
+        // lib/commerce/money.ts and the matching conversion in useProductSubmit.
         const costFor = (size: string | null, color: string | null): number | null => {
           const key = variantKeyFor(size, color);
           const row = (productData?.product_variants ?? []).find((v) => v.variant_key === key);
-          return typeof row?.cost === 'number' ? row.cost : null;
+          return typeof row?.cost === 'number' ? fromMinorUnits(row.cost) : null;
         };
 
         reset({
           name: productData.name,
           description: productData.description || '',
-          price: productData.price,
+          price: fromMinorUnits(productData.price),
           category: productData.category || '',
           sub_category: (productData as any).sub_category || '',
           sub_sub_category: (productData as any).sub_sub_category || '',
@@ -124,7 +127,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
             setHasVariants(false);
             setHasSizes(false);
             setHasColors(false);
-            setVariants([{ size: '', price: productData.price, stock: config.singleStock || productData.stock, cost: null, colors: [] }]);
+            setVariants([{ size: '', price: fromMinorUnits(productData.price), stock: config.singleStock || productData.stock, cost: null, colors: [] }]);
           } else {
             setHasVariants(true);
             const newVariants: VariantSize[] = [];
@@ -141,7 +144,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
                 const [size, color] = key.split('|');
                 if (size && color) {
                   if (!sizeMap.has(size)) sizeMap.set(size, []);
-                  sizeMap.get(size)!.push({ name: color, price: prices[key] || 0, stock: stocks[key] || 0, cost: costFor(size, color) });
+                  sizeMap.get(size)!.push({ name: color, price: fromMinorUnits(prices[key] || 0), stock: stocks[key] || 0, cost: costFor(size, color) });
                 }
               });
 
@@ -158,7 +161,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
               const stocks = config.sizeStock || {};
 
               Object.keys(prices).forEach((size) => {
-                newVariants.push({ size, price: prices[size] || 0, stock: stocks[size] || 0, cost: costFor(size, null), colors: [] });
+                newVariants.push({ size, price: fromMinorUnits(prices[size] || 0), stock: stocks[size] || 0, cost: costFor(size, null), colors: [] });
               });
 
               if (newVariants.length === 0) newVariants.push({ size: '', price: 0, stock: 0, cost: null, colors: [] });
@@ -171,7 +174,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
               const colors: VariantColor[] = [];
 
               Object.keys(prices).forEach((color) => {
-                colors.push({ name: color, price: prices[color] || 0, stock: stocks[color] || 0, cost: costFor(null, color) });
+                colors.push({ name: color, price: fromMinorUnits(prices[color] || 0), stock: stocks[color] || 0, cost: costFor(null, color) });
               });
 
               newVariants.push({ size: '', price: 0, stock: 0, colors });
@@ -181,7 +184,7 @@ export function useEditProductData(args: UseEditProductDataArgs) {
           }
         } else {
           setHasVariants(false);
-          setVariants([{ size: '', price: productData.price, stock: productData.stock, colors: [] }]);
+          setVariants([{ size: '', price: fromMinorUnits(productData.price), stock: productData.stock, colors: [] }]);
         }
       }
     } catch (error: any) {
