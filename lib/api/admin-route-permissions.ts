@@ -68,6 +68,12 @@ const ROUTES: RoutePermission[] = [
   { pattern: '/api/admin/payments', read: 'orders:read', write: 'orders:write' },
   { pattern: '/api/admin/payments/queue', read: 'orders:read' },
 
+  // Counter sale: ringing up a walk-in customer. A permission of its own,
+  // narrower than orders:write, so a cashier can be granted exactly this and
+  // nothing else — no discounts, no refunds, no online order management.
+  { pattern: '/api/admin/counter-sales', read: 'counter_sale:write', write: 'counter_sale:write' },
+  { pattern: '/api/admin/counter-sales/products', read: 'counter_sale:write' },
+
   // Catalogue. Stock is carved out of it on purpose: adjusting a count is a
   // warehouse job, changing a price or deleting a product is not.
   { pattern: '/api/admin/products', read: 'store:read', write: 'catalog:write' },

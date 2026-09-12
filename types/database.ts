@@ -1381,6 +1381,7 @@ export type Database = {
           receipt_path: string | null
           receipt_url: string | null
           reserved_until: string | null
+          sales_channel: string
           selected_lga: string | null
           selected_place: string | null
           selected_state: string
@@ -1428,6 +1429,7 @@ export type Database = {
           receipt_path?: string | null
           receipt_url?: string | null
           reserved_until?: string | null
+          sales_channel?: string
           selected_lga?: string | null
           selected_place?: string | null
           selected_state: string
@@ -1475,6 +1477,7 @@ export type Database = {
           receipt_path?: string | null
           receipt_url?: string | null
           reserved_until?: string | null
+          sales_channel?: string
           selected_lga?: string | null
           selected_place?: string | null
           selected_state?: string
@@ -2874,6 +2877,7 @@ export type Database = {
           p_items: Json
           p_reference_id?: string
           p_reserve: boolean
+          p_sale_reason?: string
         }
         Returns: Json
       }

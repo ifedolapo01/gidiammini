@@ -14,7 +14,7 @@
  * per role says exactly what is meant and survives the next role being added.
  */
 
-export const ADMIN_ROLES = ['owner', 'manager', 'fulfilment', 'read_only'] as const;
+export const ADMIN_ROLES = ['owner', 'manager', 'fulfilment', 'read_only', 'cashier'] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
 export const DEFAULT_ADMIN_ROLE: AdminRole = 'read_only';
@@ -51,7 +51,13 @@ export type AdminPermission =
    * shop's hands, and neither is part of running it day to day. Reading them
    * is store:read, because half the Admin has to agree with the storefront
    * about the tax rate. */
-  | 'settings:write';
+  | 'settings:write'
+  /** Ringing up a walk-in customer at the till: search products, build a
+   * sale, take payment, print a receipt. Deliberately its own permission
+   * rather than a reuse of orders:write or store:read — either would also
+   * hand a cashier the online order queue, the customer database, or the
+   * discounts a counter sale never offers. */
+  | 'counter_sale:write';
 
 const OWNER: AdminPermission[] = [
   'store:read', 'catalog:write', 'stock:write',
@@ -59,6 +65,7 @@ const OWNER: AdminPermission[] = [
   'customers:read', 'customers:write',
   'moderation:write', 'audit:read', 'export:read',
   'team:read', 'team:manage', 'settings:write',
+  'counter_sale:write',
 ];
 
 /**
@@ -79,6 +86,11 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   // Looks, never touches. No customers and no audit trail, both of which carry
   // more personal data than a viewer needs.
   read_only: ['store:read', 'orders:read'],
+  // A till, and nothing else. No store:read — a cashier does not browse the
+  // catalogue or the dashboard, only search products through the counter-sale
+  // screen's own endpoint — and no orders:read/write, so the online order
+  // queue, discounts and refunds all stay out of reach.
+  cashier: ['counter_sale:write'],
 };
 
 export interface AdminRoleInfo {
@@ -109,6 +121,11 @@ export const ADMIN_ROLE_INFO: readonly AdminRoleInfo[] = [
     value: 'read_only',
     label: 'Read only',
     description: 'Can view the shop and its orders. Changes nothing.',
+  },
+  {
+    value: 'cashier',
+    label: 'Cashier',
+    description: 'Rings up walk-in sales at the counter. No discounts, refunds, settings or online order management.',
   },
 ];
 

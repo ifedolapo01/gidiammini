@@ -19,6 +19,7 @@ import { MobileViewNotice } from './components/MobileViewNotice';
 import CommandPalette from './components/CommandPalette';
 import { useAdminSessionGuard } from './hooks/useAdminSessionGuard';
 import { useAdminIdentity } from './hooks/useAdminIdentity';
+import { useCashierRedirect } from './hooks/useCashierRedirect';
 import { useSidebarCollapsed } from './hooks/useSidebarCollapsed';
 import { clearAdminRealtimeToken } from '@/lib/supabase/realtime-client';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useAdminSessionGuard();
   const { admin, label: adminLabel } = useAdminIdentity(!isStandalone);
+  useCashierRedirect(admin?.role, pathname);
   const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
 
   // Close the drawer on navigation, or it stays open over the page just

@@ -10,7 +10,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Package, ShoppingCart, Boxes, Star, ReceiptText,
   CircleQuestionMark, FolderTree, Percent, Truck, History, Users, Contact, Settings, Zap,
-  GalleryHorizontal, Search,
+  GalleryHorizontal, Search, Banknote,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/api/admin-roles';
 
@@ -75,6 +75,10 @@ export const adminConfig = {
     // is the first screen anybody opens, and verification is the task the
     // whole shop waits on.
     { href: '/admin/payments', label: 'Verify Payments', icon: ReceiptText, shortLabel: 'Payments', permission: 'orders:read' },
+    // Gated on its own permission, not orders:read — a cashier holds
+    // counter_sale:write and nothing else, so this is the only link a cashier
+    // ever sees in this list.
+    { href: '/admin/counter-sale', label: 'Counter Sale', icon: Banknote, permission: 'counter_sale:write' },
     // Beside Orders, not down with the catalogue: a customer is looked up
     // because of an order, almost every time. Behind customers:read, which is
     // deliberately narrower than orders:read — the customer database holds

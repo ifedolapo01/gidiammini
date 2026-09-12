@@ -22,14 +22,17 @@ import type { DraftLine } from '../hooks/useOrderEdit';
 
 interface AddOrderLineProps {
   onAdd: (line: Omit<DraftLine, 'key'>) => void;
+  /** Defaults to the order-edit picker's catalogue. The counter-sale screen
+   *  passes its own cashier-safe endpoint instead — see useProductPicker. */
+  productsEndpoint?: string;
 }
 
 function variantLabel(size: string | null, color: string | null): string {
   return [size, color].filter(Boolean).join(' / ') || 'Standard';
 }
 
-export default function AddOrderLine({ onAdd }: AddOrderLineProps) {
-  const picker = useProductPicker();
+export default function AddOrderLine({ onAdd, productsEndpoint }: AddOrderLineProps) {
+  const picker = useProductPicker(productsEndpoint);
   const [product, setProduct] = useState<PickerProduct | null>(null);
   const [variantKey, setVariantKey] = useState('');
   const [price, setPrice] = useState('');

@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     const adminRow = data?.user
       ? await createAdminClient()
           .from('admin_users')
-          .select('user_id, is_active')
+          .select('user_id, is_active, role')
           .eq('user_id', data.user.id)
           .maybeSingle()
       : null;
@@ -142,7 +142,12 @@ export async function POST(request: NextRequest) {
       .update({ last_seen_at: new Date().toISOString() })
       .eq('user_id', data.user.id);
 
-    return NextResponse.json({ success: true, message: 'Login successful' });
+    // A cashier's whole job is the till — landing them on the full dashboard
+    // first, only to click through to the one screen their role can use, is a
+    // step nobody with this role ever wants.
+    const redirectTo = adminRow?.data?.role === 'cashier' ? '/admin/counter-sale' : '/admin/dashboard';
+
+    return NextResponse.json({ success: true, message: 'Login successful', redirectTo });
   } catch (error) {
     console.error('Login failed:', error);
     return NextResponse.json({ success: false, error: 'Login failed' }, { status: 500 });

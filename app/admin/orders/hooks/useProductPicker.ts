@@ -1,11 +1,14 @@
 /** ADMIN layer — the catalogue behind "add an item to this order".
  *
- * Reads /api/admin/products/catalog, the lean projection the discounts editor
- * already uses: no images, no descriptions, just what is needed to name a
- * product, pick a variant and know what it costs. Loaded once per mount rather
- * than polled — a catalogue that changed while somebody was mid-edit would
- * move the option under their cursor, and the price is re-read server-side by
- * the pricing rules anyway.
+ * Reads /api/admin/products/catalog by default, the lean projection the
+ * discounts editor already uses: no images, no descriptions, just what is
+ * needed to name a product, pick a variant and know what it costs. A caller
+ * can point it at a different, equally lean endpoint instead — the
+ * counter-sale screen passes /api/admin/counter-sales/products, which is the
+ * same shape minus product_variants.cost, since a cashier must never see
+ * margin data. Loaded once per mount rather than polled — a catalogue that
+ * changed while somebody was mid-edit would move the option under their
+ * cursor, and the price is re-read server-side by the pricing rules anyway.
  *
  * Search is client-side because the whole (capped) list is already here and a
  * round trip per keystroke would be slower than filtering it.
@@ -35,21 +38,30 @@ export interface PickerProduct {
  * the operator has not typed yet. */
 const MAX_RESULTS = 25;
 
-export function useProductPicker() {
+export function useProductPicker(endpoint: string = '/api/admin/products/catalog') {
   const [products, setProducts] = useState<PickerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  // Only the counter-sale endpoint sends this — a cashier has no store:read,
+  // so this is how its live preview learns the tax rate without that
+  // permission. Null (and left at DEFAULT_STORE_SETTINGS.taxRate by the
+  // caller) for the order-edit picker, which reads settings its own way.
+  const [taxRate, setTaxRate] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    adminFetch('/api/admin/products/catalog')
+    adminFetch(endpoint)
       .then((response) => response.json())
       .then((data) => {
         if (cancelled) return;
-        if (data?.success) setProducts(data.products ?? []);
-        else setError(data?.error || 'Could not load the catalogue.');
+        if (data?.success) {
+          setProducts(data.products ?? []);
+          if (typeof data.tax_rate === 'number') setTaxRate(data.tax_rate);
+        } else {
+          setError(data?.error || 'Could not load the catalogue.');
+        }
       })
       .catch(() => {
         if (!cancelled) setError('Could not load the catalogue.');
@@ -61,7 +73,7 @@ export function useProductPicker() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [endpoint]);
 
   const results = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -95,5 +107,6 @@ export function useProductPicker() {
     setSearch,
     variantsFor,
     truncated: !search.trim() && products.length > MAX_RESULTS,
+    taxRate,
   };
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ADMIN_ROLES, ADMIN_ROLE_INFO, ROLE_PERMISSIONS, DEFAULT_ADMIN_ROLE,
-  can, isAdminRole, roleLabel,
+  can, isAdminRole, roleLabel, type AdminPermission,
 } from './admin-roles';
 
 describe('the role vocabulary', () => {
@@ -15,12 +15,18 @@ describe('the role vocabulary', () => {
     }
   });
 
-  it('defaults to the least privileged role', () => {
+  it('defaults to the broadly-passive role, not merely the narrowest one', () => {
     // What an unrecognised role is treated as, and what the invite form opens
-    // on. Both must fail towards less access, never more.
-    expect(ROLE_PERMISSIONS[DEFAULT_ADMIN_ROLE].length).toBe(
-      Math.min(...ADMIN_ROLES.map((role) => ROLE_PERMISSIONS[role].length))
-    );
+    // on. Both must fail towards less access, never more — but "fewest
+    // permissions" is not the same test as "safest default": cashier holds
+    // only one permission (narrower than read_only's two) yet is an
+    // operational role scoped to a till, not a safe fallback for an
+    // unrecognised or newly-invited admin. read_only — broad visibility, zero
+    // writes — is the one that must stay the default.
+    expect(DEFAULT_ADMIN_ROLE).toBe('read_only');
+    for (const permission of ROLE_PERMISSIONS[DEFAULT_ADMIN_ROLE]) {
+      expect(permission.endsWith(':write')).toBe(false);
+    }
   });
 });
 
@@ -59,6 +65,18 @@ describe('can', () => {
       expect(can('read_only', permission), permission).toBe(false);
     }
     expect(can('read_only', 'store:read')).toBe(true);
+  });
+
+  it('gives a cashier the till and nothing else', () => {
+    expect(can('cashier', 'counter_sale:write')).toBe(true);
+    const rest: AdminPermission[] = [
+      'store:read', 'catalog:write', 'stock:write', 'orders:read', 'orders:write',
+      'customers:read', 'customers:write', 'moderation:write', 'audit:read',
+      'export:read', 'team:read', 'team:manage', 'settings:write',
+    ];
+    for (const permission of rest) {
+      expect(can('cashier', permission), permission).toBe(false);
+    }
   });
 
   it('keeps the audit trail and the customer list away from the narrower roles', () => {

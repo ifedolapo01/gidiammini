@@ -43,6 +43,12 @@ export interface StockChangeContext {
   orderId?: string | null;
   /** auth.users.id of the admin who caused it, where one did. */
   actorId?: string | null;
+  /** Which kind of sale is claiming stock, e.g. 'counter_sale'. Only
+   *  meaningful when claiming (isReserving true) — a release is always
+   *  labelled 'release' by the database function regardless of this value.
+   *  Omitted by every online-checkout caller, which keeps today's default
+   *  of 'sale'. */
+  saleReason?: string | null;
 }
 
 /** Raised by adjust_order_stock() when a claim would oversell. Its message is
@@ -85,12 +91,14 @@ export async function adjustStock(
   if (items.length === 0) return {};
 
   // The function labels the movement 'sale' or 'release' from p_reserve on its
-  // own — these two only say which order and which person to attribute it to.
+  // own by default — these arguments say which order and which person to
+  // attribute it to, and (optionally) which kind of sale it is.
   let { error } = await supabase.rpc('adjust_order_stock', {
     p_items: items,
     p_reserve: isReserving,
     p_reference_id: context.orderId ?? null,
     p_actor_id: context.actorId ?? null,
+    p_sale_reason: context.saleReason ?? null,
   });
 
   // Retried without the ledger arguments, for the window between deploying

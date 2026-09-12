@@ -110,9 +110,14 @@ export interface Order {
    * rewrite history. */
   tracking_url?: string | null;
   /** 'transfer' — a receipt somebody inspects — or 'paystack', verified by the
-   *  provider's webhook. Defaulted in the database, so an order that predates
-   *  online payment reads as a transfer. */
-  payment_method?: 'transfer' | 'paystack';
+   *  provider's webhook. 'cash'/'pos' are a counter sale, paid and verified at
+   *  creation. Defaulted in the database, so an order that predates online
+   *  payment reads as a transfer. */
+  payment_method?: 'transfer' | 'paystack' | 'cash' | 'pos';
+  /** 'online' (the storefront checkout) or 'counter' (rung up in Admin for a
+   *  walk-in customer) — see supabase/migrations/20260912140000. Defaulted in
+   *  the database, so every order before this field existed reads as online. */
+  sales_channel?: 'online' | 'counter';
   /** How they paid, in the provider's words: card, bank, ussd. */
   payment_channel?: string | null;
   /** The checkout checkbox — gates the WhatsApp arm of every notification for

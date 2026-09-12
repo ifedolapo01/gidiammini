@@ -41,20 +41,28 @@ interface OrderPrintDocumentProps {
 const CELL = 'border border-black/30 px-2 py-1.5 text-left align-top';
 
 function Address({ order }: { order: Order }) {
+  // A counter sale's selected_state is a fixed sentinel ('Counter Sale'), not
+  // a place — nothing about where this customer lives, only that they were
+  // standing at the till. Printing it as a location would be actively wrong,
+  // so the whole line is left out for that channel rather than shown as one.
+  const isCounterSale = order.sales_channel === 'counter';
+
   return (
     <div>
       <p className="text-[10pt] uppercase tracking-wide text-black/60">
-        {order.delivery_option === 'pickup' ? 'Collecting' : 'Deliver to'}
+        {isCounterSale ? 'Counter sale' : order.delivery_option === 'pickup' ? 'Collecting' : 'Deliver to'}
       </p>
-      <p className="font-semibold">{order.customer_name}</p>
+      {order.customer_name && <p className="font-semibold">{order.customer_name}</p>}
       {order.delivery_option === 'delivery' && order.delivery_address && (
         <p>{order.delivery_address}{order.city ? `, ${order.city}` : ''}</p>
       )}
-      <p>
-        {[order.selected_place, order.selected_lga, order.selected_state].filter(Boolean).join(', ')}
-      </p>
-      <p>{order.customer_phone}</p>
-      <p>{order.customer_email}</p>
+      {!isCounterSale && (
+        <p>
+          {[order.selected_place, order.selected_lga, order.selected_state].filter(Boolean).join(', ')}
+        </p>
+      )}
+      {order.customer_phone && <p>{order.customer_phone}</p>}
+      {order.customer_email && <p>{order.customer_email}</p>}
     </div>
   );
 }
@@ -106,7 +114,9 @@ export default function OrderPrintDocument({ order, kind, onDone }: OrderPrintDo
         <div className="text-[10pt]">
           <p className="uppercase tracking-wide text-black/60">Fulfilment</p>
           <p className="font-semibold">
-            {order.delivery_option === 'pickup' ? 'Store pickup' : 'Delivery'}
+            {order.sales_channel === 'counter'
+              ? 'Counter sale'
+              : order.delivery_option === 'pickup' ? 'Store pickup' : 'Delivery'}
           </p>
           {order.carrier && <p>Courier: {carrierName(order.carrier)}</p>}
           {order.tracking_number && <p className="font-mono">Waybill: {order.tracking_number}</p>}
